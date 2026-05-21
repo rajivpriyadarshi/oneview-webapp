@@ -1,0 +1,258 @@
+:root {
+  --background: #f6f5f3;
+  --foreground: #080808;
+  --muted: #8a8a8a;
+  --field: #f7f7f7;
+  --card: rgba(255, 255, 255, 0.96);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.login-page {
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 80%, rgba(190, 166, 130, 0.2), transparent 30%),
+    linear-gradient(90deg, #f7f7f7 0%, #fbfbfb 17%, #f2f0ed 35%, #f9f8f6 50%, #e8e1d8 58%, #fbfbfb 78%, #f5f5f5 100%);
+  position: relative;
+}
+
+.login-page::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  background:
+    linear-gradient(90deg, transparent 0 10%, rgba(255, 255, 255, 0.45) 10% 13%, transparent 13% 20%),
+    repeating-linear-gradient(90deg, rgba(117, 101, 80, 0.03) 0 1px, transparent 1px 88px);
+  filter: blur(10px);
+}
+
+.login-shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  justify-items: center;
+  align-items: center;
+  padding: 11vh 24px 8vh;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  align-self: end;
+  margin-bottom: 95px;
+  color: #050505;
+  font-size: clamp(34px, 3vw, 52px);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.oneview-mark {
+  width: 74px;
+  height: 74px;
+}
+
+.login-card {
+  width: min(100%, 638px);
+  min-height: 596px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 53px 42px 42px;
+  background: var(--card);
+  border-radius: 28px;
+  box-shadow: 0 18px 60px rgba(53, 44, 34, 0.05);
+}
+
+.login-card h1 {
+  margin: 0 0 67px;
+  color: #17342f;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 42px;
+  font-weight: 500;
+  line-height: 1.08;
+}
+
+.field {
+  position: relative;
+  width: min(100%, 554px);
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-bottom: 22px;
+  padding: 16px 56px 16px 23px;
+  background: var(--field);
+  border: 1px solid rgba(0, 0, 0, 0.01);
+  border-radius: 17px;
+}
+
+.field span {
+  margin-bottom: 10px;
+  color: #8d8d8d;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.field input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  background: transparent;
+  color: #222;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.password-field {
+  margin-bottom: 37px;
+}
+
+.visibility-button {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #050505;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.visibility-button svg {
+  width: 27px;
+  height: 27px;
+}
+
+.continue-button {
+  width: min(100%, 554px);
+  min-height: 76px;
+  border: 0;
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.terms {
+  max-width: 510px;
+  margin: 27px 0 0;
+  color: #888;
+  font-size: 16px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.terms a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.zinc-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  align-self: start;
+  margin-top: 146px;
+  color: #525252;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.zinc-brand strong {
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.zinc-mark {
+  width: 35px;
+  height: 35px;
+}
+
+@media (max-width: 720px) {
+  .login-shell {
+    grid-template-rows: auto auto 1fr;
+    padding: 56px 18px 40px;
+  }
+
+  .brand {
+    gap: 14px;
+    margin-bottom: 52px;
+    font-size: 36px;
+  }
+
+  .oneview-mark {
+    width: 54px;
+    height: 54px;
+  }
+
+  .login-card {
+    min-height: auto;
+    padding: 40px 20px 30px;
+    border-radius: 24px;
+  }
+
+  .login-card h1 {
+    margin-bottom: 42px;
+    font-size: 36px;
+  }
+
+  .field {
+    min-height: 82px;
+    padding-left: 20px;
+  }
+
+  .field span {
+    font-size: 15px;
+  }
+
+  .field input {
+    font-size: 18px;
+  }
+
+  .continue-button {
+    min-height: 64px;
+    font-size: 19px;
+  }
+
+  .terms {
+    font-size: 14px;
+  }
+
+  .zinc-brand {
+    margin-top: 62px;
+    font-size: 24px;
+  }
+}
