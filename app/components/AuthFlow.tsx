@@ -1,49 +1,27 @@
 "use client";
 
-import { ClipboardEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand, ZincBrand } from "./BrandMarks";
 import { startGoogleLogin } from "../lib/authApi";
 import { isApiUnauthorized as isRealApiUnauthorized } from "../lib/apiClient";
-import {
-  isApiUnauthorized as isMockApiUnauthorized,
-  requestEmailOtp,
-  verifyEmailOtp,
-} from "../lib/mockAuthApi";
 import { getPostProfileRoute } from "../lib/postAuthRoute";
 import { getProfile, login } from "../lib/realAuthApi";
 import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
 
-const OTP_LENGTH = 6;
-
 export function AuthFlow() {
   const router = useRouter();
-  const [step, setStep] = useState<"login" | "password" | "otp">("login");
+  const [step, setStep] = useState<"login" | "password">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState(["2", "5", "0", "5", "9", "0"]);
-  const [retrySeconds, setRetrySeconds] = useState(25);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     if (getStoredAuthToken()) {
       routeByProfile();
     }
   }, [router]);
-
-  useEffect(() => {
-    if (step !== "otp" || retrySeconds <= 0) {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setRetrySeconds((seconds) => seconds - 1);
-    }, 1000);
-
-    return () => window.clearTimeout(timer);
-  }, [retrySeconds, step]);
 
   async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -65,12 +43,7 @@ export function AuthFlow() {
     setIsSubmitting(true);
 
     try {
-      const session = await startGoogleLogin();
-
-      if (session) {
-        storeAuthToken(session.authToken);
-        await routeByProfile();
-      }
+      await startGoogleLogin();
     } catch (requestError) {
       if (isUnauthorizedAuthError(requestError)) {
         router.replace("/");
@@ -104,89 +77,9 @@ export function AuthFlow() {
     }
   }
 
-  async function handleOtpSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-    setIsSubmitting(true);
-
-    try {
-      const session = await verifyEmailOtp({ email, otp: otp.join("") });
-      storeAuthToken(session.authToken);
-      await routeByProfile();
-    } catch (requestError) {
-      if (isUnauthorizedAuthError(requestError)) {
-        router.replace("/");
-        return;
-      }
-
-      setError(getErrorMessage(requestError));
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  function handleOtpChange(index: number, value: string) {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const nextOtp = [...otp];
-    nextOtp[index] = digit;
-    setOtp(nextOtp);
-
-    if (digit && index < OTP_LENGTH - 1) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  }
-
-  function handleOtpKeyDown(index: number, key: string) {
-    if (key === "Backspace" && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
-    }
-  }
-
-  function handleOtpPaste(index: number, event: ClipboardEvent<HTMLInputElement>) {
-    const pastedDigits = event.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, OTP_LENGTH - index)
-      .split("");
-
-    if (pastedDigits.length === 0) {
-      return;
-    }
-
-    event.preventDefault();
-
-    const nextOtp = [...otp];
-    pastedDigits.forEach((digit, digitIndex) => {
-      nextOtp[index + digitIndex] = digit;
-    });
-
-    setOtp(nextOtp);
-
-    const nextFocusIndex = Math.min(index + pastedDigits.length, OTP_LENGTH - 1);
-    otpRefs.current[nextFocusIndex]?.focus();
-  }
-
   function handleDifferentEmail() {
     setStep("login");
     setError("");
-  }
-
-  async function handleRetryOtp() {
-    if (retrySeconds > 0) {
-      return;
-    }
-
-    setError("");
-    setIsSubmitting(true);
-
-    try {
-      await requestEmailOtp({ email });
-      setRetrySeconds(25);
-    } catch (requestError) {
-      setError(getErrorMessage(requestError));
-    } finally {
-      setIsSubmitting(false);
-    }
   }
 
   async function routeByProfile() {
@@ -248,7 +141,7 @@ export function AuthFlow() {
           </form>
           <ZincBrand />
         </section>
-      ) : step === "password" ? (
+      ) : (
         <section className="auth-shell otp-shell" aria-labelledby="password-title">
           <OneviewBrand />
           <form className="otp-panel" onSubmit={handlePasswordSubmit}>
@@ -286,55 +179,6 @@ export function AuthFlow() {
             </button>
 
             {error ? <p className="form-error otp-error">{error}</p> : null}
-          </form>
-          <ZincBrand />
-        </section>
-      ) : (
-        <section className="auth-shell otp-shell" aria-labelledby="otp-title">
-          <OneviewBrand />
-          <form className="otp-panel" onSubmit={handleOtpSubmit}>
-            <h1 id="otp-title">Verify with OTP</h1>
-            <p className="otp-copy">
-              Please confirm your email by entering the OTP sent to your email
-              address
-            </p>
-            <p className="sent-line">
-              <span>Sent to: {email}</span>
-              <button type="button" onClick={handleDifferentEmail}>
-                Use a different email
-              </button>
-            </p>
-
-            <div className="otp-inputs" aria-label="One-time password">
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(element) => {
-                    otpRefs.current[index] = element;
-                  }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(event) => handleOtpChange(index, event.target.value)}
-                  onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
-                  onPaste={(event) => handleOtpPaste(index, event)}
-                  aria-label={`OTP digit ${index + 1}`}
-                  required
-                />
-              ))}
-            </div>
-
-            <button className="continue-button otp-button" type="submit" disabled={isSubmitting}>
-              Continue
-            </button>
-
-            {error ? <p className="form-error otp-error">{error}</p> : null}
-
-            <button className="retry-button" type="button" onClick={handleRetryOtp}>
-              Didn&apos;t receive it?{" "}
-              {retrySeconds > 0 ? `Retry in ${retrySeconds} sec` : "Retry now"}
-            </button>
           </form>
           <ZincBrand />
         </section>
@@ -381,5 +225,5 @@ function validateEmail(email: string) {
 }
 
 function isUnauthorizedAuthError(error: unknown) {
-  return isRealApiUnauthorized(error) || isMockApiUnauthorized(error);
+  return isRealApiUnauthorized(error);
 }

@@ -1,16 +1,10 @@
 import { appConfig } from "./config";
-import { continueWithGoogle, type SessionResponse } from "./mockAuthApi";
 
 const GOOGLE_OAUTH_STATE_KEY = "oneview.googleOAuthState";
 
-export async function startGoogleLogin(): Promise<SessionResponse | null> {
-  if (appConfig.useMockAuth) {
-    return continueWithGoogle();
-  }
-
+export async function startGoogleLogin() {
   const authUrl = buildGoogleAuthUrl();
   window.location.assign(authUrl);
-  return null;
 }
 
 export function getExpectedGoogleOAuthState() {

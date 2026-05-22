@@ -48,9 +48,7 @@ Authorization: Token <token>
 
 ## Google login
 
-The Google button uses mock login while `NEXT_PUBLIC_USE_MOCK_AUTH=true`.
-
-When mock auth is disabled, clicking the button redirects to `NEXT_PUBLIC_GOOGLE_AUTH_START_URL` with:
+Clicking the Google button redirects to `NEXT_PUBLIC_GOOGLE_AUTH_START_URL` with:
 
 - `redirect_uri`: `${window.location.origin}/auth/google/callback`
 - `state`: browser-generated CSRF state
