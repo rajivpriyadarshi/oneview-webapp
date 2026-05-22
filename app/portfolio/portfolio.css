@@ -38,7 +38,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: var(--muted);
+  color: rgba(0, 0, 0, 0.7);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
@@ -49,8 +49,8 @@
 }
 
 .sidebar-btn.active {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--foreground);
+  background: rgba(108, 61, 11, 0.1);
+  color: #7f4e0b;
 }
 
 .sidebar-avatar {
@@ -87,7 +87,7 @@
 
 .dashboard-title {
   margin: 0;
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: var(--font-butler), Georgia, serif;
   font-size: 32px;
   font-weight: 700;
   color: var(--foreground);
@@ -124,7 +124,7 @@
   justify-content: space-between;
   align-items: stretch;
   padding: 32px 36px;
-  background: #1a1a1a;
+  background: #2F2B2C;
   border-radius: 20px;
   margin-bottom: 28px;
   min-height: 200px;
@@ -180,19 +180,38 @@
   gap: 10px;
 }
 
+.filter-select-wrapper {
+  position: relative;
+}
+
 .filter-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 10px 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+select.filter-btn {
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 6l4 4 4-4' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+
+select.filter-btn option {
+  background: #2F2B2C;
+  color: #fff;
 }
 
 .filter-btn:hover {
@@ -201,32 +220,10 @@
 
 /* Chart */
 .portfolio-chart {
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-  width: 45%;
+  width: 50%;
   min-width: 300px;
-}
-
-.chart-y-axis {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  padding: 4px 0;
-  text-align: right;
-}
-
-.chart-area {
-  flex: 1;
+  min-height: 180px;
   position: relative;
-  border-left: 1px dashed rgba(255, 255, 255, 0.1);
-}
-
-.chart-svg {
-  width: 100%;
-  height: 100%;
 }
 
 /* Portfolio Exposure */

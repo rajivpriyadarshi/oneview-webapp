@@ -21,7 +21,7 @@ body {
   margin: 0;
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), var(--font-geist), Arial, Helvetica, sans-serif;
 }
 
 button,
@@ -112,6 +112,15 @@ button:disabled {
   border-radius: 25px;
   box-shadow: 0 18px 60px rgba(53, 44, 34, 0.05);
 }
+
+.login-card h1 {
+  margin: 0 0 67px;
+  color: #17342f;
+  font-family: var(--font-butler), Georgia, serif;
+  font-size: 42px;
+  font-weight: 500;
+}
+
 
 .account-card h1,
 .otp-panel h1 {

@@ -1,19 +1,17 @@
 import Sidebar from "../components/Sidebar";
-import DashboardHeader from "../components/DashboardHeader";
-import PortfolioSummary from "../components/PortfolioSummary";
-import PortfolioExposure from "../components/PortfolioExposure";
-import HoldingsTable from "../components/HoldingsTable";
-import "./dashboard.css";
+import HomeHeader from "../components/HomeHeader";
+import InsightCard from "../components/InsightCard";
+import GoalsList from "../components/GoalsList";
+import "./home.css";
 
-export default function DashboardPage() {
+export default function HomePage() {
   return (
     <div className="dashboard-layout">
       <Sidebar />
       <main className="dashboard-main">
-        <DashboardHeader />
-        <PortfolioSummary />
-        <PortfolioExposure />
-        <HoldingsTable />
+        <HomeHeader />
+        <InsightCard />
+        <GoalsList />
       </main>
     </div>
   );

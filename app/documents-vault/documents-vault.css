@@ -1,0 +1,264 @@
+/* Documents Vault */
+.docs-vault-content {
+  width: 100%;
+}
+
+.docs-vault-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.docs-vault-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.docs-vault-title {
+  margin: 0;
+  font-family: var(--font-butler), Georgia, serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.docs-vault-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.upload-statements-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: #1a1a1a;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.upload-statements-btn:hover {
+  background: #333;
+}
+
+/* Dropzone */
+.docs-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 180px;
+  margin-bottom: 40px;
+  padding: 40px 24px;
+  border: 2px dashed rgba(0, 0, 0, 0.15);
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.docs-dropzone.is-dragging {
+  border-color: rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.docs-dropzone input {
+  display: none;
+}
+
+.docs-dropzone-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.06);
+  color: #151515;
+  margin-bottom: 8px;
+}
+
+.docs-dropzone strong {
+  color: #333;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.docs-dropzone span {
+  color: #888;
+  font-size: 14px;
+}
+
+/* Table Section */
+.docs-table-section {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 32px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.docs-table-title {
+  margin: 0 0 20px;
+  font-family: var(--font-butler), Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--foreground);
+}
+
+.docs-table-wrapper {
+  overflow-x: auto;
+}
+
+.docs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.docs-table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-weight: 500;
+  color: var(--muted);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.docs-table td {
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  vertical-align: middle;
+  color: #555;
+  font-size: 14px;
+}
+
+.docs-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.th-checkbox,
+.td-checkbox {
+  width: 40px;
+}
+
+.docs-checkbox {
+  width: 18px;
+  height: 18px;
+  display: block;
+  border: 1.5px solid #d4d4d4;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.td-filename {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--foreground);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.docs-file-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 7px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.docs-file-icon.file-xls {
+  background: linear-gradient(90deg, #128044 0 35%, #21a365 35% 100%);
+}
+
+.docs-file-icon.file-pdf {
+  background: #e31b2f;
+}
+
+.docs-file-icon.file-png {
+  background: linear-gradient(135deg, #dfe6ee 0 62%, #b6c4d4 62%);
+  color: #6958ff;
+}
+
+.docs-file-icon.file-docx {
+  background: #2a83df;
+}
+
+.docs-file-icon.file-csv {
+  background: #4caf50;
+}
+
+.docs-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px solid #e3d903;
+  border-radius: 5px;
+  background: #fffdb8;
+  color: #8c7b00;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.docs-view-btn {
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.docs-view-btn:hover {
+  background: #333;
+}
+
+.docs-sort-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.docs-error {
+  margin: -20px 0 24px;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .docs-vault-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .docs-table-section {
+    padding: 20px 16px;
+    border-radius: 16px;
+  }
+
+  .docs-dropzone {
+    min-height: 140px;
+    padding: 28px 16px;
+  }
+}

@@ -1,55 +1,84 @@
-export default function PortfolioSummary() {
+import PortfolioChart from "./PortfolioChart";
+import { type PortfolioValuation, type Account } from "../lib/portfolioDataApi";
+import { type Portfolio } from "../lib/portfoliosApi";
+
+type Props = {
+  valuation: PortfolioValuation | null;
+  loading: boolean;
+  accounts: Account[];
+  selectedAccountId: number | "all";
+  onAccountChange: (accountId: number | "all") => void;
+  portfolios: Portfolio[];
+  selectedPortfolio: Portfolio | null;
+  onPortfolioChange: (portfolioId: number) => void;
+};
+
+export default function PortfolioSummary({
+  valuation,
+  loading,
+  accounts,
+  selectedAccountId,
+  onAccountChange,
+  selectedPortfolio,
+}: Props) {
+  const marketValue = valuation ? formatLakhs(valuation.market_value) : "—";
+  const gainAmount = valuation ? formatLakhs(valuation.gain_amount) : "—";
+  const gainPct = valuation ? `${parseFloat(valuation.gain_pct).toFixed(2)}%` : "";
+  const isPositive = valuation ? parseFloat(valuation.gain_amount) >= 0 : true;
+
   return (
     <section className="portfolio-summary">
       <div className="portfolio-info">
         <p className="portfolio-label">Total portfolio value</p>
-        <h2 className="portfolio-value">&#8377;49.2L</h2>
-        <p className="portfolio-gain">+11.13 L (22.64%)</p>
+        <h2 className="portfolio-value">
+          {loading ? "..." : `₹${marketValue}`}
+        </h2>
+        <p className={`portfolio-gain ${isPositive ? "" : "negative"}`}>
+          {loading ? "" : `${isPositive ? "+" : ""}${gainAmount} (${gainPct})`}
+        </p>
         <div className="portfolio-meta">
-          <span className="portfolio-date">Prices as of <strong>May 18, 026</strong></span>
+          <span className="portfolio-date">
+            Prices as of <strong>{new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</strong>
+          </span>
           <div className="portfolio-filters">
+            <div className="filter-select-wrapper">
+              <select
+                className="filter-btn"
+                value={selectedAccountId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  onAccountChange(val === "all" ? "all" : Number(val));
+                }}
+              >
+                <option value="all">All accounts</option>
+                {accounts.map((acc) => (
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <button className="filter-btn">
-              All accounts
-              <ChevronDown />
-            </button>
-            <button className="filter-btn">
-              INR
+              {selectedPortfolio?.base_currency || "INR"}
               <ChevronDown />
             </button>
           </div>
         </div>
       </div>
-      <div className="portfolio-chart">
-        <div className="chart-y-axis">
-          <span>&#8377;60L</span>
-          <span>&#8377;40L</span>
-          <span>&#8377;30L</span>
-          <span>&#8377;25L</span>
-          <span>&#8377;10L</span>
-        </div>
-        <div className="chart-area">
-          <svg viewBox="0 0 300 120" preserveAspectRatio="none" className="chart-svg">
-            <defs>
-              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgba(200, 180, 80, 0.3)" />
-                <stop offset="100%" stopColor="rgba(200, 180, 80, 0)" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M0 100 L50 95 L100 90 L150 85 L180 80 L200 60 L230 30 L260 25 L280 20 L300 20"
-              fill="none"
-              stroke="#c8b850"
-              strokeWidth="2"
-            />
-            <path
-              d="M0 100 L50 95 L100 90 L150 85 L180 80 L200 60 L230 30 L260 25 L280 20 L300 20 L300 120 L0 120 Z"
-              fill="url(#chartGradient)"
-            />
-          </svg>
-        </div>
-      </div>
+      <PortfolioChart />
     </section>
   );
+}
+
+function formatLakhs(value: string) {
+  const num = parseFloat(value);
+  if (Math.abs(num) >= 100000) {
+    return `${(num / 100000).toFixed(1)}L`;
+  }
+  if (Math.abs(num) >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
+  }
+  return num.toFixed(2);
 }
 
 function ChevronDown() {
