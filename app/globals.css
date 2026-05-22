@@ -31,6 +31,7 @@ input {
 
 button {
   cursor: pointer;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
 }
 
 button:disabled {
@@ -77,11 +78,6 @@ button:disabled {
 .brand {
   display: flex;
   align-items: center;
-  gap: 21px;
-  color: #050505;
-  font-size: clamp(38px, 3.1vw, 49px);
-  font-weight: 800;
-  line-height: 1;
 }
 
 .auth-shell-card .brand {
@@ -92,9 +88,18 @@ button:disabled {
   margin-bottom: 91px;
 }
 
+.oneview-logo {
+  width: clamp(239px, 18vw, 282px);
+  height: auto;
+  display: block;
+}
+
 .oneview-mark {
-  width: 72px;
-  height: 72px;
+  width: 48px;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  object-position: left center;
 }
 
 .login-card {
@@ -111,12 +116,13 @@ button:disabled {
 .account-card h1,
 .otp-panel h1 {
   margin: 0;
-  color: var(--green);
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 36px;
-  font-weight: 600;
-  line-height: 1.1;
-  letter-spacing: 0;
+  color: #092423;
+  font-family: "ButlerPro", Georgia, "Times New Roman", serif;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 56px;
+  letter-spacing: -1.28px;
 }
 
 .account-card h1 {
@@ -133,9 +139,21 @@ button:disabled {
   border: 1.5px solid #030303;
   border-radius: 999px;
   background: transparent;
-  color: #080808;
-  font-size: 18px;
-  font-weight: 800;
+}
+
+.google-button span {
+  overflow: hidden;
+  color: #000;
+  text-align: center;
+  font-feature-settings: "ss03" on;
+  text-overflow: ellipsis;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: var(--Kerning-None, 0);
+  white-space: nowrap;
 }
 
 .google-icon {
@@ -172,16 +190,27 @@ button:disabled {
   font-weight: 500;
 }
 
-.field input {
+.field input,
+.account-field input {
   width: 100%;
+  overflow: hidden;
   border: 0;
   outline: 0;
   padding: 0;
   background: transparent;
-  color: #222;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.1;
+  color: #262626;
+  font-feature-settings: "ss03" on;
+  text-overflow: ellipsis;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: var(--Kerning-None, 0);
+  white-space: nowrap;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 .continue-button {
@@ -303,13 +332,14 @@ button:disabled {
 }
 
 .zinc-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   align-self: start;
-  color: #525252;
-  font-size: 27px;
-  line-height: 1;
+  display: block;
+}
+
+.zinc-brand img {
+  width: 134px;
+  height: auto;
+  display: block;
 }
 
 .auth-shell-card .zinc-brand {
@@ -318,16 +348,6 @@ button:disabled {
 
 .otp-shell .zinc-brand {
   margin-top: 147px;
-}
-
-.zinc-brand strong {
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
-.zinc-mark {
-  width: 32px;
-  height: 32px;
 }
 
 .dashboard-page {
@@ -394,6 +414,21 @@ button:disabled {
   line-height: 1.5;
 }
 
+.auth-callback-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #f7f7f7;
+  color: #092423;
+}
+
+.auth-callback-page p {
+  margin: 0;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
 .vault-page {
   min-height: 100vh;
   display: grid;
@@ -417,6 +452,8 @@ button:disabled {
 .vault-logo .oneview-mark {
   width: 48px;
   height: 48px;
+  object-fit: cover;
+  object-position: left center;
 }
 
 .vault-nav {
@@ -730,24 +767,16 @@ button:disabled {
 
   .auth-shell-card .brand,
   .otp-shell .brand {
-    gap: 14px;
     margin-bottom: 52px;
-    font-size: 36px;
   }
 
-  .oneview-mark {
-    width: 54px;
-    height: 54px;
+  .oneview-logo {
+    width: 218px;
   }
 
   .login-card {
     padding: 36px 20px 28px;
     border-radius: 24px;
-  }
-
-  .account-card h1,
-  .otp-panel h1 {
-    font-size: 34px;
   }
 
   .account-card h1 {
@@ -772,10 +801,6 @@ button:disabled {
 
   .field span {
     font-size: 15px;
-  }
-
-  .field input {
-    font-size: 17px;
   }
 
   .terms {
@@ -813,7 +838,10 @@ button:disabled {
   .auth-shell-card .zinc-brand,
   .otp-shell .zinc-brand {
     margin-top: 64px;
-    font-size: 24px;
+  }
+
+  .zinc-brand img {
+    width: 120px;
   }
 
   .dashboard-nav {

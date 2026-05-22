@@ -10,7 +10,7 @@ type VerifyOtpParams = {
   otp: string;
 };
 
-type SessionResponse = {
+export type SessionResponse = {
   authToken: string;
   expiresInSeconds: number;
 };

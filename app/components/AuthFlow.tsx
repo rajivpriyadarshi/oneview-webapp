@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { ClipboardEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand, ZincBrand } from "./BrandMarks";
+import { startGoogleLogin } from "../lib/authApi";
 import {
-  continueWithGoogle,
   isApiUnauthorized,
   requestEmailOtp,
   verifyEmailOtp,
@@ -64,9 +64,12 @@ export function AuthFlow() {
     setIsSubmitting(true);
 
     try {
-      const session = await continueWithGoogle();
-      storeAuthToken(session.authToken);
-      router.replace("/dashboard");
+      const session = await startGoogleLogin();
+
+      if (session) {
+        storeAuthToken(session.authToken);
+        router.replace("/dashboard");
+      }
     } catch (requestError) {
       if (isApiUnauthorized(requestError)) {
         router.replace("/");
@@ -117,6 +120,30 @@ export function AuthFlow() {
     }
   }
 
+  function handleOtpPaste(index: number, event: ClipboardEvent<HTMLInputElement>) {
+    const pastedDigits = event.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, OTP_LENGTH - index)
+      .split("");
+
+    if (pastedDigits.length === 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const nextOtp = [...otp];
+    pastedDigits.forEach((digit, digitIndex) => {
+      nextOtp[index + digitIndex] = digit;
+    });
+
+    setOtp(nextOtp);
+
+    const nextFocusIndex = Math.min(index + pastedDigits.length, OTP_LENGTH - 1);
+    otpRefs.current[nextFocusIndex]?.focus();
+  }
+
   function handleDifferentEmail() {
     setStep("login");
     setError("");
@@ -146,7 +173,7 @@ export function AuthFlow() {
         <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
           <OneviewBrand />
           <form className="login-card account-card" onSubmit={handleEmailSubmit}>
-            <h1 id="login-title">Create an account</h1>
+            <h1 id="login-title">Get started</h1>
 
             <button
               className="google-button"
@@ -168,6 +195,8 @@ export function AuthFlow() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
                 aria-label="Email address"
                 required
               />
@@ -216,6 +245,7 @@ export function AuthFlow() {
                   value={digit}
                   onChange={(event) => handleOtpChange(index, event.target.value)}
                   onKeyDown={(event) => handleOtpKeyDown(index, event.key)}
+                  onPaste={(event) => handleOtpPaste(index, event)}
                   aria-label={`OTP digit ${index + 1}`}
                   required
                 />

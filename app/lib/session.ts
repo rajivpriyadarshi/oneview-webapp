@@ -27,7 +27,7 @@ export function clearAuthToken() {
 export function getAuthHeaders() {
   const authToken = getStoredAuthToken();
 
-  return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+  return authToken ? { Authorization: `Token ${authToken}` } : {};
 }
 
 function canUseBrowserStorage() {
