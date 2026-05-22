@@ -4,20 +4,23 @@ import { ClipboardEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand, ZincBrand } from "./BrandMarks";
 import { startGoogleLogin } from "../lib/authApi";
+import { isApiUnauthorized as isRealApiUnauthorized } from "../lib/apiClient";
 import {
-  isApiUnauthorized,
+  isApiUnauthorized as isMockApiUnauthorized,
   requestEmailOtp,
   verifyEmailOtp,
 } from "../lib/mockAuthApi";
-import { getStoredAuthToken, storeAuthToken } from "../lib/session";
+import { getPostProfileRoute } from "../lib/postAuthRoute";
+import { getProfile, login } from "../lib/realAuthApi";
+import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
 
-const DEFAULT_EMAIL = "naksh.mehta@gmail.com";
 const OTP_LENGTH = 6;
 
 export function AuthFlow() {
   const router = useRouter();
-  const [step, setStep] = useState<"login" | "otp">("login");
-  const [email, setEmail] = useState(DEFAULT_EMAIL);
+  const [step, setStep] = useState<"login" | "password" | "otp">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState(["2", "5", "0", "5", "9", "0"]);
   const [retrySeconds, setRetrySeconds] = useState(25);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,7 +29,7 @@ export function AuthFlow() {
 
   useEffect(() => {
     if (getStoredAuthToken()) {
-      router.replace("/dashboard");
+      routeByProfile();
     }
   }, [router]);
 
@@ -48,10 +51,8 @@ export function AuthFlow() {
     setIsSubmitting(true);
 
     try {
-      await requestEmailOtp({ email });
-      setRetrySeconds(25);
-      setStep("otp");
-      window.setTimeout(() => otpRefs.current[0]?.focus(), 0);
+      validateEmail(email);
+      setStep("password");
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -68,11 +69,32 @@ export function AuthFlow() {
 
       if (session) {
         storeAuthToken(session.authToken);
-        router.replace("/dashboard");
+        await routeByProfile();
       }
     } catch (requestError) {
-      if (isApiUnauthorized(requestError)) {
+      if (isUnauthorizedAuthError(requestError)) {
         router.replace("/");
+        return;
+      }
+
+      setError(getErrorMessage(requestError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const session = await login({ email, password });
+      storeAuthToken(session.token);
+      await routeByProfile();
+    } catch (requestError) {
+      if (isUnauthorizedAuthError(requestError)) {
+        setError("Invalid email or password.");
         return;
       }
 
@@ -90,9 +112,9 @@ export function AuthFlow() {
     try {
       const session = await verifyEmailOtp({ email, otp: otp.join("") });
       storeAuthToken(session.authToken);
-      router.replace("/dashboard");
+      await routeByProfile();
     } catch (requestError) {
-      if (isApiUnauthorized(requestError)) {
+      if (isUnauthorizedAuthError(requestError)) {
         router.replace("/");
         return;
       }
@@ -167,6 +189,16 @@ export function AuthFlow() {
     }
   }
 
+  async function routeByProfile() {
+    try {
+      const profile = await getProfile();
+      router.replace(await getPostProfileRoute(profile));
+    } catch {
+      clearAuthToken();
+      router.replace("/");
+    }
+  }
+
   return (
     <main className="login-page">
       {step === "login" ? (
@@ -213,6 +245,47 @@ export function AuthFlow() {
               <a href="#">Terms</a> and <a href="#">Usage Policy</a>, and
               acknowledge their <a href="#">Privacy Policy</a>.
             </p>
+          </form>
+          <ZincBrand />
+        </section>
+      ) : step === "password" ? (
+        <section className="auth-shell otp-shell" aria-labelledby="password-title">
+          <OneviewBrand />
+          <form className="otp-panel" onSubmit={handlePasswordSubmit}>
+            <h1 id="password-title">Enter password</h1>
+            <p className="otp-copy">
+              Password login is enabled while OTP login support is being added
+              to the API.
+            </p>
+            <p className="sent-line">
+              <span>Email: {email}</span>
+              <button type="button" onClick={handleDifferentEmail}>
+                Use a different email
+              </button>
+            </p>
+
+            <label className="field account-field password-login-field">
+              <span>Password</span>
+              <input
+                type="password"
+                name="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                aria-label="Password"
+                required
+              />
+            </label>
+
+            <button
+              className="continue-button otp-button"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              Continue
+            </button>
+
+            {error ? <p className="form-error otp-error">{error}</p> : null}
           </form>
           <ZincBrand />
         </section>
@@ -299,4 +372,14 @@ function getErrorMessage(error: unknown) {
   }
 
   return "Something went wrong. Please try again.";
+}
+
+function validateEmail(email: string) {
+  if (!email.includes("@")) {
+    throw new Error("Enter a valid email address.");
+  }
+}
+
+function isUnauthorizedAuthError(error: unknown) {
+  return isRealApiUnauthorized(error) || isMockApiUnauthorized(error);
 }

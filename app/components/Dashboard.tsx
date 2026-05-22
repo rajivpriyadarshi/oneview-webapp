@@ -4,15 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand } from "./BrandMarks";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
-import {
-  getCurrentUser,
-  isApiUnauthorized,
-  mockProtectedModuleRequest,
-} from "../lib/mockAuthApi";
+import { isApiUnauthorized } from "../lib/apiClient";
+import { getPostProfileRoute } from "../lib/postAuthRoute";
+import { getProfile, logout } from "../lib/realAuthApi";
 
 type User = {
   email: string;
-  name: string;
+  displayName: string;
 };
 
 export function Dashboard() {
@@ -28,9 +26,19 @@ export function Dashboard() {
       return;
     }
 
-    getCurrentUser(token)
-      .then((currentUser) => {
-        setUser(currentUser);
+    getProfile()
+      .then(async (profile) => {
+        const route = await getPostProfileRoute(profile);
+
+        if (route !== "/dashboard") {
+          router.replace(route);
+          return;
+        }
+
+        setUser({
+          email: profile.email,
+          displayName: profile.display_name.trim(),
+        });
         setStatus("Session active");
       })
       .catch((error) => {
@@ -45,24 +53,17 @@ export function Dashboard() {
   }, [router]);
 
   async function handleMock401() {
-    const token = getStoredAuthToken();
-
-    try {
-      await mockProtectedModuleRequest(token, { forceUnauthorized: true });
-    } catch (error) {
-      if (isApiUnauthorized(error)) {
-        clearAuthToken();
-        router.replace("/");
-        return;
-      }
-
-      setStatus(error instanceof Error ? error.message : "Request failed");
-    }
-  }
-
-  function handleSignOut() {
     clearAuthToken();
     router.replace("/");
+  }
+
+  async function handleSignOut() {
+    try {
+      await logout();
+    } finally {
+      clearAuthToken();
+      router.replace("/");
+    }
   }
 
   return (
@@ -79,7 +80,7 @@ export function Dashboard() {
         <h1>Oneview framework is ready</h1>
         <p>
           {user
-            ? `${user.name} is logged in as ${user.email}.`
+            ? `${user.displayName} is logged in as ${user.email}.`
             : "Loading the logged in user..."}
         </p>
         <button type="button" onClick={handleMock401}>

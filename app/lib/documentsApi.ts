@@ -1,13 +1,19 @@
 import { apiRequest } from "./apiClient";
 
 export type DocumentRecord = {
-  id: string;
+  id: string | number;
   name: string;
   description: string;
   file: string;
+  file_url?: string;
   file_size: number;
   content_type: string;
+  uploaded_by?: number;
+  uploaded_by_username?: string;
+  accounts?: unknown[];
+  positions_count?: number;
   created_at: string;
+  updated_at?: string;
 };
 
 export type DocumentPosition = {
@@ -28,7 +34,7 @@ export type DocumentPosition = {
 
 export type BrokerStatementUploadResponse = {
   status: "success" | "error";
-  document_id: string;
+  document_id: string | number;
   broker?: string;
   statement_date?: string;
   client_code?: string;
@@ -40,6 +46,8 @@ export type BrokerStatementUploadResponse = {
   error?: string;
   warnings?: string[];
   positions?: unknown[];
+  positions_truncated?: boolean;
+  total_positions?: number;
   storage?: {
     portfolio: string;
     account: string;

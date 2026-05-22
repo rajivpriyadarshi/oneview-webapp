@@ -6,6 +6,8 @@ import {
   clearExpectedGoogleOAuthState,
   getExpectedGoogleOAuthState,
 } from "../../lib/authApi";
+import { getPostProfileRoute } from "../../lib/postAuthRoute";
+import { getProfile } from "../../lib/realAuthApi";
 import { storeAuthToken } from "../../lib/session";
 
 export function GoogleAuthCallback() {
@@ -40,7 +42,12 @@ export function GoogleAuthCallback() {
     }
 
     storeAuthToken(authToken);
-    router.replace("/dashboard");
+    getProfile()
+      .then((profile) => getPostProfileRoute(profile))
+      .then((route) => router.replace(route))
+      .catch(() => {
+        router.replace("/");
+      });
   }, [router]);
 
   return (

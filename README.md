@@ -34,10 +34,10 @@ npm run start:prod
 
 Use `.env.local`, `.env.development.local`, or `.env.production.local` for private machine-specific overrides. Those files are ignored by git.
 
-`NEXT_PUBLIC_API_BASE_URL` should include the API version prefix, for example:
+`NEXT_PUBLIC_API_BASE_URL` should include the wealth API prefix, for example:
 
 ```text
-http://localhost:8080/api/v1
+https://labs-sbox.zinc.money/api/wealth
 ```
 
 Authenticated requests send:
