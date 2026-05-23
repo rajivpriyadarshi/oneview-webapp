@@ -13,6 +13,34 @@ import { Line } from "react-chartjs-2";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
+const dottedGridPlugin = {
+  id: "dottedGrid",
+  beforeDraw(chart: ChartJS) {
+    const { ctx, chartArea, scales } = chart;
+    if (!chartArea) return;
+    const yScale = scales.y;
+    if (!yScale) return;
+
+    ctx.save();
+    const ticks = yScale.ticks;
+    for (const tick of ticks) {
+      const y = yScale.getPixelForValue(tick.value as number);
+      const startX = chartArea.left;
+      const endX = chartArea.right;
+      const dotRadius = 0.7;
+      const gap = 8;
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
+      for (let x = startX; x <= endX; x += gap) {
+        ctx.beginPath();
+        ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  },
+};
+
 const labels = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""];
 const dataPoints = [10, 10, 10, 10, 10, 10, 10, 11, 13, 18, 30, 42, 48, 50, 50, 50, 50, 50, 50, 50];
 
@@ -69,12 +97,10 @@ export default function PortfolioChart() {
           padding: 12,
         },
         grid: {
-          color: "rgba(255, 255, 255, 0.15)",
-          lineWidth: 1,
+          display: false,
         },
         border: {
           display: false,
-          dash: [2, 3],
         },
       },
     },
@@ -85,7 +111,7 @@ export default function PortfolioChart() {
 
   return (
     <div className="portfolio-chart">
-      <Line data={data} options={options} />
+      <Line data={data} options={options} plugins={[dottedGridPlugin]} />
     </div>
   );
 }

@@ -9,73 +9,58 @@ export type Account = {
   is_active: boolean;
 };
 
-export type AccountValuation = {
+export type PortfolioViewSummary = {
+  total_market_value: number;
+  total_cost_basis: number;
+  total_cash: number;
+  total_gain_amount: number;
+  total_gain_pct: number | null;
+};
+
+export type PortfolioViewAccount = {
   account_id: number;
   account_name: string;
-  market_value: string;
-  cost_basis: string;
-  cash_balance: string;
-  gain_amount: string;
-  gain_pct: string;
-  cumulative_twr: string;
+  institution_name: string | null;
+  base_currency: string;
+  market_value: number;
+  cost_basis: number;
+  cash: number;
+  gain_amount: number;
+  gain_pct: number | null;
+  snapshot_date: string | null;
+  position_count: number;
+};
+
+export type PortfolioViewPosition = {
+  ticker: string;
+  name: string;
+  isin: string;
+  asset_type: string;
+  quantity: number;
+  market_value: number;
+  cost_basis: number;
+  gain_amount: number;
+  gain_pct: number | null;
+  weight_pct: number | null;
   currency: string;
+  account_ids: number[];
 };
 
-export type PortfolioValuation = {
-  portfolio_id: number;
-  portfolio_name: string;
-  currency: string;
-  market_value: string;
-  cost_basis: string;
-  gain_amount: string;
-  gain_pct: string;
-  accounts: AccountValuation[];
+export type AssetAllocation = {
+  [key: string]: {
+    market_value: number;
+    weight_pct: number | null;
+  };
 };
 
-export type HoldingPosition = {
-  id: number;
-  portfolio_listing: number;
-  security_name?: string;
-  name?: string;
-  ticker_symbol?: string;
-  ticker?: string;
-  type?: string;
-  quantity: string;
-  price?: string;
-  current_price?: string;
-  market_value: string;
-  cost_basis: string;
-  cost_basis_amount?: string;
-  cost_basis_currency?: string;
-  market_value_amount?: string;
-  market_value_currency?: string;
-  gain_amount?: string;
-  gain_pct?: string;
-};
-
-export type HoldingsSnapshot = {
-  id: number;
-  account: number;
+export type PortfolioViewResponse = {
   as_of_date: string;
-  positions: HoldingPosition[];
-  positions_json: HoldingPosition[];
+  currency: string;
+  summary: PortfolioViewSummary;
+  accounts: PortfolioViewAccount[];
+  positions: PortfolioViewPosition[];
+  asset_allocation: AssetAllocation;
 };
-
-export type DailyValuation = {
-  valuation_date: string;
-  market_value: string;
-  cost_basis: string;
-  gain_amount: string;
-  gain_pct: string;
-  daily_twr?: string;
-  cumulative_twr?: string;
-};
-
-export async function getPortfolioById(portfolioId: number) {
-  return apiRequest<{ id: number; name: string; base_currency: string; accounts?: Account[] }>(
-    `/portfolios/${portfolioId}/`,
-  );
-}
 
 export async function getAccountsByPortfolioId(portfolioId: number) {
   const response = await apiRequest<Account[] | { results: Account[] }>(
@@ -84,26 +69,14 @@ export async function getAccountsByPortfolioId(portfolioId: number) {
   return Array.isArray(response) ? response : response.results;
 }
 
-export async function getPortfolioValuation(portfolioId: number, currency?: string) {
-  const params = currency ? `?currency=${currency}` : "";
-  return apiRequest<PortfolioValuation>(
-    `/portfolios/${portfolioId}/valuation/${params}`,
-  );
-}
-
-export async function getAccountValuation(portfolioId: number, accountId: number, from?: string, to?: string) {
-  const params = new URLSearchParams();
-  if (from) params.set("from", from);
-  if (to) params.set("to", to);
-  const query = params.toString() ? `?${params.toString()}` : "";
-  return apiRequest<DailyValuation[]>(
-    `/portfolios/${portfolioId}/accounts/${accountId}/valuation/${query}`,
-  );
-}
-
-export async function getAccountHoldings(portfolioId: number, accountId: number, date?: string) {
-  const params = date ? `?date=${date}` : "";
-  return apiRequest<HoldingsSnapshot>(
-    `/portfolios/${portfolioId}/accounts/${accountId}/holdings/${params}`,
-  );
+export async function getPortfolioView(accountIds?: number[], currency = "INR", date?: string) {
+  const today = date || new Date().toISOString().split("T")[0];
+  return apiRequest<PortfolioViewResponse>("/portfolio-view/", {
+    method: "POST",
+    body: {
+      account_ids: accountIds || [],
+      currency,
+      date: today,
+    },
+  });
 }

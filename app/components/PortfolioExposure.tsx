@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { type HoldingPosition } from "../lib/portfolioDataApi";
+import { type PortfolioViewResponse } from "../lib/portfolioDataApi";
 
 type Props = {
-  holdings: HoldingPosition[];
+  portfolioView: PortfolioViewResponse | null;
 };
 
 type ChartSegment = {
@@ -14,10 +14,37 @@ type ChartSegment = {
   color: string;
 };
 
-const COLORS = ["#c8b850", "#6b5ce7", "#f472b6", "#34d399"];
+const COLORS = ["#f5e680", "#7c5ce7", "#f472b6", "#34d399", "#f97316"];
 
-export default function PortfolioExposure({ holdings }: Props) {
-  const assetTypeData = useMemo(() => groupBy(holdings, "type"), [holdings]);
+export default function PortfolioExposure({ portfolioView }: Props) {
+  const assetTypeData = useMemo(() => {
+    if (!portfolioView?.asset_allocation) return [];
+    const entries = Object.entries(portfolioView.asset_allocation);
+    const total = entries.reduce((sum, [, v]) => sum + v.market_value, 0);
+    return entries
+      .sort((a, b) => b[1].market_value - a[1].market_value)
+      .map(([label, data], i) => ({
+        label: capitalize(label),
+        value: data.market_value,
+        percentage: data.weight_pct ?? (total > 0 ? (data.market_value / total) * 100 : 0),
+        color: COLORS[i % COLORS.length],
+      }));
+  }, [portfolioView]);
+
+  const brokerData = useMemo(() => {
+    if (!portfolioView?.accounts) return [];
+    const total = portfolioView.accounts.reduce((sum, a) => sum + a.market_value, 0);
+    return portfolioView.accounts
+      .sort((a, b) => b.market_value - a.market_value)
+      .map((acc, i) => ({
+        label: capitalize(acc.institution_name || acc.account_name),
+        value: acc.market_value,
+        percentage: total > 0 ? (acc.market_value / total) * 100 : 0,
+        color: COLORS[i % COLORS.length],
+      }));
+  }, [portfolioView]);
+
+  const currency = portfolioView?.currency || "INR";
 
   return (
     <section className="portfolio-exposure">
@@ -30,103 +57,123 @@ export default function PortfolioExposure({ holdings }: Props) {
           <p className="exposure-chart-label">
             By <strong>Asset type</strong>
           </p>
-          <DonutChart segments={assetTypeData} />
-          <div className="donut-legend">
-            {assetTypeData.map((seg) => (
-              <div className="legend-item" key={seg.label}>
-                <span className="legend-dot" style={{ background: seg.color }} />
-                <span>{seg.label}</span>
-                <span className="legend-value">
-                  ₹{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
-                </span>
-              </div>
-            ))}
-          </div>
+          <LabeledDonut segments={assetTypeData} currency={currency} />
         </div>
 
         <div className="exposure-chart">
           <p className="exposure-chart-label">
             By <strong>Broker</strong>
           </p>
-          <div className="donut-container">
-            <svg viewBox="0 0 120 120" className="donut">
-              <circle cx="60" cy="60" r="45" fill="none" stroke="#c8b850" strokeWidth="24" strokeDasharray="140 283" strokeDashoffset="0" />
-              <circle cx="60" cy="60" r="45" fill="none" stroke="#6b5ce7" strokeWidth="24" strokeDasharray="90 283" strokeDashoffset="-140" />
-              <circle cx="60" cy="60" r="45" fill="none" stroke="#f472b6" strokeWidth="24" strokeDasharray="53 283" strokeDashoffset="-230" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="exposure-chart">
-          <p className="exposure-chart-label">
-            By <strong>Sector allocation</strong>
-          </p>
-          <div className="donut-container">
-            <svg viewBox="0 0 120 120" className="donut">
-              <circle cx="60" cy="60" r="45" fill="none" stroke="#c8b850" strokeWidth="24" strokeDasharray="100 283" strokeDashoffset="0" />
-              <circle cx="60" cy="60" r="45" fill="none" stroke="#6b5ce7" strokeWidth="24" strokeDasharray="120 283" strokeDashoffset="-100" />
-              <circle cx="60" cy="60" r="45" fill="none" stroke="#f472b6" strokeWidth="24" strokeDasharray="63 283" strokeDashoffset="-220" />
-            </svg>
-          </div>
+          <LabeledDonut segments={brokerData} currency={currency} />
         </div>
       </div>
     </section>
   );
 }
 
-function DonutChart({ segments }: { segments: ChartSegment[] }) {
-  const circumference = 2 * Math.PI * 45;
+function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; currency: string }) {
+  const circumference = 2 * Math.PI * 80;
+  const currSymbol = currency === "USD" ? "$" : "₹";
+
   let offset = 0;
+  const segmentsWithAngles = segments.map((seg) => {
+    const dashLength = (seg.percentage / 100) * circumference;
+    const startAngle = (offset / circumference) * 360 - 90;
+    const midAngle = startAngle + ((seg.percentage / 100) * 360) / 2;
+    offset += dashLength;
+    return { ...seg, midAngle, dashLength };
+  });
+
+  let drawOffset = 0;
 
   return (
-    <div className="donut-container">
-      <svg viewBox="0 0 120 120" className="donut">
-        {segments.map((seg) => {
-          const dashLength = (seg.percentage / 100) * circumference;
+    <div className="donut-labeled-container">
+      <svg viewBox="0 0 360 360" className="donut-labeled">
+        {segmentsWithAngles.map((seg) => {
           const el = (
             <circle
               key={seg.label}
-              cx="60"
-              cy="60"
-              r="45"
+              cx="180"
+              cy="180"
+              r="80"
               fill="none"
               stroke={seg.color}
-              strokeWidth="24"
-              strokeDasharray={`${dashLength} ${circumference}`}
-              strokeDashoffset={-offset}
+              strokeWidth="32"
+              strokeDasharray={`${seg.dashLength} ${circumference}`}
+              strokeDashoffset={-drawOffset}
+              transform="rotate(-90 180 180)"
             />
           );
-          offset += dashLength;
+          drawOffset += seg.dashLength;
           return el;
         })}
+        {(() => {
+          const labels: { x: number; y: number; seg: typeof segmentsWithAngles[0] }[] = [];
+          const minGap = 45;
+
+          for (const seg of segmentsWithAngles) {
+            const labelRadius = 155;
+            const rad = (seg.midAngle * Math.PI) / 180;
+            let x = 180 + labelRadius * Math.cos(rad);
+            let y = 180 + labelRadius * Math.sin(rad);
+
+            for (const placed of labels) {
+              const dx = x - placed.x;
+              const dy = y - placed.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist < minGap) {
+                const angle = Math.atan2(dy, dx);
+                y = placed.y + minGap * Math.sin(angle);
+                x = placed.x + minGap * Math.cos(angle);
+              }
+            }
+
+            labels.push({ x, y, seg });
+          }
+
+          return labels.map(({ x, y, seg }) => {
+            const innerRadius = 112;
+            const rad = (seg.midAngle * Math.PI) / 180;
+            const x1 = 180 + innerRadius * Math.cos(rad);
+            const y1 = 180 + innerRadius * Math.sin(rad);
+            const lineEndRadius = 130;
+            const x2 = 180 + lineEndRadius * Math.cos(rad);
+            const y2 = 180 + lineEndRadius * Math.sin(rad);
+
+            return (
+              <g key={seg.label}>
+                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#080808" strokeWidth="1" />
+                <text
+                  x={x}
+                  y={y - 10}
+                  textAnchor="middle"
+                  fontSize="15"
+                  fontWeight="700"
+                  fill="#080808"
+                >
+                  {seg.label}
+                </text>
+                <circle cx={x} cy={y + 4} r="4" fill={seg.color} />
+                <text
+                  x={x}
+                  y={y + 22}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#6f6f6f"
+                >
+                  {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
+                </text>
+              </g>
+            );
+          });
+        })()}
       </svg>
     </div>
   );
 }
 
-function groupBy(holdings: HoldingPosition[], key: "type"): ChartSegment[] {
-  const groups: Record<string, number> = {};
-  let total = 0;
-
-  for (const h of holdings) {
-    const label = h[key] || "Other";
-    const value = parseFloat(h.market_value) || 0;
-    groups[label] = (groups[label] || 0) + value;
-    total += value;
-  }
-
-  return Object.entries(groups)
-    .sort((a, b) => b[1] - a[1])
-    .map(([label, value], i) => ({
-      label: capitalize(label),
-      value,
-      percentage: total > 0 ? (value / total) * 100 : 0,
-      color: COLORS[i % COLORS.length],
-    }));
-}
-
 function capitalize(str: string) {
-  return str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, " ");
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase().replace(/_/g, " ");
 }
 
 function formatValue(num: number) {

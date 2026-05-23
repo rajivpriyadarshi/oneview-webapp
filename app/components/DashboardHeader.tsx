@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function DashboardHeader() {
   return (
     <header className="dashboard-header">
@@ -5,10 +7,10 @@ export default function DashboardHeader() {
         <h1 className="dashboard-title">Your investments</h1>
         <p className="dashboard-subtitle">Last updated: May 16, 2026 at 4:05 PM</p>
       </div>
-      <button className="add-more-btn">
+      <Link href="/documents-vault" className="add-more-btn">
         <PlusIcon />
         Add more
-      </button>
+      </Link>
     </header>
   );
 }

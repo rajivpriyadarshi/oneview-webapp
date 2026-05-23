@@ -9,75 +9,94 @@ import {
   createColumnHelper,
   type SortingState,
 } from "@tanstack/react-table";
-import { type HoldingPosition } from "../lib/portfolioDataApi";
+import { type PortfolioViewPosition } from "../lib/portfolioDataApi";
 
 type Props = {
-  holdings: HoldingPosition[];
+  positions: PortfolioViewPosition[];
   loading: boolean;
 };
 
-const columnHelper = createColumnHelper<HoldingPosition>();
+const columnHelper = createColumnHelper<PortfolioViewPosition>();
 
-export default function HoldingsTable({ holdings, loading }: Props) {
+function getCurrencySymbol(currency?: string): string {
+  switch (currency?.toUpperCase()) {
+    case "USD": return "$";
+    case "EUR": return "€";
+    case "GBP": return "£";
+    case "JPY": return "¥";
+    case "INR":
+    default: return "₹";
+  }
+}
+
+export default function HoldingsTable({ positions, loading }: Props) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const columns = useMemo(
     () => [
-      columnHelper.display({
+      columnHelper.accessor((row) => row.ticker || "", {
         id: "security",
         header: "Security",
+        sortingFn: "alphanumeric",
         cell: (info) => {
           const row = info.row.original;
-          const ticker = row.ticker_symbol || row.ticker || "—";
-          const name = row.security_name || row.name || row.type || "";
           return (
             <div>
-              <span className="security-ticker">{ticker}</span>
-              <span className="security-name">{name}</span>
+              <span className="security-ticker">{row.ticker || "—"}</span>
+              <span className="security-name">{row.name || ""}</span>
             </div>
           );
         },
       }),
       columnHelper.accessor("quantity", {
         header: "Quantity",
+        sortingFn: "basic",
         cell: (info) => {
-          const num = parseFloat(info.getValue());
+          const num = info.getValue();
           return num % 1 === 0 ? num.toString() : num.toFixed(4).replace(/0+$/, "");
         },
       }),
-      columnHelper.display({
+      columnHelper.accessor((row) => row.cost_basis > 0 && row.quantity > 0 ? row.market_value / row.quantity : 0, {
         id: "current_price",
         header: "Current price",
+        sortingFn: "basic",
         cell: (info) => {
           const row = info.row.original;
-          const val = row.current_price || (row as any).price;
-          return val ? `₹${parseFloat(val).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—";
+          const price = row.quantity > 0 ? row.market_value / row.quantity : 0;
+          const symbol = getCurrencySymbol(row.currency);
+          return price > 0 ? `${symbol}${price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—";
         },
       }),
       columnHelper.accessor("market_value", {
         header: "Market value",
-        cell: (info) => `₹${parseFloat(info.getValue()).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+        sortingFn: "basic",
+        cell: (info) => {
+          const symbol = getCurrencySymbol(info.row.original.currency);
+          return `${symbol}${info.getValue().toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+        },
       }),
       columnHelper.accessor("cost_basis", {
         header: "Cost basis",
-        cell: (info) => `₹${parseFloat(info.getValue()).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`,
+        sortingFn: "basic",
+        cell: (info) => {
+          const symbol = getCurrencySymbol(info.row.original.currency);
+          return `${symbol}${info.getValue().toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+        },
       }),
-      columnHelper.display({
+      columnHelper.accessor("gain_amount", {
         id: "gain_loss",
         header: "Gain/Loss",
+        sortingFn: "basic",
         cell: (info) => {
           const row = info.row.original;
-          const marketValue = parseFloat(row.market_value);
-          const costBasis = parseFloat(row.cost_basis);
-          const gainAmount = row.gain_amount ? parseFloat(row.gain_amount) : marketValue - costBasis;
-          const gainPct = row.gain_pct
-            ? parseFloat(row.gain_pct)
-            : costBasis > 0 ? (gainAmount / costBasis) * 100 : 0;
+          const gainAmount = row.gain_amount;
+          const gainPct = row.gain_pct ?? (row.cost_basis > 0 ? (gainAmount / row.cost_basis) * 100 : 0);
           const isPositive = gainAmount >= 0;
+          const symbol = getCurrencySymbol(row.currency);
 
           return (
             <span className={`td-gain ${isPositive ? "positive" : "negative"}`}>
-              {isPositive ? "+" : ""}₹{Math.abs(gainAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })} ({isPositive ? "+" : ""}{gainPct.toFixed(2)}%)
+              {isPositive ? "+" : "-"}{symbol}{Math.abs(gainAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })} ({isPositive ? "+" : ""}{gainPct.toFixed(2)}%)
             </span>
           );
         },
@@ -87,10 +106,11 @@ export default function HoldingsTable({ holdings, loading }: Props) {
   );
 
   const table = useReactTable({
-    data: holdings,
+    data: positions,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
+    enableSortingRemoval: false,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -110,7 +130,6 @@ export default function HoldingsTable({ holdings, loading }: Props) {
                   <th
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
-                    className={header.id === "gain_loss" ? "th-right" : ""}
                     style={{ cursor: header.column.getCanSort() ? "pointer" : "default" }}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -128,7 +147,7 @@ export default function HoldingsTable({ holdings, loading }: Props) {
                 </td>
               </tr>
             )}
-            {!loading && holdings.length === 0 && (
+            {!loading && positions.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "var(--muted)" }}>
                   No holdings found
@@ -154,17 +173,9 @@ export default function HoldingsTable({ holdings, loading }: Props) {
 
 function SortIndicator({ direction }: { direction: false | "asc" | "desc" }) {
   return (
-    <svg viewBox="0 0 12 16" fill="none" width="10" height="14" className="sort-icon">
-      <path
-        d="M6 2l3 4H3l3-4z"
-        fill="currentColor"
-        opacity={direction === "asc" ? 1 : 0.3}
-      />
-      <path
-        d="M6 14l-3-4h6l-3 4z"
-        fill="currentColor"
-        opacity={direction === "desc" ? 1 : 0.3}
-      />
+    <svg width="10" height="12" viewBox="0 0 6 9" fill="none" className="sort-icon">
+      <path d="M0.5 3L3 0.5L5.5 3" stroke="black" strokeOpacity={direction === "asc" ? "1" : "0.5"} strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M0.5 6L3 8.5L5.5 6" stroke="black" strokeOpacity={direction === "desc" ? "1" : "0.5"} strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
