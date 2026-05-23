@@ -287,10 +287,6 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .dashboard-main {
-    padding: 24px 20px;
-  }
-
   .home-header {
     flex-direction: column;
     gap: 16px;
@@ -310,13 +306,76 @@
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 720px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
   .sidebar {
-    width: 48px;
+    width: 100%;
+    height: auto;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    flex-direction: row;
+    align-items: center;
+    padding: 14px 20px;
+    background: var(--background);
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    z-index: 20;
+  }
+
+  .sidebar-logo {
+    margin-bottom: 0;
+    margin-right: auto;
+  }
+
+  .sidebar-logo svg {
+    width: 44px;
+    height: 44px;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    gap: 6px;
+    margin-right: 16px;
+  }
+
+  .sidebar-btn {
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid transparent;
+    border-radius: 12px;
+  }
+
+  .sidebar-btn.active {
+    border-color: transparent;
+    background: rgba(108, 61, 11, 0.1);
+    color: #7f4e0b;
+  }
+
+  .sidebar-avatar {
+    margin-top: 0;
+  }
+
+  .vault-avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .avatar-popover {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: auto;
+    bottom: auto;
   }
 
   .dashboard-main {
-    margin-left: 48px;
-    padding: 20px 14px;
+    margin-left: 0;
+    padding: 80px 16px 20px;
   }
 }
+

@@ -17,8 +17,8 @@ export default function DashboardHeader() {
 
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
-      <path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 5V19M5 12H19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

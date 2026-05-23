@@ -84,7 +84,7 @@ export default function Sidebar() {
 
       <div className="sidebar-avatar">
         <button className="avatar-btn" onClick={() => setShowMenu(!showMenu)}>
-          <div className="avatar-placeholder" />
+          <div className="vault-avatar" />
         </button>
         {showMenu && (
           <div className="avatar-popover">

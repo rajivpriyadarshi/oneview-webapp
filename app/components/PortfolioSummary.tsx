@@ -35,14 +35,16 @@ export default function PortfolioSummary({
 
   return (
     <section className="portfolio-summary">
-      <div className="portfolio-info">
-        <p className="portfolio-label">Total portfolio value</p>
-        <h2 className="portfolio-value">
-          {loading ? "..." : `${currSymbol}${marketValue}`}
-        </h2>
-        <p className={`portfolio-gain ${isPositive ? "" : "negative"}`}>
-          {loading ? "" : `${isPositive ? "+" : "-"}${currSymbol}${formatLakhs(Math.abs(summary!.total_gain_amount))} (${gainPct})`}
-        </p>
+      <div className="flex flex-col justify-between gap-6 md:gap-12 lg:gap-16">
+        <div className="portfolio-info">
+          <p className="portfolio-label">Total portfolio value</p>
+          <h2 className="portfolio-value">
+            {loading ? "..." : `${currSymbol}${marketValue}`}
+          </h2>
+          <p className={`portfolio-gain ${isPositive ? "" : "negative"}`}>
+            {loading ? "" : `${isPositive ? "+" : "-"}${currSymbol}${formatLakhs(Math.abs(summary!.total_gain_amount))} (${gainPct})`}
+          </p>
+        </div>
         <div className="portfolio-meta">
           <span className="portfolio-date">
             Prices as of <strong>{formatDate(portfolioView?.as_of_date)}</strong>

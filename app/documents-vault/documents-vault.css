@@ -18,16 +18,43 @@
 
 .docs-vault-title {
   margin: 0;
-  font-family: var(--font-butler), Georgia, serif;
+  font-family: "ButlerPro", Georgia, serif;
   font-size: 32px;
-  font-weight: 700;
-  color: var(--foreground);
+  font-weight: 500;
+  line-height: 38.4px;
+  color: black;
+  word-wrap: break-word;
 }
 
 .docs-vault-subtitle {
   margin: 0;
+  font-family: var(--font-inter), sans-serif;
   font-size: 14px;
-  color: var(--muted);
+  font-weight: 400;
+  line-height: 21px;
+  color: rgba(0, 0, 0, 0.70);
+  word-wrap: break-word;
+}
+
+.docs-vault-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.docs-vault-brokers {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.docs-vault-brokers .brokers-text {
+  color: #595959;
+  font-size: 16px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-weight: 500;
+  line-height: 24px;
+  word-wrap: break-word;
 }
 
 .upload-statements-btn {
@@ -93,8 +120,12 @@
 }
 
 .docs-dropzone span {
-  color: #888;
-  font-size: 14px;
+  color: rgba(0, 0, 0, 0.70);
+  font-size: 16px;
+  font-family: var(--font-geist), sans-serif;
+  font-weight: 400;
+  line-height: 24px;
+  word-wrap: break-word;
 }
 
 /* Table Section */
@@ -106,11 +137,16 @@
 }
 
 .docs-table-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0 0 20px;
-  font-family: var(--font-butler), Georgia, serif;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--foreground);
+  color: black;
+  font-size: 13.7px;
+  font-family: var(--font-inter), sans-serif;
+  font-weight: 600;
+  line-height: 17.81px;
+  word-wrap: break-word;
 }
 
 .docs-table-wrapper {
@@ -119,30 +155,47 @@
 
 .docs-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 10px;
   font-size: 14px;
 }
 
 .docs-table th {
-  text-align: left;
-  padding: 14px 16px;
+  text-align: right;
+  padding: 28px 16px;
   font-weight: 500;
   color: var(--muted);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   white-space: nowrap;
   font-size: 13px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.docs-table th:first-child,
+.docs-table th:nth-child(2) {
+  text-align: left;
 }
 
 .docs-table td {
-  padding: 20px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 24px 16px;
   vertical-align: middle;
-  color: #555;
+  color: var(--foreground);
+  background: #F4F3F380;
   font-size: 14px;
+  text-align: right;
 }
 
-.docs-table tbody tr:last-child td {
-  border-bottom: none;
+.docs-table td:first-child,
+.docs-table td:nth-child(2) {
+  text-align: left;
+}
+
+.docs-table tbody tr td:first-child {
+  border-radius: 12px 0 0 12px;
+}
+
+.docs-table tbody tr td:last-child {
+  border-radius: 0 12px 12px 0;
 }
 
 .th-checkbox,
@@ -250,6 +303,15 @@
   .docs-vault-header {
     flex-direction: column;
     gap: 16px;
+  }
+
+  .docs-vault-header-right {
+    width: 100%;
+  }
+
+  .docs-vault-brokers {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .docs-table-section {

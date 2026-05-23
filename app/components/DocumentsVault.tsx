@@ -2,6 +2,7 @@
 
 import { useState, useRef, ChangeEvent, DragEvent } from "react";
 import DocumentsTable from "./DocumentsTable";
+import { DownloadInstructionModal } from "./DownloadInstructionModal";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
@@ -66,6 +67,7 @@ const mockDocuments = [
 export function DocumentsVault() {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -125,14 +127,27 @@ export function DocumentsVault() {
           <h1 className="docs-vault-title">Documents vault</h1>
           <p className="docs-vault-subtitle">Total 8 files across 3 accounts</p>
         </div>
-        <button
-          className="upload-statements-btn"
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <UploadIcon />
-          Upload statements
-        </button>
+        <div className="docs-vault-header-right">
+          <div className="docs-vault-brokers">
+            <span className="brokers-text">We accepts</span>
+            <div className="broker-icons">
+              <img src="/broker-icons/groww.png" alt="Groww" className="broker-icon" />
+              <img src="/broker-icons/fidelity.png" alt="Fidelity" className="broker-icon" />
+              <img src="/broker-icons/zerodha.png" alt="Zerodha" className="broker-icon" />
+              <img src="/broker-icons/vested.png" alt="Vested" className="broker-icon" />
+              <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="broker-icon" />
+              <img src="/broker-icons/ibkr.png" alt="IBKR" className="broker-icon" />
+            </div>
+            <span className="brokers-text">and any CSV format</span>
+            <button
+              type="button"
+              className="download-instruction"
+              onClick={() => setIsModalOpen(true)}
+            >
+              See download instruction
+            </button>
+          </div>
+        </div>
       </header>
 
       <div
@@ -162,6 +177,11 @@ export function DocumentsVault() {
       {error && <p className="docs-error">{error}</p>}
 
       <DocumentsTable documents={mockDocuments} />
+
+      <DownloadInstructionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }
