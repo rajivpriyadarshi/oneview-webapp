@@ -112,7 +112,7 @@ export function AuthFlow() {
 
             <div className="or-divider">OR</div>
 
-            <label className="field account-field">
+            <label className={`field account-field ${email ? 'has-value' : ''}`}>
               <span>Email address</span>
               <input
                 type="email"
@@ -157,7 +157,7 @@ export function AuthFlow() {
               </button>
             </p>
 
-            <label className="field account-field password-login-field">
+            <label className={`field account-field password-login-field ${password ? 'has-value' : ''}`}>
               <span>Password</span>
               <input
                 type="password"

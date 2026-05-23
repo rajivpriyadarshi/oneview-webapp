@@ -1,5 +1,5 @@
 import PortfolioChart from "./PortfolioChart";
-import { type PortfolioViewResponse, type Account } from "../lib/portfolioDataApi";
+import { type PortfolioViewResponse, type Account, type ValuationSeriesPoint } from "../lib/portfolioDataApi";
 import { type Portfolio } from "../lib/portfoliosApi";
 
 type Props = {
@@ -13,6 +13,7 @@ type Props = {
   onPortfolioChange: (portfolioId: number) => void;
   currency: string;
   onCurrencyChange: (currency: string) => void;
+  valuationSeries: ValuationSeriesPoint[];
 };
 
 export default function PortfolioSummary({
@@ -23,6 +24,7 @@ export default function PortfolioSummary({
   onAccountChange,
   currency,
   onCurrencyChange,
+  valuationSeries,
 }: Props) {
   const summary = portfolioView?.summary;
   const currSymbol = currency === "USD" ? "$" : "₹";
@@ -78,7 +80,7 @@ export default function PortfolioSummary({
           </div>
         </div>
       </div>
-      <PortfolioChart />
+      <PortfolioChart series={valuationSeries} currency={currency} />
     </section>
   );
 }

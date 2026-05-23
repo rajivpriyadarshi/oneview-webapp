@@ -10,6 +10,7 @@ import {
   Tooltip,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import { type ValuationSeriesPoint } from "../lib/portfolioDataApi";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
@@ -41,10 +42,24 @@ const dottedGridPlugin = {
   },
 };
 
-const labels = ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""];
-const dataPoints = [10, 10, 10, 10, 10, 10, 10, 11, 13, 18, 30, 42, 48, 50, 50, 50, 50, 50, 50, 50];
+type Props = {
+  series: ValuationSeriesPoint[];
+  currency: string;
+};
 
-export default function PortfolioChart() {
+export default function PortfolioChart({ series, currency }: Props) {
+  const currSymbol = currency === "USD" ? "$" : "₹";
+
+  const labels = series.map((p) => p.date);
+  const dataPoints = series.map((p) => p.market_value);
+
+  const hasData = dataPoints.length > 0;
+  const maxVal = hasData ? Math.max(...dataPoints) : 60;
+  const minVal = hasData ? Math.min(...dataPoints) : 0;
+  const padding = (maxVal - minVal) * 0.15 || maxVal * 0.1;
+  const yMin = Math.max(0, minVal - padding);
+  const yMax = maxVal + padding;
+
   const data = {
     labels,
     datasets: [
@@ -64,13 +79,20 @@ export default function PortfolioChart() {
         },
         fill: true,
         tension: 0.35,
-        pointRadius: Array(19).fill(0).concat([5]),
+        pointRadius: dataPoints.map((_, i) => (i === dataPoints.length - 1 ? 5 : 0)),
         pointBackgroundColor: "#d4c85c",
         pointBorderColor: "rgba(212, 200, 92, 0.4)",
         pointBorderWidth: 4,
         pointHoverRadius: 6,
       },
     ],
+  };
+
+  const formatLabel = (value: number | string) => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    if (num >= 100000) return `${currSymbol}${(num / 100000).toFixed(1)}L`;
+    if (num >= 1000) return `${currSymbol}${(num / 1000).toFixed(1)}K`;
+    return `${currSymbol}${num.toFixed(0)}`;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -87,13 +109,13 @@ export default function PortfolioChart() {
       },
       y: {
         position: "right",
-        min: 10,
-        max: 60,
+        min: yMin,
+        max: yMax,
         ticks: {
-          stepSize: 10,
+          count: 5,
           color: "white",
           font: { size: 8, weight: "500", family: "Satoshi, var(--font-inter), sans-serif", lineHeight: 1.5 },
-          callback: (value: number | string) => `₹${value}.0L`,
+          callback: formatLabel,
           padding: 12,
         },
         grid: {

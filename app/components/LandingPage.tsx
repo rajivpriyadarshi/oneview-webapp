@@ -5,29 +5,47 @@ import Image from "next/image";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#faf9f7] flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col relative">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/Hero_bg.png"
+          alt=""
+          fill
+          className="object-cover"
+          priority
+        />
+      </div>
+
       {/* Header */}
-      <header className="flex justify-between items-center px-8 py-6">
+      <header className="flex justify-between items-center px-8 lg:px-16 py-6 relative z-10">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="12" cy="12" r="8" stroke="white" strokeWidth="2" />
-              <circle cx="12" cy="12" r="3" fill="white" />
-            </svg>
-          </div>
+          <svg width="31" height="30" viewBox="0 0 31 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3.55566 19.2666L3.33398 19.0469C1.79851 17.5218 0.752098 16.778 0.75 15.0156C0.747877 13.1987 1.77395 12.5155 3.33594 10.9443L3.54883 10.7305L3.55371 10.4287C3.56565 9.75637 3.53559 9.03195 3.52832 8.39746C3.52077 7.73813 3.53667 7.12803 3.62598 6.56641C3.79824 5.48349 4.23581 4.60664 5.37109 3.98926C6.26131 3.50516 6.97931 3.54877 8.22852 3.55176H8.22949L10.4287 3.55273H10.7402L10.9609 3.33105C11.7884 2.49861 12.2767 1.90995 12.8818 1.45801C13.4184 1.05731 14.0208 0.795588 14.9854 0.750977C16.8439 0.800709 17.4383 1.72263 19.0312 3.32812L19.2422 3.54102L19.542 3.5498C20.114 3.56646 20.7109 3.54403 21.2666 3.53027C21.8349 3.5162 22.3742 3.51095 22.8887 3.55273C23.9102 3.63577 24.7531 3.89868 25.4121 4.58008C25.9392 5.12504 26.1796 5.61135 26.3027 6.12695C26.4015 6.54047 26.4298 6.98665 26.4375 7.54297L26.4404 8.1377L26.4375 10.4238V10.7363L26.6582 10.9561L27.9121 12.2031V12.2041C28.3805 12.6742 28.7118 13.0827 28.9307 13.5137C29.1436 13.9333 29.2666 14.4079 29.2686 15.0303C29.2743 16.7295 28.1437 17.5781 26.6602 19.0498L26.4395 19.2686L26.4385 19.5791C26.4364 19.994 26.4359 20.4088 26.4385 20.8232C26.4432 22.8812 26.6241 24.2269 25.4248 25.4033C24.8828 25.9351 24.3829 26.1807 23.8506 26.3057C23.2833 26.4388 22.6606 26.4419 21.8164 26.4414L19.582 26.4375H19.293L19.0781 26.6309C18.669 27 18.3221 27.3656 18.0166 27.6826C17.7035 28.0075 17.4377 28.2771 17.1582 28.5039C16.6396 28.9246 16.0559 29.2133 15.0576 29.249C13.1906 29.2341 12.5489 28.2719 10.9492 26.6631L10.7344 26.4473L10.4307 26.4424L9.91797 26.4414C9.75103 26.4426 9.59416 26.4435 9.44043 26.4414C8.35863 26.4267 7.51557 26.5037 6.65234 26.3945C5.85675 26.2939 5.17593 26.039 4.5752 25.4131C4.04762 24.8633 3.80726 24.3671 3.68555 23.8418C3.55556 23.2807 3.55289 22.667 3.55273 21.8213L3.55566 19.5791V19.2666Z" stroke="black" strokeWidth="1.5"/>
+            <path d="M14.6538 6.87824C14.6947 6.87372 14.7357 6.87014 14.7771 6.86748C15.8618 6.79742 17.0242 7.18392 17.8164 7.94272C19.027 9.10211 20.1902 10.3127 21.3826 11.4914C22.2022 12.2825 22.7539 12.901 23.0274 14.0259C23.6905 16.7547 21.6502 18.2595 19.9251 19.9628C19.1582 20.7202 18.0756 21.9833 17.1833 22.5323C16.6148 22.8891 15.9635 23.0932 15.2924 23.1246C14.341 23.2359 13.1132 22.8659 12.3889 22.2304C11.6068 21.4949 10.7683 20.7118 10.0364 19.9283C9.2851 19.1241 8.06652 18.1104 7.47684 17.2209C6.51454 15.7693 6.68755 13.5522 7.86182 12.2682C8.53119 11.5363 9.30992 10.798 10.0274 10.0813L11.4373 8.66407C12.4598 7.63741 13.1284 7.00924 14.6538 6.87824Z" fill="black"/>
+          </svg>
           <span className="text-xl font-semibold">Oneview</span>
-          <span className="text-gray-400 text-sm ml-1">by</span>
-          <span className="text-gray-600 text-sm font-medium ml-1">ZINC</span>
+          <span className="text-gray-400 text-sm">by</span>
+          <svg width="59" height="19" viewBox="0 0 59 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <g clipPath="url(#clip0_8069_13857)">
+              <path d="M16.5085 9.54132L12.8887 11.6385V7.62891L16.5085 9.54132Z" fill="#050505"/>
+              <path d="M3.60189 7.41608L3.60822 11.5995L0.0244141 9.65039L3.60189 7.41608Z" fill="#050505"/>
+              <path fillRule="evenodd" clipRule="evenodd" d="M8.55032 18.766L16.5276 14.1603V10.1682L12.3607 12.5776L12.3242 2.1825L8.54399 0L8.55032 18.766ZM7.95174 0.0397955L0 4.63069L0 8.97128L4.1378 6.41183L4.1378 16.5856L4.16533 16.6014L4.1378 16.6172V16.6315L6.76883 18.1045L7.95807 18.791L7.95174 0.0397955Z" fill="#050505"/>
+              <path d="M45.7258 14.8392H43.747L37.7933 5.83314V14.8392H35.8145V2.76172H37.7933L43.747 11.7504V2.76172H45.7258V14.8392Z" fill="#050505"/>
+              <path d="M33.7143 2.76172V14.8392H31.7451V2.76172H33.7143Z" fill="#050505"/>
+              <path d="M24.0442 13.1188H29.6454V14.8392H21.7031V13.2926L27.287 4.4821H21.7031V2.76172H29.6454V4.30833L24.0442 13.1188Z" fill="#050505"/>
+              <path fillRule="evenodd" clipRule="evenodd" d="M58.5203 12.3475C57.4272 13.8979 55.6225 14.9106 53.5813 14.9106C50.2459 14.9106 47.542 12.2067 47.542 8.87129C47.542 5.5359 50.2459 2.83203 53.5813 2.83203C55.4436 2.83203 57.1091 3.67502 58.2169 5.00024L56.8656 6.12874C56.0967 5.11683 54.9114 4.4683 53.5818 4.4683C51.264 4.4683 49.385 6.43892 49.385 8.8698C49.385 11.3007 51.264 13.2713 53.5818 13.2713C55.0331 13.2713 56.3124 12.4986 57.066 11.3241L58.5203 12.3475Z" fill="#050505"/>
+            </g>
+            <defs>
+              <clipPath id="clip0_8069_13857">
+                <rect width="58.5207" height="18.791" fill="white"/>
+              </clipPath>
+            </defs>
+          </svg>
         </div>
 
         <div className="flex items-center gap-4">
-          <Link href="/login" className="text-gray-700 hover:text-black transition-colors">
+          <Link href="/auth" className="text-gray-700 hover:text-black transition-colors font-medium">
             Sign in
           </Link>
           <Link
@@ -35,179 +53,66 @@ export function LandingPage() {
             className="bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
           >
             Try Oneview
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M5 12h14m-7-7l7 7-7 7"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 12H19M12 19L19 12L12 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center px-8 lg:px-16">
-        <div className="w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+      <main className="flex-1 flex items-start pt-12 px-8 lg:px-16 relative z-10">
+        <div className="w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-start">
           {/* Left Column - Text Content */}
-          <div className="space-y-8">
-            <div className="inline-block bg-blue-500 text-white px-3 py-1 rounded text-sm font-medium">
-              Title
-            </div>
-
-            <h1 className="space-y-2">
-              <div className="text-5xl lg:text-6xl font-serif leading-tight">
+          <div className="pt-8">
+            <h1 className="font-[family-name:var(--font-butler)] font-medium mb-8" style={{ fontSize: '72px', lineHeight: '86.40px' }}>
+              <div className="text-black">
                 Get a single view
               </div>
-              <div className="text-5xl lg:text-6xl font-serif leading-tight">
+              <div className="text-black">
                 of your holdings in
               </div>
-              <div className="text-5xl lg:text-6xl font-serif leading-tight text-amber-700">
+              <div className="text-[#7F4E0B]">
                 US and India
               </div>
             </h1>
 
-            <p className="text-gray-600 text-lg max-w-lg">
+            <p className="max-w-md font-[family-name:var(--font-geist)] mb-8" style={{ color: 'rgba(0, 0, 0, 0.70)', fontSize: '18px', fontWeight: 400, lineHeight: '27px' }}>
               Oneview lets you create a single view of all your investments across
               different regions
             </p>
 
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 rounded-full font-medium hover:bg-gray-800 transition-colors text-lg"
+              className="inline-flex items-center gap-2 bg-black rounded-full hover:bg-gray-800 transition-colors font-[family-name:var(--font-inter)] mb-8"
+              style={{ color: 'white', fontSize: '16px', fontWeight: 600, lineHeight: '24px', paddingLeft: '24px', paddingRight: '24px', paddingTop: '16px', paddingBottom: '16px' }}
             >
               See your Oneview
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M5 12h14m-7-7l7 7-7 7"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 12H19M12 19L19 12L12 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </Link>
 
-            <p className="text-gray-500 text-sm">
+            <p className="font-[family-name:var(--font-geist)]" style={{ color: 'rgba(0, 0, 0, 0.70)', fontSize: '14px', fontWeight: 400, lineHeight: '21px' }}>
               Your data stays encrypted • 100% Safe and Secure
             </p>
           </div>
 
-          {/* Right Column - App Preview */}
-          <div className="relative">
-            <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-[40px] p-8 shadow-2xl">
-              {/* Floating Brand Icons */}
-              <div className="absolute -left-4 top-20 w-16 h-16 bg-red-500 rounded-2xl shadow-lg transform -rotate-12 flex items-center justify-center">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
-                </svg>
-              </div>
-
-              <div className="absolute -left-8 top-[45%] w-20 h-20 bg-red-600 rounded-2xl shadow-lg transform rotate-6 flex items-center justify-center text-white font-bold text-2xl">
-                K
-              </div>
-
-              <div className="absolute left-4 bottom-12 w-16 h-16 bg-green-600 rounded-full shadow-lg flex items-center justify-center">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
-                  <circle cx="12" cy="12" r="10" />
-                </svg>
-              </div>
-
-              <div className="absolute -right-4 top-16 w-16 h-16 bg-purple-600 rounded-2xl shadow-lg transform rotate-12 flex items-center justify-center text-white font-bold">
-                up
-              </div>
-
-              <div className="absolute -right-8 top-[40%] w-20 h-20 bg-blue-400 rounded-2xl shadow-lg transform -rotate-6 flex items-center justify-center text-white font-bold text-lg">
-                charles
-                <br />
-                SCHWAB
-              </div>
-
-              <div className="absolute right-4 bottom-20 w-16 h-16 bg-blue-500 rounded-full shadow-lg flex items-center justify-center">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
-                  <path d="M12 2L2 7v10l10 5 10-5V7l-10-5z" />
-                </svg>
-              </div>
-
-              <div className="absolute -right-4 bottom-32 w-16 h-16 bg-indigo-900 rounded-2xl shadow-lg transform rotate-6 flex items-center justify-center text-white font-bold text-xl">
-                V
-              </div>
-
-              {/* Phone Mockup */}
-              <div className="relative mx-auto w-[280px] bg-black rounded-[40px] p-3 shadow-2xl">
-                <div className="bg-white rounded-[32px] overflow-hidden">
-                  {/* Phone Header */}
-                  <div className="bg-white px-4 pt-4 pb-2">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <circle cx="12" cy="12" r="8" stroke="white" strokeWidth="2" />
-                          <circle cx="12" cy="12" r="3" fill="white" />
-                        </svg>
-                      </div>
-                      <div className="flex gap-2">
-                        <button className="text-gray-400 text-sm">↻</button>
-                        <button className="text-gray-400 text-sm">⋮</button>
-                        <button className="text-gray-400 text-sm">👤</button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-2">
-                      <h2 className="text-lg font-semibold">Your investments</h2>
-                      <button className="text-sm flex items-center gap-1">
-                        + Add more
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500">Last updated May 18, 2026 at 4:05 PM</p>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="px-4 pb-4">
-                    <div className="bg-gray-900 rounded-2xl p-4 text-white">
-                      <div className="text-xs text-gray-400 mb-1">Total portfolio value</div>
-                      <div className="text-3xl font-bold mb-2">₹49.2L</div>
-                      <div className="text-sm text-green-400 mb-4">+₹131,692(+1%)</div>
-
-                      {/* Chart placeholder */}
-                      <div className="h-24 bg-gradient-to-t from-amber-900/30 to-transparent rounded-lg mb-4"></div>
-
-                      <div className="text-xs text-gray-400 mb-3">Prices as of May 18, 2026</div>
-
-                      <div className="flex gap-2 text-xs">
-                        <button className="bg-gray-800 text-white px-3 py-1 rounded-full">
-                          All accounts ˅
-                        </button>
-                        <button className="bg-gray-800 text-white px-3 py-1 rounded-full">
-                          INR ˅
-                        </button>
-                      </div>
-                    </div>
-
-                    <button className="mt-3 w-full text-sm text-gray-600 flex items-center justify-center gap-1 py-2">
-                      📊 Portfolio Exposure
-                    </button>
-                  </div>
-                </div>
+          {/* Right Column - Video */}
+          <div className="relative lg:pl-8">
+            <div className="relative rounded-[40px] shadow-2xl bg-gradient-to-b from-white/5 via-[#FFFCF5] to-white/5 p-4" style={{ backgroundBlendMode: 'overlay' }}>
+              <div className="rounded-[36px] overflow-hidden bg-[#FFFCF5]">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-auto block rounded-[36px]"
+                  style={{ clipPath: 'inset(2px 2px round 36px)' }}
+                >
+                  <source src="/Hero-Explainer.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
               </div>
             </div>
           </div>

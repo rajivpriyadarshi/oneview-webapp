@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import DashboardHeader from "../components/DashboardHeader";
 import PortfolioSummary from "../components/PortfolioSummary";
@@ -10,8 +11,10 @@ import { listPortfolios, type Portfolio } from "../lib/portfoliosApi";
 import {
   getAccountsByPortfolioId,
   getPortfolioView,
+  getValuationsView,
   type Account,
   type PortfolioViewResponse,
+  type ValuationSeriesPoint,
 } from "../lib/portfolioDataApi";
 import "./portfolio.css";
 
@@ -22,6 +25,7 @@ export default function PortfolioPage() {
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
   const [currency, setCurrency] = useState("INR");
   const [portfolioView, setPortfolioView] = useState<PortfolioViewResponse | null>(null);
+  const [valuationSeries, setValuationSeries] = useState<ValuationSeriesPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,16 +57,28 @@ export default function PortfolioPage() {
     fetchAccounts();
   }, [selectedPortfolio]);
 
-  const fetchPortfolioView = useCallback(async (accountFilter: number | "all", curr: string) => {
+  const fetchData = useCallback(async (accountFilter: number | "all", curr: string) => {
     setLoading(true);
     try {
-      const accountIds = accountFilter === "all"
-        ? []
-        : [accountFilter];
-      const data = await getPortfolioView(accountIds, curr);
-      setPortfolioView(data);
+      const accountIds = accountFilter === "all" ? [] : [accountFilter];
+      const today = new Date();
+      const fiveDaysAgo = new Date(today);
+      fiveDaysAgo.setDate(today.getDate() - 5);
+      const fromDate = fiveDaysAgo.toISOString().split("T")[0];
+      const toDate = today.toISOString().split("T")[0];
+
+      const viewData = await getPortfolioView(accountIds, curr);
+      setPortfolioView(viewData);
+
+      try {
+        const valuationsData = await getValuationsView(accountIds, curr, fromDate, toDate);
+        setValuationSeries(valuationsData.series || []);
+      } catch (e) {
+        console.error("Valuations API failed:", e);
+        setValuationSeries([]);
+      }
     } catch (error) {
-      console.error("Failed to fetch portfolio view:", error);
+      console.error("Failed to fetch portfolio data:", error);
     } finally {
       setLoading(false);
     }
@@ -70,9 +86,9 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     if (selectedPortfolio) {
-      fetchPortfolioView(selectedAccountId, currency);
+      fetchData(selectedAccountId, currency);
     }
-  }, [selectedPortfolio, selectedAccountId, currency, fetchPortfolioView]);
+  }, [selectedPortfolio, selectedAccountId, currency, fetchData]);
 
   const handleAccountChange = (accountId: number | "all") => {
     setSelectedAccountId(accountId);
@@ -91,25 +107,28 @@ export default function PortfolioPage() {
   };
 
   return (
-    <div className="dashboard-layout">
-      <Sidebar />
-      <main className="dashboard-main">
-        <DashboardHeader />
-        <PortfolioSummary
-          portfolioView={portfolioView}
-          loading={loading}
-          accounts={accounts}
-          selectedAccountId={selectedAccountId}
-          onAccountChange={handleAccountChange}
-          portfolios={portfolios}
-          selectedPortfolio={selectedPortfolio}
-          onPortfolioChange={handlePortfolioChange}
-          currency={currency}
-          onCurrencyChange={handleCurrencyChange}
-        />
-        <PortfolioExposure portfolioView={portfolioView} />
-        <HoldingsTable positions={portfolioView?.positions || []} loading={loading} />
-      </main>
-    </div>
+    <ProtectedRoute>
+      <div className="dashboard-layout">
+        <Sidebar />
+        <main className="dashboard-main">
+          <DashboardHeader />
+          <PortfolioSummary
+            portfolioView={portfolioView}
+            loading={loading}
+            accounts={accounts}
+            selectedAccountId={selectedAccountId}
+            onAccountChange={handleAccountChange}
+            portfolios={portfolios}
+            selectedPortfolio={selectedPortfolio}
+            onPortfolioChange={handlePortfolioChange}
+            currency={currency}
+            onCurrencyChange={handleCurrencyChange}
+            valuationSeries={valuationSeries}
+          />
+          <PortfolioExposure portfolioView={portfolioView} />
+          <HoldingsTable positions={portfolioView?.positions || []} loading={loading} />
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 }

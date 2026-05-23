@@ -1,5 +1,5 @@
-import { AuthFlow } from "./components/AuthFlow";
+import { LandingPage } from "./components/LandingPage";
 
-export default function LoginPage() {
-  return <AuthFlow />;
+export default function Home() {
+  return <LandingPage />;
 }

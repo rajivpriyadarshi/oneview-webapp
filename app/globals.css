@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --background: #f6f5f3;
   --foreground: #080808;
@@ -41,30 +43,21 @@ button:disabled {
 
 .login-page {
   min-height: 100vh;
+  height: 100vh;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 78%, rgba(190, 166, 130, 0.24), transparent 31%),
-    linear-gradient(90deg, #f7f7f7 0%, #fbfbfb 17%, #f2f0ed 35%, #f9f8f6 50%, #e8e1d8 58%, #fbfbfb 78%, #f5f5f5 100%);
+  background: url('/auth-Hero-bg.png') center/cover no-repeat fixed;
   position: relative;
-}
-
-.login-page::before {
-  content: "";
-  position: absolute;
-  inset: -10%;
-  background:
-    linear-gradient(90deg, transparent 0 10%, rgba(255, 255, 255, 0.45) 10% 13%, transparent 13% 20%),
-    repeating-linear-gradient(90deg, rgba(117, 101, 80, 0.032) 0 1px, transparent 1px 88px);
-  filter: blur(10px);
 }
 
 .auth-shell {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   justify-items: center;
-  padding: 10vh 24px 7vh;
+  align-content: center;
+  padding: 24px;
+  overflow-y: auto;
 }
 
 .auth-shell-card {
@@ -81,7 +74,7 @@ button:disabled {
 }
 
 .auth-shell-card .brand {
-  margin-bottom: 86px;
+  margin-bottom: 44px;
 }
 
 .otp-shell .brand {
@@ -135,7 +128,7 @@ button:disabled {
 }
 
 .account-card h1 {
-  margin-bottom: 50px;
+  margin-bottom: 32px;
 }
 
 .google-button {
@@ -148,6 +141,7 @@ button:disabled {
   border: 1.5px solid #030303;
   border-radius: 999px;
   background: transparent;
+  margin-bottom: 32px;
 }
 
 .google-button span {
@@ -172,7 +166,7 @@ button:disabled {
 }
 
 .or-divider {
-  margin: 24px 0 41px;
+  margin: 0;
   color: #5b5b5b;
   font-size: 13px;
   font-weight: 500;
@@ -184,19 +178,36 @@ button:disabled {
   min-height: 79px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  margin-bottom: 31px;
-  padding: 14px 23px 13px;
+  justify-content: flex-end;
+  margin-bottom: 0;
+  margin-top: 32px;
+  padding: 18px 23px 18px;
   background: var(--field);
   border: 1px solid rgba(0, 0, 0, 0.01);
   border-radius: 16px;
 }
 
 .field span {
-  margin-bottom: 10px;
-  color: #8d8d8d;
+  position: absolute;
+  top: 50%;
+  left: 23px;
+  transform: translateY(-50%);
+  color: #828282;
   font-size: 16px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 500;
+  line-height: 24px;
+  pointer-events: none;
+  transition: all 0.2s ease-in-out;
+  background: transparent;
+}
+
+.field:focus-within span,
+.field.has-value span {
+  top: 18px;
+  transform: translateY(0);
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .field input,
@@ -206,6 +217,7 @@ button:disabled {
   border: 0;
   outline: 0;
   padding: 0;
+  margin: 0;
   background: transparent;
   color: #262626;
   font-feature-settings: "ss03" on;
@@ -220,6 +232,9 @@ button:disabled {
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
+  flex-shrink: 0;
+  min-height: 24px;
+  max-height: 24px;
 }
 
 .continue-button {
@@ -231,19 +246,23 @@ button:disabled {
   color: #fff;
   font-size: 18px;
   font-weight: 800;
+  margin-top: 32px;
 }
 
 .terms {
   max-width: 430px;
-  margin: 20px 0 0;
-  color: #808080;
-  font-size: 13px;
-  line-height: 1.45;
+  margin: 32px 0 0;
+  color: black;
+  font-size: 12px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-weight: 400;
+  line-height: 18px;
   text-align: center;
 }
 
 .terms a {
-  color: inherit;
+  color: black;
+  font-weight: 400;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
