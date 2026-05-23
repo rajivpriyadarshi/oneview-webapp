@@ -108,7 +108,7 @@
 .dashboard-main {
   flex: 1;
   margin-left: 64px;
-  padding: 40px 48px;
+  padding: 40px 48px 40px 80px;
 }
 
 /* Header */
@@ -395,7 +395,12 @@ select.filter-btn option {
   background: #fff;
   border-radius: 20px;
   padding: 28px 32px;
+  margin-bottom: 28px;
   border: 1px solid rgba(0, 0, 0, 0.06);
+  height: calc(100vh - 80px);
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
 }
 
 .holdings-title {
@@ -410,6 +415,8 @@ select.filter-btn option {
 
 .holdings-table-wrapper {
   overflow-x: auto;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .holdings-table {
@@ -428,6 +435,10 @@ select.filter-btn option {
   font-size: 13px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 2;
 }
 
 .holdings-table th:first-child {
@@ -435,7 +446,7 @@ select.filter-btn option {
 }
 
 .holdings-table td {
-  padding: 24px 16px;
+  padding: 28px 16px;
   vertical-align: middle;
   font-size: 14px;
   color: var(--foreground);
@@ -587,7 +598,7 @@ select.filter-btn option {
 
   .dashboard-main {
     margin-left: 0;
-    padding: 80px 16px 20px;
+    padding: 100px 16px 20px;
   }
 
   .portfolio-value {

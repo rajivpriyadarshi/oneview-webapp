@@ -522,7 +522,7 @@ button:disabled {
   position: relative;
   z-index: 1;
   width: min(100% - 40px, 650px);
-  margin: 82px auto 0;
+  margin: 110px auto 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1517,6 +1517,6 @@ button:disabled {
 
   .dashboard-main {
     margin-left: 0;
-    padding: 80px 16px 20px;
+    padding: 100px 16px 20px;
   }
 }

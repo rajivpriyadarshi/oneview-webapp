@@ -18,6 +18,7 @@ type Document = {
   type: string;
   status: string;
   fileType: string;
+  fileUrl?: string;
 };
 
 type Props = {
@@ -27,15 +28,49 @@ type Props = {
 
 const columnHelper = createColumnHelper<Document>();
 
+const GROUP_OPTIONS = ["Account", "Type", "Status"];
+
 export default function DocumentsTable({ documents, loading = false }: Props) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [groupBy, setGroupBy] = useState("Account");
+
+  const toggleAll = () => {
+    if (selectedRows.size === documents.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(documents.map((_, i) => i)));
+    }
+  };
+
+  const toggleRow = (index: number) => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
 
   const columns = useMemo(
     () => [
       columnHelper.display({
         id: "checkbox",
-        header: () => <span className="docs-checkbox" />,
-        cell: () => <span className="docs-checkbox" />,
+        header: () => (
+          <span
+            className={`docs-checkbox${selectedRows.size === documents.length && documents.length > 0 ? " checked" : ""}`}
+            onClick={toggleAll}
+          />
+        ),
+        cell: ({ row }) => (
+          <span
+            className={`docs-checkbox${selectedRows.has(row.index) ? " checked" : ""}`}
+            onClick={() => toggleRow(row.index)}
+          />
+        ),
       }),
       columnHelper.accessor("filename", {
         header: "Filename",
@@ -62,21 +97,22 @@ export default function DocumentsTable({ documents, loading = false }: Props) {
         header: "Type",
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor("status", {
-        header: "Status",
-        cell: (info) => <span className="docs-status-pill">{info.getValue()}</span>,
-      }),
       columnHelper.display({
         id: "actions",
         header: "Actions",
-        cell: () => (
-          <button className="docs-view-btn" type="button">
+        cell: ({ row }) => (
+          <a
+            className="docs-view-btn"
+            href={row.original.fileUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             View
-          </button>
+          </a>
         ),
       }),
     ],
-    [],
+    [selectedRows, documents.length],
   );
 
   const table = useReactTable({
@@ -90,10 +126,27 @@ export default function DocumentsTable({ documents, loading = false }: Props) {
 
   return (
     <section className="docs-table-section">
-      <h2 className="docs-table-title">
-        <DocumentsIcon />
-        Added statements
-      </h2>
+      <div className="docs-table-header">
+        <h2 className="docs-table-title">
+          <DocumentsIcon />
+          Added statements
+        </h2>
+        <div className="docs-group-by">
+          <span className="docs-group-by-label">Group by:</span>
+          <div className="docs-group-by-select-wrapper">
+            <select
+              className="docs-group-by-select"
+              value={groupBy}
+              onChange={(e) => setGroupBy(e.target.value)}
+            >
+              {GROUP_OPTIONS.map((opt) => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+            <ChevronDown />
+          </div>
+        </div>
+      </div>
       <div className="docs-table-wrapper">
         <table className="docs-table">
           <thead>
@@ -118,14 +171,14 @@ export default function DocumentsTable({ documents, loading = false }: Props) {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: "40px" }}>
+                <td colSpan={7} style={{ textAlign: "center", padding: "40px" }}>
                   Loading...
                 </td>
               </tr>
             )}
             {!loading && documents.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ textAlign: "center", padding: "40px", color: "var(--muted)" }}>
+                <td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "var(--muted)" }}>
                   No documents found
                 </td>
               </tr>
@@ -170,6 +223,14 @@ function SortIndicator({ direction }: { direction: false | "asc" | "desc" }) {
     <svg width="10" height="12" viewBox="0 0 6 9" fill="none" className="docs-sort-icon">
       <path d="M0.5 3L3 0.5L5.5 3" stroke="black" strokeOpacity={direction === "asc" ? "1" : "0.5"} strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M0.5 6L3 8.5L5.5 6" stroke="black" strokeOpacity={direction === "desc" ? "1" : "0.5"} strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function ChevronDown() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="docs-group-chevron">
+      <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

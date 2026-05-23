@@ -58,8 +58,11 @@ export type BrokerStatementUploadResponse = {
   };
 };
 
-export function listDocuments() {
-  return apiRequest<DocumentRecord[]>("/oneview/documents/");
+export async function listDocuments() {
+  const response = await apiRequest<DocumentRecord[] | { results: DocumentRecord[] }>(
+    "/oneview/documents/",
+  );
+  return Array.isArray(response) ? response : response.results;
 }
 
 export function uploadDocument(input: {

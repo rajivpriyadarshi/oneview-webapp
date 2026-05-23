@@ -1,11 +1,27 @@
 import Link from "next/link";
 
-export default function DashboardHeader() {
+type Props = {
+  updatedAt?: string;
+};
+
+function formatLastUpdated(dateStr?: string) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `Last updated: ${month} ${day}, ${year} at ${time}`;
+}
+
+export default function DashboardHeader({ updatedAt }: Props) {
+  const subtitle = formatLastUpdated(updatedAt);
+
   return (
     <header className="dashboard-header">
       <div className="dashboard-header-left">
         <h1 className="dashboard-title">Your investments</h1>
-        <p className="dashboard-subtitle">Last updated: May 16, 2026 at 4:05 PM</p>
+        {subtitle && <p className="dashboard-subtitle">{subtitle}</p>}
       </div>
       <Link href="/documents-vault" className="add-more-btn">
         <PlusIcon />

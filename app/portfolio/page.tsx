@@ -111,7 +111,7 @@ export default function PortfolioPage() {
       <div className="dashboard-layout">
         <Sidebar />
         <main className="dashboard-main">
-          <DashboardHeader />
+          <DashboardHeader updatedAt={selectedPortfolio?.updated_at} />
           <PortfolioSummary
             portfolioView={portfolioView}
             loading={loading}

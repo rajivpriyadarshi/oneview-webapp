@@ -17,6 +17,7 @@ export type Profile = {
   timezone: string;
   email: string;
   is_active: boolean;
+  updated_at?: string;
 };
 
 export function initiateSignup(input: {

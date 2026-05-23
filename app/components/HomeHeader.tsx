@@ -1,14 +1,52 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { getProfile } from "../lib/realAuthApi";
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function formatLastUpdated(dateStr?: string) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `Last updated: ${month} ${day}, ${year} at ${time}`;
+}
+
 export default function HomeHeader() {
+  const [firstName, setFirstName] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
+
+  useEffect(() => {
+    getProfile()
+      .then((profile) => {
+        const name = profile.display_name?.trim().split(/\s+/)[0] || "";
+        setFirstName(name);
+        setLastUpdated(formatLastUpdated(profile.updated_at));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <header className="home-header">
       <div className="home-header-left">
-        <h1 className="home-title">Good morning, Arjun!</h1>
-        <p className="home-subtitle">Last updated: May 16, 2026 at 4:05 PM</p>
+        <h1 className="home-title">
+          {getGreeting()}{firstName ? `, ${firstName}` : ""}!
+        </h1>
+        {lastUpdated && <p className="home-subtitle">{lastUpdated}</p>}
       </div>
-      <button className="upload-btn">
+      <Link href="/documents-vault" className="upload-btn">
         <UploadIcon />
         Upload statements
-      </button>
+      </Link>
     </header>
   );
 }

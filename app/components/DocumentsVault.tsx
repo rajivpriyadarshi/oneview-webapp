@@ -1,79 +1,87 @@
 "use client";
 
-import { useState, useRef, ChangeEvent, DragEvent } from "react";
+import { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
 import DocumentsTable from "./DocumentsTable";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
+import { listDocuments, uploadBrokerStatement, type DocumentRecord } from "../lib/documentsApi";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
 
-const mockDocuments = [
-  {
-    filename: "Fidelity holdings Mar 2024-Apr 2025.xls",
-    downloadedOn: "Oct 22, 2025 at 9:30 AM",
-    downloadedBy: "Zerodha MCP",
-    size: "20 KB",
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `${month} ${day}, ${year} at ${time}`;
+}
+
+function getFileType(name: string, contentType: string) {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  if (["xls", "xlsx"].includes(ext)) return "xls";
+  if (ext === "pdf") return "pdf";
+  if (ext === "csv") return "csv";
+  if (["doc", "docx"].includes(ext)) return "docx";
+  if (["png", "jpg", "jpeg"].includes(ext)) return "png";
+  if (contentType.includes("pdf")) return "pdf";
+  if (contentType.includes("spreadsheet") || contentType.includes("excel")) return "xls";
+  return "csv";
+}
+
+function mapDocToTableRow(doc: DocumentRecord) {
+  return {
+    filename: doc.name,
+    downloadedOn: formatDate(doc.created_at),
+    downloadedBy: doc.uploaded_by_username || "Manual",
+    size: formatFileSize(doc.file_size),
     type: "Investments",
     status: "Processing",
-    fileType: "xls",
-  },
-  {
-    filename: "Zerodha P&L Mar 2024-Apr 2025.xls",
-    downloadedOn: "Oct 22, 2025 at 9:30 AM",
-    downloadedBy: "Zerodha MCP",
-    size: "20 KB",
-    type: "Investments",
-    status: "Processing",
-    fileType: "xls",
-  },
-  {
-    filename: "Zerodha P&L Mar 2024-Apr 2025.xls",
-    downloadedOn: "Oct 22, 2025 at 9:30 AM",
-    downloadedBy: "Manual",
-    size: "20 KB",
-    type: "Investments",
-    status: "Processing",
-    fileType: "png",
-  },
-  {
-    filename: "HDFC statement XXXXX0032 (FY24-25).pdf",
-    downloadedOn: "Oct 22, 2025 at 9:30 AM",
-    downloadedBy: "Gmail MCP",
-    size: "20 KB",
-    type: "Investments",
-    status: "Processing",
-    fileType: "pdf",
-  },
-  {
-    filename: "Zerodha P&L Mar 2024-Apr 2025.xls",
-    downloadedOn: "Oct 22, 2025 at 9:30 AM",
-    downloadedBy: "Zerodha MCP",
-    size: "20 KB",
-    type: "Investments",
-    status: "Processing",
-    fileType: "docx",
-  },
-  {
-    filename: "Zerodha P&L Mar 2024-Apr 2025.xls",
-    downloadedOn: "Oct 22, 2025 at 9:30 AM",
-    downloadedBy: "Zerodha MCP",
-    size: "20 KB",
-    type: "Investments",
-    status: "Processing",
-    fileType: "csv",
-  },
-];
+    fileType: getFileType(doc.name, doc.content_type),
+    fileUrl: doc.file_url || doc.file,
+  };
+}
 
 export function DocumentsVault() {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [documents, setDocuments] = useState<ReturnType<typeof mapDocToTableRow>[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [docCount, setDocCount] = useState(0);
+  const [accountCount, setAccountCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function fetchDocuments() {
+    listDocuments()
+      .then((docs) => {
+        setDocuments(docs.map(mapDocToTableRow));
+        setDocCount(docs.length);
+        const uniqueAccounts = new Set(
+          docs.flatMap((d) => (d.accounts as { id: number }[])?.map((a) => a.id) || [])
+        );
+        setAccountCount(uniqueAccounts.size);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files || []);
     if (files.length > 0) {
-      validateFiles(files);
+      handleUploadFiles(files);
     }
   }
 
@@ -92,12 +100,13 @@ export function DocumentsVault() {
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      validateFiles(files);
+      handleUploadFiles(files);
     }
   }
 
-  function validateFiles(files: File[]) {
+  async function handleUploadFiles(files: File[]) {
     setError("");
+    setUploadMessage("");
 
     for (const file of files) {
       const lowerName = file.name.toLowerCase();
@@ -116,8 +125,33 @@ export function DocumentsVault() {
       }
     }
 
-    // Handle upload here
-    console.log("Files validated:", files);
+    setUploading(true);
+
+    try {
+      for (const file of files) {
+        const response = await uploadBrokerStatement({
+          file,
+          name: file.name,
+          storeData: true,
+          portfolioName: "Main Portfolio",
+          useLlmFallback: true,
+        });
+
+        if (response.status === "error") {
+          setError(response.error ?? "Unable to parse this statement.");
+          return;
+        }
+      }
+
+      setUploadMessage(`Successfully uploaded ${files.length} file${files.length > 1 ? "s" : ""}.`);
+      fetchDocuments();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to upload this statement."
+      );
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -125,7 +159,7 @@ export function DocumentsVault() {
       <header className="docs-vault-header">
         <div className="docs-vault-header-left">
           <h1 className="docs-vault-title">Documents vault</h1>
-          <p className="docs-vault-subtitle">Total 8 files across 3 accounts</p>
+          <p className="docs-vault-subtitle">Total {docCount} files{accountCount > 0 ? ` across ${accountCount} accounts` : ""}</p>
         </div>
         <div className="docs-vault-header-right">
           <div className="docs-vault-brokers">
@@ -170,13 +204,14 @@ export function DocumentsVault() {
             <path d="M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <strong>Drop your statements here</strong>
+        <strong>{uploading ? "Uploading..." : "Drop your statements here"}</strong>
         <span>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
       </div>
 
       {error && <p className="docs-error">{error}</p>}
+      {uploadMessage && <p className="docs-success">{uploadMessage}</p>}
 
-      <DocumentsTable documents={mockDocuments} />
+      <DocumentsTable documents={documents} loading={loading} />
 
       <DownloadInstructionModal
         isOpen={isModalOpen}
