@@ -2,7 +2,21 @@
 
 import { useState } from "react";
 
-const BROKERS = [
+type Step = {
+  text: string;
+  highlight?: string;
+  highlight2?: string;
+  highlight3?: string;
+};
+
+type Broker = {
+  id: string;
+  name: string;
+  icon: string;
+  steps: Step[];
+};
+
+const BROKERS: Broker[] = [
   { id: "groww", name: "Groww (Excel)", icon: "/broker-icons/groww.png", steps: [
     { text: "Open Groww and go to your ", highlight: "Profile" },
     { text: "Select ", highlight: "Reports" },
