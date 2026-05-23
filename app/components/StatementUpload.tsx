@@ -3,6 +3,7 @@
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand } from "./BrandMarks";
+import { DownloadInstructionModal } from "./DownloadInstructionModal";
 import { uploadBrokerStatement } from "../lib/documentsApi";
 import { listPortfolios } from "../lib/portfoliosApi";
 import { getProfile } from "../lib/realAuthApi";
@@ -21,6 +22,8 @@ export function StatementUpload() {
   const [hasUploadedStatement, setHasUploadedStatement] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -152,7 +155,32 @@ export function StatementUpload() {
     <main className="statement-page">
       <header className="statement-topbar">
         <OneviewBrand />
-        <div className="vault-avatar" aria-label="User avatar" />
+        <div className="statement-profile">
+          <button
+            className="statement-avatar-btn"
+            onClick={() => setShowProfileMenu(!showProfileMenu)}
+            aria-label="Profile menu"
+          >
+            <div className="vault-avatar" />
+          </button>
+          {showProfileMenu && (
+            <>
+              <div className="profile-menu-backdrop" onClick={() => setShowProfileMenu(false)} />
+              <div className="profile-menu-dropdown">
+                <button
+                  className="profile-menu-item"
+                  onClick={() => {
+                    clearAuthToken();
+                    router.push("/");
+                  }}
+                >
+                  <LogoutIcon />
+                  Logout
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </header>
 
       <section className="statement-content" aria-labelledby="statement-title">
@@ -187,10 +215,28 @@ export function StatementUpload() {
           <span>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
         </label>
 
-        <p className="statement-support">
-          We accepts Fidelity, Zerodha, Schwab, Groww, IBKR, Vested, and any CSV
-          format
-        </p>
+        <div className="statement-brokers">
+          <span className="brokers-text">We accepts</span>
+          <div className="broker-icons">
+            <img src="/broker-icons/fidelity.png" alt="Fidelity" className="broker-icon" />
+            <img src="/broker-icons/zerodha.png" alt="Zerodha" className="broker-icon" />
+            <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="broker-icon" />
+            <img src="/broker-icons/groww.png" alt="Groww" className="broker-icon" />
+            <img src="/broker-icons/ibkr.png" alt="IBKR" className="broker-icon" />
+            <img src="/broker-icons/vested.png" alt="Vested" className="broker-icon" />
+          </div>
+          <span className="brokers-text">and any CSV format</span>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsModalOpen(true);
+            }}
+            className="download-instruction"
+          >
+            See download instruction
+          </button>
+        </div>
 
         {error ? <p className="statement-error">{error}</p> : null}
         {message ? <p className="statement-success">{message}</p> : null}
@@ -200,7 +246,7 @@ export function StatementUpload() {
           type="button"
           onClick={
             hasUploadedStatement
-              ? () => router.replace("/dashboard")
+              ? () => router.replace("/onboarding/processing")
               : selectedFile
                 ? handleUpload
                 : undefined
@@ -208,7 +254,7 @@ export function StatementUpload() {
           disabled={isUploading || !selectedFile}
         >
           {hasUploadedStatement
-            ? "Go to Oneview"
+            ? "See your Oneview"
             : selectedFile
               ? isUploading
                 ? "Uploading..."
@@ -221,14 +267,33 @@ export function StatementUpload() {
           Your data stays encrypted • 100% Safe and Secure
         </p>
       </section>
+
+      <DownloadInstructionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </main>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" width="16" height="16">
+      <path
+        d="M12.333 12.333L15.666 9m0 0L12.333 5.667M15.666 9H6.333M6.333 2.333H5.2c-1.12 0-1.68 0-2.108.218a2 2 0 00-.874.874c-.218.428-.218.988-.218 2.108v7.934c0 1.12 0 1.68.218 2.108a2 2 0 00.874.874c.428.218.988.218 2.108.218h1.133"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
 function UploadIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M12 17V6M8 10l4-4 4 4M5 19h14" />
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M14.9997 2.14258H2.14258M4.28544 9.28544L8.57115 4.99972L12.8569 9.28544M8.57115 4.99972V14.9997" stroke="black" strokeOpacity="0.7" strokeWidth="1.42857" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }

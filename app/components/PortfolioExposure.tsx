@@ -74,6 +74,11 @@ export default function PortfolioExposure({ portfolioView }: Props) {
 function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; currency: string }) {
   const circumference = 2 * Math.PI * 80;
   const currSymbol = currency === "USD" ? "$" : "₹";
+  const cx = 200;
+  const cy = 180;
+  const donutR = 80;
+  const strokeW = 32;
+  const outerEdge = donutR + strokeW / 2;
 
   let offset = 0;
   const segmentsWithAngles = segments.map((seg) => {
@@ -86,87 +91,90 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
 
   let drawOffset = 0;
 
+  const labelPositions = (() => {
+    const positions: { finalY: number; seg: typeof segmentsWithAngles[0]; isRight: boolean }[] = [];
+    const minGap = 44;
+
+    for (const seg of segmentsWithAngles) {
+      const rad = (seg.midAngle * Math.PI) / 180;
+      const isRight = Math.cos(rad) >= 0;
+      let finalY = cy + 120 * Math.sin(rad);
+
+      for (const placed of positions) {
+        if ((isRight && placed.isRight) || (!isRight && !placed.isRight)) {
+          const dy = Math.abs(finalY - placed.finalY);
+          if (dy < minGap) {
+            finalY = placed.finalY + (finalY > placed.finalY ? minGap : -minGap);
+          }
+        }
+      }
+
+      positions.push({ finalY, seg, isRight });
+    }
+    return positions;
+  })();
+
   return (
     <div className="donut-labeled-container">
-      <svg viewBox="0 0 360 360" className="donut-labeled">
+      <svg viewBox="0 0 400 360" className="donut-labeled">
         {segmentsWithAngles.map((seg) => {
           const el = (
             <circle
               key={seg.label}
-              cx="180"
-              cy="180"
-              r="80"
+              cx={cx}
+              cy={cy}
+              r={donutR}
               fill="none"
               stroke={seg.color}
-              strokeWidth="32"
+              strokeWidth={strokeW}
               strokeDasharray={`${seg.dashLength} ${circumference}`}
               strokeDashoffset={-drawOffset}
-              transform="rotate(-90 180 180)"
+              transform={`rotate(-90 ${cx} ${cy})`}
             />
           );
           drawOffset += seg.dashLength;
           return el;
         })}
-        {(() => {
-          const labels: { x: number; y: number; seg: typeof segmentsWithAngles[0] }[] = [];
-          const minGap = 45;
+        {labelPositions.map(({ finalY, seg, isRight }) => {
+          const rad = (seg.midAngle * Math.PI) / 180;
+          const edgeX = cx + outerEdge * Math.cos(rad);
+          const edgeY = cy + outerEdge * Math.sin(rad);
+          const horizEnd = isRight ? 310 : 90;
+          const dotX = horizEnd;
+          const labelX = isRight ? dotX + 14 : dotX - 14;
+          const anchor = isRight ? "start" : "end";
 
-          for (const seg of segmentsWithAngles) {
-            const labelRadius = 155;
-            const rad = (seg.midAngle * Math.PI) / 180;
-            let x = 180 + labelRadius * Math.cos(rad);
-            let y = 180 + labelRadius * Math.sin(rad);
-
-            for (const placed of labels) {
-              const dx = x - placed.x;
-              const dy = y - placed.y;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist < minGap) {
-                const angle = Math.atan2(dy, dx);
-                y = placed.y + minGap * Math.sin(angle);
-                x = placed.x + minGap * Math.cos(angle);
-              }
-            }
-
-            labels.push({ x, y, seg });
-          }
-
-          return labels.map(({ x, y, seg }) => {
-            const innerRadius = 112;
-            const rad = (seg.midAngle * Math.PI) / 180;
-            const x1 = 180 + innerRadius * Math.cos(rad);
-            const y1 = 180 + innerRadius * Math.sin(rad);
-            const lineEndRadius = 130;
-            const x2 = 180 + lineEndRadius * Math.cos(rad);
-            const y2 = 180 + lineEndRadius * Math.sin(rad);
-
-            return (
-              <g key={seg.label}>
-                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#080808" strokeWidth="1" />
-                <text
-                  x={x}
-                  y={y - 10}
-                  textAnchor="middle"
-                  fontSize="15"
-                  fontWeight="700"
-                  fill="#080808"
-                >
-                  {seg.label}
-                </text>
-                <circle cx={x} cy={y + 4} r="4" fill={seg.color} />
-                <text
-                  x={x}
-                  y={y + 22}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fill="#6f6f6f"
-                >
-                  {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
-                </text>
-              </g>
-            );
-          });
-        })()}
+          return (
+            <g key={seg.label}>
+              <polyline
+                points={`${edgeX},${edgeY} ${isRight ? edgeX + 15 : edgeX - 15},${finalY} ${horizEnd},${finalY}`}
+                fill="none"
+                stroke="#1a1a1a"
+                strokeWidth="1"
+              />
+              <circle cx={dotX} cy={finalY} r="4.5" fill={seg.color} />
+              <text
+                x={labelX}
+                y={finalY + 4}
+                textAnchor={anchor}
+                fontSize="13"
+                fontWeight="700"
+                fill="#1a1a1a"
+              >
+                {seg.label}
+              </text>
+              <text
+                x={labelX}
+                y={finalY + 20}
+                textAnchor={anchor}
+                fontSize="11"
+                fill="#6f6f6f"
+              >
+                {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
+              </text>
+            </g>
+          );
+        })}
       </svg>
     </div>
   );
