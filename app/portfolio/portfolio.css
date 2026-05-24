@@ -73,6 +73,12 @@
   background: linear-gradient(135deg, #a855f7, #ec4899, #f97316);
 }
 
+.avatar-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+
 .avatar-popover {
   position: absolute;
   bottom: 0;

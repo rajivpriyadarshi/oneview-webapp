@@ -1,9 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { getStoredAuthToken } from "../lib/session";
 
 export function LandingPage() {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    const token = getStoredAuthToken();
+    if (token) {
+      router.replace("/dashboard");
+    } else {
+      setIsChecking(false);
+    }
+  }, [router]);
+
+  if (isChecking) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
       {/* Background Image */}

@@ -1,14 +1,14 @@
 export default function GoalsList() {
   return (
     <section className="goals-list">
-      <GoalItem name="Will planning" showAction />
-      <GoalItem name="House planning" />
-      <GoalItem name="Silverdale fund" />
+      {/* <GoalItem name="Will planning" showAction /> */}
+      <GoalItem name="House planning" href="https://housing.zinc.money/" />
+      {/* <GoalItem name="Silverdale fund" /> */}
     </section>
   );
 }
 
-function GoalItem({ name, showAction }: { name: string; showAction?: boolean }) {
+function GoalItem({ name, href }: { name: string; href?: string }) {
   return (
     <div className="goal-item">
       <div className="goal-item-left">
@@ -17,11 +17,16 @@ function GoalItem({ name, showAction }: { name: string; showAction?: boolean }) 
         </div>
         <span className="goal-name">{name}</span>
       </div>
-      {showAction && (
-        <button className="goal-action-btn">
-          View simulation
+      {href && (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="goal-action-btn"
+        >
+          View
           <ArrowRight />
-        </button>
+        </a>
       )}
     </div>
   );
