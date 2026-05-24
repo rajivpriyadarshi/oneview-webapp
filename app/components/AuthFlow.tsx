@@ -1,13 +1,19 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand, ZincBrand } from "./BrandMarks";
-import { startGoogleLogin } from "../lib/authApi";
+import {
+  authenticateWithGoogle,
+  GoogleAuthCallbackHandler,
+  initializeGoogleAuth,
+  renderGoogleButton,
+} from "../lib/authApi";
 import { isApiUnauthorized as isRealApiUnauthorized } from "../lib/apiClient";
 import { getPostProfileRoute } from "../lib/postAuthRoute";
 import { getProfile, login } from "../lib/realAuthApi";
 import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
+import { GoogleIdentityScript } from "./GoogleIdentityScript";
 
 export function AuthFlow() {
   const router = useRouter();
@@ -16,12 +22,54 @@ export function AuthFlow() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+  const hiddenGoogleButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (getStoredAuthToken()) {
       routeByProfile();
     }
   }, [router]);
+
+  useEffect(() => {
+    if (!isGoogleLoaded || !hiddenGoogleButtonRef.current) {
+      return;
+    }
+
+    try {
+      const handleGoogleCallback: GoogleAuthCallbackHandler = async (response) => {
+        setError("");
+        setIsSubmitting(true);
+
+        try {
+          const session = await authenticateWithGoogle(response.credential);
+          storeAuthToken(session.token);
+          await routeByProfile();
+        } catch (requestError) {
+          setError(getErrorMessage(requestError));
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      initializeGoogleAuth(handleGoogleCallback);
+      renderGoogleButton(hiddenGoogleButtonRef.current);
+    } catch (err) {
+      console.error("Failed to initialize Google Auth:", err);
+    }
+  }, [isGoogleLoaded, router]);
+
+  function handleGoogleSubmit() {
+    if (!hiddenGoogleButtonRef.current) {
+      return;
+    }
+
+    const googleButton = hiddenGoogleButtonRef.current.querySelector('div[role="button"]') as HTMLElement;
+    if (googleButton) {
+      googleButton.click();
+    }
+  }
 
   async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,23 +86,6 @@ export function AuthFlow() {
     }
   }
 
-  async function handleGoogleSubmit() {
-    setError("");
-    setIsSubmitting(true);
-
-    try {
-      await startGoogleLogin();
-    } catch (requestError) {
-      if (isUnauthorizedAuthError(requestError)) {
-        router.replace("/");
-        return;
-      }
-
-      setError(getErrorMessage(requestError));
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
 
   async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,24 +124,29 @@ export function AuthFlow() {
   }
 
   return (
-    <main className="login-page">
-      {step === "login" ? (
-        <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
-          <OneviewBrand />
-          <form className="login-card account-card" onSubmit={handleEmailSubmit}>
-            <h1 id="login-title">Get started</h1>
+    <>
+      <GoogleIdentityScript onLoad={() => setIsGoogleLoaded(true)} />
+      <main className="login-page">
+        {step === "login" ? (
+          <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
+            <OneviewBrand />
+            <form className="login-card account-card" onSubmit={handleEmailSubmit}>
+              <h1 id="login-title">Get started</h1>
 
-            <button
-              className="google-button"
-              type="button"
-              onClick={handleGoogleSubmit}
-              disabled={isSubmitting}
-            >
-              <GoogleIcon />
-              <span>Continue with Google</span>
-            </button>
+              <button
+                className="google-button"
+                type="button"
+                onClick={handleGoogleSubmit}
+                disabled={isSubmitting || !isGoogleLoaded}
+              >
+                <GoogleIcon />
+                <span>Continue with Google</span>
+              </button>
 
-            <div className="or-divider">OR</div>
+              {/* Hidden Google button that gets programmatically clicked */}
+              <div ref={hiddenGoogleButtonRef} style={{ display: 'none' }} />
+
+              <div className="or-divider">OR</div>
 
             <label className={`field account-field ${email ? 'has-value' : ''}`}>
               <span>Email address</span>
@@ -183,7 +219,8 @@ export function AuthFlow() {
           <ZincBrand />
         </section>
       )}
-    </main>
+      </main>
+    </>
   );
 }
 
