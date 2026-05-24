@@ -98,7 +98,7 @@ export type ValuationsViewResponse = {
     total_gain_amount: number;
     total_gain_pct: number | null;
   };
-  series: ValuationSeriesPoint[];
+  price_series: ValuationSeriesPoint[];
   accounts: {
     account_id: number;
     account_name: string;

@@ -62,9 +62,9 @@ export default function PortfolioPage() {
     try {
       const accountIds = accountFilter === "all" ? [] : [accountFilter];
       const today = new Date();
-      const fiveDaysAgo = new Date(today);
-      fiveDaysAgo.setDate(today.getDate() - 5);
-      const fromDate = fiveDaysAgo.toISOString().split("T")[0];
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      const fromDate = thirtyDaysAgo.toISOString().split("T")[0];
       const toDate = today.toISOString().split("T")[0];
 
       const viewData = await getPortfolioView(accountIds, curr);
@@ -72,7 +72,7 @@ export default function PortfolioPage() {
 
       try {
         const valuationsData = await getValuationsView(accountIds, curr, fromDate, toDate);
-        setValuationSeries(valuationsData.series || []);
+        setValuationSeries(valuationsData.price_series || []);
       } catch (e) {
         console.error("Valuations API failed:", e);
         setValuationSeries([]);
