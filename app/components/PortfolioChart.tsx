@@ -8,6 +8,7 @@ import {
   LineElement,
   Filler,
   Tooltip,
+  type TooltipItem,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { type ValuationSeriesPoint } from "../lib/portfolioDataApi";
@@ -151,7 +152,7 @@ export default function PortfolioChart({ series, currency }: Props) {
           family: "Satoshi, var(--font-inter), sans-serif",
         },
         callbacks: {
-          title: (tooltipItems) => {
+          title: (tooltipItems: TooltipItem<"line">[]) => {
             const date = tooltipItems[0]?.label;
             if (!date) return "";
             const parsedDate = new Date(date + "T00:00:00");
@@ -161,8 +162,8 @@ export default function PortfolioChart({ series, currency }: Props) {
               year: "numeric",
             });
           },
-          label: (context) => {
-            const value = context.parsed.y;
+          label: (context: TooltipItem<"line">) => {
+            const value = context.parsed.y ?? 0;
             return formatLabel(value);
           },
         },
