@@ -11,6 +11,10 @@ export type AuthSession = {
   user: ApiUser;
 };
 
+export type PasswordlessAuthSession = AuthSession & {
+  created: boolean;
+};
+
 export type Profile = {
   display_name: string;
   base_currency: string;
@@ -52,6 +56,30 @@ export function resendSignupOtp(input: { email: string }) {
 
 export function login(input: { email: string; password: string }) {
   return apiRequest<AuthSession>("/auth/login/", {
+    method: "POST",
+    body: input,
+    skipAuth: true,
+  });
+}
+
+export function sendPasswordlessOtp(input: { email: string }) {
+  return apiRequest<{ message: string; email: string }>("/auth/passwordless/send-otp/", {
+    method: "POST",
+    body: input,
+    skipAuth: true,
+  });
+}
+
+export function verifyPasswordlessOtp(input: { email: string; otp: string }) {
+  return apiRequest<PasswordlessAuthSession>("/auth/passwordless/verify/", {
+    method: "POST",
+    body: input,
+    skipAuth: true,
+  });
+}
+
+export function resendPasswordlessOtp(input: { email: string }) {
+  return apiRequest<{ message: string }>("/auth/passwordless/resend-otp/", {
     method: "POST",
     body: input,
     skipAuth: true,
