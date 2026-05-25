@@ -14,7 +14,9 @@ type ChartSegment = {
   color: string;
 };
 
-const COLORS = ["#f5e680", "#7c5ce7", "#f472b6", "#34d399", "#f97316"];
+const ASSET_COLORS = ["#f5e680", "#7c5ce7", "#f472b6", "#34d399", "#f97316"];
+const BROKER_COLORS = ["#7c5ce7", "#f472b6", "#f5e680", "#34d399", "#f97316"];
+const SECTOR_COLORS = ["#34d399", "#f97316", "#7c5ce7", "#f472b6", "#60a5fa"];
 
 export default function PortfolioExposure({ portfolioView }: Props) {
   const assetTypeData = useMemo(() => {
@@ -27,7 +29,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         label: capitalize(label),
         value: data.market_value,
         percentage: data.weight_pct ?? (total > 0 ? (data.market_value / total) * 100 : 0),
-        color: COLORS[i % COLORS.length],
+        color: ASSET_COLORS[i % ASSET_COLORS.length],
       }));
   }, [portfolioView]);
 
@@ -40,7 +42,21 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         label: capitalize(acc.institution_name || acc.account_name),
         value: acc.market_value,
         percentage: total > 0 ? (acc.market_value / total) * 100 : 0,
-        color: COLORS[i % COLORS.length],
+        color: BROKER_COLORS[i % BROKER_COLORS.length],
+      }));
+  }, [portfolioView]);
+
+  const sectorData = useMemo(() => {
+    if (!portfolioView?.sector_allocation) return [];
+    const entries = Object.entries(portfolioView.sector_allocation);
+    const total = entries.reduce((sum, [, v]) => sum + v.market_value, 0);
+    return entries
+      .sort((a, b) => b[1].market_value - a[1].market_value)
+      .map(([label, data], i) => ({
+        label: capitalize(label),
+        value: data.market_value,
+        percentage: data.weight_pct ?? (total > 0 ? (data.market_value / total) * 100 : 0),
+        color: SECTOR_COLORS[i % SECTOR_COLORS.length],
       }));
   }, [portfolioView]);
 
@@ -66,6 +82,15 @@ export default function PortfolioExposure({ portfolioView }: Props) {
           </p>
           <LabeledDonut segments={brokerData} currency={currency} />
         </div>
+
+        {sectorData.length > 0 && (
+          <div className="exposure-chart">
+            <p className="exposure-chart-label">
+              By <strong>Sector allocation</strong>
+            </p>
+            <LabeledDonut segments={sectorData} currency={currency} />
+          </div>
+        )}
       </div>
     </section>
   );

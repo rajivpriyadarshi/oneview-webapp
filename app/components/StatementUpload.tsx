@@ -198,16 +198,17 @@ export function StatementUpload() {
         </p>
 
         <label
-          className={`statement-dropzone${isDragging ? " is-dragging" : ""}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          className={`statement-dropzone${isDragging ? " is-dragging" : ""}${isUploading ? " is-disabled" : ""}`}
+          onDragOver={isUploading ? undefined : handleDragOver}
+          onDragLeave={isUploading ? undefined : handleDragLeave}
+          onDrop={isUploading ? undefined : handleDrop}
         >
           <input
             ref={inputRef}
             type="file"
             accept=".csv,.xlsx,.pdf"
             onChange={handleFileChange}
+            disabled={isUploading}
           />
           <span className={`upload-icon${isUploading ? " is-uploading" : ""}`}>
             {isUploading ? <SpinnerIcon /> : <UploadIcon />}

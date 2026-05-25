@@ -60,6 +60,7 @@ export type PortfolioViewResponse = {
   accounts: PortfolioViewAccount[];
   positions: PortfolioViewPosition[];
   asset_allocation: AssetAllocation;
+  sector_allocation?: AssetAllocation;
 };
 
 export async function getAccountsByPortfolioId(portfolioId: number) {
