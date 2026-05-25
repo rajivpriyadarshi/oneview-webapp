@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import "../portfolio/portfolio.css";
+import "../dashboard/home.css";
 import "./wealth-map.css";
 
 import {
