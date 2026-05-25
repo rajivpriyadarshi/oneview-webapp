@@ -1,12 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect, ChangeEvent, DragEvent } from "react";
-import DocumentsTable from "./DocumentsTable";
+import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
+import DocumentsTable, { type VaultDocument } from "./DocumentsTable";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
-import { listDocuments, uploadBrokerStatement, type DocumentRecord } from "../lib/documentsApi";
+import { deleteDocument, listDocuments, uploadDocument, type DocumentRecord } from "../lib/documentsApi";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
+
+type UploadStatus = "queued" | "uploading" | "complete" | "error";
+
+type UploadItem = {
+  id: string;
+  name: string;
+  size: string;
+  status: UploadStatus;
+  error?: string;
+};
 
 function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -35,14 +45,15 @@ function getFileType(name: string, contentType: string) {
   return "csv";
 }
 
-function mapDocToTableRow(doc: DocumentRecord) {
+function mapDocToTableRow(doc: DocumentRecord): VaultDocument {
   return {
+    id: String(doc.id),
     filename: doc.name,
     downloadedOn: formatDate(doc.created_at),
     downloadedBy: doc.uploaded_by_username || "Manual",
     size: formatFileSize(doc.file_size),
     type: "Investments",
-    status: "Processing",
+    status: "Processed",
     fileType: getFileType(doc.name, doc.content_type),
     fileUrl: doc.file_url || doc.file,
   };
@@ -52,21 +63,25 @@ export function DocumentsVault() {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [documents, setDocuments] = useState<ReturnType<typeof mapDocToTableRow>[]>([]);
+  const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
+  const [documentsPendingDelete, setDocumentsPendingDelete] = useState<VaultDocument[]>([]);
+  const [deleting, setDeleting] = useState(false);
   const [docCount, setDocCount] = useState(0);
   const [accountCount, setAccountCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function fetchDocuments() {
+    setLoading(true);
     listDocuments()
       .then((docs) => {
         setDocuments(docs.map(mapDocToTableRow));
         setDocCount(docs.length);
         const uniqueAccounts = new Set(
-          docs.flatMap((d) => (d.accounts as { id: number }[])?.map((a) => a.id) || [])
+          docs.flatMap((d) => (d.accounts as { id: number }[])?.map((a) => a.id) || []),
         );
         setAccountCount(uniqueAccounts.size);
       })
@@ -80,8 +95,9 @@ export function DocumentsVault() {
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files || []);
+
     if (files.length > 0) {
-      handleUploadFiles(files);
+      void handleUploadFiles(files);
     }
   }
 
@@ -99,8 +115,9 @@ export function DocumentsVault() {
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
+
     if (files.length > 0) {
-      handleUploadFiles(files);
+      void handleUploadFiles(files);
     }
   }
 
@@ -108,49 +125,123 @@ export function DocumentsVault() {
     setError("");
     setUploadMessage("");
 
-    for (const file of files) {
-      const lowerName = file.name.toLowerCase();
-      const hasSupportedExtension = SUPPORTED_EXTENSIONS.some((ext) =>
-        lowerName.endsWith(ext)
-      );
+    const preparedItems = files.map((file, index) => {
+      const validationError = validateFile(file);
 
-      if (!hasSupportedExtension) {
-        setError("Only CSV, XLSX, or PDF files are supported.");
-        return;
-      }
+      return {
+        file,
+        item: {
+          id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
+          name: file.name,
+          size: formatFileSize(file.size),
+          status: validationError ? "error" as const : "queued" as const,
+          error: validationError,
+        },
+      };
+    });
+    const validUploads = preparedItems.filter(({ item }) => item.status !== "error");
 
-      if (file.size > MAX_UPLOAD_SIZE) {
-        setError("File size must be 10 MB or less.");
-        return;
-      }
+    setUploadItems(preparedItems.map(({ item }) => item));
+
+    if (validUploads.length === 0) {
+      setError("No supported files selected.");
+      return;
     }
 
     setUploading(true);
 
     try {
-      for (const file of files) {
-        const response = await uploadBrokerStatement({
-          file,
-          name: file.name,
-          storeData: true,
-          portfolioName: "Main Portfolio",
-          useLlmFallback: true,
-        });
+      let successCount = 0;
 
-        if (response.status === "error") {
-          setError(response.error ?? "Unable to parse this statement.");
-          return;
+      for (const { file, item } of validUploads) {
+        updateUploadItem(item.id, { status: "uploading", error: undefined });
+
+        try {
+          await uploadDocument({
+            file,
+            name: file.name,
+          });
+          successCount += 1;
+          updateUploadItem(item.id, { status: "complete" });
+        } catch (uploadError) {
+          updateUploadItem(item.id, {
+            status: "error",
+            error: uploadError instanceof Error ? uploadError.message : "Upload failed.",
+          });
         }
       }
 
-      setUploadMessage(`Successfully uploaded ${files.length} file${files.length > 1 ? "s" : ""}.`);
-      fetchDocuments();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Unable to upload this statement."
-      );
+      if (successCount > 0) {
+        setUploadMessage(`Uploaded ${successCount} file${successCount > 1 ? "s" : ""}.`);
+        fetchDocuments();
+      }
     } finally {
       setUploading(false);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  function updateUploadItem(id: string, patch: Partial<UploadItem>) {
+    setUploadItems((items) =>
+      items.map((item) => item.id === id ? { ...item, ...patch } : item),
+    );
+  }
+
+  function validateFile(file: File) {
+    const lowerName = file.name.toLowerCase();
+    const hasSupportedExtension = SUPPORTED_EXTENSIONS.some((ext) =>
+      lowerName.endsWith(ext),
+    );
+
+    if (!hasSupportedExtension) {
+      return "Only CSV, XLSX, or PDF files are supported.";
+    }
+
+    if (file.size > MAX_UPLOAD_SIZE) {
+      return "File size must be 10 MB or less.";
+    }
+
+    return "";
+  }
+
+  function clearUploadPanel() {
+    if (uploading) {
+      return;
+    }
+
+    setUploadItems([]);
+    setUploadMessage("");
+  }
+
+  async function confirmDeleteDocuments() {
+    if (documentsPendingDelete.length === 0) {
+      return;
+    }
+
+    setDeleting(true);
+    setError("");
+    setUploadMessage("");
+
+    try {
+      await Promise.all(
+        documentsPendingDelete.map((document) => deleteDocument(document.id)),
+      );
+      setUploadMessage(
+        `Deleted ${documentsPendingDelete.length} file${documentsPendingDelete.length > 1 ? "s" : ""}.`,
+      );
+      setDocumentsPendingDelete([]);
+      fetchDocuments();
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : "Unable to delete selected files.",
+      );
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -159,7 +250,9 @@ export function DocumentsVault() {
       <header className="docs-vault-header">
         <div className="docs-vault-header-left">
           <h1 className="docs-vault-title">Documents vault</h1>
-          <p className="docs-vault-subtitle">Total {docCount} files{accountCount > 0 ? ` across ${accountCount} accounts` : ""}</p>
+          <p className="docs-vault-subtitle">
+            Total {docCount} files{accountCount > 0 ? ` across ${accountCount} accounts` : ""}
+          </p>
         </div>
         <div className="docs-vault-header-right">
           <div className="docs-vault-brokers">
@@ -204,28 +297,126 @@ export function DocumentsVault() {
             <path d="M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-        <strong>{uploading ? "Uploading..." : "Drop your statements here"}</strong>
-        <span>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
+        <strong>{isDragging ? "Drop files to upload" : "Drop files here"}</strong>
+        <span>or click to browse CSV, XLSX, PDF files up to 10MB</span>
       </div>
 
       {error && <p className="docs-error">{error}</p>}
       {uploadMessage && <p className="docs-success">{uploadMessage}</p>}
 
-      <DocumentsTable documents={documents} loading={loading} />
+      <DocumentsTable
+        documents={documents}
+        loading={loading}
+        deleting={deleting}
+        onRequestDelete={setDocumentsPendingDelete}
+      />
+
+      {uploadItems.length > 0 && (
+        <section className="docs-upload-panel" aria-live="polite">
+          <div className="docs-upload-panel-header">
+            <div>
+              <strong>{getUploadPanelTitle(uploadItems, uploading)}</strong>
+              <span>{getUploadPanelSubtitle(uploadItems)}</span>
+            </div>
+            <button
+              type="button"
+              className="docs-upload-panel-close"
+              onClick={clearUploadPanel}
+              disabled={uploading}
+              aria-label="Close upload status"
+            >
+              ×
+            </button>
+          </div>
+          <div className="docs-upload-list">
+            {uploadItems.map((item) => (
+              <div className="docs-upload-row" key={item.id}>
+                <div className="docs-upload-file">
+                  <span className={`docs-upload-status is-${item.status}`} />
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>{item.error ?? item.size}</span>
+                  </div>
+                </div>
+                <span className="docs-upload-state">{getUploadStatusLabel(item.status)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <DownloadInstructionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
       />
+
+      {documentsPendingDelete.length > 0 && (
+        <div className="docs-confirm-overlay" role="presentation">
+          <div className="docs-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-documents-title">
+            <h2 id="delete-documents-title">Delete selected files?</h2>
+            <p>
+              {documentsPendingDelete.length === 1
+                ? `This will permanently delete "${documentsPendingDelete[0].filename}" from your vault.`
+                : `This will permanently delete ${documentsPendingDelete.length} files from your vault.`}
+            </p>
+            <div className="docs-confirm-actions">
+              <button
+                type="button"
+                className="docs-confirm-secondary"
+                disabled={deleting}
+                onClick={() => setDocumentsPendingDelete([])}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="docs-confirm-danger"
+                disabled={deleting}
+                onClick={confirmDeleteDocuments}
+              >
+                {deleting ? "Deleting..." : "Delete files"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function UploadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
-      <path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+function getUploadStatusLabel(status: UploadStatus) {
+  if (status === "queued") return "Queued";
+  if (status === "uploading") return "Uploading";
+  if (status === "complete") return "Uploaded";
+  return "Failed";
+}
+
+function getUploadPanelTitle(items: UploadItem[], uploading: boolean) {
+  if (uploading) {
+    return `Uploading ${items.length} item${items.length > 1 ? "s" : ""}`;
+  }
+
+  const failedCount = items.filter((item) => item.status === "error").length;
+  const completeCount = items.filter((item) => item.status === "complete").length;
+
+  if (failedCount > 0 && completeCount === 0) {
+    return "Upload failed";
+  }
+
+  if (failedCount > 0) {
+    return "Upload complete with errors";
+  }
+
+  return "Upload complete";
+}
+
+function getUploadPanelSubtitle(items: UploadItem[]) {
+  const completeCount = items.filter((item) => item.status === "complete").length;
+  const failedCount = items.filter((item) => item.status === "error").length;
+
+  if (failedCount > 0) {
+    return `${completeCount} uploaded, ${failedCount} failed`;
+  }
+
+  return `${completeCount} of ${items.length} uploaded`;
 }

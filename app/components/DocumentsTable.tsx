@@ -10,7 +10,8 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 
-type Document = {
+export type VaultDocument = {
+  id: string;
   filename: string;
   downloadedOn: string;
   downloadedBy: string;
@@ -22,37 +23,53 @@ type Document = {
 };
 
 type Props = {
-  documents: Document[];
+  documents: VaultDocument[];
   loading?: boolean;
+  deleting?: boolean;
+  onRequestDelete?: (documents: VaultDocument[]) => void;
 };
 
-const columnHelper = createColumnHelper<Document>();
+const columnHelper = createColumnHelper<VaultDocument>();
 
 const GROUP_OPTIONS = ["Account", "Type", "Status"];
 
-export default function DocumentsTable({ documents, loading = false }: Props) {
+export default function DocumentsTable({
+  documents,
+  loading = false,
+  deleting = false,
+  onRequestDelete,
+}: Props) {
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [groupBy, setGroupBy] = useState("Account");
+  const selectedDocuments = documents.filter((document) => selectedRows.has(document.id));
 
   const toggleAll = () => {
     if (selectedRows.size === documents.length) {
       setSelectedRows(new Set());
     } else {
-      setSelectedRows(new Set(documents.map((_, i) => i)));
+      setSelectedRows(new Set(documents.map((document) => document.id)));
     }
   };
 
-  const toggleRow = (index: number) => {
+  const toggleRow = (id: string) => {
     setSelectedRows((prev) => {
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        next.add(index);
+        next.add(id);
       }
       return next;
     });
+  };
+
+  const requestDelete = () => {
+    if (selectedDocuments.length === 0 || deleting) {
+      return;
+    }
+
+    onRequestDelete?.(selectedDocuments);
   };
 
   const columns = useMemo(
@@ -67,8 +84,8 @@ export default function DocumentsTable({ documents, loading = false }: Props) {
         ),
         cell: ({ row }) => (
           <span
-            className={`docs-checkbox${selectedRows.has(row.index) ? " checked" : ""}`}
-            onClick={() => toggleRow(row.index)}
+            className={`docs-checkbox${selectedRows.has(row.original.id) ? " checked" : ""}`}
+            onClick={() => toggleRow(row.original.id)}
           />
         ),
       }),
@@ -112,7 +129,7 @@ export default function DocumentsTable({ documents, loading = false }: Props) {
         ),
       }),
     ],
-    [selectedRows, documents.length],
+    [selectedRows, documents.length, deleting, onRequestDelete],
   );
 
   const table = useReactTable({
@@ -131,19 +148,29 @@ export default function DocumentsTable({ documents, loading = false }: Props) {
           <DocumentsIcon />
           Added statements
         </h2>
-        <div className="docs-group-by">
-          <span className="docs-group-by-label">Group by:</span>
-          <div className="docs-group-by-select-wrapper">
-            <select
-              className="docs-group-by-select"
-              value={groupBy}
-              onChange={(e) => setGroupBy(e.target.value)}
-            >
-              {GROUP_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </select>
-            <ChevronDown />
+        <div className="docs-table-actions">
+          <button
+            type="button"
+            className="docs-delete-btn"
+            disabled={selectedDocuments.length === 0 || deleting}
+            onClick={requestDelete}
+          >
+            {deleting ? "Deleting..." : `Delete${selectedDocuments.length > 0 ? ` (${selectedDocuments.length})` : ""}`}
+          </button>
+          <div className="docs-group-by">
+            <span className="docs-group-by-label">Group by:</span>
+            <div className="docs-group-by-select-wrapper">
+              <select
+                className="docs-group-by-select"
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value)}
+              >
+                {GROUP_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              <ChevronDown />
+            </div>
           </div>
         </div>
       </div>
