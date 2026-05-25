@@ -472,6 +472,37 @@ select.filter-btn option {
   border-radius: 0 12px 12px 0;
 }
 
+.security-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.instrument-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+}
+
+.instrument-icon.fallback {
+  color: rgba(0, 0, 0, 0.72);
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.security-copy {
+  min-width: 0;
+}
+
 .security-ticker {
   display: block;
   font-weight: 500;
