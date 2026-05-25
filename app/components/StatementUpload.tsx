@@ -35,9 +35,10 @@ export function StatementUpload() {
 
     getProfile()
       .then(async (profile) => {
+        const emailPrefix = profile.email.split("@")[0];
         const displayName = profile.display_name?.trim();
 
-        if (!displayName) {
+        if (!displayName || displayName === emailPrefix) {
           router.replace("/profile/setup");
           return;
         }

@@ -22,8 +22,8 @@ export function ProfileSetup() {
     }
 
     getProfile()
-      .then((profile) => getPostProfileRoute(profile))
-      .then((route) => {
+      .then(async (profile) => {
+        const route = await getPostProfileRoute(profile);
         if (route !== "/profile/setup") {
           router.replace(route);
         }
@@ -34,6 +34,12 @@ export function ProfileSetup() {
       });
   }, [router]);
 
+  function isNameValid(name: string): boolean {
+    const trimmedName = name.trim();
+    const nameWithoutSpaces = trimmedName.replace(/\s+/g, "");
+    return nameWithoutSpaces.length >= 2;
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -42,6 +48,11 @@ export function ProfileSetup() {
 
     if (!trimmedName) {
       setError("Enter your name to continue.");
+      return;
+    }
+
+    if (!isNameValid(displayName)) {
+      setError("Name must be at least 2 characters.");
       return;
     }
 
@@ -63,29 +74,34 @@ export function ProfileSetup() {
 
   return (
     <main className="login-page">
-      <section className="auth-shell auth-shell-card" aria-labelledby="profile-title">
+      <section className="auth-shell profile-shell" aria-labelledby="profile-title">
         <OneviewBrand />
-        <form className="login-card account-card" onSubmit={handleSubmit}>
-          <h1 id="profile-title">What&apos;s your name?</h1>
+        <form className="profile-form" onSubmit={handleSubmit}>
+          <h1 id="profile-title">What should we call you?</h1>
 
-          <label className="field account-field">
-            <span>Full name</span>
+          <div className="profile-name-field">
             <input
               type="text"
               name="display_name"
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
+              placeholder="Enter your name"
               autoComplete="name"
-              aria-label="Full name"
+              autoFocus
+              aria-label="Name"
               required
             />
-          </label>
+          </div>
 
-          <button className="continue-button" type="submit" disabled={isSubmitting}>
-            Continue
+          <button
+            className="profile-continue-button"
+            type="submit"
+            disabled={isSubmitting || !isNameValid(displayName)}
+          >
+            {isSubmitting ? "Saving..." : "Proceed"}
           </button>
 
-          {error ? <p className="form-error">{error}</p> : null}
+          {error ? <p className="form-error profile-error">{error}</p> : null}
         </form>
         <ZincBrand />
       </section>
