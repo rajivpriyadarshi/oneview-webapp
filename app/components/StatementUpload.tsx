@@ -4,6 +4,7 @@ import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand } from "./BrandMarks";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
+import { OneviewInfoModal } from "./OneviewInfoModal";
 import { uploadBrokerStatement } from "../lib/documentsApi";
 import { listPortfolios } from "../lib/portfoliosApi";
 import { getProfile } from "../lib/realAuthApi";
@@ -23,6 +24,7 @@ export function StatementUpload() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   useEffect(() => {
@@ -207,8 +209,8 @@ export function StatementUpload() {
             accept=".csv,.xlsx,.pdf"
             onChange={handleFileChange}
           />
-          <span className="upload-icon">
-            <UploadIcon />
+          <span className={`upload-icon${isUploading ? " is-uploading" : ""}`}>
+            {isUploading ? <SpinnerIcon /> : <UploadIcon />}
           </span>
           <strong>
             {selectedFile ? selectedFile.name : "Drop your statements here"}
@@ -242,27 +244,37 @@ export function StatementUpload() {
         {error ? <p className="statement-error">{error}</p> : null}
         {message ? <p className="statement-success">{message}</p> : null}
 
-        <button
-          className="statement-submit"
-          type="button"
-          onClick={
-            hasUploadedStatement
-              ? () => router.replace("/onboarding/processing")
+        <div className="statement-cta-group">
+          <button
+            className="statement-sample-btn"
+            type="button"
+            onClick={() => setIsSampleModalOpen(true)}
+          >
+            Check a sample Oneview
+          </button>
+
+          <button
+            className="statement-submit"
+            type="button"
+            onClick={
+              hasUploadedStatement
+                ? () => router.replace("/onboarding/processing")
+                : selectedFile
+                  ? handleUpload
+                  : undefined
+            }
+            disabled={isUploading || !selectedFile}
+          >
+            {hasUploadedStatement
+              ? "See your Oneview"
               : selectedFile
-                ? handleUpload
-                : undefined
-          }
-          disabled={isUploading || !selectedFile}
-        >
-          {hasUploadedStatement
-            ? "See your Oneview"
-            : selectedFile
-              ? isUploading
-                ? "Uploading..."
-                : "Upload statements"
-              : "Upload statements"}
-          <ArrowRightIcon />
-        </button>
+                ? isUploading
+                  ? "Uploading..."
+                  : "Upload statements"
+                : "Upload statements"}
+            <ArrowRightIcon />
+          </button>
+        </div>
 
         <p className="statement-security">
           Your data stays encrypted • 100% Safe and Secure
@@ -272,6 +284,11 @@ export function StatementUpload() {
       <DownloadInstructionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      <OneviewInfoModal
+        isOpen={isSampleModalOpen}
+        onClose={() => setIsSampleModalOpen(false)}
       />
     </main>
   );
@@ -303,6 +320,15 @@ function ArrowRightIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="spinner-icon">
+      <circle cx="9" cy="9" r="7" stroke="black" strokeOpacity="0.2" strokeWidth="2" />
+      <path d="M9 2a7 7 0 0 1 7 7" stroke="black" strokeOpacity="0.7" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }

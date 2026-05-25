@@ -42,6 +42,28 @@ const dottedGridPlugin = {
   },
 };
 
+const verticalLinePlugin = {
+  id: "verticalLine",
+  afterDatasetsDraw(chart: ChartJS) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tooltip = (chart as any).tooltip;
+    if (tooltip?._active?.length) {
+      const { ctx, chartArea } = chart;
+      const activePoint = tooltip._active[0];
+      const x = activePoint.element.x;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x, chartArea.top);
+      ctx.lineTo(x, chartArea.bottom);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(212, 200, 92, 0.5)";
+      ctx.stroke();
+      ctx.restore();
+    }
+  },
+};
+
 type Props = {
   series: ValuationSeriesPoint[];
   currency: string;
@@ -84,6 +106,9 @@ export default function PortfolioChart({ series, currency }: Props) {
         pointBorderColor: "rgba(212, 200, 92, 0.4)",
         pointBorderWidth: 4,
         pointHoverRadius: 6,
+        pointHoverBackgroundColor: "#d4c85c",
+        pointHoverBorderColor: "#d4c85c",
+        pointHoverBorderWidth: 2,
       },
     ],
   };
@@ -99,8 +124,49 @@ export default function PortfolioChart({ series, currency }: Props) {
   const options: any = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: "index",
+      intersect: false,
+    },
     plugins: {
-      tooltip: { enabled: false },
+      tooltip: {
+        enabled: true,
+        mode: "index",
+        intersect: false,
+        backgroundColor: "rgba(0, 0, 0, 0.85)",
+        titleColor: "rgba(255, 255, 255, 0.6)",
+        bodyColor: "#fff",
+        borderColor: "rgba(212, 200, 92, 0.3)",
+        borderWidth: 1,
+        padding: 12,
+        displayColors: false,
+        titleFont: {
+          size: 11,
+          weight: "500",
+          family: "Satoshi, var(--font-inter), sans-serif",
+        },
+        bodyFont: {
+          size: 14,
+          weight: "600",
+          family: "Satoshi, var(--font-inter), sans-serif",
+        },
+        callbacks: {
+          title: (tooltipItems) => {
+            const date = tooltipItems[0]?.label;
+            if (!date) return "";
+            const parsedDate = new Date(date + "T00:00:00");
+            return parsedDate.toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+          },
+          label: (context) => {
+            const value = context.parsed.y;
+            return formatLabel(value);
+          },
+        },
+      },
       legend: { display: false },
     },
     scales: {
@@ -133,7 +199,7 @@ export default function PortfolioChart({ series, currency }: Props) {
 
   return (
     <div className="portfolio-chart">
-      <Line data={data} options={options} plugins={[dottedGridPlugin]} />
+      <Line data={data} options={options} plugins={[dottedGridPlugin, verticalLinePlugin]} />
     </div>
   );
 }
