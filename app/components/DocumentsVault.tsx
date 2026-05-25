@@ -3,7 +3,7 @@
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import DocumentsTable, { type VaultDocument } from "./DocumentsTable";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
-import { deleteDocument, listDocuments, uploadDocument, type DocumentRecord } from "../lib/documentsApi";
+import { deleteDocument, listDocuments, uploadBrokerStatement, type DocumentRecord } from "../lib/documentsApi";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
@@ -157,12 +157,21 @@ export function DocumentsVault() {
         updateUploadItem(item.id, { status: "uploading", error: undefined });
 
         try {
-          await uploadDocument({
+          const response = await uploadBrokerStatement({
             file,
             name: file.name,
+            storeData: true,
+            useLlmFallback: true,
           });
-          successCount += 1;
-          updateUploadItem(item.id, { status: "complete" });
+          if (response.status === "error") {
+            updateUploadItem(item.id, {
+              status: "error",
+              error: response.error ?? "Unable to parse this statement.",
+            });
+          } else {
+            successCount += 1;
+            updateUploadItem(item.id, { status: "complete" });
+          }
         } catch (uploadError) {
           updateUploadItem(item.id, {
             status: "error",
