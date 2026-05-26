@@ -58,7 +58,7 @@ export function StatementUpload() {
     if (!profile) return;
 
     const emailPrefix = profile.email.split("@")[0];
-    const displayName = profile.display_name?.trim();
+    const displayName = profile.name?.trim();
 
     if (!displayName || displayName === emailPrefix) {
       router.replace("/profile/setup");

@@ -353,7 +353,7 @@ export function AuthFlow() {
 
 async function getPostProfileRouteFromStore(profile: Profile): Promise<string> {
   const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.display_name?.trim();
+  const displayName = profile.name?.trim();
 
   if (!displayName || displayName === emailPrefix) {
     return "/profile/setup";

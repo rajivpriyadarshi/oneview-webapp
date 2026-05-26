@@ -68,7 +68,7 @@ export function ProfileSetup() {
     setIsSubmitting(true);
 
     try {
-      const updatedProfile = await updateProfile({ display_name: trimmedName }).unwrap();
+      const updatedProfile = await updateProfile({ name: trimmedName }).unwrap();
       router.replace(await getPostProfileRoute(updatedProfile));
     } catch (requestError) {
       setError(
@@ -91,7 +91,7 @@ export function ProfileSetup() {
           <div className="profile-name-field">
             <input
               type="text"
-              name="display_name"
+              name="name"
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               placeholder="Enter your name"
@@ -120,7 +120,7 @@ export function ProfileSetup() {
 
 async function getPostProfileRoute(profile: Profile): Promise<string> {
   const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.display_name?.trim();
+  const displayName = profile.name?.trim();
 
   if (!displayName || displayName === emailPrefix) {
     return "/profile/setup";

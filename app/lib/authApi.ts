@@ -74,7 +74,7 @@ export async function authenticateWithGoogle(idToken: string): Promise<{
   user: {
     id: number;
     email: string;
-    display_name: string;
+    name: string;
   };
   created: boolean;
 }> {

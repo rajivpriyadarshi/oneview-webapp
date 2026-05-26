@@ -20,7 +20,7 @@ export const api = createApi({
   endpoints: (builder) => ({
     // Auth
     authenticateWithGoogle: builder.mutation<
-      { token: string; user: { id: number; email: string; display_name: string }; created: boolean },
+      { token: string; user: { id: number; email: string; name: string }; created: boolean },
       { id_token: string }
     >({
       query: (body) => ({ url: "/auth/google/", method: "POST", body }),
@@ -55,14 +55,14 @@ export const api = createApi({
 
     // Profile
     getProfile: builder.query<Profile, void>({
-      query: () => "/me/",
+      query: () => "/auth/me/",
       providesTags: ["Profile"],
     }),
     updateProfile: builder.mutation<
       Profile,
-      Partial<Pick<Profile, "display_name" | "base_currency" | "timezone">>
+      { name: string }
     >({
-      query: (body) => ({ url: "/me/", method: "PATCH", body }),
+      query: (body) => ({ url: "/auth/me/", method: "PATCH", body }),
       invalidatesTags: ["Profile"],
     }),
 

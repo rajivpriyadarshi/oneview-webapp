@@ -23,8 +23,8 @@ function formatLastUpdated(dateStr?: string) {
 export default function HomeHeader() {
   const { data: profile } = useGetProfileQuery();
 
-  const firstName = profile?.display_name?.trim().split(/\s+/)[0] || "";
-  const lastUpdated = formatLastUpdated(profile?.updated_at);
+  const firstName = profile?.name?.trim().split(/\s+/)[0] || "";
+  const lastUpdated = "";
 
   return (
     <header className="home-header">
