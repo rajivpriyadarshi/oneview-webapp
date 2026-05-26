@@ -14,9 +14,28 @@ type ChartSegment = {
   color: string;
 };
 
-const ASSET_COLORS = ["#f5e680", "#7c5ce7", "#f472b6", "#34d399", "#f97316"];
-const BROKER_COLORS = ["#7c5ce7", "#f472b6", "#f5e680", "#34d399", "#f97316"];
-const SECTOR_COLORS = ["#34d399", "#f97316", "#7c5ce7", "#f472b6", "#60a5fa"];
+// Color palette for charts - designed for visual distinction and accessibility
+const CHART_COLORS = [
+  "#5e68c4",
+  "#c45e7b",
+  "#ffda73", 
+  "#f2a96d", 
+  "#a1c45e",
+  "#5ea5c4",    
+  "#5d9c69", 
+  "#214b6b",   
+  "#9a9c35", 
+  "#66665f", 
+  "#94192a", 
+  "#679140", 
+  "#4a3034", 
+  "#86508a", 
+  "#bf6034", 
+];
+
+const ASSET_COLORS = CHART_COLORS;
+const BROKER_COLORS = CHART_COLORS;
+const SECTOR_COLORS = CHART_COLORS;
 
 export default function PortfolioExposure({ portfolioView }: Props) {
   const assetTypeData = useMemo(() => {
@@ -86,11 +105,11 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         </div>
 
         {hasSectorData && (
-          <div className="exposure-chart">
+          <div className="exposure-chart exposure-chart-sector">
             <p className="exposure-chart-label">
               By <strong>Sector allocation</strong>
             </p>
-            <LabeledDonut segments={sectorData} currency={currency} />
+            <SectorBarChart segments={sectorData} currency={currency} />
           </div>
         )}
       </div>
@@ -106,15 +125,27 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
   const cy = 150;
   const donutR = 80;
   const strokeW = 32;
+  const labelRadius = donutR + strokeW / 2 + 30;
 
-  let offset = 0;
+  let cumulativeAngle = 0;
   const segmentsWithAngles = segments.map((seg) => {
     const dashLength = (seg.percentage / 100) * circumference;
-    offset += dashLength;
-    return { ...seg, dashLength };
+    const startAngle = cumulativeAngle;
+    const angleSpan = (seg.percentage / 100) * 360;
+    const midAngle = startAngle + angleSpan / 2;
+    cumulativeAngle += angleSpan;
+    return { ...seg, dashLength, midAngle };
   });
 
   let drawOffset = 0;
+
+  const getHoverLabelPosition = (angle: number) => {
+    const radians = (angle * Math.PI) / 180;
+    const x = cx + labelRadius * Math.cos(radians);
+    const y = cy + labelRadius * Math.sin(radians);
+    const anchor = angle > 90 && angle < 270 ? "end" : "start";
+    return { x, y, anchor };
+  };
 
   return (
     <div className="donut-container">
@@ -147,39 +178,64 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
               return el;
             })}
           </g>
-          {hoveredIndex !== null && (
-            <g className="donut-hover-label">
-              <text
-                x={cx}
-                y={cy - 10}
-                textAnchor="middle"
-                fontSize="16"
-                fontWeight="700"
-                fill="#1a1a1a"
-              >
-                {segments[hoveredIndex].label}
-              </text>
-              <text
-                x={cx}
-                y={cy + 12}
-                textAnchor="middle"
-                fontSize="14"
-                fill="#6f6f6f"
-              >
-                {currSymbol}{formatValue(segments[hoveredIndex].value)}
-              </text>
-              <text
-                x={cx}
-                y={cy + 30}
-                textAnchor="middle"
-                fontSize="13"
-                fontWeight="600"
-                fill={segments[hoveredIndex].color}
-              >
-                {segments[hoveredIndex].percentage.toFixed(1)}%
-              </text>
-            </g>
-          )}
+          {hoveredIndex !== null && (() => {
+            const pos = getHoverLabelPosition(segmentsWithAngles[hoveredIndex].midAngle);
+            const label = segments[hoveredIndex].label;
+            const value = `${currSymbol}${formatValue(segments[hoveredIndex].value)}`;
+            const pct = `${segments[hoveredIndex].percentage.toFixed(1)}%`;
+
+            // Estimate box width based on longest text (rough approximation: 7px per char for label, 6px for others)
+            const labelWidth = label.length * 7;
+            const valueWidth = value.length * 6;
+            const pctWidth = pct.length * 6;
+            const boxWidth = Math.max(labelWidth, valueWidth, pctWidth, 100) + 24; // +24 for padding
+            const boxHeight = 56;
+            const boxX = pos.anchor === "end" ? pos.x - boxWidth : pos.x;
+            const textX = boxX + boxWidth / 2;
+
+            return (
+              <g className="donut-hover-label" style={{ zIndex: 1000 }}>
+                <rect
+                  x={boxX}
+                  y={pos.y - 28}
+                  width={boxWidth}
+                  height={boxHeight}
+                  rx="8"
+                  fill="white"
+                  filter="drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15))"
+                />
+                <text
+                  x={textX}
+                  y={pos.y - 10}
+                  textAnchor="middle"
+                  fontSize="13"
+                  fontWeight="700"
+                  fill="#1a1a1a"
+                >
+                  {label}
+                </text>
+                <text
+                  x={textX}
+                  y={pos.y + 8}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fill="#6f6f6f"
+                >
+                  {value}
+                </text>
+                <text
+                  x={textX}
+                  y={pos.y + 22}
+                  textAnchor="middle"
+                  fontSize="12"
+                  fontWeight="600"
+                  fill={segments[hoveredIndex].color}
+                >
+                  {pct}
+                </text>
+              </g>
+            );
+          })()}
         </svg>
       </div>
       <div className="donut-legends">
@@ -203,6 +259,92 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function SectorBarChart({ segments, currency }: { segments: ChartSegment[]; currency: string }) {
+  const [hoveredBar, setHoveredBar] = useState<string | null>(null);
+  const currSymbol = currency === "USD" ? "$" : "₹";
+
+  const top5 = segments.slice(0, 5);
+  const others = segments.slice(5);
+  const othersTotal = others.reduce((sum, seg) => sum + seg.percentage, 0);
+
+  return (
+    <div className="sector-bar-container">
+      <div className="sector-items">
+        {top5.map((seg) => (
+          <div
+            key={seg.label}
+            className="sector-item"
+            onMouseEnter={() => setHoveredBar(seg.label)}
+            onMouseLeave={() => setHoveredBar(null)}
+            style={{
+              opacity: hoveredBar && hoveredBar !== seg.label ? 0.3 : 1,
+              transition: 'opacity 0.2s ease',
+            }}
+          >
+            <div className="sector-item-header">
+              <span className="sector-item-label">{seg.label}</span>
+              <span className="sector-item-value">{seg.percentage.toFixed(2)}%</span>
+            </div>
+            <div className="sector-bar-wrapper">
+              <div
+                className="sector-bar"
+                style={{
+                  width: `${seg.percentage}%`,
+                  backgroundColor: seg.color,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+        {others.length > 0 && (
+          <div
+            className="sector-item sector-item-others"
+            onMouseEnter={() => setHoveredBar('others')}
+            onMouseLeave={() => setHoveredBar(null)}
+            style={{
+              opacity: hoveredBar && hoveredBar !== 'others' ? 0.3 : 1,
+              transition: 'opacity 0.2s ease',
+            }}
+          >
+            <div className="sector-item-header">
+              <span className="sector-item-label">+{others.length} more</span>
+              <span className="sector-item-value">{othersTotal.toFixed(2)}%</span>
+            </div>
+            <div className="sector-bar-wrapper sector-bar-combined">
+              {others.map((seg, i) => {
+                const prevWidths = others.slice(0, i).reduce((sum, s) => sum + s.percentage, 0);
+                return (
+                  <div
+                    key={seg.label}
+                    className="sector-bar-segment"
+                    style={{
+                      width: `${(seg.percentage / othersTotal) * 100}%`,
+                      backgroundColor: seg.color,
+                    }}
+                  />
+                );
+              })}
+            </div>
+            {hoveredBar === 'others' && (
+              <div className="sector-tooltip">
+                <div className="sector-tooltip-content">
+                  {others.map((seg) => (
+                    <div key={seg.label} className="sector-tooltip-item">
+                      <div className="sector-tooltip-color" style={{ backgroundColor: seg.color }} />
+                      <span className="sector-tooltip-label">{seg.label}</span>
+                      <span className="sector-tooltip-value">{seg.percentage.toFixed(2)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

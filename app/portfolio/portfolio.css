@@ -385,11 +385,13 @@ select.filter-btn option {
   padding: 14px 10px;
   background: #fff;
   min-width: 0;
+  overflow: visible;
+  position: relative;
 }
 
 .exposure-chart-label {
   margin: 0 0 10px;
-  font-size: 16px;
+  font-size: 22px;
   color: var(--muted);
   text-align: center;
 }
@@ -412,23 +414,27 @@ select.filter-btn option {
 
 .donut-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   width: 100%;
-  justify-content: center;
   padding: 0;
-  min-width: 0;
+  overflow: visible;
+  position: relative;
 }
 
 .donut-chart-wrapper {
   flex-shrink: 0;
-  width: 150px;
-  height: 150px;
+  width: 70%;
+  aspect-ratio: 1;
+  position: relative;
+  overflow: visible;
 }
 
 .donut-chart {
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
 .donut-segment {
@@ -437,19 +443,18 @@ select.filter-btn option {
 
 .donut-hover-label {
   pointer-events: none;
+  z-index: 1000;
 }
 
 .donut-legends {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  max-height: 150px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px 30px;
+  width: 100%;
+  max-height: 200px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 6px;
+  padding: 0 32px;
 }
 
 .donut-legends::-webkit-scrollbar {
@@ -472,9 +477,10 @@ select.filter-btn option {
 
 .legend-item {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 8px;
   transition: opacity 0.2s ease;
+  width: 100%;
 }
 
 .legend-color {
@@ -482,41 +488,192 @@ select.filter-btn option {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  margin-top: 4px;
 }
 
 .legend-text {
   display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-wrap: nowrap;
-  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
   flex: 1;
+  min-width: 0;
 }
 
 .legend-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   color: #1a1a1a;
-  line-height: 1.3;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.legend-label::after {
-  content: "•";
-  margin-left: 4px;
-  margin-right: 2px;
-  color: #d1d1d1;
-}
-
-.legend-value {
-  font-size: 11px;
-  color: #6f6f6f;
   line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
+}
+
+.legend-label::after {
+  content: "";
+}
+
+.legend-value {
+  font-size: 13px;
+  color: #6f6f6f;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+/* Sector Bar Chart */
+
+.sector-bar-container {
+  width: 100%;
+  padding: 20px 0;
+}
+
+.sector-items {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sector-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.sector-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sector-item-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.sector-item-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.sector-bar-wrapper {
+  width: 100%;
+  height: 28px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.sector-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.sector-bar-combined {
+  display: flex;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.sector-bar-combined:hover {
+  opacity: 0.9;
+}
+
+.sector-bar-segment {
+  height: 100%;
+}
+
+.sector-item-others {
+  position: relative;
+}
+
+.sector-item-others::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 16px;
+  pointer-events: auto;
+}
+
+.sector-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  z-index: 20;
+  max-height: 300px;
+  overflow: hidden;
+}
+
+.sector-tooltip-content {
+  max-height: 268px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+
+.sector-tooltip-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sector-tooltip-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
+}
+
+.sector-tooltip-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.sector-tooltip-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.sector-tooltip-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.sector-tooltip-item:last-child {
+  border-bottom: none;
+}
+
+.sector-tooltip-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.sector-tooltip-label {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5a5a5a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sector-tooltip-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+  flex-shrink: 0;
 }
 
 /* Holdings Table */

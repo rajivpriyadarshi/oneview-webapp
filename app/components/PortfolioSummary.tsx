@@ -46,9 +46,6 @@ export default function PortfolioSummary({
           </p>
         </div>
         <div className="portfolio-meta">
-          <span className="portfolio-date">
-            Prices as of <strong>{formatDate(portfolioView?.as_of_date)}</strong>
-          </span>
           <div className="portfolio-filters">
             <div className="filter-select-wrapper">
               <select
