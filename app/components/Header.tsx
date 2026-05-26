@@ -37,7 +37,7 @@ export default function Header({
           {showAddMoreBtn && (
             <Link href="/documents-vault" className="add-more-btn">
               <PlusIcon />
-              Add more
+              Add documents
             </Link>
           )}
           {showUploadBtn && (

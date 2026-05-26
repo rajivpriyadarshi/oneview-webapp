@@ -25,7 +25,7 @@ export default function DashboardHeader({ updatedAt }: Props) {
       </div>
       <Link href="/documents-vault" className="add-more-btn">
         <PlusIcon />
-        Add more
+        Add documents
       </Link>
     </header>
   );

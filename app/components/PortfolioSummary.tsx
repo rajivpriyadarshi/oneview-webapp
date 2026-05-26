@@ -68,16 +68,19 @@ export default function PortfolioSummary({
               </select>
               <ChevronDown />
             </div>
-            <div className="filter-select-wrapper">
-              <select
-                className="filter-btn"
-                value={currency}
-                onChange={(e) => onCurrencyChange(e.target.value)}
+            <div className="currency-toggle">
+              <button
+                className={`currency-option ${currency === "INR" ? "active" : ""}`}
+                onClick={() => onCurrencyChange("INR")}
               >
-                <option value="INR">INR</option>
-                <option value="USD">USD</option>
-              </select>
-              <ChevronDown />
+                INR
+              </button>
+              <button
+                className={`currency-option ${currency === "USD" ? "active" : ""}`}
+                onClick={() => onCurrencyChange("USD")}
+              >
+                USD
+              </button>
             </div>
           </div>
         </div>
