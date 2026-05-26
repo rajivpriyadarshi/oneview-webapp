@@ -16,21 +16,24 @@ type ChartSegment = {
 
 // Color palette for charts - designed for visual distinction and accessibility
 const CHART_COLORS = [
-  "#5e68c4",
-  "#c45e7b",
-  "#ffda73", 
-  "#f2a96d", 
-  "#a1c45e",
-  "#5ea5c4",    
-  "#5d9c69", 
-  "#214b6b",   
-  "#9a9c35", 
-  "#66665f", 
-  "#94192a", 
-  "#679140", 
-  "#4a3034", 
-  "#86508a", 
-  "#bf6034", 
+  "#FE5D26",
+  "#388DE8",
+  "#CE8016",
+  "#6438E8",
+  "#59886B",
+  "#444444",    
+  "#FFC75F",    
+  "#9EDE73", 
+  "#184D47",   
+  "#D2DB20", 
+  "#939191",  
+  "#76FDB0", 
+  "#2F2B2C", 
+  "#FFB2FC", 
+  "#B0EDFF",
+  "#A3A1FB",
+  "#7A2783",
+  "#F46396"
 ];
 
 const ASSET_COLORS = CHART_COLORS;
