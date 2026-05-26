@@ -43,6 +43,19 @@ function getCurrencySymbol(currency?: string): string {
   }
 }
 
+function formatCurrencyAmount(value: number, currency?: string) {
+  return `${getCurrencySymbol(currency)}${value.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function formatNumber(value: number) {
+  return value.toLocaleString("en-IN", {
+    maximumFractionDigits: 2,
+  });
+}
+
 export default function HoldingsTable({ positions, loading }: Props) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -73,8 +86,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
         header: "Quantity",
         sortingFn: "basic",
         cell: (info) => {
-          const num = info.getValue();
-          return num % 1 === 0 ? num.toString() : num.toFixed(4).replace(/0+$/, "");
+          return formatNumber(info.getValue());
         },
       }),
       columnHelper.accessor((row) => row.cost_basis > 0 && row.quantity > 0 ? row.market_value / row.quantity : 0, {
@@ -84,24 +96,21 @@ export default function HoldingsTable({ positions, loading }: Props) {
         cell: (info) => {
           const row = info.row.original;
           const price = row.quantity > 0 ? row.market_value / row.quantity : 0;
-          const symbol = getCurrencySymbol(row.currency);
-          return price > 0 ? `${symbol}${price.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—";
+          return price > 0 ? formatCurrencyAmount(price, row.currency) : "—";
         },
       }),
       columnHelper.accessor("market_value", {
         header: "Market value",
         sortingFn: "basic",
         cell: (info) => {
-          const symbol = getCurrencySymbol(info.row.original.currency);
-          return `${symbol}${info.getValue().toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+          return formatCurrencyAmount(info.getValue(), info.row.original.currency);
         },
       }),
       columnHelper.accessor("cost_basis", {
         header: "Cost basis",
         sortingFn: "basic",
         cell: (info) => {
-          const symbol = getCurrencySymbol(info.row.original.currency);
-          return `${symbol}${info.getValue().toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+          return formatCurrencyAmount(info.getValue(), info.row.original.currency);
         },
       }),
       columnHelper.accessor("gain_amount", {
@@ -113,11 +122,10 @@ export default function HoldingsTable({ positions, loading }: Props) {
           const gainAmount = row.gain_amount;
           const gainPct = row.gain_pct ?? (row.cost_basis > 0 ? (gainAmount / row.cost_basis) * 100 : 0);
           const isPositive = gainAmount >= 0;
-          const symbol = getCurrencySymbol(row.currency);
 
           return (
             <span className={`td-gain ${isPositive ? "positive" : "negative"}`}>
-              {isPositive ? "+" : "-"}{symbol}{Math.abs(gainAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })} ({isPositive ? "+" : ""}{gainPct.toFixed(2)}%)
+              {isPositive ? "+" : "-"}{formatCurrencyAmount(Math.abs(gainAmount), row.currency)} ({isPositive ? "+" : ""}{gainPct.toFixed(2)}%)
             </span>
           );
         },

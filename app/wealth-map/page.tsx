@@ -155,7 +155,7 @@ function SankeyChart() {
         callbacks: {
           label: (ctx: { raw: { from: string; to: string; flow: number } }) => {
             const { from, to, flow } = ctx.raw;
-            return `${from} → ${to}: $${flow.toLocaleString()}`;
+            return `${from} → ${to}: $${flow.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
           },
         },
       },
