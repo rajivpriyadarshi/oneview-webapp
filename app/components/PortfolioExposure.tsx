@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { type PortfolioViewResponse } from "../lib/portfolioDataApi";
 
 type Props = {
@@ -97,110 +97,111 @@ export default function PortfolioExposure({ portfolioView }: Props) {
 }
 
 function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; currency: string }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const circumference = 2 * Math.PI * 80;
   const currSymbol = currency === "USD" ? "$" : "₹";
-  const cx = 200;
-  const cy = 180;
+  const cx = 150;
+  const cy = 150;
   const donutR = 80;
   const strokeW = 32;
-  const outerEdge = donutR + strokeW / 2;
 
   let offset = 0;
   const segmentsWithAngles = segments.map((seg) => {
     const dashLength = (seg.percentage / 100) * circumference;
-    const startAngle = (offset / circumference) * 360 - 90;
-    const midAngle = startAngle + ((seg.percentage / 100) * 360) / 2;
     offset += dashLength;
-    return { ...seg, midAngle, dashLength };
+    return { ...seg, dashLength };
   });
 
   let drawOffset = 0;
 
-  const labelPositions = (() => {
-    const positions: { finalY: number; seg: typeof segmentsWithAngles[0]; isRight: boolean }[] = [];
-    const minGap = 44;
-
-    for (const seg of segmentsWithAngles) {
-      const rad = (seg.midAngle * Math.PI) / 180;
-      const isRight = Math.cos(rad) >= 0;
-      let finalY = cy + 120 * Math.sin(rad);
-
-      for (const placed of positions) {
-        if ((isRight && placed.isRight) || (!isRight && !placed.isRight)) {
-          const dy = Math.abs(finalY - placed.finalY);
-          if (dy < minGap) {
-            finalY = placed.finalY + (finalY > placed.finalY ? minGap : -minGap);
-          }
-        }
-      }
-
-      positions.push({ finalY, seg, isRight });
-    }
-    return positions;
-  })();
-
   return (
-    <div className="donut-labeled-container">
-      <svg viewBox="0 0 400 360" className="donut-labeled">
-        {segmentsWithAngles.map((seg) => {
-          const el = (
-            <circle
-              key={seg.label}
-              cx={cx}
-              cy={cy}
-              r={donutR}
-              fill="none"
-              stroke={seg.color}
-              strokeWidth={strokeW}
-              strokeDasharray={`${seg.dashLength} ${circumference}`}
-              strokeDashoffset={-drawOffset}
-              transform={`rotate(-90 ${cx} ${cy})`}
-            />
-          );
-          drawOffset += seg.dashLength;
-          return el;
-        })}
-        {labelPositions.map(({ finalY, seg, isRight }) => {
-          const rad = (seg.midAngle * Math.PI) / 180;
-          const edgeX = cx + outerEdge * Math.cos(rad);
-          const edgeY = cy + outerEdge * Math.sin(rad);
-          const horizEnd = isRight ? 310 : 90;
-          const dotX = horizEnd;
-          const labelX = isRight ? dotX + 14 : dotX - 14;
-          const anchor = isRight ? "start" : "end";
-
-          return (
-            <g key={seg.label}>
-              <polyline
-                points={`${edgeX},${edgeY} ${isRight ? edgeX + 15 : edgeX - 15},${finalY} ${horizEnd},${finalY}`}
-                fill="none"
-                stroke="#1a1a1a"
-                strokeWidth="1"
-              />
-              <circle cx={dotX} cy={finalY} r="4.5" fill={seg.color} />
+    <div className="donut-container">
+      <div className="donut-chart-wrapper">
+        <svg viewBox="0 0 300 300" className="donut-chart">
+          <g>
+            {segmentsWithAngles.map((seg, i) => {
+              const el = (
+                <circle
+                  key={seg.label}
+                  cx={cx}
+                  cy={cy}
+                  r={donutR}
+                  fill="none"
+                  stroke={seg.color}
+                  strokeWidth={strokeW}
+                  strokeDasharray={`${seg.dashLength} ${circumference}`}
+                  strokeDashoffset={-drawOffset}
+                  transform={`rotate(-90 ${cx} ${cy})`}
+                  onMouseEnter={() => setHoveredIndex(i)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  className="donut-segment"
+                  style={{
+                    opacity: hoveredIndex === null || hoveredIndex === i ? 1 : 0.4,
+                    cursor: 'pointer',
+                  }}
+                />
+              );
+              drawOffset += seg.dashLength;
+              return el;
+            })}
+          </g>
+          {hoveredIndex !== null && (
+            <g className="donut-hover-label">
               <text
-                x={labelX}
-                y={finalY + 4}
-                textAnchor={anchor}
-                fontSize="13"
+                x={cx}
+                y={cy - 10}
+                textAnchor="middle"
+                fontSize="16"
                 fontWeight="700"
                 fill="#1a1a1a"
               >
-                {seg.label}
+                {segments[hoveredIndex].label}
               </text>
               <text
-                x={labelX}
-                y={finalY + 20}
-                textAnchor={anchor}
-                fontSize="11"
+                x={cx}
+                y={cy + 12}
+                textAnchor="middle"
+                fontSize="14"
                 fill="#6f6f6f"
               >
-                {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
+                {currSymbol}{formatValue(segments[hoveredIndex].value)}
+              </text>
+              <text
+                x={cx}
+                y={cy + 30}
+                textAnchor="middle"
+                fontSize="13"
+                fontWeight="600"
+                fill={segments[hoveredIndex].color}
+              >
+                {segments[hoveredIndex].percentage.toFixed(1)}%
               </text>
             </g>
-          );
-        })}
-      </svg>
+          )}
+        </svg>
+      </div>
+      <div className="donut-legends">
+        {segments.map((seg, i) => (
+          <div
+            key={seg.label}
+            className="legend-item"
+            onMouseEnter={() => setHoveredIndex(i)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            style={{
+              opacity: hoveredIndex === null || hoveredIndex === i ? 1 : 0.4,
+              cursor: 'pointer',
+            }}
+          >
+            <div className="legend-color" style={{ backgroundColor: seg.color }} />
+            <div className="legend-text">
+              <span className="legend-label">{seg.label}</span>
+              <span className="legend-value">
+                {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
