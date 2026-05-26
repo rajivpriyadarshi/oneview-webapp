@@ -3,7 +3,7 @@ import { apiRequest } from "./apiClient";
 export type ApiUser = {
   id: number;
   email: string;
-  display_name: string;
+  name: string;
 };
 
 export type AuthSession = {
@@ -16,12 +16,8 @@ export type PasswordlessAuthSession = AuthSession & {
 };
 
 export type Profile = {
-  display_name: string;
-  base_currency: string;
-  timezone: string;
+  name: string;
   email: string;
-  is_active: boolean;
-  updated_at?: string;
 };
 
 export function initiateSignup(input: {
@@ -93,11 +89,11 @@ export function logout() {
 }
 
 export function getProfile() {
-  return apiRequest<Profile>("/me/");
+  return apiRequest<Profile>("/auth/me/");
 }
 
-export function updateProfile(input: Partial<Pick<Profile, "display_name" | "base_currency" | "timezone">>) {
-  return apiRequest<Profile>("/me/", {
+export function updateProfile(input: { name: string }) {
+  return apiRequest<Profile>("/auth/me/", {
     method: "PATCH",
     body: input,
   });

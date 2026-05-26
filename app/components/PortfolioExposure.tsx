@@ -62,13 +62,15 @@ export default function PortfolioExposure({ portfolioView }: Props) {
 
   const currency = portfolioView?.currency || "INR";
 
+  const hasSectorData = sectorData.length > 0;
+
   return (
     <section className="portfolio-exposure">
       <h3 className="exposure-title">
         <ExposureIcon />
         Portfolio Exposure
       </h3>
-      <div className="exposure-charts">
+      <div className={`exposure-charts ${!hasSectorData ? 'two-charts' : ''}`}>
         <div className="exposure-chart">
           <p className="exposure-chart-label">
             By <strong>Asset type</strong>
@@ -83,7 +85,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
           <LabeledDonut segments={brokerData} currency={currency} />
         </div>
 
-        {sectorData.length > 0 && (
+        {hasSectorData && (
           <div className="exposure-chart">
             <p className="exposure-chart-label">
               By <strong>Sector allocation</strong>

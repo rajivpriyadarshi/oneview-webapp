@@ -369,21 +369,25 @@ select.filter-btn option {
 
 .exposure-charts {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: minmax(250px, 1fr) minmax(250px, 1fr) minmax(350px, 2fr);
   gap: 1px;
   background: rgba(0, 0, 0, 0.06);
+}
+
+.exposure-charts.two-charts {
+  grid-template-columns: 1fr 1fr;
 }
 
 .exposure-chart {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 32px 40px;
+  padding: 20px 12px;
   background: #fff;
 }
 
 .exposure-chart-label {
-  margin: 0 0 32px;
+  margin: 0 0 20px;
   font-size: 16px;
   color: var(--muted);
   text-align: center;
@@ -407,16 +411,17 @@ select.filter-btn option {
 
 .donut-container {
   display: flex;
-  align-items: center;
-  gap: 48px;
+  align-items: flex-start;
+  gap: 20px;
   width: 100%;
-  justify-content: center;
+  justify-content: flex-start;
+  padding: 0 8px;
 }
 
 .donut-chart-wrapper {
   flex-shrink: 0;
-  width: 200px;
-  height: 200px;
+  width: 120px;
+  height: 120px;
 }
 
 .donut-chart {
@@ -436,51 +441,79 @@ select.filter-btn option {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   min-width: 0;
+  max-height: 120px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+}
+
+.donut-legends::-webkit-scrollbar {
+  width: 4px;
+}
+
+.donut-legends::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 2px;
+}
+
+.donut-legends::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+.donut-legends::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   transition: opacity 0.2s ease;
 }
 
 .legend-color {
   flex-shrink: 0;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
 }
 
 .legend-text {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: nowrap;
-  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .legend-label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: #1a1a1a;
-  line-height: 1.4;
+  line-height: 1.3;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .legend-label::after {
   content: "•";
-  margin-left: 8px;
+  margin-left: 4px;
+  margin-right: 2px;
   color: #d1d1d1;
 }
 
 .legend-value {
-  font-size: 13px;
+  font-size: 11px;
   color: #6f6f6f;
-  line-height: 1.4;
-  flex-shrink: 0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .donut-container {

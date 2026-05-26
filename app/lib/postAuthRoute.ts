@@ -3,7 +3,7 @@ import type { Profile } from "./realAuthApi";
 
 export async function getPostProfileRoute(profile: Profile) {
   const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.display_name?.trim();
+  const displayName = profile.name?.trim();
 
   if (!displayName || displayName === emailPrefix) {
     return "/profile/setup";
