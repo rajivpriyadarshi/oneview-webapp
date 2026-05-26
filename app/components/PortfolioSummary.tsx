@@ -5,6 +5,7 @@ import { type Portfolio } from "../lib/portfoliosApi";
 type Props = {
   portfolioView: PortfolioViewResponse | null;
   loading: boolean;
+  chartLoading: boolean;
   accounts: Account[];
   selectedAccountId: number | "all";
   onAccountChange: (accountId: number | "all") => void;
@@ -19,6 +20,7 @@ type Props = {
 export default function PortfolioSummary({
   portfolioView,
   loading,
+  chartLoading,
   accounts,
   selectedAccountId,
   onAccountChange,
@@ -82,7 +84,7 @@ export default function PortfolioSummary({
           </div>
         </div>
       </div>
-      <PortfolioChart series={valuationSeries} currency={currency} />
+      <PortfolioChart series={valuationSeries} currency={currency} loading={chartLoading} />
     </section>
   );
 }

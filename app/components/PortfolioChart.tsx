@@ -45,9 +45,10 @@ const dottedGridPlugin = {
 type Props = {
   series: ValuationSeriesPoint[];
   currency: string;
+  loading: boolean;
 };
 
-export default function PortfolioChart({ series, currency }: Props) {
+export default function PortfolioChart({ series, currency, loading }: Props) {
   const currSymbol = currency === "USD" ? "$" : "₹";
 
   const labels = series.map((p) => p.date);
@@ -195,7 +196,14 @@ export default function PortfolioChart({ series, currency }: Props) {
 
   return (
     <div className="portfolio-chart">
-      <Line data={data} options={options} plugins={[dottedGridPlugin]} />
+      {loading ? (
+        <div className="portfolio-chart-skeleton" aria-label="Loading chart">
+          <div className="portfolio-chart-skeleton-grid" />
+          <div className="portfolio-chart-skeleton-line" />
+        </div>
+      ) : (
+        <Line data={data} options={options} plugins={[dottedGridPlugin]} />
+      )}
     </div>
   );
 }

@@ -50,7 +50,7 @@ export default function DashboardPage() {
     { skip: !activePortfolioId },
   );
 
-  const { data: valuationsData } = useGetValuationsViewQuery(
+  const { data: valuationsData, isFetching: valuationsFetching } = useGetValuationsViewQuery(
     { accountIds, currency, fromDate, toDate },
     { skip: !activePortfolioId },
   );
@@ -93,6 +93,7 @@ export default function DashboardPage() {
               <PortfolioSummary
             portfolioView={portfolioView ?? null}
             loading={loading}
+            chartLoading={valuationsFetching}
             accounts={accounts}
             selectedAccountId={selectedAccountId}
             onAccountChange={handleAccountChange}
