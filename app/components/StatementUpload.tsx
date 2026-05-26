@@ -296,7 +296,7 @@ export function StatementUpload() {
         </label>
 
         <div className="statement-brokers">
-          <span className="brokers-text">We accepts</span>
+          <span className="brokers-text">We accept</span>
           <div className="broker-icons">
             <img src="/broker-icons/fidelity.png" alt="Fidelity" className="broker-icon" />
             <img src="/broker-icons/zerodha.png" alt="Zerodha" className="broker-icon" />

@@ -255,7 +255,7 @@ export function DocumentsVault() {
         </div>
         <div className="docs-vault-header-right">
           <div className="docs-vault-brokers">
-            <span className="brokers-text">We accepts</span>
+            <span className="brokers-text">We accept</span>
             <div className="broker-icons">
               <img src="/broker-icons/groww.png" alt="Groww" className="broker-icon" />
               <img src="/broker-icons/fidelity.png" alt="Fidelity" className="broker-icon" />
