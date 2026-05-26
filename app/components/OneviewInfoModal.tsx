@@ -16,7 +16,26 @@ interface OneviewInfoModalProps {
 export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
   const [activeSlide, setActiveSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
   const totalSlides = CAROUSEL_IMAGES.length;
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
+      return;
+    }
+
+    if (shouldRender) {
+      setIsClosing(true);
+      const timeout = setTimeout(() => {
+        setShouldRender(false);
+        setIsClosing(false);
+      }, 280);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen, shouldRender]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -43,11 +62,11 @@ export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
     }
   }, [activeSlide, totalSlides]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="oneview-info-modal" onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay${isClosing ? " is-closing" : ""}`} onClick={onClose}>
+      <div className={`oneview-info-modal${isClosing ? " is-closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <button className="oneview-info-close" onClick={onClose} aria-label="Close modal">
           <CloseIcon />
         </button>
@@ -55,13 +74,13 @@ export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
         <div className="oneview-info-header">
           <div className="oneview-info-badge">
             <SparkleIcon />
-            See what Oneview can do for you
+            See what Meridian Oneview can do for you
           </div>
           <h2 className="oneview-info-title">
             The most comprehensive view of your entire portfolio. Anywhere in the world!
           </h2>
           <p className="oneview-info-description">
-            Oneview brings all your investments together in one secure dashboard so you can see the complete picture and make smarter decisions.
+            Meridian Oneview brings all your investments together in one secure dashboard so you can see the complete picture and make smarter decisions.
           </p>
         </div>
 
@@ -131,7 +150,7 @@ export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
         </div>
 
         <button className="oneview-info-cta" onClick={onClose} type="button">
-          Create my Oneview
+          Create my Meridian
         </button>
         <p className="oneview-info-time">Takes only 2 minutes</p>
       </div>

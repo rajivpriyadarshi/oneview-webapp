@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ReactNode } from "react";
 
 type Step = {
   text: string;
@@ -91,6 +92,52 @@ export function DownloadInstructionModal({ isOpen, onClose }: DownloadInstructio
     setDropdownOpen(false);
   }
 
+  function renderStepText(step: Step): ReactNode {
+    if (!step.highlight) {
+      return step.text;
+    }
+
+    const [beforeHighlight, afterHighlight = ""] = step.text.split(step.highlight, 2);
+
+    if (!step.highlight2) {
+      return (
+        <>
+          {beforeHighlight}
+          <strong>{step.highlight}</strong>
+          {afterHighlight}
+        </>
+      );
+    }
+
+    const [betweenHighlightAndHighlight2, afterHighlight2 = ""] = afterHighlight.split(step.highlight2, 2);
+
+    if (!step.highlight3) {
+      return (
+        <>
+          {beforeHighlight}
+          <strong>{step.highlight}</strong>
+          {betweenHighlightAndHighlight2}
+          {step.highlight2}
+          {afterHighlight2}
+        </>
+      );
+    }
+
+    const [betweenHighlight2AndHighlight3, afterHighlight3 = ""] = afterHighlight2.split(step.highlight3, 2);
+
+    return (
+      <>
+        {beforeHighlight}
+        <strong>{step.highlight}</strong>
+        {betweenHighlightAndHighlight2}
+        {step.highlight2}
+        <strong>{step.highlight3}</strong>
+        {betweenHighlight2AndHighlight3}
+        {afterHighlight3}
+      </>
+    );
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
@@ -137,13 +184,7 @@ export function DownloadInstructionModal({ isOpen, onClose }: DownloadInstructio
           {selectedBroker.steps.map((step, index) => (
             <li key={index} className="instruction-step">
               <span className="step-number">{index + 1}</span>
-              <span className="step-text">
-                {step.text.split(step.highlight || "")[0]}
-                {step.highlight && <strong>{step.highlight}</strong>}
-                {step.text.split(step.highlight || "")[1]?.split(step.highlight2 || "")[0]}
-                {step.highlight2 && <>{step.highlight2}<strong>{step.highlight3}</strong></>}
-                {step.text.split(step.highlight3 || "").pop()?.replace(step.text, "")}
-              </span>
+              <span className="step-text">{renderStepText(step)}</span>
             </li>
           ))}
         </ol>

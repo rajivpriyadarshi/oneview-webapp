@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, CSSProperties, DragEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand } from "./BrandMarks";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
@@ -19,7 +19,7 @@ export function StatementUpload() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const uploadProgressTimerRef = useRef<number | null>(null);
-  const uploadRedirectTimerRef = useRef<number | null>(null);
+  const uploadRequestRef = useRef<{ abort?: () => void } | null>(null);
   const [firstName, setFirstName] = useState("there");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -31,6 +31,7 @@ export function StatementUpload() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [hasStartedUploadFlow, setHasStartedUploadFlow] = useState(false);
   const showUploadProgress = isUploading || hasUploadedStatement;
 
   const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
@@ -65,21 +66,17 @@ export function StatementUpload() {
       return;
     }
 
-    if (portfolios && portfolios.length > 0) {
+    if (!hasStartedUploadFlow && portfolios && portfolios.length > 0) {
       router.replace("/dashboard");
       return;
     }
 
     setFirstName(displayName.split(/\s+/)[0]);
-  }, [router, profile, profileError, portfolios]);
+  }, [router, profile, profileError, portfolios, hasStartedUploadFlow]);
 
   useEffect(() => {
     return () => {
       clearUploadProgressTimer();
-
-      if (uploadRedirectTimerRef.current) {
-        window.clearTimeout(uploadRedirectTimerRef.current);
-      }
     };
   }, []);
 
@@ -112,6 +109,7 @@ export function StatementUpload() {
   }
 
   function selectFile(file: File) {
+    setHasStartedUploadFlow(true);
     setError("");
     setMessage("");
     setHasUploadedStatement(false);
@@ -135,10 +133,16 @@ export function StatementUpload() {
     }
 
     setSelectedFile(file);
+    void handleUpload(file);
   }
 
-  async function handleUpload() {
-    if (!selectedFile) {
+  async function handleUpload(fileToUpload?: File) {
+    if (isUploading) {
+      return;
+    }
+
+    const uploadFile = fileToUpload ?? selectedFile;
+    if (!uploadFile) {
       setError("Choose a statement to upload first.");
       return;
     }
@@ -150,13 +154,15 @@ export function StatementUpload() {
     startUploadProgressAnimation();
 
     try {
-      const response = await uploadBrokerStatement({
-        file: selectedFile,
-        name: selectedFile.name,
+      const request = uploadBrokerStatement({
+        file: uploadFile,
+        name: uploadFile.name,
         storeData: true,
         portfolioName: "Main Portfolio",
         useLlmFallback: true,
-      }).unwrap();
+      });
+      uploadRequestRef.current = request as unknown as { abort?: () => void };
+      const response = await request.unwrap();
 
       if (response.status === "error") {
         setError(response.error ?? "Unable to parse this statement.");
@@ -167,14 +173,20 @@ export function StatementUpload() {
       stopUploadProgressAnimation();
       setMessage(
         `Uploaded ${response.positions_count ?? 0} positions from ${
-          response.account_name ?? selectedFile.name
+          response.account_name ?? uploadFile.name
         }.`,
       );
       setHasUploadedStatement(true);
-      uploadRedirectTimerRef.current = window.setTimeout(() => {
-        router.replace("/onboarding/processing");
-      }, 600);
     } catch (requestError) {
+      if (
+        typeof requestError === "object" &&
+        requestError !== null &&
+        "name" in requestError &&
+        requestError.name === "AbortError"
+      ) {
+        stopUploadProgressAnimation(false);
+        return;
+      }
       stopUploadProgressAnimation(false);
       setError(
         requestError instanceof Error
@@ -183,6 +195,7 @@ export function StatementUpload() {
       );
     } finally {
       setIsUploading(false);
+      uploadRequestRef.current = null;
     }
   }
 
@@ -213,6 +226,20 @@ export function StatementUpload() {
 
     window.clearInterval(uploadProgressTimerRef.current);
     uploadProgressTimerRef.current = null;
+  }
+
+  function clearSelectedFile() {
+    if (isUploading && uploadRequestRef.current?.abort) {
+      uploadRequestRef.current.abort();
+    }
+    setSelectedFile(null);
+    setHasUploadedStatement(false);
+    setUploadProgress(0);
+    setMessage("");
+    setError("");
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
   }
 
   return (
@@ -251,49 +278,12 @@ export function StatementUpload() {
         <h1 id="statement-title">
           Welcome {firstName}! Add your accounts statements
           <br />
-          to create your Oneview
+          to create your Meridian Oneview
         </h1>
         <p>
           Securely drop your key investment accounts statements here. We don&apos;t
           share or sell your data
         </p>
-
-        <label
-          className={`statement-dropzone${isDragging ? " is-dragging" : ""}${isUploading ? " is-disabled" : ""}`}
-          onDragOver={isUploading ? undefined : handleDragOver}
-          onDragLeave={isUploading ? undefined : handleDragLeave}
-          onDrop={isUploading ? undefined : handleDrop}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".csv,.xlsx,.pdf"
-            onChange={handleFileChange}
-            disabled={isUploading}
-          />
-          <span className={`upload-icon${isUploading ? " is-uploading" : ""}`}>
-            {isUploading ? <SpinnerIcon /> : <UploadIcon />}
-          </span>
-          <strong>
-            {isUploading
-              ? "Uploading document"
-              : hasUploadedStatement
-                ? "Upload complete"
-                : selectedFile
-                  ? selectedFile.name
-                  : "Drop your statements here"}
-          </strong>
-          {showUploadProgress ? (
-            <div className="statement-upload-progress" aria-label={`Upload progress ${uploadProgress}%`}>
-              <span>
-                <span style={{ width: `${uploadProgress}%` }} />
-              </span>
-              <em>{uploadProgress}%</em>
-            </div>
-          ) : (
-            <span>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
-          )}
-        </label>
 
         <div className="statement-brokers">
           <span className="brokers-text">We accept</span>
@@ -318,18 +308,73 @@ export function StatementUpload() {
           </button>
         </div>
 
+        <label
+          className={`statement-dropzone${isDragging ? " is-dragging" : ""}${isUploading ? " is-disabled" : ""}`}
+          onDragOver={isUploading ? undefined : handleDragOver}
+          onDragLeave={isUploading ? undefined : handleDragLeave}
+          onDrop={isUploading ? undefined : handleDrop}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".csv,.xlsx,.pdf"
+            onChange={handleFileChange}
+            disabled={isUploading}
+          />
+          <span className="upload-icon">
+            <UploadIcon />
+          </span>
+          <strong>Drop your statements here or select files</strong>
+          <span>CSV, XLSX, PDF (Max 10MB)</span>
+        </label>
+
+        {selectedFile ? (
+          <div className="statement-file-loading" aria-live="polite">
+            <div
+              className={`statement-file-loader${isUploading ? " is-uploading" : ""}`}
+              style={{ "--upload-progress": `${uploadProgress}%` } as CSSProperties}
+            >
+              <span />
+            </div>
+            <div className="statement-file-meta">
+              <strong>{selectedFile.name}</strong>
+              <span>
+                {formatFileSize(selectedFile.size)}
+                {showUploadProgress ? ` • ${uploadProgress}%` : ""}
+              </span>
+            </div>
+            {!hasUploadedStatement ? (
+              <button
+                type="button"
+                className="statement-file-remove"
+                onClick={clearSelectedFile}
+                aria-label="Remove selected file"
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         {error ? <p className="statement-error">{error}</p> : null}
         {message ? <p className="statement-success">{message}</p> : null}
 
         <div className="statement-cta-group">
           <button
+            className="statement-sample-btn"
+            type="button"
+            onClick={() => setIsSampleModalOpen(true)}
+          >
+            Check a sample Oneview
+          </button>
+          <button
             className="statement-submit"
             type="button"
-            onClick={selectedFile && !hasUploadedStatement ? handleUpload : undefined}
-            disabled={isUploading || hasUploadedStatement || !selectedFile}
+            onClick={hasUploadedStatement ? () => router.replace("/onboarding/processing") : undefined}
+            disabled={!hasUploadedStatement || isUploading}
             aria-busy={isUploading}
           >
-            {hasUploadedStatement ? "Uploaded" : isUploading ? "Uploading" : "Upload statements"}
+            See your Oneview
             <ArrowRightIcon />
           </button>
         </div>
@@ -382,11 +427,10 @@ function ArrowRightIcon() {
   );
 }
 
-function SpinnerIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" className="spinner-icon">
-      <circle cx="9" cy="9" r="7" stroke="black" strokeOpacity="0.2" strokeWidth="2" />
-      <path d="M9 2a7 7 0 0 1 7 7" stroke="black" strokeOpacity="0.7" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(1)} MB`;
 }

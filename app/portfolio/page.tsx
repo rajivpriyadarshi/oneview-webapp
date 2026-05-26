@@ -50,13 +50,13 @@ export default function PortfolioPage() {
     { skip: !activePortfolioId },
   );
 
-  const { data: valuationsData } = useGetValuationsViewQuery(
+  const { data: valuationsData, isLoading: valuationsLoading } = useGetValuationsViewQuery(
     { accountIds, currency, fromDate, toDate },
     { skip: !activePortfolioId },
   );
 
   const valuationSeries = valuationsData?.price_series ?? [];
-  const loading = viewLoading || !portfolioView;
+  const loading = viewLoading || valuationsLoading || !portfolioView || !valuationsData;
 
   const handleAccountChange = (accountId: number | "all") => {
     setSelectedAccountId(accountId);

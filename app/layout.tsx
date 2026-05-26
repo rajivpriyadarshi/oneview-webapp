@@ -24,8 +24,8 @@ const butlerPro = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Oneview",
-  description: "Oneview login",
+  title: "Meridian",
+  description: "Meridian login",
 };
 
 export default function RootLayout({
