@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
+import { useGetSankeyQuery } from "../store/api";
+import type { SankeyNode, SankeyResponse } from "../lib/portfolioDataApi";
 import "../portfolio/portfolio.css";
 import "../dashboard/home.css";
 import "./wealth-map.css";
@@ -20,39 +22,6 @@ import { Chart } from "react-chartjs-2";
 
 ChartJS.register(SankeyController, Flow, Tooltip, Colors, LinearScale, CategoryScale);
 
-const MOCK_DATA = [
-  { from: "Paychecks", to: "Income", flow: 4200 },
-  { from: "Income", to: "Savings", flow: 480.54 },
-  { from: "Income", to: "Housing", flow: 1593 },
-  { from: "Income", to: "Financial", flow: 741.68 },
-  { from: "Income", to: "Bills & Utilities", flow: 683.47 },
-  { from: "Income", to: "Food & Dining", flow: 232.35 },
-  { from: "Housing", to: "Mortgage", flow: 1385 },
-  { from: "Housing", to: "Home Improvement", flow: 208 },
-  { from: "Financial", to: "Loan Repayment", flow: 500.23 },
-  { from: "Financial", to: "Insurance", flow: 201.45 },
-  { from: "Financial", to: "Cash & ATM", flow: 40 },
-  { from: "Bills & Utilities", to: "Garbage", flow: 320.47 },
-  { from: "Bills & Utilities", to: "Phone", flow: 363 },
-];
-
-const COLOR_MAP: Record<string, string> = {
-  Paychecks: "#5DADEC",
-  Income: "#5DADEC",
-  Savings: "#4CAF50",
-  Housing: "#F5E6A3",
-  Financial: "#E1BEE7",
-  "Bills & Utilities": "#B0BEC5",
-  "Food & Dining": "#FFCDD2",
-  Mortgage: "#FFC107",
-  "Home Improvement": "#FFC107",
-  "Loan Repayment": "#AB47BC",
-  Insurance: "#CE93D8",
-  "Cash & ATM": "#3F51B5",
-  Garbage: "#3F51B5",
-  Phone: "#90A4AE",
-};
-
 const VIEW_OPTIONS = [
   { id: "sankey", icon: "sankey" },
   { id: "bar", icon: "bar" },
@@ -60,8 +29,11 @@ const VIEW_OPTIONS = [
 ];
 
 export default function WealthMapPage() {
-  const [groupBy, setGroupBy] = useState("By category & group");
   const [activeView, setActiveView] = useState("sankey");
+  const { data: sankeyData, isFetching, isError } = useGetSankeyQuery({
+    accountIds: [],
+    currency: "INR",
+  });
 
   return (
     <ProtectedRoute>
@@ -82,19 +54,22 @@ export default function WealthMapPage() {
           <section className="wealth-map-card">
             <div className="wealth-map-toolbar">
               <div className="wealth-map-toolbar-left">
-                <span className="wealth-map-label">CASH FLOW</span>
-                <h2 className="wealth-map-date">Dec 1, 2024 - Dec 31, 2024</h2>
+                <span className="wealth-map-label">Portfolio flow</span>
+                <h2 className="wealth-map-date">
+                  {sankeyData ? `As of ${formatDate(sankeyData.as_of_date)}` : "Loading portfolio flow"}
+                </h2>
               </div>
               <div className="wealth-map-toolbar-right">
                 <div className="wealth-map-group-select-wrapper">
                   <select
                     className="wealth-map-group-select"
-                    value={groupBy}
-                    onChange={(e) => setGroupBy(e.target.value)}
+                    value="account_asset_type_instrument"
+                    disabled
+                    aria-label="Sankey grouping"
                   >
-                    <option>By category &amp; group</option>
-                    <option>By account</option>
-                    <option>By type</option>
+                    <option value="account_asset_type_instrument">
+                      Account → Asset type → Instrument
+                    </option>
                   </select>
                   <ChevronDownIcon />
                 </div>
@@ -119,7 +94,16 @@ export default function WealthMapPage() {
             </div>
 
             <div className="wealth-map-chart-container">
-              <SankeyChart />
+              {isFetching && <div className="wealth-map-state">Loading sankey chart...</div>}
+              {isError && !isFetching && (
+                <div className="wealth-map-state">Unable to load sankey chart.</div>
+              )}
+              {!isFetching && !isError && sankeyData && sankeyData.links.length > 0 && (
+                <SankeyChart sankey={sankeyData} />
+              )}
+              {!isFetching && !isError && sankeyData && sankeyData.links.length === 0 && (
+                <div className="wealth-map-state">No holdings found for this view.</div>
+              )}
             </div>
           </section>
         </main>
@@ -128,19 +112,48 @@ export default function WealthMapPage() {
   );
 }
 
-function SankeyChart() {
+type ChartSankeyLink = {
+  from: string;
+  to: string;
+  flow: number;
+  sourceId: string;
+  targetId: string;
+  currency: string;
+};
+
+function SankeyChart({ sankey }: { sankey: SankeyResponse }) {
+  const { chartLinks, nodeById, labels } = useMemo(() => {
+    const nodes = new Map<string, SankeyNode>(
+      sankey.nodes.map((node) => [node.id, node]),
+    );
+    const links = sankey.links.map((link) => ({
+      from: nodes.get(link.from)?.label ?? link.from,
+      to: nodes.get(link.to)?.label ?? link.to,
+      flow: link.value,
+      sourceId: link.from,
+      targetId: link.to,
+      currency: link.currency,
+    }));
+
+    return {
+      chartLinks: links,
+      nodeById: nodes,
+      labels: Object.fromEntries(
+        sankey.nodes.map((node) => [node.label, node.label]),
+      ),
+    };
+  }, [sankey]);
+
   const data = {
     datasets: [
       {
-        data: MOCK_DATA,
-        colorFrom: (c: { dataset: { data: typeof MOCK_DATA }; dataIndex: number }) =>
-          COLOR_MAP[c.dataset.data[c.dataIndex]?.from] || "#ccc",
-        colorTo: (c: { dataset: { data: typeof MOCK_DATA }; dataIndex: number }) =>
-          COLOR_MAP[c.dataset.data[c.dataIndex]?.to] || "#ccc",
+        data: chartLinks,
+        colorFrom: (c: { dataset: { data: ChartSankeyLink[] }; dataIndex: number }) =>
+          nodeById.get(c.dataset.data[c.dataIndex]?.sourceId)?.color || "#ccc",
+        colorTo: (c: { dataset: { data: ChartSankeyLink[] }; dataIndex: number }) =>
+          nodeById.get(c.dataset.data[c.dataIndex]?.targetId)?.color || "#ccc",
         colorMode: "gradient" as const,
-        labels: Object.fromEntries(
-          [...new Set(MOCK_DATA.flatMap((d) => [d.from, d.to]))].map((label) => [label, label])
-        ),
+        labels,
         borderWidth: 0,
         nodeWidth: 20,
       },
@@ -153,9 +166,9 @@ function SankeyChart() {
     plugins: {
       tooltip: {
         callbacks: {
-          label: (ctx: { raw: { from: string; to: string; flow: number } }) => {
-            const { from, to, flow } = ctx.raw;
-            return `${from} → ${to}: $${flow.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+          label: (ctx: { raw: ChartSankeyLink }) => {
+            const { from, to, flow, currency } = ctx.raw;
+            return `${from} → ${to}: ${formatCurrency(flow, currency)}`;
           },
         },
       },
@@ -165,6 +178,22 @@ function SankeyChart() {
   return (
     <Chart type="sankey" data={data as never} options={options as never} />
   );
+}
+
+function formatCurrency(value: number, currency: string) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatDate(date: string) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function UploadIcon() {

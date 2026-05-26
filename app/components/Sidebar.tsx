@@ -44,17 +44,6 @@ export default function Sidebar() {
             />
           </svg>
         </Link>
-        <Link href="/wealth-map" className={`sidebar-btn ${pathname === "/wealth-map" ? "active" : ""}`} aria-label="Wealth Map">
-          <svg viewBox="0 0 18 18" fill="none" width="18" height="18">
-            <path
-              d="M2.14258 2.14258V9.42829C2.14258 10.6284 2.14258 11.2285 2.37614 11.6868C2.58158 12.09 2.90939 12.4179 3.3126 12.6233C3.77098 12.8569 4.37104 12.8569 5.57115 12.8569H10.714M10.714 12.8569C10.714 14.0403 11.6734 14.9997 12.8569 14.9997C14.0403 14.9997 14.9997 14.0403 14.9997 12.8569C14.9997 11.6734 14.0403 10.714 12.8569 10.714C11.6734 10.714 10.714 11.6734 10.714 12.8569ZM2.14258 5.71401L10.714 5.71401M10.714 5.71401C10.714 6.89747 11.6734 7.85686 12.8569 7.85686C14.0403 7.85686 14.9997 6.89747 14.9997 5.71401C14.9997 4.53054 14.0403 3.57115 12.8569 3.57115C11.6734 3.57115 10.714 4.53054 10.714 5.71401Z"
-              stroke="currentColor"
-              strokeWidth="1.71429"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </Link>
         <Link href="/documents-vault" className={`sidebar-btn ${pathname === "/documents-vault" ? "active" : ""}`} aria-label="Document Vault">
           <svg viewBox="0 0 18 18" fill="none" width="18" height="18">
             <path

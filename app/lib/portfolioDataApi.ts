@@ -120,3 +120,65 @@ export async function getValuationsView(accountIds?: number[], currency = "INR",
     },
   });
 }
+
+export type SankeyNodeType = "portfolio" | "account" | "asset_type" | "instrument";
+
+export type SankeyNode = {
+  id: string;
+  label: string;
+  type: SankeyNodeType;
+  level: number;
+  color: string;
+  sort_order: number;
+  metadata?: {
+    account_id?: number;
+    institution_name?: string;
+    position_count?: number;
+    ticker?: string;
+    name?: string;
+    isin?: string;
+    gain_pct?: number | null;
+    weight_pct?: number | null;
+  };
+};
+
+export type SankeyLink = {
+  id: string;
+  from: string;
+  to: string;
+  value: number;
+  currency: string;
+};
+
+export type SankeyResponse = {
+  as_of_date: string;
+  currency: string;
+  group_by: "account_asset_type_instrument";
+  totals: {
+    market_value: number;
+    cost_basis: number;
+    cash: number;
+    gain_amount: number;
+    gain_pct: number | null;
+  };
+  nodes: SankeyNode[];
+  links: SankeyLink[];
+  metadata: {
+    generated_at: string;
+    data_source: "portfolio_positions";
+    value_basis: "market_value";
+    has_uncategorized: boolean;
+    min_link_value: number;
+  };
+};
+
+export async function getSankey(accountIds?: number[], currency = "INR", date?: string) {
+  return apiRequest<SankeyResponse>("/sankey/", {
+    method: "POST",
+    body: {
+      account_ids: accountIds || [],
+      currency,
+      ...(date && { date }),
+    },
+  });
+}

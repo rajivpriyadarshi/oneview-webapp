@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getProfile } from "../lib/realAuthApi";
 
 type Props = {
   updatedAt?: string;
@@ -15,12 +19,22 @@ function formatLastUpdated(dateStr?: string) {
 }
 
 export default function DashboardHeader({ updatedAt }: Props) {
+  const [userName, setUserName] = useState("");
   const subtitle = formatLastUpdated(updatedAt);
+
+  useEffect(() => {
+    getProfile()
+      .then((profile) => {
+        const name = profile.name?.trim().split(/\s+/)[0] || "";
+        setUserName(name);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <header className="dashboard-header">
       <div className="dashboard-header-left">
-        <h1 className="dashboard-title">Your investments</h1>
+        <h1 className="dashboard-title">{userName ? `${userName}'s` : "Your"} investments</h1>
         {subtitle && <p className="dashboard-subtitle">{subtitle}</p>}
       </div>
       <Link href="/documents-vault" className="add-more-btn">

@@ -36,7 +36,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
   const brokerData = useMemo(() => {
     if (!portfolioView?.accounts) return [];
     const total = portfolioView.accounts.reduce((sum, a) => sum + a.market_value, 0);
-    return portfolioView.accounts
+    return [...portfolioView.accounts]
       .sort((a, b) => b.market_value - a.market_value)
       .map((acc, i) => ({
         label: capitalize(acc.institution_name || acc.account_name),

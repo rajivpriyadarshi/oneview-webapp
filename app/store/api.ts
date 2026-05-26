@@ -4,6 +4,7 @@ import type { Portfolio } from "../lib/portfoliosApi";
 import type {
   Account,
   PortfolioViewResponse,
+  SankeyResponse,
   ValuationsViewResponse,
 } from "../lib/portfolioDataApi";
 import type {
@@ -16,7 +17,7 @@ import type { AuthSession, PasswordlessAuthSession, Profile } from "../lib/realA
 export const api = createApi({
   reducerPath: "api",
   baseQuery,
-  tagTypes: ["Portfolios", "Accounts", "PortfolioView", "Documents", "Profile"],
+  tagTypes: ["Portfolios", "Accounts", "PortfolioView", "Sankey", "Documents", "Profile"],
   endpoints: (builder) => ({
     // Auth
     authenticateWithGoogle: builder.mutation<
@@ -100,6 +101,21 @@ export const api = createApi({
       }),
       providesTags: ["PortfolioView"],
     }),
+    getSankey: builder.query<
+      SankeyResponse,
+      { accountIds?: number[]; currency?: string; date?: string }
+    >({
+      query: ({ accountIds = [], currency = "INR", date }) => ({
+        url: "/sankey/",
+        method: "POST",
+        body: {
+          account_ids: accountIds,
+          currency,
+          ...(date && { date }),
+        },
+      }),
+      providesTags: ["Sankey"],
+    }),
 
     // Valuations
     getValuationsView: builder.query<
@@ -181,7 +197,7 @@ export const api = createApi({
         if (typeof useLlmFallback === "boolean") formData.set("use_llm_fallback", String(useLlmFallback));
         return { url: "/oneview/broker-statements/upload/", method: "POST", body: formData };
       },
-      invalidatesTags: ["Documents", "Portfolios", "PortfolioView"],
+      invalidatesTags: ["Documents", "Portfolios", "PortfolioView", "Sankey"],
     }),
   }),
 });
@@ -201,6 +217,7 @@ export const {
   useListPortfoliosQuery,
   useGetAccountsByPortfolioIdQuery,
   useGetPortfolioViewQuery,
+  useGetSankeyQuery,
   useGetValuationsViewQuery,
   useListDocumentsQuery,
   useGetDocumentQuery,

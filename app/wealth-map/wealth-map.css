@@ -123,9 +123,20 @@
 }
 
 .wealth-map-chart-container {
+  position: relative;
   width: 100%;
   height: calc(100vh - 300px);
   min-height: 400px;
+}
+
+.wealth-map-state {
+  width: 100%;
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 @media (max-width: 900px) {
