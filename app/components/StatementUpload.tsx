@@ -18,16 +18,20 @@ const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
 export function StatementUpload() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const uploadProgressTimerRef = useRef<number | null>(null);
+  const uploadRedirectTimerRef = useRef<number | null>(null);
   const [firstName, setFirstName] = useState("there");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [hasUploadedStatement, setHasUploadedStatement] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const showUploadProgress = isUploading || hasUploadedStatement;
 
   const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
     skip: !getStoredAuthToken(),
@@ -69,6 +73,16 @@ export function StatementUpload() {
     setFirstName(displayName.split(/\s+/)[0]);
   }, [router, profile, profileError, portfolios]);
 
+  useEffect(() => {
+    return () => {
+      clearUploadProgressTimer();
+
+      if (uploadRedirectTimerRef.current) {
+        window.clearTimeout(uploadRedirectTimerRef.current);
+      }
+    };
+  }, []);
+
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
@@ -101,6 +115,7 @@ export function StatementUpload() {
     setError("");
     setMessage("");
     setHasUploadedStatement(false);
+    setUploadProgress(0);
 
     const lowerName = file.name.toLowerCase();
     const hasSupportedExtension = SUPPORTED_EXTENSIONS.some((extension) =>
@@ -131,6 +146,8 @@ export function StatementUpload() {
     setError("");
     setMessage("");
     setIsUploading(true);
+    setUploadProgress(0);
+    startUploadProgressAnimation();
 
     try {
       const response = await uploadBrokerStatement({
@@ -143,16 +160,22 @@ export function StatementUpload() {
 
       if (response.status === "error") {
         setError(response.error ?? "Unable to parse this statement.");
+        stopUploadProgressAnimation(false);
         return;
       }
 
+      stopUploadProgressAnimation();
       setMessage(
         `Uploaded ${response.positions_count ?? 0} positions from ${
           response.account_name ?? selectedFile.name
         }.`,
       );
       setHasUploadedStatement(true);
+      uploadRedirectTimerRef.current = window.setTimeout(() => {
+        router.replace("/onboarding/processing");
+      }, 600);
     } catch (requestError) {
+      stopUploadProgressAnimation(false);
       setError(
         requestError instanceof Error
           ? requestError.message
@@ -161,6 +184,35 @@ export function StatementUpload() {
     } finally {
       setIsUploading(false);
     }
+  }
+
+  function startUploadProgressAnimation() {
+    clearUploadProgressTimer();
+
+    const startedAt = window.performance.now();
+    uploadProgressTimerRef.current = window.setInterval(() => {
+      const elapsed = window.performance.now() - startedAt;
+      const nextProgress = Math.min(Math.round((elapsed / 3000) * 90), 90);
+      setUploadProgress(nextProgress);
+
+      if (nextProgress >= 90) {
+        clearUploadProgressTimer();
+      }
+    }, 80);
+  }
+
+  function stopUploadProgressAnimation(complete = true) {
+    clearUploadProgressTimer();
+    setUploadProgress(complete ? 100 : 0);
+  }
+
+  function clearUploadProgressTimer() {
+    if (!uploadProgressTimerRef.current) {
+      return;
+    }
+
+    window.clearInterval(uploadProgressTimerRef.current);
+    uploadProgressTimerRef.current = null;
   }
 
   return (
@@ -223,9 +275,24 @@ export function StatementUpload() {
             {isUploading ? <SpinnerIcon /> : <UploadIcon />}
           </span>
           <strong>
-            {selectedFile ? selectedFile.name : "Drop your statements here"}
+            {isUploading
+              ? "Uploading document"
+              : hasUploadedStatement
+                ? "Upload complete"
+                : selectedFile
+                  ? selectedFile.name
+                  : "Drop your statements here"}
           </strong>
-          <span>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
+          {showUploadProgress ? (
+            <div className="statement-upload-progress" aria-label={`Upload progress ${uploadProgress}%`}>
+              <span>
+                <span style={{ width: `${uploadProgress}%` }} />
+              </span>
+              <em>{uploadProgress}%</em>
+            </div>
+          ) : (
+            <span>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
+          )}
         </label>
 
         <div className="statement-brokers">
@@ -256,32 +323,13 @@ export function StatementUpload() {
 
         <div className="statement-cta-group">
           <button
-            className="statement-sample-btn"
-            type="button"
-            onClick={() => setIsSampleModalOpen(true)}
-          >
-            Check a sample Oneview
-          </button>
-
-          <button
             className="statement-submit"
             type="button"
-            onClick={
-              hasUploadedStatement
-                ? () => router.replace("/onboarding/processing")
-                : selectedFile
-                  ? handleUpload
-                  : undefined
-            }
-            disabled={isUploading || !selectedFile}
+            onClick={selectedFile && !hasUploadedStatement ? handleUpload : undefined}
+            disabled={isUploading || hasUploadedStatement || !selectedFile}
+            aria-busy={isUploading}
           >
-            {hasUploadedStatement
-              ? "See your Oneview"
-              : selectedFile
-                ? isUploading
-                  ? "Uploading..."
-                  : "Upload statements"
-                : "Upload statements"}
+            {hasUploadedStatement ? "Uploaded" : isUploading ? "Uploading" : "Upload statements"}
             <ArrowRightIcon />
           </button>
         </div>

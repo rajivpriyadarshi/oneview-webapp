@@ -656,7 +656,7 @@ button:disabled {
 
 .statement-dropzone.is-disabled {
   pointer-events: none;
-  opacity: 0.6;
+  cursor: default;
 }
 
 .statement-dropzone input {
@@ -715,6 +715,41 @@ button:disabled {
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-size: 16px;
   line-height: 24px;
+}
+
+.statement-upload-progress {
+  width: min(100% - 56px, 300px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.statement-upload-progress > span {
+  flex: 1;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.statement-upload-progress > span > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #000;
+  transition: width 220ms ease;
+}
+
+.statement-upload-progress em {
+  min-width: 36px;
+  color: #444;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: right;
 }
 
 .statement-support {
