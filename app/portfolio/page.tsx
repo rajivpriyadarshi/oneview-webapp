@@ -1,94 +1,62 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useMemo, useState } from "react";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import DashboardHeader from "../components/DashboardHeader";
 import PortfolioSummary from "../components/PortfolioSummary";
 import PortfolioExposure from "../components/PortfolioExposure";
 import HoldingsTable from "../components/HoldingsTable";
-import { listPortfolios, type Portfolio } from "../lib/portfoliosApi";
 import {
-  getAccountsByPortfolioId,
-  getPortfolioView,
-  getValuationsView,
-  type Account,
-  type PortfolioViewResponse,
-  type ValuationSeriesPoint,
-} from "../lib/portfolioDataApi";
+  useListPortfoliosQuery,
+  useGetAccountsByPortfolioIdQuery,
+  useGetPortfolioViewQuery,
+  useGetValuationsViewQuery,
+} from "../store/api";
 import "./portfolio.css";
+import "../onboarding/processing/processing.css";
 
 export default function PortfolioPage() {
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
-  const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
   const [currency, setCurrency] = useState("INR");
-  const [portfolioView, setPortfolioView] = useState<PortfolioViewResponse | null>(null);
-  const [valuationSeries, setValuationSeries] = useState<ValuationSeriesPoint[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function init() {
-      try {
-        const allPortfolios = await listPortfolios();
-        setPortfolios(allPortfolios);
-        if (allPortfolios.length > 0) {
-          setSelectedPortfolio(allPortfolios[0]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch portfolios:", error);
-        setLoading(false);
-      }
-    }
-    init();
+  const { data: portfolios = [] } = useListPortfoliosQuery();
+
+  const activePortfolioId = selectedPortfolioId ?? portfolios[0]?.id ?? null;
+  const selectedPortfolio = portfolios.find((p) => p.id === activePortfolioId) ?? null;
+
+  const { data: accounts = [] } = useGetAccountsByPortfolioIdQuery(activePortfolioId!, {
+    skip: !activePortfolioId,
+  });
+
+  const accountIds = useMemo(
+    () => (selectedAccountId === "all" ? [] : [selectedAccountId]),
+    [selectedAccountId],
+  );
+
+  const { fromDate, toDate } = useMemo(() => {
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    return {
+      fromDate: thirtyDaysAgo.toISOString().split("T")[0],
+      toDate: today.toISOString().split("T")[0],
+    };
   }, []);
 
-  useEffect(() => {
-    if (!selectedPortfolio) return;
-    async function fetchAccounts() {
-      try {
-        const accountsList = await getAccountsByPortfolioId(selectedPortfolio!.id);
-        setAccounts(accountsList);
-      } catch (error) {
-        console.error("Failed to fetch accounts:", error);
-      }
-    }
-    fetchAccounts();
-  }, [selectedPortfolio]);
+  const { data: portfolioView, isLoading: viewLoading } = useGetPortfolioViewQuery(
+    { accountIds, currency },
+    { skip: !activePortfolioId },
+  );
 
-  const fetchData = useCallback(async (accountFilter: number | "all", curr: string) => {
-    setLoading(true);
-    try {
-      const accountIds = accountFilter === "all" ? [] : [accountFilter];
-      const today = new Date();
-      const thirtyDaysAgo = new Date(today);
-      thirtyDaysAgo.setDate(today.getDate() - 30);
-      const fromDate = thirtyDaysAgo.toISOString().split("T")[0];
-      const toDate = today.toISOString().split("T")[0];
+  const { data: valuationsData } = useGetValuationsViewQuery(
+    { accountIds, currency, fromDate, toDate },
+    { skip: !activePortfolioId },
+  );
 
-      const viewData = await getPortfolioView(accountIds, curr);
-      setPortfolioView(viewData);
-
-      try {
-        const valuationsData = await getValuationsView(accountIds, curr, fromDate, toDate);
-        setValuationSeries(valuationsData.price_series || []);
-      } catch (e) {
-        console.error("Valuations API failed:", e);
-        setValuationSeries([]);
-      }
-    } catch (error) {
-      console.error("Failed to fetch portfolio data:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedPortfolio) {
-      fetchData(selectedAccountId, currency);
-    }
-  }, [selectedPortfolio, selectedAccountId, currency, fetchData]);
+  const valuationSeries = valuationsData?.price_series ?? [];
+  const loading = viewLoading || !portfolioView;
 
   const handleAccountChange = (accountId: number | "all") => {
     setSelectedAccountId(accountId);
@@ -99,11 +67,8 @@ export default function PortfolioPage() {
   };
 
   const handlePortfolioChange = (portfolioId: number) => {
-    const portfolio = portfolios.find((p) => p.id === portfolioId);
-    if (portfolio) {
-      setSelectedPortfolio(portfolio);
-      setSelectedAccountId("all");
-    }
+    setSelectedPortfolioId(portfolioId);
+    setSelectedAccountId("all");
   };
 
   return (
@@ -112,8 +77,21 @@ export default function PortfolioPage() {
         <Sidebar />
         <main className="dashboard-main">
           <DashboardHeader updatedAt={selectedPortfolio?.updated_at} />
-          <PortfolioSummary
-            portfolioView={portfolioView}
+          {loading && !portfolioView ? (
+            <div className="dashboard-loading-content">
+              <div className="oneview-logo-container">
+                <svg width="56" height="56" viewBox="0 0 31 30" fill="none" xmlns="http://www.w3.org/2000/svg" className="processing-logo">
+                  <path className="logo-outline" d="M3.55566 19.2666L3.33398 19.0469C1.79851 17.5218 0.752098 16.778 0.75 15.0156C0.747877 13.1987 1.77395 12.5155 3.33594 10.9443L3.54883 10.7305L3.55371 10.4287C3.56565 9.75637 3.53559 9.03195 3.52832 8.39746C3.52077 7.73813 3.53667 7.12803 3.62598 6.56641C3.79824 5.48349 4.23581 4.60664 5.37109 3.98926C6.26131 3.50516 6.97931 3.54877 8.22852 3.55176H8.22949L10.4287 3.55273H10.7402L10.9609 3.33105C11.7884 2.49861 12.2767 1.90995 12.8818 1.45801C13.4184 1.05731 14.0208 0.795588 14.9854 0.750977C16.8439 0.800709 17.4383 1.72263 19.0312 3.32812L19.2422 3.54102L19.542 3.5498C20.114 3.56646 20.7109 3.54403 21.2666 3.53027C21.8349 3.5162 22.3742 3.51095 22.8887 3.55273C23.9102 3.63577 24.7531 3.89868 25.4121 4.58008C25.9392 5.12504 26.1796 5.61135 26.3027 6.12695C26.4015 6.54047 26.4298 6.98665 26.4375 7.54297L26.4404 8.1377L26.4375 10.4238V10.7363L26.6582 10.9561L27.9121 12.2031V12.2041C28.3805 12.6742 28.7118 13.0827 28.9307 13.5137C29.1436 13.9333 29.2666 14.4079 29.2686 15.0303C29.2743 16.7295 28.1437 17.5781 26.6602 19.0498L26.4395 19.2686L26.4385 19.5791C26.4364 19.994 26.4359 20.4088 26.4385 20.8232C26.4432 22.8812 26.6241 24.2269 25.4248 25.4033C24.8828 25.9351 24.3829 26.1807 23.8506 26.3057C23.2833 26.4388 22.6606 26.4419 21.8164 26.4414L19.582 26.4375H19.293L19.0781 26.6309C18.669 27 18.3221 27.3656 18.0166 27.6826C17.7035 28.0075 17.4377 28.2771 17.1582 28.5039C16.6396 28.9246 16.0559 29.2133 15.0576 29.249C13.1906 29.2341 12.5489 28.2719 10.9492 26.6631L10.7344 26.4473L10.4307 26.4424L9.91797 26.4414C9.75103 26.4426 9.59416 26.4435 9.44043 26.4414C8.35863 26.4267 7.51557 26.5037 6.65234 26.3945C5.85675 26.2939 5.17593 26.039 4.5752 25.4131C4.04762 24.8633 3.80726 24.3671 3.68555 23.8418C3.55556 23.2807 3.55289 22.667 3.55273 21.8213L3.55566 19.5791V19.2666Z" stroke="black" strokeWidth="1.5"/>
+                  <path className="logo-animated-stroke" d="M3.55566 19.2666L3.33398 19.0469C1.79851 17.5218 0.752098 16.778 0.75 15.0156C0.747877 13.1987 1.77395 12.5155 3.33594 10.9443L3.54883 10.7305L3.55371 10.4287C3.56565 9.75637 3.53559 9.03195 3.52832 8.39746C3.52077 7.73813 3.53667 7.12803 3.62598 6.56641C3.79824 5.48349 4.23581 4.60664 5.37109 3.98926C6.26131 3.50516 6.97931 3.54877 8.22852 3.55176H8.22949L10.4287 3.55273H10.7402L10.9609 3.33105C11.7884 2.49861 12.2767 1.90995 12.8818 1.45801C13.4184 1.05731 14.0208 0.795588 14.9854 0.750977C16.8439 0.800709 17.4383 1.72263 19.0312 3.32812L19.2422 3.54102L19.542 3.5498C20.114 3.56646 20.7109 3.54403 21.2666 3.53027C21.8349 3.5162 22.3742 3.51095 22.8887 3.55273C23.9102 3.63577 24.7531 3.89868 25.4121 4.58008C25.9392 5.12504 26.1796 5.61135 26.3027 6.12695C26.4015 6.54047 26.4298 6.98665 26.4375 7.54297L26.4404 8.1377L26.4375 10.4238V10.7363L26.6582 10.9561L27.9121 12.2031V12.2041C28.3805 12.6742 28.7118 13.0827 28.9307 13.5137C29.1436 13.9333 29.2666 14.4079 29.2686 15.0303C29.2743 16.7295 28.1437 17.5781 26.6602 19.0498L26.4395 19.2686L26.4385 19.5791C26.4364 19.994 26.4359 20.4088 26.4385 20.8232C26.4432 22.8812 26.6241 24.2269 25.4248 25.4033C24.8828 25.9351 24.3829 26.1807 23.8506 26.3057C23.2833 26.4388 22.6606 26.4419 21.8164 26.4414L19.582 26.4375H19.293L19.0781 26.6309C18.669 27 18.3221 27.3656 18.0166 27.6826C17.7035 28.0075 17.4377 28.2771 17.1582 28.5039C16.6396 28.9246 16.0559 29.2133 15.0576 29.249C13.1906 29.2341 12.5489 28.2719 10.9492 26.6631L10.7344 26.4473L10.4307 26.4424L9.91797 26.4414C9.75103 26.4426 9.59416 26.4435 9.44043 26.4414C8.35863 26.4267 7.51557 26.5037 6.65234 26.3945C5.85675 26.2939 5.17593 26.039 4.5752 25.4131C4.04762 24.8633 3.80726 24.3671 3.68555 23.8418C3.55556 23.2807 3.55289 22.667 3.55273 21.8213L3.55566 19.5791V19.2666Z" stroke="black" strokeWidth="1.5" fill="none"/>
+                  <path d="M14.6538 6.87824C14.6947 6.87372 14.7357 6.87014 14.7771 6.86748C15.8618 6.79742 17.0242 7.18392 17.8164 7.94272C19.027 9.10211 20.1902 10.3127 21.3826 11.4914C22.2022 12.2825 22.7539 12.901 23.0274 14.0259C23.6905 16.7547 21.6502 18.2595 19.9251 19.9628C19.1582 20.7202 18.0756 21.9833 17.1833 22.5323C16.6148 22.8891 15.9635 23.0932 15.2924 23.1246C14.341 23.2359 13.1132 22.8659 12.3889 22.2304C11.6068 21.4949 10.7683 20.7118 10.0364 19.9283C9.2851 19.1241 8.06652 18.1104 7.47684 17.2209C6.51454 15.7693 6.68755 13.5522 7.86182 12.2682C8.53119 11.5363 9.30992 10.798 10.0274 10.0813L11.4373 8.66407C12.4598 7.63741 13.1284 7.00924 14.6538 6.87824Z" fill="black"/>
+                </svg>
+              </div>
+              <p className="processing-subtitle">Loading your portfolio</p>
+            </div>
+          ) : (
+            <>
+              <PortfolioSummary
+            portfolioView={portfolioView ?? null}
             loading={loading}
             accounts={accounts}
             selectedAccountId={selectedAccountId}
@@ -125,8 +103,10 @@ export default function PortfolioPage() {
             onCurrencyChange={handleCurrencyChange}
             valuationSeries={valuationSeries}
           />
-          <PortfolioExposure portfolioView={portfolioView} />
-          <HoldingsTable positions={portfolioView?.positions || []} loading={loading} />
+              <PortfolioExposure portfolioView={portfolioView ?? null} />
+              <HoldingsTable positions={portfolioView?.positions || []} loading={loading} />
+            </>
+          )}
         </main>
       </div>
     </ProtectedRoute>

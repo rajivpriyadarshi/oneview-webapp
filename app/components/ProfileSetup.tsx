@@ -3,15 +3,22 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand, ZincBrand } from "./BrandMarks";
-import { getPostProfileRoute } from "../lib/postAuthRoute";
-import { getProfile, updateProfile } from "../lib/realAuthApi";
+import { useGetProfileQuery, useUpdateProfileMutation } from "../store/api";
+import { api } from "../store/api";
+import { store } from "../store/store";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
+import type { Profile } from "../lib/realAuthApi";
 
 export function ProfileSetup() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
+    skip: !getStoredAuthToken(),
+  });
+  const [updateProfile] = useUpdateProfileMutation();
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -21,18 +28,20 @@ export function ProfileSetup() {
       return;
     }
 
-    getProfile()
-      .then(async (profile) => {
-        const route = await getPostProfileRoute(profile);
-        if (route !== "/profile/setup") {
-          router.replace(route);
-        }
-      })
-      .catch(() => {
-        clearAuthToken();
-        router.replace("/");
-      });
-  }, [router]);
+    if (profileError) {
+      clearAuthToken();
+      router.replace("/");
+      return;
+    }
+
+    if (!profile) return;
+
+    getPostProfileRoute(profile).then((route) => {
+      if (route !== "/profile/setup") {
+        router.replace(route);
+      }
+    });
+  }, [router, profile, profileError]);
 
   function isNameValid(name: string): boolean {
     const trimmedName = name.trim();
@@ -59,8 +68,8 @@ export function ProfileSetup() {
     setIsSubmitting(true);
 
     try {
-      const profile = await updateProfile({ display_name: trimmedName });
-      router.replace(await getPostProfileRoute(profile));
+      const updatedProfile = await updateProfile({ display_name: trimmedName }).unwrap();
+      router.replace(await getPostProfileRoute(updatedProfile));
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -107,4 +116,18 @@ export function ProfileSetup() {
       </section>
     </main>
   );
+}
+
+async function getPostProfileRoute(profile: Profile): Promise<string> {
+  const emailPrefix = profile.email.split("@")[0];
+  const displayName = profile.display_name?.trim();
+
+  if (!displayName || displayName === emailPrefix) {
+    return "/profile/setup";
+  }
+
+  const portfoliosResult = await store.dispatch(api.endpoints.listPortfolios.initiate(undefined, { forceRefetch: true }));
+  const portfolios = portfoliosResult.data ?? [];
+
+  return portfolios.length === 0 ? "/onboarding/documents" : "/dashboard";
 }

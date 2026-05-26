@@ -42,7 +42,7 @@ export default function PortfolioSummary({
             {loading ? "..." : `${currSymbol}${marketValue}`}
           </h2>
           <p className={`portfolio-gain ${isPositive ? "" : "negative"}`}>
-            {loading ? "" : `${isPositive ? "+" : "-"}${currSymbol}${formatLakhs(Math.abs(summary!.total_gain_amount))} (${gainPct})`}
+            {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${formatLakhs(Math.abs(summary.total_gain_amount))} (${gainPct})`}
           </p>
         </div>
         <div className="portfolio-meta">

@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { OneviewBrand } from "./BrandMarks";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
 import { OneviewInfoModal } from "./OneviewInfoModal";
-import { uploadBrokerStatement } from "../lib/documentsApi";
-import { listPortfolios } from "../lib/portfoliosApi";
-import { getProfile } from "../lib/realAuthApi";
+import {
+  useUploadBrokerStatementMutation,
+  useListPortfoliosQuery,
+  useGetProfileQuery,
+} from "../store/api";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
@@ -27,38 +29,45 @@ export function StatementUpload() {
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
+  const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
+    skip: !getStoredAuthToken(),
+  });
+  const { data: portfolios } = useListPortfoliosQuery(undefined, {
+    skip: !profile,
+  });
+
+  const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
+
   useEffect(() => {
     const token = getStoredAuthToken();
-
     if (!token) {
       router.replace("/");
       return;
     }
 
-    getProfile()
-      .then(async (profile) => {
-        const emailPrefix = profile.email.split("@")[0];
-        const displayName = profile.display_name?.trim();
+    if (profileError) {
+      clearAuthToken();
+      router.replace("/");
+      return;
+    }
 
-        if (!displayName || displayName === emailPrefix) {
-          router.replace("/profile/setup");
-          return;
-        }
+    if (!profile) return;
 
-        const portfolios = await listPortfolios();
+    const emailPrefix = profile.email.split("@")[0];
+    const displayName = profile.display_name?.trim();
 
-        if (portfolios.length > 0) {
-          router.replace("/dashboard");
-          return;
-        }
+    if (!displayName || displayName === emailPrefix) {
+      router.replace("/profile/setup");
+      return;
+    }
 
-        setFirstName(displayName.split(/\s+/)[0]);
-      })
-      .catch(() => {
-        clearAuthToken();
-        router.replace("/");
-      });
-  }, [router]);
+    if (portfolios && portfolios.length > 0) {
+      router.replace("/dashboard");
+      return;
+    }
+
+    setFirstName(displayName.split(/\s+/)[0]);
+  }, [router, profile, profileError, portfolios]);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -130,7 +139,7 @@ export function StatementUpload() {
         storeData: true,
         portfolioName: "Main Portfolio",
         useLlmFallback: true,
-      });
+      }).unwrap();
 
       if (response.status === "error") {
         setError(response.error ?? "Unable to parse this statement.");

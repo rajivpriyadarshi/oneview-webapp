@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getProfile } from "../lib/realAuthApi";
+import { useGetProfileQuery } from "../store/api";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -22,18 +21,10 @@ function formatLastUpdated(dateStr?: string) {
 }
 
 export default function HomeHeader() {
-  const [firstName, setFirstName] = useState("");
-  const [lastUpdated, setLastUpdated] = useState("");
+  const { data: profile } = useGetProfileQuery();
 
-  useEffect(() => {
-    getProfile()
-      .then((profile) => {
-        const name = profile.display_name?.trim().split(/\s+/)[0] || "";
-        setFirstName(name);
-        setLastUpdated(formatLastUpdated(profile.updated_at));
-      })
-      .catch(() => {});
-  }, []);
+  const firstName = profile?.display_name?.trim().split(/\s+/)[0] || "";
+  const lastUpdated = formatLastUpdated(profile?.updated_at);
 
   return (
     <header className="home-header">

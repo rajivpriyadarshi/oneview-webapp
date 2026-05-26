@@ -4,20 +4,21 @@ import { ClipboardEvent, FormEvent, KeyboardEvent, useEffect, useRef, useState }
 import { useRouter } from "next/navigation";
 import { OneviewBrand, ZincBrand } from "./BrandMarks";
 import {
-  authenticateWithGoogle,
   GoogleAuthCallbackHandler,
   initializeGoogleAuth,
   renderGoogleButton,
 } from "../lib/authApi";
-import { getPostProfileRoute } from "../lib/postAuthRoute";
 import {
-  getProfile,
-  resendPasswordlessOtp,
-  sendPasswordlessOtp,
-  verifyPasswordlessOtp,
-} from "../lib/realAuthApi";
+  useAuthenticateWithGoogleMutation,
+  useSendPasswordlessOtpMutation,
+  useVerifyPasswordlessOtpMutation,
+  useResendPasswordlessOtpMutation,
+} from "../store/api";
+import { api } from "../store/api";
+import { store } from "../store/store";
 import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
 import { GoogleIdentityScript } from "./GoogleIdentityScript";
+import type { Profile } from "../lib/realAuthApi";
 
 export function AuthFlow() {
   const router = useRouter();
@@ -30,6 +31,11 @@ export function AuthFlow() {
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
   const hiddenGoogleButtonRef = useRef<HTMLDivElement>(null);
   const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const [authenticateWithGoogle] = useAuthenticateWithGoogleMutation();
+  const [sendPasswordlessOtp] = useSendPasswordlessOtpMutation();
+  const [verifyPasswordlessOtp] = useVerifyPasswordlessOtpMutation();
+  const [resendPasswordlessOtp] = useResendPasswordlessOtpMutation();
 
   useEffect(() => {
     if (getStoredAuthToken()) {
@@ -48,7 +54,7 @@ export function AuthFlow() {
         setIsSubmitting(true);
 
         try {
-          const session = await authenticateWithGoogle(response.credential);
+          const session = await authenticateWithGoogle({ id_token: response.credential }).unwrap();
           storeAuthToken(session.token);
           await routeByProfile();
         } catch (requestError) {
@@ -102,7 +108,7 @@ export function AuthFlow() {
     try {
       const normalizedEmail = email.trim();
       validateEmail(normalizedEmail);
-      await sendPasswordlessOtp({ email: normalizedEmail });
+      await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
       setEmail(normalizedEmail);
       setOtp(Array(6).fill(""));
       setResendCooldown(60);
@@ -127,7 +133,7 @@ export function AuthFlow() {
         throw new Error("Enter the 6-digit code.");
       }
 
-      const session = await verifyPasswordlessOtp({ email, otp: otpCode });
+      const session = await verifyPasswordlessOtp({ email, otp: otpCode }).unwrap();
       storeAuthToken(session.token);
       await routeByProfile();
     } catch (requestError) {
@@ -202,7 +208,7 @@ export function AuthFlow() {
     setIsSubmitting(true);
 
     try {
-      await resendPasswordlessOtp({ email });
+      await resendPasswordlessOtp({ email }).unwrap();
       setOtp(Array(6).fill(""));
       setResendCooldown(60);
       otpInputRefs.current[0]?.focus();
@@ -215,8 +221,12 @@ export function AuthFlow() {
 
   async function routeByProfile() {
     try {
-      const profile = await getProfile();
-      router.replace(await getPostProfileRoute(profile));
+      const profileResult = await store.dispatch(api.endpoints.getProfile.initiate(undefined, { forceRefetch: true }));
+      if (profileResult.error || !profileResult.data) {
+        throw new Error("Failed to fetch profile");
+      }
+      const profile = profileResult.data;
+      router.replace(await getPostProfileRouteFromStore(profile));
     } catch {
       clearAuthToken();
       router.replace("/");
@@ -341,6 +351,20 @@ export function AuthFlow() {
   );
 }
 
+async function getPostProfileRouteFromStore(profile: Profile): Promise<string> {
+  const emailPrefix = profile.email.split("@")[0];
+  const displayName = profile.display_name?.trim();
+
+  if (!displayName || displayName === emailPrefix) {
+    return "/profile/setup";
+  }
+
+  const portfoliosResult = await store.dispatch(api.endpoints.listPortfolios.initiate(undefined, { forceRefetch: true }));
+  const portfolios = portfoliosResult.data ?? [];
+
+  return portfolios.length === 0 ? "/onboarding/documents" : "/dashboard";
+}
+
 function GoogleIcon() {
   return (
     <svg aria-hidden="true" className="google-icon" viewBox="0 0 24 24">
@@ -367,6 +391,13 @@ function GoogleIcon() {
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message;
+  }
+
+  if (typeof error === "object" && error !== null && "data" in error) {
+    const data = (error as { data: unknown }).data;
+    if (typeof data === "object" && data !== null && "error" in data) {
+      return String((data as { error: unknown }).error);
+    }
   }
 
   return "Something went wrong. Please try again.";

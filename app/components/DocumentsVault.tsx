@@ -1,9 +1,14 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useRef, useState } from "react";
 import DocumentsTable, { type VaultDocument } from "./DocumentsTable";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
-import { deleteDocument, listDocuments, uploadBrokerStatement, type DocumentRecord } from "../lib/documentsApi";
+import {
+  useListDocumentsQuery,
+  useDeleteDocumentMutation,
+  useUploadBrokerStatementMutation,
+} from "../store/api";
+import type { DocumentRecord } from "../lib/documentsApi";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
@@ -63,35 +68,22 @@ export function DocumentsVault() {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [documents, setDocuments] = useState<VaultDocument[]>([]);
-  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [uploadMessage, setUploadMessage] = useState("");
   const [documentsPendingDelete, setDocumentsPendingDelete] = useState<VaultDocument[]>([]);
   const [deleting, setDeleting] = useState(false);
-  const [docCount, setDocCount] = useState(0);
-  const [accountCount, setAccountCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  function fetchDocuments() {
-    setLoading(true);
-    listDocuments()
-      .then((docs) => {
-        setDocuments(docs.map(mapDocToTableRow));
-        setDocCount(docs.length);
-        const uniqueAccounts = new Set(
-          docs.flatMap((d) => (d.accounts as { id: number }[])?.map((a) => a.id) || []),
-        );
-        setAccountCount(uniqueAccounts.size);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }
+  const { data: rawDocuments = [], isLoading: loading } = useListDocumentsQuery();
+  const [deleteDocumentMutation] = useDeleteDocumentMutation();
+  const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+  const documents = rawDocuments.map(mapDocToTableRow);
+  const docCount = rawDocuments.length;
+  const accountCount = new Set(
+    rawDocuments.flatMap((d) => (d.accounts as { id: number }[])?.map((a) => a.id) || []),
+  ).size;
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files || []);
@@ -162,7 +154,7 @@ export function DocumentsVault() {
             name: file.name,
             storeData: true,
             useLlmFallback: true,
-          });
+          }).unwrap();
           if (response.status === "error") {
             updateUploadItem(item.id, {
               status: "error",
@@ -182,7 +174,6 @@ export function DocumentsVault() {
 
       if (successCount > 0) {
         setUploadMessage(`Uploaded ${successCount} file${successCount > 1 ? "s" : ""}.`);
-        fetchDocuments();
       }
     } finally {
       setUploading(false);
@@ -236,13 +227,12 @@ export function DocumentsVault() {
 
     try {
       await Promise.all(
-        documentsPendingDelete.map((document) => deleteDocument(document.id)),
+        documentsPendingDelete.map((document) => deleteDocumentMutation(document.id).unwrap()),
       );
       setUploadMessage(
         `Deleted ${documentsPendingDelete.length} file${documentsPendingDelete.length > 1 ? "s" : ""}.`,
       );
       setDocumentsPendingDelete([]);
-      fetchDocuments();
     } catch (deleteError) {
       setError(
         deleteError instanceof Error
