@@ -1,97 +1,54 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { MeridianLogo } from "./MeridianLogo";
+
 export default function Sidebar() {
+  const pathname = usePathname();
+
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 64 64"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          width="36"
-          height="36"
-        >
-          <path
-            d="M32 5.5 38.1 10l7.5-.8 3.1 6.9 6.9 3.1-.8 7.5 4.7 6.1-4.7 6.1.8 7.5-6.9 3.1-3.1 6.9-7.5-.8-6.1 4.9-6.1-4.9-7.5.8-3.1-6.9-6.9-3.1.8-7.5-4.7-6.1 4.7-6.1-.8-7.5 6.9-3.1 3.1-6.9 7.5.8L32 5.5Z"
-            stroke="currentColor"
-            strokeWidth="4"
-            strokeLinejoin="round"
-          />
-          <rect
-            x="21"
-            y="21"
-            width="22"
-            height="22"
-            rx="6"
-            transform="rotate(45 32 32)"
-            fill="currentColor"
-          />
-        </svg>
+        <MeridianLogo width={41} height={40} />
       </div>
 
       <nav className="sidebar-nav">
-        <button className="sidebar-btn active" aria-label="Investments">
+        <Link href="/dashboard" className={`sidebar-btn ${pathname === "/dashboard" ? "active" : ""}`} aria-label="Home">
           <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
             <path
-              d="M3 17l4-4 4 4 10-10"
+              d="M3 10.5L12 3l9 7.5"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
             <path
-              d="M14 7h7v7"
+              d="M5 9.5V19a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1V9.5"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
-        </button>
-        <button className="sidebar-btn" aria-label="Portfolio">
-          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+        </Link>
+        <Link href="/documents-vault" className={`sidebar-btn ${pathname === "/documents-vault" ? "active" : ""}`} aria-label="Document Vault">
+          <svg viewBox="0 0 18 18" fill="none" width="18" height="18">
             <path
-              d="M12 2l2.4 4.8L20 8l-4 3.8 1 5.2-5-2.6L7 17l1-5.2-4-3.8 5.6-1.2L12 2z"
+              d="M14.286 7.143V4.85728C14.286 3.65717 14.286 3.05711 14.0524 2.59873C13.847 2.19553 13.5192 1.86771 13.116 1.66227C12.6576 1.42871 12.0575 1.42871 10.8574 1.42871H6.28599C5.08588 1.42871 4.48582 1.42871 4.02744 1.66227C3.62424 1.86771 3.29642 2.19553 3.09098 2.59873C2.85742 3.05711 2.85742 3.65717 2.85742 4.85728V12.2859C2.85742 13.486 2.85742 14.086 3.09098 14.5444C3.29642 14.9476 3.62424 15.2754 4.02744 15.4809C4.48582 15.7144 5.08588 15.7144 6.28599 15.7144H7.50028M9.28599 7.85728H5.71456M7.85742 10.7144H5.71456M11.4288 5.00014H5.71456M13.7503 12.143V10.893C13.7503 10.2026 13.1906 9.643 12.5003 9.643C11.8099 9.643 11.2503 10.2026 11.2503 10.893V12.143M11.1431 15.0001H13.8574C14.2575 15.0001 14.4575 15.0001 14.6103 14.9223C14.7447 14.8538 14.8539 14.7445 14.9224 14.6101C15.0003 14.4573 15.0003 14.2573 15.0003 13.8573V13.2859C15.0003 12.8858 15.0003 12.6858 14.9224 12.533C14.8539 12.3986 14.7447 12.2893 14.6103 12.2208C14.4575 12.143 14.2575 12.143 13.8574 12.143H11.1431C10.7431 12.143 10.5431 12.143 10.3903 12.2208C10.2559 12.2893 10.1466 12.3986 10.0781 12.533C10.0003 12.6858 10.0003 12.8858 10.0003 13.2859V13.8573C10.0003 14.2573 10.0003 14.4573 10.0781 14.6101C10.1466 14.7445 10.2559 14.8538 10.3903 14.9223C10.5431 15.0001 10.7431 15.0001 11.1431 15.0001Z"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="1.71429"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
-        </button>
-        <button className="sidebar-btn" aria-label="Goals">
-          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-            <path
-              d="M12 2l2.09 6.26L20.18 9l-5 4.09L16.54 20 12 16.27 7.46 20l1.36-6.91-5-4.09 6.09-.74L12 2z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
-          </svg>
-        </button>
-        <button className="sidebar-btn" aria-label="Reports">
-          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-            <path
-              d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M14 2v6h6M8 13h8M8 17h8"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+        </Link>
       </nav>
 
       <div className="sidebar-avatar">
-        <div className="avatar-placeholder" />
+        <Link href="/profile" className="avatar-btn">
+          <div className="vault-avatar" />
+        </Link>
       </div>
     </aside>
   );

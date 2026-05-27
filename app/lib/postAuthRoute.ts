@@ -2,7 +2,10 @@ import { listPortfolios } from "./portfoliosApi";
 import type { Profile } from "./realAuthApi";
 
 export async function getPostProfileRoute(profile: Profile) {
-  if (!profile.display_name?.trim()) {
+  const emailPrefix = profile.email.split("@")[0];
+  const displayName = profile.name?.trim();
+
+  if (!displayName || displayName === emailPrefix) {
     return "/profile/setup";
   }
 

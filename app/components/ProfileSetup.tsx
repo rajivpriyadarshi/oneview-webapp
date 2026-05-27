@@ -3,15 +3,22 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand, ZincBrand } from "./BrandMarks";
-import { getPostProfileRoute } from "../lib/postAuthRoute";
-import { getProfile, updateProfile } from "../lib/realAuthApi";
+import { useGetProfileQuery, useUpdateProfileMutation } from "../store/api";
+import { api } from "../store/api";
+import { store } from "../store/store";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
+import type { Profile } from "../lib/realAuthApi";
 
 export function ProfileSetup() {
   const router = useRouter();
   const [displayName, setDisplayName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
+    skip: !getStoredAuthToken(),
+  });
+  const [updateProfile] = useUpdateProfileMutation();
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -21,18 +28,26 @@ export function ProfileSetup() {
       return;
     }
 
-    getProfile()
-      .then((profile) => getPostProfileRoute(profile))
-      .then((route) => {
-        if (route !== "/profile/setup") {
-          router.replace(route);
-        }
-      })
-      .catch(() => {
-        clearAuthToken();
-        router.replace("/");
-      });
-  }, [router]);
+    if (profileError) {
+      clearAuthToken();
+      router.replace("/");
+      return;
+    }
+
+    if (!profile) return;
+
+    getPostProfileRoute(profile).then((route) => {
+      if (route !== "/profile/setup") {
+        router.replace(route);
+      }
+    });
+  }, [router, profile, profileError]);
+
+  function isNameValid(name: string): boolean {
+    const trimmedName = name.trim();
+    const nameWithoutSpaces = trimmedName.replace(/\s+/g, "");
+    return nameWithoutSpaces.length >= 2;
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,11 +60,16 @@ export function ProfileSetup() {
       return;
     }
 
+    if (!isNameValid(displayName)) {
+      setError("Name must be at least 2 characters.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      const profile = await updateProfile({ display_name: trimmedName });
-      router.replace(await getPostProfileRoute(profile));
+      const updatedProfile = await updateProfile({ name: trimmedName }).unwrap();
+      router.replace(await getPostProfileRoute(updatedProfile));
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -63,32 +83,51 @@ export function ProfileSetup() {
 
   return (
     <main className="login-page">
-      <section className="auth-shell auth-shell-card" aria-labelledby="profile-title">
+      <section className="auth-shell profile-shell" aria-labelledby="profile-title">
         <OneviewBrand />
-        <form className="login-card account-card" onSubmit={handleSubmit}>
-          <h1 id="profile-title">What&apos;s your name?</h1>
+        <form className="profile-form" onSubmit={handleSubmit}>
+          <h1 id="profile-title">What should we call you?</h1>
 
-          <label className="field account-field">
-            <span>Full name</span>
+          <div className="profile-name-field">
             <input
               type="text"
-              name="display_name"
+              name="name"
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
+              placeholder="Enter your name"
               autoComplete="name"
-              aria-label="Full name"
+              autoFocus
+              aria-label="Name"
               required
             />
-          </label>
+          </div>
 
-          <button className="continue-button" type="submit" disabled={isSubmitting}>
-            Continue
+          <button
+            className="profile-continue-button"
+            type="submit"
+            disabled={isSubmitting || !isNameValid(displayName)}
+          >
+            {isSubmitting ? "Saving..." : "Proceed"}
           </button>
 
-          {error ? <p className="form-error">{error}</p> : null}
+          {error ? <p className="form-error profile-error">{error}</p> : null}
         </form>
         <ZincBrand />
       </section>
     </main>
   );
+}
+
+async function getPostProfileRoute(profile: Profile): Promise<string> {
+  const emailPrefix = profile.email.split("@")[0];
+  const displayName = profile.name?.trim();
+
+  if (!displayName || displayName === emailPrefix) {
+    return "/profile/setup";
+  }
+
+  const portfoliosResult = await store.dispatch(api.endpoints.listPortfolios.initiate(undefined, { forceRefetch: true }));
+  const portfolios = portfoliosResult.data ?? [];
+
+  return portfolios.length === 0 ? "/onboarding/documents" : "/dashboard";
 }

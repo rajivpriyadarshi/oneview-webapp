@@ -3,5 +3,5 @@ export const appConfig = {
   apiBaseUrl:
     process.env.NEXT_PUBLIC_API_BASE_URL ??
     "https://labs-sbox.zinc.money/api/wealth",
-  googleAuthStartUrl: process.env.NEXT_PUBLIC_GOOGLE_AUTH_START_URL ?? "",
+  googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
 };

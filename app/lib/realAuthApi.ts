@@ -3,7 +3,7 @@ import { apiRequest } from "./apiClient";
 export type ApiUser = {
   id: number;
   email: string;
-  display_name: string;
+  name: string;
 };
 
 export type AuthSession = {
@@ -11,12 +11,13 @@ export type AuthSession = {
   user: ApiUser;
 };
 
+export type PasswordlessAuthSession = AuthSession & {
+  created: boolean;
+};
+
 export type Profile = {
-  display_name: string;
-  base_currency: string;
-  timezone: string;
+  name: string;
   email: string;
-  is_active: boolean;
 };
 
 export function initiateSignup(input: {
@@ -57,6 +58,30 @@ export function login(input: { email: string; password: string }) {
   });
 }
 
+export function sendPasswordlessOtp(input: { email: string }) {
+  return apiRequest<{ message: string; email: string }>("/auth/passwordless/send-otp/", {
+    method: "POST",
+    body: input,
+    skipAuth: true,
+  });
+}
+
+export function verifyPasswordlessOtp(input: { email: string; otp: string }) {
+  return apiRequest<PasswordlessAuthSession>("/auth/passwordless/verify/", {
+    method: "POST",
+    body: input,
+    skipAuth: true,
+  });
+}
+
+export function resendPasswordlessOtp(input: { email: string }) {
+  return apiRequest<{ message: string }>("/auth/passwordless/resend-otp/", {
+    method: "POST",
+    body: input,
+    skipAuth: true,
+  });
+}
+
 export function logout() {
   return apiRequest<void>("/auth/logout/", {
     method: "POST",
@@ -64,11 +89,11 @@ export function logout() {
 }
 
 export function getProfile() {
-  return apiRequest<Profile>("/me/");
+  return apiRequest<Profile>("/auth/me/");
 }
 
-export function updateProfile(input: Partial<Pick<Profile, "display_name" | "base_currency" | "timezone">>) {
-  return apiRequest<Profile>("/me/", {
+export function updateProfile(input: { name: string }) {
+  return apiRequest<Profile>("/auth/me/", {
     method: "PATCH",
     body: input,
   });

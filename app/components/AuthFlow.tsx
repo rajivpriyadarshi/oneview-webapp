@@ -1,21 +1,41 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { ClipboardEvent, FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OneviewBrand, ZincBrand } from "./BrandMarks";
-import { startGoogleLogin } from "../lib/authApi";
-import { isApiUnauthorized as isRealApiUnauthorized } from "../lib/apiClient";
-import { getPostProfileRoute } from "../lib/postAuthRoute";
-import { getProfile, login } from "../lib/realAuthApi";
+import {
+  GoogleAuthCallbackHandler,
+  initializeGoogleAuth,
+  renderGoogleButton,
+} from "../lib/authApi";
+import {
+  useAuthenticateWithGoogleMutation,
+  useSendPasswordlessOtpMutation,
+  useVerifyPasswordlessOtpMutation,
+  useResendPasswordlessOtpMutation,
+} from "../store/api";
+import { api } from "../store/api";
+import { store } from "../store/store";
 import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
+import { GoogleIdentityScript } from "./GoogleIdentityScript";
+import type { Profile } from "../lib/realAuthApi";
 
 export function AuthFlow() {
   const router = useRouter();
-  const [step, setStep] = useState<"login" | "password">("login");
+  const [step, setStep] = useState<"login" | "otp">("login");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
+  const hiddenGoogleButtonRef = useRef<HTMLDivElement>(null);
+  const otpInputRefs = useRef<Array<HTMLInputElement | null>>([]);
+
+  const [authenticateWithGoogle] = useAuthenticateWithGoogleMutation();
+  const [sendPasswordlessOtp] = useSendPasswordlessOtpMutation();
+  const [verifyPasswordlessOtp] = useVerifyPasswordlessOtpMutation();
+  const [resendPasswordlessOtp] = useResendPasswordlessOtpMutation();
 
   useEffect(() => {
     if (getStoredAuthToken()) {
@@ -23,14 +43,76 @@ export function AuthFlow() {
     }
   }, [router]);
 
+  useEffect(() => {
+    if (!isGoogleLoaded || !hiddenGoogleButtonRef.current) {
+      return;
+    }
+
+    try {
+      const handleGoogleCallback: GoogleAuthCallbackHandler = async (response) => {
+        setError("");
+        setIsSubmitting(true);
+
+        try {
+          const session = await authenticateWithGoogle({ id_token: response.credential }).unwrap();
+          storeAuthToken(session.token);
+          await routeByProfile();
+        } catch (requestError) {
+          setError(getErrorMessage(requestError));
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+
+      initializeGoogleAuth(handleGoogleCallback);
+      renderGoogleButton(hiddenGoogleButtonRef.current);
+    } catch (err) {
+      console.error("Failed to initialize Google Auth:", err);
+    }
+  }, [isGoogleLoaded, router]);
+
+  useEffect(() => {
+    if (step !== "otp" || resendCooldown <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((currentCooldown) => Math.max(currentCooldown - 1, 0));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [resendCooldown, step]);
+
+  useEffect(() => {
+    if (step === "otp") {
+      otpInputRefs.current[0]?.focus();
+    }
+  }, [step]);
+
+  function handleGoogleSubmit() {
+    if (!hiddenGoogleButtonRef.current) {
+      return;
+    }
+
+    const googleButton = hiddenGoogleButtonRef.current.querySelector('div[role="button"]') as HTMLElement;
+    if (googleButton) {
+      googleButton.click();
+    }
+  }
+
   async function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setIsSubmitting(true);
 
     try {
-      validateEmail(email);
-      setStep("password");
+      const normalizedEmail = email.trim();
+      validateEmail(normalizedEmail);
+      await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
+      setEmail(normalizedEmail);
+      setOtp(Array(6).fill(""));
+      setResendCooldown(60);
+      setStep("otp");
     } catch (requestError) {
       setError(getErrorMessage(requestError));
     } finally {
@@ -38,39 +120,23 @@ export function AuthFlow() {
     }
   }
 
-  async function handleGoogleSubmit() {
-    setError("");
-    setIsSubmitting(true);
 
-    try {
-      await startGoogleLogin();
-    } catch (requestError) {
-      if (isUnauthorizedAuthError(requestError)) {
-        router.replace("/");
-        return;
-      }
-
-      setError(getErrorMessage(requestError));
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
-  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleOtpSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setIsSubmitting(true);
 
     try {
-      const session = await login({ email, password });
+      const otpCode = otp.join("");
+
+      if (otpCode.length !== 6) {
+        throw new Error("Enter the 6-digit code.");
+      }
+
+      const session = await verifyPasswordlessOtp({ email, otp: otpCode }).unwrap();
       storeAuthToken(session.token);
       await routeByProfile();
     } catch (requestError) {
-      if (isUnauthorizedAuthError(requestError)) {
-        setError("Invalid email or password.");
-        return;
-      }
-
       setError(getErrorMessage(requestError));
     } finally {
       setIsSubmitting(false);
@@ -80,12 +146,87 @@ export function AuthFlow() {
   function handleDifferentEmail() {
     setStep("login");
     setError("");
+    setOtp(Array(6).fill(""));
+    setResendCooldown(0);
+  }
+
+  function handleOtpChange(index: number, value: string) {
+    const digits = value.replace(/\D/g, "");
+
+    if (!digits) {
+      setOtp((currentOtp) => {
+        const nextOtp = [...currentOtp];
+        nextOtp[index] = "";
+        return nextOtp;
+      });
+      return;
+    }
+
+    setOtp((currentOtp) => {
+      const nextOtp = [...currentOtp];
+      digits
+        .slice(0, 6 - index)
+        .split("")
+        .forEach((digit, offset) => {
+          nextOtp[index + offset] = digit;
+        });
+      return nextOtp;
+    });
+
+    const nextIndex = Math.min(index + digits.length, 5);
+    otpInputRefs.current[nextIndex]?.focus();
+  }
+
+  function handleOtpKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Backspace" && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  }
+
+  function handleOtpPaste(event: ClipboardEvent<HTMLInputElement>) {
+    event.preventDefault();
+    const pastedCode = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+
+    if (!pastedCode) {
+      return;
+    }
+
+    const nextOtp = Array(6).fill("");
+    pastedCode.split("").forEach((digit, index) => {
+      nextOtp[index] = digit;
+    });
+    setOtp(nextOtp);
+    otpInputRefs.current[Math.min(pastedCode.length, 6) - 1]?.focus();
+  }
+
+  async function handleResendOtp() {
+    if (resendCooldown > 0 || isSubmitting) {
+      return;
+    }
+
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      await resendPasswordlessOtp({ email }).unwrap();
+      setOtp(Array(6).fill(""));
+      setResendCooldown(60);
+      otpInputRefs.current[0]?.focus();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   async function routeByProfile() {
     try {
-      const profile = await getProfile();
-      router.replace(await getPostProfileRoute(profile));
+      const profileResult = await store.dispatch(api.endpoints.getProfile.initiate(undefined, { forceRefetch: true }));
+      if (profileResult.error || !profileResult.data) {
+        throw new Error("Failed to fetch profile");
+      }
+      const profile = profileResult.data;
+      router.replace(await getPostProfileRouteFromStore(profile));
     } catch {
       clearAuthToken();
       router.replace("/");
@@ -93,26 +234,31 @@ export function AuthFlow() {
   }
 
   return (
-    <main className="login-page">
-      {step === "login" ? (
-        <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
-          <OneviewBrand />
-          <form className="login-card account-card" onSubmit={handleEmailSubmit}>
-            <h1 id="login-title">Get started</h1>
+    <>
+      <GoogleIdentityScript onLoad={() => setIsGoogleLoaded(true)} />
+      <main className="login-page">
+        {step === "login" ? (
+          <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
+            <OneviewBrand />
+            <form className="login-card account-card" onSubmit={handleEmailSubmit}>
+              <h1 id="login-title">Get started</h1>
 
-            <button
-              className="google-button"
-              type="button"
-              onClick={handleGoogleSubmit}
-              disabled={isSubmitting}
-            >
-              <GoogleIcon />
-              <span>Continue with Google</span>
-            </button>
+              <button
+                className="google-button"
+                type="button"
+                onClick={handleGoogleSubmit}
+                disabled={isSubmitting || !isGoogleLoaded}
+              >
+                <GoogleIcon />
+                <span>Continue with Google</span>
+              </button>
 
-            <div className="or-divider">OR</div>
+              {/* Hidden Google button that gets programmatically clicked */}
+              <div ref={hiddenGoogleButtonRef} style={{ display: 'none' }} />
 
-            <label className="field account-field">
+              <div className="or-divider">OR</div>
+
+            <label className={`field account-field ${email ? 'has-value' : ''}`}>
               <span>Email address</span>
               <input
                 type="email"
@@ -142,49 +288,81 @@ export function AuthFlow() {
           <ZincBrand />
         </section>
       ) : (
-        <section className="auth-shell otp-shell" aria-labelledby="password-title">
+        <section className="auth-shell otp-shell" aria-labelledby="otp-title">
           <OneviewBrand />
-          <form className="otp-panel" onSubmit={handlePasswordSubmit}>
-            <h1 id="password-title">Enter password</h1>
+          <form className="otp-panel" onSubmit={handleOtpSubmit}>
+            <h1 id="otp-title">Verify with OTP</h1>
             <p className="otp-copy">
-              Password login is enabled while OTP login support is being added
-              to the API.
+              Please confirm your email by entering the OTP sent to your email address
             </p>
             <p className="sent-line">
-              <span>Email: {email}</span>
+              <span>Sent to: {email}</span>
               <button type="button" onClick={handleDifferentEmail}>
                 Use a different email
               </button>
             </p>
 
-            <label className="field account-field password-login-field">
-              <span>Password</span>
-              <input
-                type="password"
-                name="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                aria-label="Password"
-                required
-              />
-            </label>
+            <div className="otp-inputs" aria-label="One-time password">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(element) => {
+                    otpInputRefs.current[index] = element;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete={index === 0 ? "one-time-code" : "off"}
+                  maxLength={1}
+                  value={digit}
+                  onChange={(event) => handleOtpChange(index, event.target.value)}
+                  onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                  onPaste={handleOtpPaste}
+                  aria-label={`OTP digit ${index + 1}`}
+                />
+              ))}
+            </div>
 
             <button
               className="continue-button otp-button"
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || otp.join("").length !== 6}
             >
-              Continue
+              Verify OTP
             </button>
 
             {error ? <p className="form-error otp-error">{error}</p> : null}
+
+            <button
+              type="button"
+              className="retry-button"
+              onClick={handleResendOtp}
+              disabled={isSubmitting || resendCooldown > 0}
+            >
+              {resendCooldown > 0
+                ? `Didn't receive it? Retry in ${resendCooldown} sec`
+                : "Didn't receive it? Resend code"}
+            </button>
           </form>
           <ZincBrand />
         </section>
       )}
-    </main>
+      </main>
+    </>
   );
+}
+
+async function getPostProfileRouteFromStore(profile: Profile): Promise<string> {
+  const emailPrefix = profile.email.split("@")[0];
+  const displayName = profile.name?.trim();
+
+  if (!displayName || displayName === emailPrefix) {
+    return "/profile/setup";
+  }
+
+  const portfoliosResult = await store.dispatch(api.endpoints.listPortfolios.initiate(undefined, { forceRefetch: true }));
+  const portfolios = portfoliosResult.data ?? [];
+
+  return portfolios.length === 0 ? "/onboarding/documents" : "/dashboard";
 }
 
 function GoogleIcon() {
@@ -215,6 +393,13 @@ function getErrorMessage(error: unknown) {
     return error.message;
   }
 
+  if (typeof error === "object" && error !== null && "data" in error) {
+    const data = (error as { data: unknown }).data;
+    if (typeof data === "object" && data !== null && "error" in data) {
+      return String((data as { error: unknown }).error);
+    }
+  }
+
   return "Something went wrong. Please try again.";
 }
 
@@ -222,8 +407,4 @@ function validateEmail(email: string) {
   if (!email.includes("@")) {
     throw new Error("Enter a valid email address.");
   }
-}
-
-function isUnauthorizedAuthError(error: unknown) {
-  return isRealApiUnauthorized(error);
 }
