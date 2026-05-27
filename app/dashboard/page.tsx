@@ -7,6 +7,7 @@ import DashboardHeader from "../components/DashboardHeader";
 import PortfolioSummary from "../components/PortfolioSummary";
 import PortfolioExposure from "../components/PortfolioExposure";
 import HoldingsTable from "../components/HoldingsTable";
+import { getPreferredCurrency, setPreferredCurrency } from "../lib/currencyStorage";
 import {
   useListPortfoliosQuery,
   useGetAccountsByPortfolioIdQuery,
@@ -19,7 +20,7 @@ import "../onboarding/processing/processing.css";
 export default function DashboardPage() {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
-  const [currency, setCurrency] = useState("INR");
+  const [currency, setCurrency] = useState(getPreferredCurrency());
 
   const { data: portfolios = [] } = useListPortfoliosQuery();
 
@@ -64,6 +65,7 @@ export default function DashboardPage() {
 
   const handleCurrencyChange = (curr: string) => {
     setCurrency(curr);
+    setPreferredCurrency(curr);
   };
 
   const handlePortfolioChange = (portfolioId: number) => {

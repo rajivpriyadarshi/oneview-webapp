@@ -16,10 +16,10 @@ type ChartSegment = {
 
 // Color palette for charts - designed for visual distinction and accessibility
 const CHART_COLORS = [
-  "#FE5D26",
-  "#388DE8",
-  "#CE8016",
+  "#4d558a",
+  "#e39f4b",
   "#6438E8",
+  "#CE8016",  
   "#59886B",
   "#444444",    
   "#FFC75F",    
@@ -97,14 +97,18 @@ export default function PortfolioExposure({ portfolioView }: Props) {
           <p className="exposure-chart-label">
             By <strong>Asset type</strong>
           </p>
-          <LabeledDonut segments={assetTypeData} currency={currency} />
+          <div className="exposure-chart-content">
+            <LabeledDonut segments={assetTypeData} currency={currency} />
+          </div>
         </div>
 
         <div className="exposure-chart">
           <p className="exposure-chart-label">
             By <strong>Broker</strong>
           </p>
-          <LabeledDonut segments={brokerData} currency={currency} />
+          <div className="exposure-chart-content">
+            <LabeledDonut segments={brokerData} currency={currency} />
+          </div>
         </div>
 
         {hasSectorData && (
@@ -112,7 +116,9 @@ export default function PortfolioExposure({ portfolioView }: Props) {
             <p className="exposure-chart-label">
               By <strong>Sector allocation</strong>
             </p>
-            <SectorBarChart segments={sectorData} currency={currency} />
+            <div className="exposure-chart-content">
+              <SectorBarChart segments={sectorData} currency={currency} />
+            </div>
           </div>
         )}
       </div>
