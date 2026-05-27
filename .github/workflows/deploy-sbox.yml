@@ -28,7 +28,7 @@ jobs:
         run: |
           touch .env.local
           echo "NEXT_PUBLIC_APP_ENV=development" >> .env.local
-          echo "NEXT_PUBLIC_API_BASE=${{ vars.NEXT_PUBLIC_API_BASE }}" >> .env.local
+          echo "NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL }}" >> .env.local
           echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}" >> .env.local
           cat .env.local
           
