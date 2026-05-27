@@ -1,0 +1,98 @@
+name: Deploy meridian.zinc.money
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA to deploy'
+        required: true
+
+env:
+  ENVIRONMENT: main
+  SERVICE: meridian-prod
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create env file
+        run: |
+          touch .env.local
+          echo "NEXT_PUBLIC_APP_ENV=development" >> .env.local
+          echo "NEXT_PUBLIC_API_BASE=${{ vars.NEXT_PUBLIC_API_BASE }}" >> .env.local
+          echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}" >> .env.local
+          cat .env.local
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@0e613a0980cbf65ed5b322eb7a1e075d28913a83
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@62f4f872db3836360b72999f4b87f1ff13310f3a
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }},${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster ${{ vars.ECS_CLUSTER_NAME }} \
+            --service ${{ vars.ECS_SERVICE_NAME }} \
+            --force-new-deployment
+
+      - name: Wait for service to be stable
+        run: |
+          echo "Waiting for ECS service to be stable..."
+          aws ecs wait services-stable \
+            --cluster ${{ vars.ECS_CLUSTER_NAME }} \
+            --services ${{ vars.ECS_SERVICE_NAME }}
+      
+      # - name: Notify Slack on Success
+      #   if: ${{ success() }}
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #   run: |
+      #     curl -X POST -H 'Content-type: application/json' \
+      #     --data '{
+      #       "text": ":tada: Deployment succeeded for branch `${{ github.ref_name }}` in repository `${{ github.repository }}`.\n\n*Service:* `${{ env.SERVICE }}`\n*Environment:* `${{ env.ENVIRONMENT }}`"
+      #     }' \
+      #     $SLACK_WEBHOOK_URL
+
+      # - name: Notify Slack on Failure
+      #   if: ${{ failure() }}
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      #   run: |
+      #     curl -X POST -H 'Content-type: application/json' \
+      #     --data '{
+      #       "text": ":x: Deployment failed for branch `${{ github.ref_name }}` in repository `${{ github.repository }}`.\n\n*Service:* `${{ env.SERVICE }}`\n*Environment:* `${{ env.ENVIRONMENT }}`"
+      #     }' \
+      #     $SLACK_WEBHOOK_URL
