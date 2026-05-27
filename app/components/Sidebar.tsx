@@ -1,21 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { clearAuthToken } from "../lib/session";
+import { usePathname } from "next/navigation";
 import { MeridianLogo } from "./MeridianLogo";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-
-  const [showMenu, setShowMenu] = useState(false);
-
-  const handleLogout = () => {
-    clearAuthToken();
-    router.push("/");
-  };
 
   return (
     <aside className="sidebar">
@@ -56,31 +46,9 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-avatar">
-        <button className="avatar-btn" onClick={() => setShowMenu(!showMenu)}>
+        <Link href="/profile" className="avatar-btn">
           <div className="vault-avatar" />
-        </button>
-        {showMenu && (
-          <>
-            <div
-              className="avatar-popover-backdrop"
-              onClick={() => setShowMenu(false)}
-            />
-            <div className="avatar-popover">
-              <button className="popover-item" onClick={handleLogout}>
-                <svg viewBox="0 0 18 18" fill="none" width="16" height="16">
-                  <path
-                    d="M12.333 12.333L15.666 9m0 0L12.333 5.667M15.666 9H6.333M6.333 2.333H5.2c-1.12 0-1.68 0-2.108.218a2 2 0 00-.874.874c-.218.428-.218.988-.218 2.108v7.934c0 1.12 0 1.68.218 2.108a2 2 0 00.874.874c.428.218.988.218 2.108.218h1.133"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                Logout
-              </button>
-            </div>
-          </>
-        )}
+        </Link>
       </div>
     </aside>
   );

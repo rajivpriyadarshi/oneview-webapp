@@ -34,6 +34,7 @@ export default function PortfolioSummary({
   const gainAmount = summary ? formatLakhs(summary.total_gain_amount) : "—";
   const gainPct = summary?.total_gain_pct != null ? `${summary.total_gain_pct.toFixed(2)}%` : "";
   const isPositive = summary ? summary.total_gain_amount >= 0 : true;
+  const asOfDate = portfolioView?.as_of_date ? formatDate(portfolioView.as_of_date) : "";
 
   return (
     <section className="portfolio-summary">
@@ -48,7 +49,27 @@ export default function PortfolioSummary({
           </p>
         </div>
         <div className="portfolio-meta">
+          {asOfDate && (
+            <span className="portfolio-date">
+              Prices as of <strong>{asOfDate}</strong>
+            </span>
+          )}
           <div className="portfolio-filters">
+           
+            <div className="currency-toggle">
+              <button
+                className={`currency-option ${currency === "INR" ? "active" : ""}`}
+                onClick={() => onCurrencyChange("INR")}
+              >
+                INR
+              </button>
+              <button
+                className={`currency-option ${currency === "USD" ? "active" : ""}`}
+                onClick={() => onCurrencyChange("USD")}
+              >
+                USD
+              </button>
+            </div>
             <div className="filter-select-wrapper">
               <select
                 className="filter-btn"
@@ -66,20 +87,6 @@ export default function PortfolioSummary({
                 ))}
               </select>
               <ChevronDown />
-            </div>
-            <div className="currency-toggle">
-              <button
-                className={`currency-option ${currency === "INR" ? "active" : ""}`}
-                onClick={() => onCurrencyChange("INR")}
-              >
-                INR
-              </button>
-              <button
-                className={`currency-option ${currency === "USD" ? "active" : ""}`}
-                onClick={() => onCurrencyChange("USD")}
-              >
-                USD
-              </button>
             </div>
           </div>
         </div>
