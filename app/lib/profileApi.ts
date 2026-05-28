@@ -21,13 +21,13 @@ export type ProfileUpdateRequest = {
 };
 
 export async function getUserProfile(): Promise<UserProfile> {
-  return apiRequest<UserProfile>("/auth/me/");
+  return apiRequest<UserProfile>("/me/");
 }
 
 export async function updateUserProfile(
   updates: ProfileUpdateRequest
 ): Promise<UserProfile> {
-  return apiRequest<UserProfile>("/auth/me/", {
+  return apiRequest<UserProfile>("/me/", {
     method: "PATCH",
     body: updates,
   });

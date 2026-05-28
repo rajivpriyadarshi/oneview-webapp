@@ -56,14 +56,14 @@ export const api = createApi({
 
     // Profile
     getProfile: builder.query<Profile, void>({
-      query: () => "/auth/me/",
+      query: () => "/me/",
       providesTags: ["Profile"],
     }),
     updateProfile: builder.mutation<
       Profile,
-      { name: string }
+      Partial<Pick<Profile, "display_name" | "base_currency" | "timezone" | "mailer_frequency">>
     >({
-      query: (body) => ({ url: "/auth/me/", method: "PATCH", body }),
+      query: (body) => ({ url: "/me/", method: "PATCH", body }),
       invalidatesTags: ["Profile"],
     }),
 

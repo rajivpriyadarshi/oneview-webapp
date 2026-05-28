@@ -90,7 +90,7 @@ export function ProfileSetup() {
     setIsSubmitting(true);
 
     try {
-      const updatedProfile = await updateProfile({ name: trimmedName }).unwrap();
+      const updatedProfile = await updateProfile({ display_name: trimmedName }).unwrap();
 
       trackAPI({
         pageName: trackingEventsMap.profileSetupPage.PAGE,

@@ -53,15 +53,9 @@ export function AuthFlow() {
   }, [step]);
 
   useEffect(() => {
-    const authToken = getStoredAuthToken();
-
-    if (!authToken) {
-      store.dispatch(api.util.resetApiState());
-      return;
-    }
-
-    routeByProfile();
-  }, [router]);
+    clearAuthToken();
+    store.dispatch(api.util.resetApiState());
+  }, []);
 
   useEffect(() => {
     if (!isGoogleLoaded || !hiddenGoogleButtonRef.current) {

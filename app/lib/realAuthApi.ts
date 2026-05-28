@@ -97,11 +97,13 @@ export function logout() {
 }
 
 export function getProfile() {
-  return apiRequest<Profile>("/auth/me/");
+  return apiRequest<Profile>("/me/");
 }
 
-export function updateProfile(input: { name: string }) {
-  return apiRequest<Profile>("/auth/me/", {
+export function updateProfile(
+  input: Partial<Pick<Profile, "display_name" | "base_currency" | "timezone" | "mailer_frequency">>,
+) {
+  return apiRequest<Profile>("/me/", {
     method: "PATCH",
     body: input,
   });
