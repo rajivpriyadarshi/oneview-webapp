@@ -86,6 +86,7 @@
   background: rgba(255, 255, 255, 0.60);
   padding: 0;
   margin-bottom: 12px;
+  overflow: hidden;
 }
 
 .profile-menu-item {
@@ -94,6 +95,12 @@
   justify-content: space-between;
   padding: 20px 24px;
   border: none;
+  border-radius: 999px;
+  transition: background 0.15s;
+}
+
+.profile-menu-item:hover {
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .profile-menu-item-left {
@@ -115,6 +122,7 @@
   cursor: pointer;
   transition: background 0.15s;
   text-align: left;
+  border-radius: 999px;
 }
 
 .profile-menu-btn:hover {
@@ -199,6 +207,10 @@
 }
 
 @media (max-width: 640px) {
+  .profile-page {
+    padding-top: 88px;
+  }
+
   .profile-name {
     font-size: 2rem;
   }

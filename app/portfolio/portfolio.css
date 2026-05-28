@@ -3,16 +3,17 @@
   display: flex;
   min-height: 100vh;
   background: var(--background);
+  overflow-x: hidden;
 }
 
 /* Sidebar */
 .sidebar {
-  width: 104px;
+  width: 64px;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 36px 0 24px;
+  padding: 24px 0 16px;
   position: fixed;
   left: 0;
   top: 0;
@@ -25,13 +26,20 @@
 .sidebar-logo {
   display: grid;
   place-items: center;
-  margin-bottom: 44px;
+  margin-bottom: 36px;
   color: var(--foreground);
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  text-decoration: none;
+}
+
+.sidebar-logo:hover {
+  opacity: 0.7;
 }
 
 .sidebar-logo svg {
-  width: 52px;
-  height: 52px;
+  width: 36px;
+  height: 36px;
 }
 
 .sidebar-nav {
@@ -42,8 +50,8 @@
 }
 
 .sidebar-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: grid;
   place-items: center;
   border: 0;
@@ -135,8 +143,10 @@
 /* Main Content */
 .dashboard-main {
   flex: 1;
-  margin-left: 104px;
+  margin-left: 64px;
   padding: 40px;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 .sidebar-toggle,
@@ -1114,7 +1124,7 @@ select.filter-btn option {
   }
 
   .sidebar {
-    width: 88px;
+    width: 64px;
     height: 100vh;
     position: fixed;
     top: 0;
@@ -1122,7 +1132,7 @@ select.filter-btn option {
     right: auto;
     flex-direction: column;
     align-items: center;
-    padding: 28px 0 18px;
+    padding: 24px 0 16px;
     background: #fff;
     border-right: 1px solid rgba(0, 0, 0, 0.08);
     border-bottom: 0;
@@ -1139,12 +1149,12 @@ select.filter-btn option {
 
   .sidebar-logo {
     margin-right: 0;
-    margin-bottom: 40px;
+    margin-bottom: 36px;
   }
 
   .sidebar-logo svg {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
   }
 
   .sidebar-nav {
@@ -1154,8 +1164,8 @@ select.filter-btn option {
   }
 
   .sidebar-btn {
-    width: 44px;
-    height: 44px;
+    width: 36px;
+    height: 36px;
     border: 1.5px solid transparent;
     border-radius: 12px;
   }
@@ -1179,13 +1189,16 @@ select.filter-btn option {
     position: absolute;
     top: auto;
     right: auto;
-    left: 56px;
+    left: 70px;
     bottom: 0;
   }
 
   .dashboard-main {
     margin-left: 0;
     padding: 72px 16px 20px;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
   }
 
   .portfolio-value {

@@ -1,14 +1,45 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MeridianLogo } from "./MeridianLogo";
+import { getUserProfile, type UserProfile } from "../lib/profileApi";
+
+const CHART_COLORS = [
+  "#FE5D26", "#388DE8", "#CE8016", "#6438E8", "#59886B",
+  "#444444", "#FFC75F", "#9EDE73", "#184D47", "#D2DB20",
+  "#939191", "#76FDB0", "#2F2B2C", "#FFB2FC", "#B0EDFF",
+  "#A3A1FB", "#7A2783", "#F46396"
+];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const closeSidebar = () => setIsOpen(false);
+
+  useEffect(() => {
+    getUserProfile()
+      .then((data) => setProfile(data))
+      .catch((error) => console.error("Failed to fetch profile:", error));
+  }, []);
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name[0]?.toUpperCase() || "U";
+  };
+
+  const getColorFromName = (name: string) => {
+    const asciiSum = name.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return CHART_COLORS[asciiSum % CHART_COLORS.length];
+  };
+
+  const initials = profile ? getInitials(profile.display_name) : "U";
+  const avatarColor = profile ? getColorFromName(profile.display_name) : CHART_COLORS[0];
 
   return (
     <>
@@ -34,9 +65,9 @@ export default function Sidebar() {
       ) : null}
 
       <aside className={`sidebar${isOpen ? " is-open" : ""}`}>
-        <div className="sidebar-logo">
-          <MeridianLogo width={52} height={52} />
-        </div>
+        <Link href="/dashboard" className="sidebar-logo" onClick={closeSidebar} aria-label="Go to Dashboard">
+          <MeridianLogo width={36} height={36} />
+        </Link>
 
         <nav className="sidebar-nav">
           <Link href="/dashboard" className={`sidebar-btn ${pathname === "/dashboard" ? "active" : ""}`} aria-label="Home" onClick={closeSidebar}>
@@ -72,7 +103,24 @@ export default function Sidebar() {
 
         <div className="sidebar-avatar">
           <Link href="/profile" className="avatar-btn" onClick={closeSidebar}>
-            <div className="vault-avatar" />
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+              <circle cx="16" cy="16" r="16" fill={avatarColor} />
+              <text
+                x="16"
+                y="16"
+                textAnchor="middle"
+                dominantBaseline="central"
+                style={{
+                  fill: "#FFF",
+                  fontFamily: "Inter",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.48px",
+                }}
+              >
+                {initials}
+              </text>
+            </svg>
           </Link>
         </div>
       </aside>
