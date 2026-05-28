@@ -628,9 +628,11 @@ select.filter-btn option {
 
 .sector-donut-wrapper {
   width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 20px;
 }
 
@@ -639,6 +641,12 @@ select.filter-btn option {
   max-width: 280px;
   height: auto;
   overflow: visible;
+}
+
+@media (min-width: 1920px) {
+  .sector-donut-svg {
+    max-width: 420px;
+  }
 }
 
 .sector-donut-arc {
@@ -655,7 +663,6 @@ select.filter-btn option {
   gap: 8px;
   justify-content: center;
   width: 100%;
-  max-width: 340px;
 }
 
 .sector-donut-chip {
