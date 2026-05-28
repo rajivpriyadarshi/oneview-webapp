@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { getStoredAuthToken } from "../lib/session";
+import { trackingEventsMap } from "../constants/trackingEventsMap";
+import useAnalytics from "../hooks/useAnalytics";
 
 export function LandingPage() {
   const router = useRouter();
   const [isChecking, setIsChecking] = useState(true);
+  const { trackPage, trackClick } = useAnalytics();
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -19,12 +22,22 @@ export function LandingPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    trackPage({
+      pageName: trackingEventsMap.landingPage.PAGE,
+      params: {
+        page_url: window.location.href,
+        page_title: document.title,
+      },
+    });
+  }, []);
+
   if (isChecking) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col relative">
+    <div className="relative flex min-h-screen flex-col bg-white font-satoshi">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
@@ -39,42 +52,21 @@ export function LandingPage() {
       {/* Header */}
       <header className="flex justify-between items-center px-8 lg:px-16 py-6 relative z-10">
         <div className="flex items-center gap-3">
-          <img src="/Logo.png" alt="Meridian" className="h-10 w-auto block" />
-          <span className="text-[#9CA3AF] text-[20px] font-medium leading-none">by</span>
-          <svg
-            width="59"
-            height="19"
-            viewBox="0 0 59 19"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-7 w-auto block"
-          >
-            <g clipPath="url(#clip0_8069_13857)">
-              <path d="M16.5085 9.54132L12.8887 11.6385V7.62891L16.5085 9.54132Z" fill="#9CA3AF"/>
-              <path d="M3.60189 7.41608L3.60822 11.5995L0.0244141 9.65039L3.60189 7.41608Z" fill="#9CA3AF"/>
-              <path fillRule="evenodd" clipRule="evenodd" d="M8.55032 18.766L16.5276 14.1603V10.1682L12.3607 12.5776L12.3242 2.1825L8.54399 0L8.55032 18.766ZM7.95174 0.0397955L0 4.63069L0 8.97128L4.1378 6.41183L4.1378 16.5856L4.16533 16.6014L4.1378 16.6172V16.6315L6.76883 18.1045L7.95807 18.791L7.95174 0.0397955Z" fill="#9CA3AF"/>
-              <path d="M45.7258 14.8392H43.747L37.7933 5.83314V14.8392H35.8145V2.76172H37.7933L43.747 11.7504V2.76172H45.7258V14.8392Z" fill="#9CA3AF"/>
-              <path d="M33.7143 2.76172V14.8392H31.7451V2.76172H33.7143Z" fill="#9CA3AF"/>
-              <path d="M24.0442 13.1188H29.6454V14.8392H21.7031V13.2926L27.287 4.4821H21.7031V2.76172H29.6454V4.30833L24.0442 13.1188Z" fill="#9CA3AF"/>
-              <path fillRule="evenodd" clipRule="evenodd" d="M58.5203 12.3475C57.4272 13.8979 55.6225 14.9106 53.5813 14.9106C50.2459 14.9106 47.542 12.2067 47.542 8.87129C47.542 5.5359 50.2459 2.83203 53.5813 2.83203C55.4436 2.83203 57.1091 3.67502 58.2169 5.00024L56.8656 6.12874C56.0967 5.11683 54.9114 4.4683 53.5818 4.4683C51.264 4.4683 49.385 6.43892 49.385 8.8698C49.385 11.3007 51.264 13.2713 53.5818 13.2713C55.0331 13.2713 56.3124 12.4986 57.066 11.3241L58.5203 12.3475Z" fill="#9CA3AF"/>
-            </g>
-            <defs>
-              <clipPath id="clip0_8069_13857">
-                <rect width="58.5207" height="18.791" fill="white"/>
-              </clipPath>
-            </defs>
-          </svg>
+          <img src="/logo.png" alt="Meridian" className="h-10 w-auto block" />
         </div>
 
         <div className="flex items-center gap-4">
-          <Link href="/auth" className="text-gray-700 hover:text-black transition-colors font-medium">
-            Sign in
-          </Link>
           <Link
             href="/dashboard"
             className="bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+            onClick={() =>
+              trackClick({
+                buttonName: trackingEventsMap.landingPage.CLICK_TRY_MERIDIAN,
+                pageName: trackingEventsMap.landingPage.PAGE,
+              })
+            }
           >
-            Try Meridian
+            See your Oneview
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M5 12H19M12 19L19 12L12 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -87,7 +79,7 @@ export function LandingPage() {
         <div className="w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-start">
           {/* Left Column - Text Content */}
           <div className="pt-8">
-            <h1 className="font-[family-name:var(--font-butler)] font-medium mb-8" style={{ fontSize: '72px', lineHeight: '86.40px' }}>
+            <h1 className="mb-4 font-butler-medium text-[72px] font-medium leading-[86.4px] tracking-[-0.04em]">
               <div className="text-black">
                 Get a single view
               </div>
@@ -99,38 +91,42 @@ export function LandingPage() {
               </div>
             </h1>
 
-            <p className="max-w-md font-[family-name:var(--font-geist)] mb-8" style={{ color: 'rgba(0, 0, 0, 0.70)', fontSize: '18px', fontWeight: 400, lineHeight: '27px' }}>
+            <p className="mb-8 max-w-md text-[18px] font-normal leading-[27px] text-black/70">
               Meridian lets you create a single view of all your investments across
               different regions
             </p>
 
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-2 bg-black rounded-full hover:bg-gray-800 transition-colors font-[family-name:var(--font-inter)] mb-8"
-              style={{ color: 'white', fontSize: '16px', fontWeight: 600, lineHeight: '24px', paddingLeft: '24px', paddingRight: '24px', paddingTop: '16px', paddingBottom: '16px' }}
+              className="mb-6 inline-flex items-center gap-2 rounded-full bg-black px-6 py-4 text-[16px] font-semibold leading-6 text-white transition-colors hover:bg-gray-800"
+              onClick={() =>
+                trackClick({
+                  buttonName: trackingEventsMap.landingPage.CLICK_SEE_ONEVIEW,
+                  pageName: trackingEventsMap.landingPage.PAGE,
+                })
+              }
             >
-              See your Oneview
+              Try Meridian
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5 12H19M12 19L19 12L12 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </Link>
 
-            <p className="font-[family-name:var(--font-geist)]" style={{ color: 'rgba(0, 0, 0, 0.70)', fontSize: '14px', fontWeight: 400, lineHeight: '21px' }}>
+            <p className="text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-black/70">
               Your data stays encrypted • 100% Safe and Secure
             </p>
           </div>
 
           {/* Right Column - Video */}
           <div className="relative lg:pl-8">
-            <div className="relative rounded-[40px] shadow-2xl bg-gradient-to-b from-white/5 via-[#FFFCF5] to-white/5 p-4" style={{ backgroundBlendMode: 'overlay' }}>
+            <div className="relative rounded-[40px] bg-gradient-to-b from-white/5 via-[#FFFCF5] to-white/5 p-4 shadow-2xl bg-blend-overlay">
               <div className="rounded-[36px] overflow-hidden bg-[#FFFCF5]">
                 <video
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="w-full h-auto block rounded-[36px]"
-                  style={{ clipPath: 'inset(2px 2px round 36px)' }}
+                  className="block h-auto w-full rounded-[36px] [clip-path:inset(2px_2px_round_36px)]"
                 >
                   <source src="/Hero-Explainer.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
@@ -140,6 +136,39 @@ export function LandingPage() {
           </div>
         </div>
       </main>
+
+      <footer className="relative z-10 mt-[120px] px-8 pb-8 lg:px-16">
+        <div className="mx-auto max-w-7xl border-t border-black/10 pt-8">
+          <div className="grid grid-cols-1 items-center gap-6 text-center md:grid-cols-3 md:text-left">
+            <p className="text-[13.23px] leading-[19.84px] tracking-[0px] text-black/55">Copyright 2026. Meridian by Zinc</p>
+
+            <div className="flex justify-center">
+              <Image src="/zinc-full.png" alt="Zinc" width={111} height={32} className="h-8 w-auto" />
+            </div>
+
+            <div className="flex items-center justify-center gap-5 text-[13.23px] leading-[19.84px] tracking-[0px] text-black/60 md:justify-end">
+              <Link href="/privacy" className="transition-colors hover:text-black">
+                Privacy
+              </Link>
+              <Link href="#" className="transition-colors hover:text-black">
+                Terms
+              </Link>
+              <span className="text-black/20">|</span>
+              <a
+                href="https://www.linkedin.com/company/zincmoney/"
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Zinc on LinkedIn"
+                className="text-black transition-opacity hover:opacity-100 opacity-100"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4.67969 5.83218C4.67969 5.26248 5.15309 4.80078 5.73719 4.80078H18.0222C18.6063 4.80078 19.0797 5.26248 19.0797 5.83218V18.1694C19.0797 18.7391 18.6063 19.2008 18.0222 19.2008H5.73719C5.15309 19.2008 4.67969 18.7391 4.67969 18.1694V5.83218ZM9.12839 16.8554V10.3529H6.96749V16.8554H9.12839ZM8.04839 9.46458C8.80169 9.46458 9.27059 8.96598 9.27059 8.34138C9.25709 7.70328 8.80259 7.21818 8.06279 7.21818C7.32299 7.21818 6.83969 7.70418 6.83969 8.34138C6.83969 8.96598 7.30859 9.46458 8.03399 9.46458H8.04839ZM12.4656 16.8554V13.2239C12.4656 13.0295 12.48 12.8351 12.5376 12.6965C12.6933 12.3086 13.0488 11.9063 13.6464 11.9063C14.4285 11.9063 14.7408 12.5021 14.7408 13.3769V16.8554H16.9017V13.1258C16.9017 11.1278 15.8361 10.199 14.4141 10.199C13.2675 10.199 12.7536 10.829 12.4656 11.2727V11.2952H12.4512L12.4656 11.2727V10.3529H10.3056C10.3326 10.9631 10.3056 16.8554 10.3056 16.8554H12.4656Z" fill="#000000" />
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

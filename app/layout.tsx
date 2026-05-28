@@ -3,18 +3,8 @@ import { Geist, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { Suspense } from "react";
 import StoreProvider from "./store/StoreProvider";
-import AnalyticsTracker from "./components/AnalyticsTracker";
+import Analytics from "./utils/analytics";
 import "./globals.css";
-
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
 
 const butlerPro = localFont({
   src: [
@@ -22,6 +12,24 @@ const butlerPro = localFont({
     { path: "./fonts/ButlerPro-SemiBold.woff2", weight: "600", style: "normal" },
   ],
   variable: "--font-butler",
+  display: "swap",
+});
+
+const butlerProMedium = localFont({
+  src: [{ path: "./fonts/ButlerPro-Medium.woff2", weight: "500", style: "normal" }],
+  variable: "--font-butler-medium",
+  display: "swap",
+});
+
+const butlerProSemiBold = localFont({
+  src: [{ path: "./fonts/ButlerPro-SemiBold.woff2", weight: "600", style: "normal" }],
+  variable: "--font-butler-semibold",
+  display: "swap",
+});
+
+const satoshi = localFont({
+  src: [{ path: "./fonts/satoshi-variable.woff2", weight: "300 900", style: "normal" }],
+  variable: "--font-satoshi",
   display: "swap",
 });
 
@@ -36,13 +44,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${inter.variable} ${butlerPro.variable}`}>
+    <html
+      lang="en"
+      className={`${butlerPro.variable} ${butlerProMedium.variable} ${butlerProSemiBold.variable} ${satoshi.variable}`}
+    >
       <body>
         <StoreProvider>
           <Suspense fallback={null}>
-            <AnalyticsTracker />
+            <Analytics>
+              {children}
+            </Analytics>
           </Suspense>
-          {children}
+          
         </StoreProvider>
       </body>
     </html>
