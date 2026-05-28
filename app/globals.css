@@ -1635,7 +1635,7 @@ button:disabled {
   flex: 0 0 auto;
   border-radius: 3px;
   color: #fff;
-  font-size: 7px;
+  font-size: 0.4375rem;
   font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -1783,7 +1783,7 @@ button:disabled {
   }
 
   .dashboard-nav .brand {
-    font-size: 24px;
+    font-size: 1.5rem;
   }
 
   .dashboard-content {

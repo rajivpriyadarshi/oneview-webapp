@@ -86,7 +86,7 @@
   border: none;
   border-radius: 8px;
   background: none;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   color: var(--foreground);
@@ -137,7 +137,7 @@
 
   .add-more-btn,
   .upload-btn {
-    font-size: 14px;
+    font-size: 0.875rem;
     padding: 12px 20px;
   }
 
