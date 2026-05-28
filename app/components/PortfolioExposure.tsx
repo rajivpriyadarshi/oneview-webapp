@@ -38,7 +38,26 @@ const CHART_COLORS = [
 
 const ASSET_COLORS = CHART_COLORS;
 const BROKER_COLORS = CHART_COLORS;
-const SECTOR_COLORS = CHART_COLORS;
+const SECTOR_COLORS = [
+  "#F5A623",
+  "#2BC5BD",
+  "#5B7FE8",
+  "#E84393",
+  "#9B4DCA",
+  "#E85454",
+  "#27B16C",
+  "#F5D842",
+  "#E87B28",
+  "#4DB6AC",
+  "#7986CB",
+  "#EF5350",
+  "#26A69A",
+  "#AB47BC",
+  "#FFA726",
+  "#66BB6A",
+  "#42A5F5",
+  "#EC407A",
+];
 
 export default function PortfolioExposure({ portfolioView }: Props) {
   const assetTypeData = useMemo(() => {
@@ -117,7 +136,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
               By <strong>Sector allocation</strong>
             </p>
             <div className="exposure-chart-content">
-              <SectorBarChart segments={sectorData} currency={currency} />
+              <SectorDonutChart segments={sectorData} />
             </div>
           </div>
         )}
@@ -273,87 +292,120 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
   );
 }
 
-function SectorBarChart({ segments, currency }: { segments: ChartSegment[]; currency: string }) {
-  const [hoveredBar, setHoveredBar] = useState<string | null>(null);
-  const currSymbol = currency === "USD" ? "$" : "₹";
+function SectorDonutChart({ segments }: { segments: ChartSegment[] }) {
+  const [activeIndex, setActiveIndex] = useState<number>(0);
 
-  const top5 = segments.slice(0, 5);
-  const others = segments.slice(5);
-  const othersTotal = others.reduce((sum, seg) => sum + seg.percentage, 0);
+  const cx = 180;
+  const cy = 180;
+  const r = 130;
+  const strokeW = 18;
+  const strokeWActive = 30;
+  // Active radius shifts outward so inner edge stays fixed: r_active = r + (strokeWActive - strokeW) / 2
+  const rActive = r + (strokeWActive - strokeW) / 2;
+  const gapDeg = 1.0;
+  const gapRad = (gapDeg * Math.PI) / 180;
+
+  const total = segments.reduce((s, seg) => s + seg.percentage, 0);
+  let cumAngle = -Math.PI / 2;
+
+  const buildPath = (radius: number, startAngle: number, endAngle: number) => {
+    const x1 = cx + radius * Math.cos(startAngle);
+    const y1 = cy + radius * Math.sin(startAngle);
+    const x2 = cx + radius * Math.cos(endAngle);
+    const y2 = cy + radius * Math.sin(endAngle);
+    const largeArc = (endAngle - startAngle) > Math.PI ? 1 : 0;
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`;
+  };
+
+  const arcs = segments.map((seg) => {
+    const frac = seg.percentage / total;
+    const fullSpan = frac * 2 * Math.PI;
+    const span = Math.max(fullSpan - gapRad, 0.01);
+    const startAngle = cumAngle + gapRad / 2;
+    const endAngle = startAngle + span;
+    cumAngle += fullSpan;
+
+    const midAngle = startAngle + span / 2;
+    const path = buildPath(r, startAngle, endAngle);
+    const activePath = buildPath(rActive, startAngle, endAngle);
+
+    return { ...seg, path, activePath, midAngle };
+  });
+
+  const active = segments[activeIndex];
 
   return (
-    <div className="sector-bar-container">
-      <div className="sector-items">
-        {top5.map((seg) => (
+    <div className="sector-donut-wrapper">
+      <svg
+        viewBox="0 0 360 360"
+        className="sector-donut-svg"
+        style={{ overflow: 'visible' }}
+        onMouseLeave={() => setActiveIndex(0)}
+      >
+        {arcs.map((arc, i) => {
+          const isActive = i === activeIndex;
+          return (
+            <path
+              key={arc.label}
+              d={isActive ? arc.activePath : arc.path}
+              fill="none"
+              stroke={arc.color}
+              strokeWidth={isActive ? strokeWActive : strokeW}
+              strokeLinecap="butt"
+              className="sector-donut-arc"
+              style={{
+                opacity: isActive ? 1 : 0.85,
+              }}
+              onMouseEnter={() => setActiveIndex(i)}
+            />
+          );
+        })}
+
+        {/* center percentage */}
+        <text
+          x={cx}
+          y={cy - 10}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="36"
+          fontWeight="800"
+          fontFamily="Geist, Inter, sans-serif"
+          fill="#0f0f0f"
+          letterSpacing="-1"
+        >
+          {active.percentage.toFixed(1)}%
+        </text>
+        {/* center label */}
+        <text
+          x={cx}
+          y={cy + 16}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="13"
+          fontWeight="500"
+          fontFamily="Geist, Inter, sans-serif"
+          fill="#888"
+          letterSpacing="0"
+        >
+          {active.label}
+        </text>
+      </svg>
+
+      {/* legend chips */}
+      <div className="sector-donut-legend">
+        {segments.map((seg, i) => (
           <div
             key={seg.label}
-            className="sector-item"
-            onMouseEnter={() => setHoveredBar(seg.label)}
-            onMouseLeave={() => setHoveredBar(null)}
-            style={{
-              opacity: hoveredBar && hoveredBar !== seg.label ? 0.3 : 1,
-              transition: 'opacity 0.2s ease',
-            }}
+            className={`sector-donut-chip ${i === activeIndex ? 'active' : ''}`}
+            style={{ '--chip-color': seg.color } as React.CSSProperties}
+            onMouseEnter={() => setActiveIndex(i)}
+            onMouseLeave={() => setActiveIndex(0)}
           >
-            <div className="sector-item-header">
-              <span className="sector-item-label">{seg.label}</span>
-              <span className="sector-item-value">{seg.percentage.toFixed(2)}%</span>
-            </div>
-            <div className="sector-bar-wrapper">
-              <div
-                className="sector-bar"
-                style={{
-                  width: `${seg.percentage}%`,
-                  backgroundColor: seg.color,
-                }}
-              />
-            </div>
+            <span className="sector-donut-chip-dot" style={{ background: seg.color }} />
+            <span className="sector-donut-chip-label">{seg.label}</span>
+            <span className="sector-donut-chip-pct">{seg.percentage.toFixed(1)}%</span>
           </div>
         ))}
-        {others.length > 0 && (
-          <div
-            className="sector-item sector-item-others"
-            onMouseEnter={() => setHoveredBar('others')}
-            onMouseLeave={() => setHoveredBar(null)}
-            style={{
-              opacity: hoveredBar && hoveredBar !== 'others' ? 0.3 : 1,
-              transition: 'opacity 0.2s ease',
-            }}
-          >
-            <div className="sector-item-header">
-              <span className="sector-item-label">+{others.length} more</span>
-              <span className="sector-item-value">{othersTotal.toFixed(2)}%</span>
-            </div>
-            <div className="sector-bar-wrapper sector-bar-combined">
-              {others.map((seg, i) => {
-                const prevWidths = others.slice(0, i).reduce((sum, s) => sum + s.percentage, 0);
-                return (
-                  <div
-                    key={seg.label}
-                    className="sector-bar-segment"
-                    style={{
-                      width: `${(seg.percentage / othersTotal) * 100}%`,
-                      backgroundColor: seg.color,
-                    }}
-                  />
-                );
-              })}
-            </div>
-            {hoveredBar === 'others' && (
-              <div className="sector-tooltip">
-                <div className="sector-tooltip-content">
-                  {others.map((seg) => (
-                    <div key={seg.label} className="sector-tooltip-item">
-                      <div className="sector-tooltip-color" style={{ backgroundColor: seg.color }} />
-                      <span className="sector-tooltip-label">{seg.label}</span>
-                      <span className="sector-tooltip-value">{seg.percentage.toFixed(2)}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
