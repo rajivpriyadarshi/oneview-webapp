@@ -7,28 +7,38 @@
 
 /* Sidebar */
 .sidebar {
-  width: 64px;
+  width: 104px;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px 0 24px;
+  padding: 36px 0 24px;
   position: fixed;
   left: 0;
   top: 0;
   z-index: 10;
+  background: #fff;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0;
 }
 
 .sidebar-logo {
-  margin-bottom: 20px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 44px;
   color: var(--foreground);
+}
+
+.sidebar-logo svg {
+  width: 52px;
+  height: 52px;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 12px;
 }
 
 .sidebar-btn {
@@ -56,14 +66,18 @@
 
 .sidebar-avatar {
   margin-top: auto;
+  display: grid;
+  place-items: center;
   position: relative;
 }
 
 .avatar-btn {
-  border: none;
-  background: none;
-  cursor: pointer;
+  display: grid;
+  place-items: center;
+  border: 0;
   padding: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .avatar-placeholder {
@@ -71,6 +85,14 @@
   height: 36px;
   border-radius: 50%;
   background: linear-gradient(135deg, #a855f7, #ec4899, #f97316);
+}
+
+.vault-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: url("/avatar.png") center / cover no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
 
 .avatar-popover-backdrop {
@@ -100,7 +122,7 @@
   border: none;
   border-radius: 8px;
   background: none;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--foreground);
   cursor: pointer;
@@ -113,8 +135,13 @@
 /* Main Content */
 .dashboard-main {
   flex: 1;
-  margin-left: 64px;
+  margin-left: 104px;
   padding: 40px;
+}
+
+.sidebar-toggle,
+.sidebar-backdrop {
+  display: none;
 }
 
 .dashboard-loading-content {
@@ -129,7 +156,7 @@
 .dashboard-loading-content .processing-subtitle {
   margin: 0;
   color: rgba(0, 0, 0, 0.5);
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 /* Header */
@@ -149,7 +176,7 @@
 .dashboard-title {
   margin: 0;
   font-family: "ButlerPro", Georgia, serif;
-  font-size: 32px;
+  font-size: 2rem;
   font-weight: 500;
   line-height: 38.4px;
   color: black;
@@ -159,7 +186,7 @@
 .dashboard-subtitle {
   margin: 0;
   font-family: var(--font-inter), sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 400;
   line-height: 21px;
   color: rgba(0, 0, 0, 0.70);
@@ -175,7 +202,7 @@
   border-radius: 999px;
   background: transparent;
   color: black;
-  font-size: 16px;
+  font-size: 1rem;
   font-family: var(--font-inter), sans-serif;
   font-weight: 600;
   line-height: 24px;
@@ -213,7 +240,7 @@
 .portfolio-label {
   margin: 0;
   color: white;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 500;
   line-height: 21px;
@@ -223,7 +250,7 @@
 .portfolio-value {
   margin: 8px 0 4px;
   color: white;
-  font-size: 48px;
+  font-size: 3rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 700;
   line-height: 57.6px;
@@ -233,7 +260,7 @@
 .portfolio-gain {
   margin: 0 0 24px;
   color: #D8FF9A;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 400;
   line-height: 21px;
@@ -249,7 +276,7 @@
 .portfolio-date {
   color: #FFF;
   font-family: Geist, var(--font-inter), sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
   line-height: 150%;
@@ -260,7 +287,7 @@
   opacity: 0.7;
   color: #FFF;
   font-family: Geist, var(--font-inter), sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 700;
   line-height: 150%;
@@ -295,7 +322,7 @@
   border-radius: 999px;
   background: transparent;
   color: #fff;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
   appearance: none;
@@ -335,7 +362,7 @@ select.filter-btn option {
   border-radius: 999px;
   background: transparent;
   color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -473,7 +500,7 @@ select.filter-btn option {
   color: #000;
   text-align: center;
   font-family: Geist, var(--font-inter), sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
   line-height: 150%;
@@ -496,7 +523,7 @@ select.filter-btn option {
   opacity: 0.7;
   color: #000;
   font-family: Geist, var(--font-inter), sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 700;
   line-height: 150%;
@@ -604,7 +631,7 @@ select.filter-btn option {
 }
 
 .legend-label {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   color: #1a1a1a;
   line-height: 1.3;
@@ -618,7 +645,7 @@ select.filter-btn option {
 }
 
 .legend-value {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #6f6f6f;
   line-height: 1.3;
   white-space: nowrap;
@@ -733,13 +760,13 @@ select.filter-btn option {
 }
 
 .sector-item-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #000000;
 }
 
 .sector-item-value {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   color: #1a1a1a;
 }
@@ -847,7 +874,7 @@ select.filter-btn option {
 
 .sector-tooltip-label {
   flex: 1;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #5a5a5a;
   overflow: hidden;
@@ -856,7 +883,7 @@ select.filter-btn option {
 }
 
 .sector-tooltip-value {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   color: #1a1a1a;
   flex-shrink: 0;
@@ -899,7 +926,7 @@ select.filter-btn option {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 10px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .holdings-table th {
@@ -908,7 +935,7 @@ select.filter-btn option {
   font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 0.8125rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   position: sticky;
@@ -924,7 +951,7 @@ select.filter-btn option {
 .holdings-table td {
   padding: 28px 16px;
   vertical-align: middle;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--foreground);
   background: #F4F3F380;
   text-align: right;
@@ -963,7 +990,7 @@ select.filter-btn option {
 .instrument-icon.fallback {
   color: rgba(0, 0, 0, 0.72);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
@@ -976,14 +1003,14 @@ select.filter-btn option {
 .security-ticker {
   display: block;
   font-weight: 500;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 24px;
   color: black;
 }
 
 .security-name {
   display: block;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 400;
   line-height: 18px;
   color: rgba(0, 0, 0, 0.50);
@@ -1048,39 +1075,82 @@ select.filter-btn option {
 
 @media (max-width: 720px) {
   .dashboard-layout {
+    flex-direction: row;
+  }
+
+  .sidebar-toggle {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 35;
+    border: 0;
+    border-radius: 12px;
+    background: #fff;
+    color: #050505;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .sidebar-toggle span {
+    width: 20px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    border: 0;
+    background: rgba(0, 0, 0, 0.28);
   }
 
   .sidebar {
-    width: 100%;
-    height: auto;
+    width: 88px;
+    height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    flex-direction: row;
+    right: auto;
+    flex-direction: column;
     align-items: center;
-    padding: 14px 20px;
-    background: var(--background);
-    border-right: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 28px 0 18px;
+    background: #fff;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 0;
+    border-radius: 0;
     z-index: 20;
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+  }
+
+  .sidebar.is-open {
+    z-index: 30;
+    transform: translateX(0);
   }
 
   .sidebar-logo {
-    margin-bottom: 0;
-    margin-right: auto;
+    margin-right: 0;
+    margin-bottom: 40px;
   }
 
   .sidebar-logo svg {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
   }
 
   .sidebar-nav {
-    flex-direction: row;
-    gap: 6px;
-    margin-right: 16px;
+    flex-direction: column;
+    gap: 12px;
+    margin-right: 0;
   }
 
   .sidebar-btn {
@@ -1097,7 +1167,7 @@ select.filter-btn option {
   }
 
   .sidebar-avatar {
-    margin-top: 0;
+    margin-top: auto;
   }
 
   .vault-avatar {
@@ -1107,19 +1177,19 @@ select.filter-btn option {
 
   .avatar-popover {
     position: absolute;
-    top: 100%;
-    right: 0;
-    left: auto;
-    bottom: auto;
+    top: auto;
+    right: auto;
+    left: 56px;
+    bottom: 0;
   }
 
   .dashboard-main {
     margin-left: 0;
-    padding: 100px 16px 20px;
+    padding: 72px 16px 20px;
   }
 
   .portfolio-value {
-    font-size: 36px;
+    font-size: 2.25rem;
   }
 
   .portfolio-meta {

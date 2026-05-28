@@ -13,7 +13,7 @@
 .profile-loading {
   text-align: center;
   color: rgba(0, 0, 0, 0.5);
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .profile-header {
@@ -27,7 +27,7 @@
   margin: 20px 0 0;
   color: #092423;
   font-family: "ButlerPro", Georgia, serif;
-  font-size: 40px;
+  font-size: 2.5rem;
   font-weight: 500;
   line-height: 1.2;
   text-align: center;
@@ -37,7 +37,7 @@
   margin: 8px 0 0;
   color: rgba(0, 0, 0, 0.6);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 400;
   line-height: 1.4;
   text-align: center;
@@ -54,7 +54,7 @@
   background: transparent;
   color: #7F4E0B;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.4;
   cursor: pointer;
@@ -70,11 +70,15 @@
   opacity: 0.5;
   color: #000;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.4;
   letter-spacing: 0.5px;
   text-align: center;
+}
+
+.profile-section-label-other {
+  margin-top: 28px;
 }
 
 .profile-section {
@@ -98,7 +102,7 @@
   gap: 12px;
   color: #000;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.4;
   font-feature-settings: 'ss03' on;
@@ -126,37 +130,98 @@
 }
 
 .profile-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-width: 120px;
   padding: 8px 16px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 999px;
   background: #fff;
   color: #000;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   outline: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
-  padding-right: 40px;
 }
 
 .profile-select:hover {
   border-color: rgba(0, 0, 0, 0.2);
 }
 
+.profile-dropdown {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.profile-select-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 168px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  background: rgba(66, 66, 66, 0.96);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
+}
+
+.profile-select-menu-compact {
+  width: 132px;
+}
+
+.profile-select-option {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.86);
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.profile-select-option.is-selected,
+.profile-select-option:hover {
+  background: #5a8dee;
+  color: #fff;
+}
+
 @media (max-width: 640px) {
   .profile-name {
-    font-size: 32px;
+    font-size: 2rem;
   }
 
   .profile-email {
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   .profile-menu-item-left {
-    font-size: 16px;
+    font-size: 1rem;
+  }
+
+  .profile-menu-item {
+    gap: 16px;
+  }
+
+  .profile-select {
+    min-width: 112px;
+    gap: 14px;
+    font-size: 0.9375rem;
+  }
+
+  .profile-select-menu {
+    right: 0;
   }
 }
