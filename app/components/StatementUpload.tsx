@@ -379,6 +379,8 @@ export function StatementUpload() {
           </button>
         </div>
 
+        <div style={{ height: '24px' }} />
+
         <p className="statement-security">
           Your data stays encrypted • 100% Safe and Secure
         </p>

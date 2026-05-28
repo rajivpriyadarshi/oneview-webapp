@@ -49,25 +49,24 @@ export default function EditProfileModal({ profile, onClose, onSave }: Props) {
         </div>
 
         <div className="edit-profile-form">
-          <div className="edit-profile-field">
-            <label className="edit-profile-label">Full name</label>
+          <label className={`field ${displayName ? 'has-value' : ''}`}>
+            <span>Full name</span>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="edit-profile-input"
-              placeholder="Enter your full name"
+              autoComplete="name"
             />
-          </div>
+          </label>
 
-          <div className="edit-profile-field">
-            <label className="edit-profile-label">Registered email address</label>
+          <div className="field has-value edit-profile-email-field">
+            <span>Registered email address</span>
             <div className="edit-profile-email-wrapper">
               <input
                 type="email"
                 value={profile.email}
                 disabled
-                className="edit-profile-input edit-profile-input-disabled"
+                className="edit-profile-input-disabled"
               />
               <VerifiedIcon />
             </div>

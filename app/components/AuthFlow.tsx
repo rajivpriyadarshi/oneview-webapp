@@ -281,8 +281,8 @@ export function AuthFlow() {
 
             <p className="terms">
               By continuing, you agree to Zinc&apos;s Consumer{" "}
-              <a href="#">Terms</a> and <a href="#">Usage Policy</a>, and
-              acknowledge their <a href="#">Privacy Policy</a>.
+              <a href="/privacy" target="_blank" rel="noopener noreferrer">Terms</a> and
+              acknowledge their <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
             </p>
           </form>
           <ZincBrand />

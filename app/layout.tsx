@@ -25,6 +25,17 @@ const butlerPro = localFont({
   display: "swap",
 });
 
+const satoshi = localFont({
+  src: [
+    { path: "./fonts/Satoshi-Regular.otf", weight: "400", style: "normal" },
+    { path: "./fonts/Satoshi-Medium.otf", weight: "500", style: "normal" },
+    { path: "./fonts/Satoshi-Bold.otf", weight: "700", style: "normal" },
+    { path: "./fonts/Satoshi-Black.otf", weight: "800", style: "normal" },
+  ],
+  variable: "--font-satoshi",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Meridian",
   description: "Meridian login",
@@ -36,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${inter.variable} ${butlerPro.variable}`}>
+    <html lang="en" className={`${geist.variable} ${inter.variable} ${butlerPro.variable} ${satoshi.variable}`}>
       <body>
         <StoreProvider>
           <Suspense fallback={null}>
