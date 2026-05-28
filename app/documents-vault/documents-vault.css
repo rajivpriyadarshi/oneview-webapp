@@ -19,7 +19,7 @@
 .docs-vault-title {
   margin: 0;
   font-family: "ButlerPro", Georgia, serif;
-  font-size: 32px;
+  font-size: 2rem;
   font-weight: 500;
   line-height: 38.4px;
   color: black;
@@ -29,7 +29,7 @@
 .docs-vault-subtitle {
   margin: 0;
   font-family: var(--font-inter), sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 400;
   line-height: 21px;
   color: rgba(0, 0, 0, 0.70);
@@ -50,7 +50,7 @@
 
 .docs-vault-brokers .brokers-text {
   color: #595959;
-  font-size: 16px;
+  font-size: 1rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 500;
   line-height: 24px;
@@ -66,7 +66,7 @@
   border-radius: 999px;
   background: #1a1a1a;
   color: white;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
@@ -120,13 +120,13 @@
 
 .docs-dropzone strong {
   color: #333;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
 .docs-dropzone span {
   color: rgba(0, 0, 0, 0.70);
-  font-size: 16px;
+  font-size: 1rem;
   font-family: var(--font-geist), sans-serif;
   font-weight: 400;
   line-height: 24px;
@@ -159,7 +159,7 @@
   gap: 10px;
   margin: 0;
   color: black;
-  font-size: 13.7px;
+  font-size: 0.85625rem;
   font-family: var(--font-inter), sans-serif;
   font-weight: 600;
   line-height: 17.81px;
@@ -180,7 +180,7 @@
   background: rgba(220, 38, 38, 0.08);
   color: #b91c1c;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
   transition: opacity 0.15s ease, background 0.15s ease;
@@ -205,7 +205,7 @@
 }
 
 .docs-group-by-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 400;
   color: rgba(0, 0, 0, 0.6);
   white-space: nowrap;
@@ -222,7 +222,7 @@
   -webkit-appearance: none;
   border: none;
   background: transparent;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: black;
   padding-right: 18px;
@@ -247,7 +247,7 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0 10px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .docs-table th {
@@ -256,7 +256,7 @@
   font-weight: 500;
   color: var(--muted);
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 0.8125rem;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   position: sticky;
@@ -275,7 +275,7 @@
   vertical-align: middle;
   color: var(--foreground);
   background: #F4F3F380;
-  font-size: 14px;
+  font-size: 0.875rem;
   text-align: right;
 }
 
@@ -342,7 +342,7 @@
   flex-shrink: 0;
   border-radius: 4px;
   color: #fff;
-  font-size: 7px;
+  font-size: 0.4375rem;
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -381,7 +381,7 @@
   border-radius: 5px;
   background: rgba(18, 128, 68, 0.12);
   color: #128044;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1;
 }
@@ -392,7 +392,7 @@
   border-radius: 999px;
   background: #1a1a1a;
   color: #fff;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
@@ -411,14 +411,14 @@
 .docs-error {
   margin: -20px 0 24px;
   color: #dc2626;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .docs-success {
   margin: -20px 0 24px;
   color: #128044;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
@@ -453,14 +453,14 @@
 }
 
 .docs-upload-panel-header strong {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   line-height: 20px;
 }
 
 .docs-upload-panel-header span {
   color: rgba(255, 255, 255, 0.72);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 18px;
 }
 
@@ -474,7 +474,7 @@
   border-radius: 50%;
   background: transparent;
   color: #fff;
-  font-size: 22px;
+  font-size: 1.375rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -524,7 +524,7 @@
 .docs-upload-file strong {
   overflow: hidden;
   color: #1f1f1f;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   line-height: 20px;
   text-overflow: ellipsis;
@@ -534,7 +534,7 @@
 .docs-upload-file span:not(.docs-upload-status) {
   overflow: hidden;
   color: rgba(0, 0, 0, 0.56);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -586,7 +586,7 @@
 .docs-upload-state {
   flex-shrink: 0;
   color: rgba(0, 0, 0, 0.58);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 16px;
 }
@@ -613,7 +613,7 @@
   margin: 0 0 10px;
   color: #050505;
   font-family: "ButlerPro", Georgia, serif;
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 500;
   line-height: 34px;
 }
@@ -622,7 +622,7 @@
   margin: 0;
   color: rgba(0, 0, 0, 0.66);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 22px;
 }
 
@@ -640,7 +640,7 @@
   border: 0;
   border-radius: 999px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 800;
   cursor: pointer;
 }
