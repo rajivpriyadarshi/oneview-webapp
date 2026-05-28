@@ -48,7 +48,7 @@ export function LandingPage() {
       {/* Header */}
       <header className="flex justify-between items-center px-8 lg:px-16 py-6 relative z-10">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Meridian" className="h-10 w-auto block" />
+          <img src="/Logo.png" alt="Meridian" className="h-10 w-auto block" />
         </div>
 
         <div className="flex items-center gap-4">
