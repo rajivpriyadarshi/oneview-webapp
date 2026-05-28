@@ -22,6 +22,8 @@ export function clearAuthToken() {
   }
 
   window.localStorage.removeItem(AUTH_TOKEN_KEY);
+  // Clear cached profile data on logout
+  window.localStorage.removeItem('userProfile');
 }
 
 export function getAuthHeaders() {

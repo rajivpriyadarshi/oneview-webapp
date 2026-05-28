@@ -30,6 +30,8 @@ export default function ProfilePage() {
     getUserProfile()
       .then((data) => {
         setProfile(data);
+        // Cache the profile in localStorage
+        localStorage.setItem('userProfile', JSON.stringify(data));
         setLoading(false);
       })
       .catch((error) => {
@@ -83,6 +85,8 @@ export default function ProfilePage() {
       setOpenDropdown(null);
       const updated = await updateUserProfile({ base_currency: newCurrency });
       setProfile(updated);
+      // Cache the updated profile
+      localStorage.setItem('userProfile', JSON.stringify(updated));
 
       trackAPI({
         pageName: trackingEventsMap.profilePage.PAGE,
@@ -120,6 +124,8 @@ export default function ProfilePage() {
       setOpenDropdown(null);
       const updated = await updateUserProfile({ mailer_frequency: frequency });
       setProfile(updated);
+      // Cache the updated profile
+      localStorage.setItem('userProfile', JSON.stringify(updated));
 
       trackAPI({
         pageName: trackingEventsMap.profilePage.PAGE,
@@ -160,6 +166,8 @@ export default function ProfilePage() {
       pageName: trackingEventsMap.profilePage.PAGE,
     });
 
+    // Clear cached profile data
+    localStorage.removeItem('userProfile');
     clearAuthToken();
     router.push("/");
   };
@@ -387,6 +395,8 @@ export default function ProfilePage() {
           onClose={() => setShowEditModal(false)}
           onSave={(updated) => {
             setProfile(updated);
+            // Cache the updated profile
+            localStorage.setItem('userProfile', JSON.stringify(updated));
             // Trigger profile refresh event for sidebar
             window.dispatchEvent(new CustomEvent('profileUpdated'));
           }}

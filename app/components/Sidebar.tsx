@@ -20,9 +20,23 @@ export default function Sidebar() {
   const closeSidebar = () => setIsOpen(false);
 
   useEffect(() => {
+    // Load cached profile from localStorage
+    const cachedProfile = localStorage.getItem('userProfile');
+    if (cachedProfile) {
+      try {
+        setProfile(JSON.parse(cachedProfile));
+      } catch (error) {
+        console.error("Failed to parse cached profile:", error);
+      }
+    }
+
     const fetchProfile = () => {
       getUserProfile()
-        .then((data) => setProfile(data))
+        .then((data) => {
+          setProfile(data);
+          // Cache the profile in localStorage
+          localStorage.setItem('userProfile', JSON.stringify(data));
+        })
         .catch((error) => console.error("Failed to fetch profile:", error));
     };
 
