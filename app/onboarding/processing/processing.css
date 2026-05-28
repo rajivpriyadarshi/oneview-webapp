@@ -43,26 +43,8 @@
 }
 
 .logo-animated-stroke {
-  stroke-dasharray: 1, 300;
-  stroke-dashoffset: 0;
-  animation: drawStroke 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-@keyframes drawStroke {
-  0% {
-    stroke-dasharray: 1, 300;
-    stroke-dashoffset: 0;
-  }
-  50% {
-    stroke-dasharray: 150, 300;
-    stroke-dashoffset: -75;
-  }
-  100% {
-    stroke-dasharray: 1, 300;
-    stroke-dashoffset: -300;
-  }
 }
 
 .processing-title {

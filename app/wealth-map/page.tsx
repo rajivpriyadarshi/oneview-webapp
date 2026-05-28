@@ -40,12 +40,15 @@ export default function WealthMapPage() {
       <div className="dashboard-layout">
         <Sidebar />
         <main className="dashboard-main">
-          <header className="dashboard-header">
-            <div className="dashboard-header-left">
-              <h1 className="dashboard-title">Wealth map</h1>
-              <p className="dashboard-subtitle">Total 8 files across 3 accounts</p>
+          <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-1">
+              <h1 className="m-0 font-[var(--font-butler)] text-[2rem] font-medium leading-[38.4px] text-black">Wealth map</h1>
+              <p className="m-0 font-[var(--font-inter)] text-sm font-normal leading-[21px] text-black/70">Total 8 files across 3 accounts</p>
             </div>
-            <Link href="/documents-vault" className="upload-btn">
+            <Link
+              href="/documents-vault"
+              className="inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-[#1a1a1a] px-7 py-3.5 font-[var(--font-inter)] text-base font-semibold leading-6 text-white no-underline transition hover:bg-[#333]"
+            >
               <UploadIcon />
               Upload statements
             </Link>

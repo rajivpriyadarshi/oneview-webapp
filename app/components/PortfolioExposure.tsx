@@ -37,7 +37,7 @@ const CHART_COLORS = [
 ];
 
 const ASSET_COLORS = CHART_COLORS;
-const BROKER_COLORS = CHART_COLORS;
+const BROKER_COLORS = CHART_COLORS.map((color) => shadeHex(color, -18));
 const SECTOR_COLORS = [
   "#F5A623",
   "#2BC5BD",
@@ -60,6 +60,10 @@ const SECTOR_COLORS = [
 ];
 
 export default function PortfolioExposure({ portfolioView }: Props) {
+  const assetPalette = useMemo(() => getShiftedPalette(ASSET_COLORS, "asset"), []);
+  const brokerPalette = useMemo(() => getShiftedPalette(BROKER_COLORS, "broker"), []);
+  const sectorPalette = useMemo(() => getShiftedPalette(SECTOR_COLORS, "sector"), []);
+
   const assetTypeData = useMemo(() => {
     if (!portfolioView?.asset_allocation) return [];
     const entries = Object.entries(portfolioView.asset_allocation);
@@ -70,9 +74,9 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         label: capitalize(label),
         value: data.market_value,
         percentage: data.weight_pct ?? (total > 0 ? (data.market_value / total) * 100 : 0),
-        color: ASSET_COLORS[i % ASSET_COLORS.length],
+        color: assetPalette[i % assetPalette.length],
       }));
-  }, [portfolioView]);
+  }, [assetPalette, portfolioView]);
 
   const brokerData = useMemo(() => {
     if (!portfolioView?.accounts) return [];
@@ -83,9 +87,9 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         label: capitalize(acc.institution_name || acc.account_name),
         value: acc.market_value,
         percentage: total > 0 ? (acc.market_value / total) * 100 : 0,
-        color: BROKER_COLORS[i % BROKER_COLORS.length],
+        color: brokerPalette[i % brokerPalette.length],
       }));
-  }, [portfolioView]);
+  }, [brokerPalette, portfolioView]);
 
   const sectorData = useMemo(() => {
     if (!portfolioView?.sector_allocation) return [];
@@ -97,45 +101,43 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         label: capitalize(label),
         value: data.market_value,
         percentage: data.weight_pct ?? (total > 0 ? (data.market_value / total) * 100 : 0),
-        color: SECTOR_COLORS[i % SECTOR_COLORS.length],
+        color: sectorPalette[i % sectorPalette.length],
       }));
-  }, [portfolioView]);
-
-  const currency = portfolioView?.currency || "INR";
+  }, [portfolioView, sectorPalette]);
 
   const hasSectorData = sectorData.length > 0;
 
   return (
-    <section className="portfolio-exposure">
-      <h3 className="exposure-title">
+    <section className="mb-7 rounded-[32px] bg-white px-[16px] pl-[24px]">
+      <h3 className="flex align-center items-center gap-2 border-b border-black/10 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
         <ExposureIcon />
         Portfolio Exposure
       </h3>
-      <div className={`exposure-charts ${!hasSectorData ? 'two-charts' : ''}`}>
-        <div className="exposure-chart">
-          <p className="exposure-chart-label">
+      <div className={`grid gap-0 ${!hasSectorData ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"}`}>
+        <div className="relative flex h-full min-w-0 flex-col items-center overflow-visible bg-white px-[30px] py-3.5 md:border-r md:border-black/15">
+          <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
             By <strong>Asset type</strong>
           </p>
-          <div className="exposure-chart-content">
-            <LabeledDonut segments={assetTypeData} currency={currency} />
+          <div className="w-full">
+            <SectorDonutChart segments={assetTypeData} />
           </div>
         </div>
 
-        <div className="exposure-chart">
-          <p className="exposure-chart-label">
+        <div className={`relative flex h-full min-w-0 flex-col items-center overflow-visible bg-white px-[30px] py-3.5 ${hasSectorData ? "md:border-r md:border-black/15" : ""}`}>
+          <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
             By <strong>Broker</strong>
           </p>
-          <div className="exposure-chart-content">
-            <LabeledDonut segments={brokerData} currency={currency} />
+          <div className="w-full">
+            <SectorDonutChart segments={brokerData} />
           </div>
         </div>
 
         {hasSectorData && (
-          <div className="exposure-chart exposure-chart-sector">
-            <p className="exposure-chart-label">
+          <div className="relative flex h-full min-w-0 flex-col items-center overflow-visible bg-white px-[30px] py-3.5">
+            <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
               By <strong>Sector allocation</strong>
             </p>
-            <div className="exposure-chart-content">
+            <div className="w-full">
               <SectorDonutChart segments={sectorData} />
             </div>
           </div>
@@ -176,9 +178,9 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
   };
 
   return (
-    <div className="donut-container">
-      <div className="donut-chart-wrapper">
-        <svg viewBox="0 0 300 300" className="donut-chart">
+    <div className="flex flex-col items-center gap-6">
+      <div className="mx-auto h-[320px] w-[320px] shrink-0">
+        <svg viewBox="0 0 300 300" className="h-full w-full">
           <g>
             {segmentsWithAngles.map((seg, i) => {
               const el = (
@@ -195,7 +197,7 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
                   transform={`rotate(-90 ${cx} ${cy})`}
                   onMouseEnter={() => setHoveredIndex(i)}
                   onMouseLeave={() => setHoveredIndex(null)}
-                  className="donut-segment"
+                  className="transition-opacity duration-150"
                   style={{
                     opacity: hoveredIndex === null || hoveredIndex === i ? 1 : 0.4,
                     cursor: 'pointer',
@@ -222,7 +224,7 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
             const textX = boxX + boxWidth / 2;
 
             return (
-              <g className="donut-hover-label" style={{ zIndex: 1000 }}>
+              <g className="pointer-events-none" style={{ zIndex: 1000 }}>
                 <rect
                   x={boxX}
                   y={pos.y - 28}
@@ -266,11 +268,11 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
           })()}
         </svg>
       </div>
-      <div className="donut-legends">
+      <div className="w-full max-w-[420px] space-y-3">
         {segments.map((seg, i) => (
           <div
             key={seg.label}
-            className="legend-item"
+            className="flex items-center justify-center gap-2.5 rounded-lg px-1 py-1 text-center transition-opacity"
             onMouseEnter={() => setHoveredIndex(i)}
             onMouseLeave={() => setHoveredIndex(null)}
             style={{
@@ -278,13 +280,12 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
               cursor: 'pointer',
             }}
           >
-            <div className="legend-color" style={{ backgroundColor: seg.color }} />
-            <div className="legend-text">
-              <span className="legend-label">{seg.label}</span>
-              <span className="legend-value">
-                {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
-              </span>
-            </div>
+            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: seg.color }} />
+            <span className="text-[46px] font-satoshi text-[14px] font-bold leading-[150%] tracking-[-0.02em] text-black">{seg.label}</span>
+            <span className="text-[14px] leading-[150%] text-black/20">•</span>
+            <span className="font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/60">
+              {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
+            </span>
           </div>
         ))}
       </div>
@@ -293,7 +294,18 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
 }
 
 function SectorDonutChart({ segments }: { segments: ChartSegment[] }) {
-  const [activeIndex, setActiveIndex] = useState<number>(0);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [showMoreOpen, setShowMoreOpen] = useState(false);
+  const safeSelectedIndex = segments.length === 0 ? 0 : Math.min(selectedIndex, segments.length - 1);
+  const activeIndex = hoveredIndex ?? safeSelectedIndex;
+  const safeActiveIndex = segments.length === 0 ? 0 : Math.min(activeIndex, segments.length - 1);
+  const displayedIndexes = [
+    safeSelectedIndex,
+    ...segments.map((_, i) => i).filter((i) => i !== safeSelectedIndex),
+  ].slice(0, 4);
+  const remainingIndexes = segments.map((_, i) => i).filter((i) => !displayedIndexes.includes(i));
+  const remainingCount = remainingIndexes.length;
 
   const cx = 180;
   const cy = 180;
@@ -332,18 +344,17 @@ function SectorDonutChart({ segments }: { segments: ChartSegment[] }) {
     return { ...seg, path, activePath, midAngle };
   });
 
-  const active = segments[activeIndex];
+  const active = segments[safeActiveIndex];
 
   return (
-    <div className="sector-donut-wrapper">
+    <div className="flex flex-col items-center gap-4">
       <svg
         viewBox="0 0 360 360"
-        className="sector-donut-svg"
+        className="h-[260px] w-[260px]"
         style={{ overflow: 'visible' }}
-        onMouseLeave={() => setActiveIndex(0)}
       >
         {arcs.map((arc, i) => {
-          const isActive = i === activeIndex;
+          const isActive = i === safeActiveIndex;
           return (
             <path
               key={arc.label}
@@ -352,11 +363,13 @@ function SectorDonutChart({ segments }: { segments: ChartSegment[] }) {
               stroke={arc.color}
               strokeWidth={isActive ? strokeWActive : strokeW}
               strokeLinecap="butt"
-              className="sector-donut-arc"
+              className="transition-all duration-150"
               style={{
                 opacity: isActive ? 1 : 0.85,
               }}
-              onMouseEnter={() => setActiveIndex(i)}
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              onClick={() => setSelectedIndex(i)}
             />
           );
         })}
@@ -392,20 +405,78 @@ function SectorDonutChart({ segments }: { segments: ChartSegment[] }) {
       </svg>
 
       {/* legend chips */}
-      <div className="sector-donut-legend">
-        {segments.map((seg, i) => (
+      <div className="flex w-full flex-wrap justify-center gap-2">
+        {displayedIndexes.map((segIndex) => {
+          const seg = segments[segIndex];
+          const isActive = segIndex === safeActiveIndex;
+          return (
           <div
             key={seg.label}
-            className={`sector-donut-chip ${i === activeIndex ? 'active' : ''}`}
-            style={{ '--chip-color': seg.color } as React.CSSProperties}
-            onMouseEnter={() => setActiveIndex(i)}
-            onMouseLeave={() => setActiveIndex(0)}
+            className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${isActive ? "" : "border-black/10 bg-white"}`}
+            style={
+              isActive
+                ? {
+                    borderColor: toRgba(seg.color, 0.5),
+                    backgroundColor: toRgba(seg.color, 0.12),
+                  }
+                : undefined
+            }
+            onMouseEnter={() => setHoveredIndex(segIndex)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            onClick={() => setSelectedIndex(segIndex)}
           >
-            <span className="sector-donut-chip-dot" style={{ background: seg.color }} />
-            <span className="sector-donut-chip-label">{seg.label}</span>
-            <span className="sector-donut-chip-pct">{seg.percentage.toFixed(1)}%</span>
+            <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />
+            <span className="max-w-[110px] truncate text-black/80">{seg.label}</span>
+            <span className="font-semibold text-black">{seg.percentage.toFixed(1)}%</span>
           </div>
-        ))}
+        )})}
+        {remainingCount > 0 && (
+          <div className="relative">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs text-black/70"
+              onClick={() => setShowMoreOpen((prev) => !prev)}
+            >
+              <span className="font-medium">+{remainingCount} more</span>
+            </button>
+            {showMoreOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close more items"
+                  className="fixed inset-0 z-10 cursor-default bg-transparent"
+                  onClick={() => setShowMoreOpen(false)}
+                />
+                <div className="absolute left-1/2 z-20 mt-2 w-[260px] -translate-x-1/2 rounded-2xl border border-black/10 bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.12)]">
+                  <div className="max-h-56 space-y-1 overflow-y-auto">
+                    {remainingIndexes.map((segIndex) => {
+                      const seg = segments[segIndex];
+                      return (
+                      <button
+                        type="button"
+                        key={seg.label}
+                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left transition"
+                        style={{
+                          backgroundColor: hoveredIndex === segIndex ? toRgba(seg.color, 0.12) : "transparent",
+                        }}
+                        onMouseEnter={() => setHoveredIndex(segIndex)}
+                        onMouseLeave={() => setHoveredIndex(null)}
+                        onClick={() => {
+                          setSelectedIndex(segIndex);
+                          setShowMoreOpen(false);
+                        }}
+                      >
+                        <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />
+                        <span className="flex-1 truncate text-xs text-black/80">{seg.label}</span>
+                        <span className="text-xs font-semibold text-black">{seg.percentage.toFixed(1)}%</span>
+                      </button>
+                    )})}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -421,9 +492,39 @@ function formatValue(num: number) {
   return num.toFixed(2);
 }
 
+function toRgba(hex: string, alpha: number) {
+  const normalized = hex.replace("#", "");
+  const bigint = parseInt(normalized.length === 3
+    ? normalized.split("").map((ch) => ch + ch).join("")
+    : normalized, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getShiftedPalette(colors: string[], seed: string) {
+  if (colors.length <= 1) return colors;
+  const shift = [...seed].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % colors.length;
+  return colors.map((_, i) => colors[(i + shift) % colors.length]);
+}
+
+function shadeHex(hex: string, percent: number) {
+  const normalized = hex.replace("#", "");
+  const full = normalized.length === 3
+    ? normalized.split("").map((ch) => ch + ch).join("")
+    : normalized;
+  const num = parseInt(full, 16);
+  const amt = Math.round(2.55 * percent);
+  const r = Math.min(255, Math.max(0, (num >> 16) + amt));
+  const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00ff) + amt));
+  const b = Math.min(255, Math.max(0, (num & 0x0000ff) + amt));
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
 function ExposureIcon() {
   return (
-    <svg viewBox="0 0 18 18" fill="none" width="18" height="18">
+    <svg viewBox="0 0 18 18" fill="none" width="26" height="26">
       <path
         d="M4.99527 6.77795L1.42773 8.56172L8.30754 12.0016C8.40114 12.0484 8.44794 12.0718 8.49703 12.081C8.5405 12.0892 8.58512 12.0892 8.6286 12.081C8.67768 12.0718 8.72448 12.0484 8.81808 12.0016L15.6979 8.56172L12.1303 6.77795M4.99527 10.3455L1.42773 12.1293L8.30754 15.5692C8.40114 15.616 8.44794 15.6394 8.49703 15.6486C8.5405 15.6567 8.58512 15.6567 8.6286 15.6486C8.67768 15.6394 8.72448 15.616 8.81808 15.5692L15.6979 12.1293L12.1303 10.3455M1.42773 4.99418L8.30754 1.55428C8.40114 1.50748 8.44794 1.48408 8.49703 1.47487C8.5405 1.46671 8.58512 1.46671 8.6286 1.47487C8.67768 1.48408 8.72448 1.50748 8.81808 1.55428L15.6979 4.99418L8.81808 8.43408C8.72448 8.48088 8.67768 8.50428 8.6286 8.51349C8.58512 8.52165 8.5405 8.52165 8.49703 8.51349C8.44794 8.50428 8.40114 8.48088 8.30754 8.43408L1.42773 4.99418Z"
         stroke="currentColor"

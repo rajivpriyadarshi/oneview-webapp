@@ -37,42 +37,51 @@ export default function PortfolioSummary({
   const asOfDate = portfolioView?.as_of_date ? formatDate(portfolioView.as_of_date) : "";
 
   return (
-    <section className="portfolio-summary">
+    <section className="relative mt-[32px] mb-7 flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6">
       <div className="flex flex-col justify-between gap-6 md:gap-12 lg:gap-16">
-        <div className="portfolio-info">
-          <p className="portfolio-label">Total portfolio value</p>
-          <h2 className="portfolio-value">
+        <div className="z-[1] flex flex-col">
+          <p className="m-0 font-satoshi text-sm font-medium leading-[21px] tracking-[-0.02em] text-[#979596]">Total portfolio value</p>
+          <h2 className="m-0 mb-1 mt-2 font-satoshi text-[48px] font-bold leading-[120%] tracking-[-0.04em] text-white max-[720px]:text-[2.25rem]">
             {loading ? "..." : `${currSymbol}${marketValue}`}
           </h2>
-          <p className={`portfolio-gain ${isPositive ? "" : "negative"}`}>
+          <p className={`m-0 mb-6 font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#D8FF9A]" : "text-red-400"}`}>
             {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${formatLakhs(Math.abs(summary.total_gain_amount))} (${gainPct})`}
           </p>
         </div>
-        <div className="portfolio-meta">
+        <div className="flex items-center gap-4 max-[720px]:flex-col max-[720px]:items-start max-[720px]:gap-3">
           {asOfDate && (
-            <span className="portfolio-date">
-              Prices as of <strong>{asOfDate}</strong>
+            <span className="font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-white">
+              Prices as of <strong className="font-satoshi font-bold tracking-[-0.02em] text-white">{asOfDate}</strong>
             </span>
           )}
-          <div className="portfolio-filters">
-           
-            <div className="currency-toggle">
+          <div className="flex gap-2.5">
+            <div className="relative inline-flex items-center rounded-full border border-white/20 bg-white/5 p-1 font-satoshi text-sm font-bold leading-6 tracking-[-0.04em]">
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute bottom-1 left-1 top-1 w-[88px] rounded-full bg-white/95 shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-out ${
+                  currency === "USD" ? "translate-x-[88px]" : "translate-x-0"
+                }`}
+              />
               <button
-                className={`currency-option ${currency === "INR" ? "active" : ""}`}
+                className={`relative z-10 w-[88px] whitespace-nowrap rounded-full px-5 py-2 text-base font-bold leading-6 tracking-[-0.04em] transition-colors duration-300 ${
+                  currency === "INR" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
+                }`}
                 onClick={() => onCurrencyChange("INR")}
               >
                 INR
               </button>
               <button
-                className={`currency-option ${currency === "USD" ? "active" : ""}`}
+                className={`relative z-10 w-[88px] whitespace-nowrap rounded-full px-5 py-2 text-base font-bold leading-6 tracking-[-0.04em] transition-colors duration-300 ${
+                  currency === "USD" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
+                }`}
                 onClick={() => onCurrencyChange("USD")}
               >
                 USD
               </button>
             </div>
-            <div className="filter-select-wrapper">
+            <div className="group relative inline-flex items-center">
               <select
-                className="filter-btn"
+                className="h-[58px] cursor-pointer appearance-none overflow-hidden whitespace-nowrap text-ellipsis rounded-full border border-white/20 bg-transparent px-7 font-satoshi text-base font-bold leading-6 tracking-[-0.04em] text-white outline-none transition hover:bg-white/[0.03]"
                 value={selectedAccountId}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -82,11 +91,11 @@ export default function PortfolioSummary({
                 <option value="all">All accounts</option>
                 {accounts.map((acc) => (
                   <option key={acc.id} value={acc.id}>
-                    {acc.name}
+                    {truncateLabel(acc.name)}
                   </option>
                 ))}
               </select>
-              <ChevronDown />
+              <ChevronDown className="pointer-events-none absolute right-4 text-white transition-transform duration-200 ease-out group-focus-within:rotate-180" />
             </div>
           </div>
         </div>
@@ -111,9 +120,14 @@ function formatLakhs(value: number) {
   return value.toFixed(2);
 }
 
-function ChevronDown() {
+function truncateLabel(value: string, maxLength = 16) {
+  if (!value) return "";
+  return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+}
+
+function ChevronDown({ className = "" }: { className?: string }) {
   return (
-    <svg width="14" height="8" viewBox="0 0 14 8" fill="none">
+    <svg width="14" height="8" viewBox="0 0 14 8" fill="none" className={className}>
       <path d="M1 1L7 7L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
