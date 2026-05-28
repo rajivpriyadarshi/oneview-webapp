@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import DashboardHeader from "../components/DashboardHeader";
@@ -8,6 +8,8 @@ import PortfolioSummary from "../components/PortfolioSummary";
 import PortfolioExposure from "../components/PortfolioExposure";
 import HoldingsTable from "../components/HoldingsTable";
 import { MeridianLogo } from "../components/MeridianLogo";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 import { getUserProfile, updateUserProfile } from "../lib/profileApi";
 import {
   useListPortfoliosQuery,
@@ -17,9 +19,82 @@ import {
 } from "../store/api";
 
 export default function DashboardPage() {
+  const { trackPage, trackClick, trackSectionScroll } = useAnalytics();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
   const [currency, setCurrency] = useState("INR");
+  const sectionInViewRef = useRef<Record<string, boolean>>({});
+
+  useEffect(() => {
+    trackPage({
+      pageName: trackingEventsMap.dashboardPage.PAGE,
+    });
+  }, []);
+
+  useEffect(() => {
+    const sections = Array.from(document.querySelectorAll<HTMLElement>("[data-analytics-section]"));
+    if (sections.length === 0) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const sectionName = entry.target.getAttribute("data-analytics-section");
+          if (!sectionName) {
+            return;
+          }
+
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            if (!sectionInViewRef.current[sectionName]) {
+              sectionInViewRef.current[sectionName] = true;
+              trackSectionScroll({
+                pageName: trackingEventsMap.dashboardPage.PAGE,
+                params: {
+                  section_name: sectionName,
+                },
+              });
+            }
+            return;
+          }
+
+          sectionInViewRef.current[sectionName] = false;
+        });
+      },
+      { threshold: [0.5] },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    sections.forEach((section) => {
+      const sectionName = section.getAttribute("data-analytics-section");
+      if (!sectionName || sectionInViewRef.current[sectionName]) {
+        return;
+      }
+
+      const rect = section.getBoundingClientRect();
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const visibleTop = Math.max(rect.top, 0);
+      const visibleBottom = Math.min(rect.bottom, viewportHeight);
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+      const ratio = rect.height > 0 ? visibleHeight / rect.height : 0;
+
+      if (ratio >= 0.5) {
+        sectionInViewRef.current[sectionName] = true;
+        trackSectionScroll({
+          pageName: trackingEventsMap.dashboardPage.PAGE,
+          params: {
+            section_name: sectionName,
+          },
+        });
+      }
+    });
+
+    return () => {
+      sectionInViewRef.current = {};
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     getUserProfile()
@@ -71,10 +146,35 @@ export default function DashboardPage() {
   const loading = viewLoading || !portfolioView;
 
   const handleAccountChange = (accountId: number | "all") => {
+    const selectedAccountName =
+      accountId === "all"
+        ? "All accounts"
+        : (accounts.find((account) => account.id === accountId)?.name ?? String(accountId));
+
+    trackClick({
+      buttonName: trackingEventsMap.dashboardPage.CLICK_ACCOUNT_FILTER,
+      pageName: trackingEventsMap.dashboardPage.PAGE,
+      params: {
+        account_id: accountId,
+        selected_value: selectedAccountName,
+      },
+    });
     setSelectedAccountId(accountId);
   };
 
   const handleCurrencyChange = async (curr: string) => {
+    if (curr === currency) {
+      return;
+    }
+
+    trackClick({
+      buttonName: trackingEventsMap.dashboardPage.CLICK_CURRENCY_TOGGLE,
+      pageName: trackingEventsMap.dashboardPage.PAGE,
+      params: {
+        current_currency: currency,
+        switched_to_currency: curr,
+      },
+    });
     setCurrency(curr);
     try {
       await updateUserProfile({ base_currency: curr });

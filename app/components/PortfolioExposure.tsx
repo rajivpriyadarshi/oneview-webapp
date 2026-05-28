@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { type PortfolioViewResponse } from "../lib/portfolioDataApi";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 type Props = {
   portfolioView: PortfolioViewResponse | null;
@@ -60,6 +62,7 @@ const SECTOR_COLORS = [
 ];
 
 export default function PortfolioExposure({ portfolioView }: Props) {
+  const { trackClick } = useAnalytics();
   const assetPalette = useMemo(() => getShiftedPalette(ASSET_COLORS, "asset"), []);
   const brokerPalette = useMemo(() => getShiftedPalette(BROKER_COLORS, "broker"), []);
   const sectorPalette = useMemo(() => getShiftedPalette(SECTOR_COLORS, "sector"), []);
@@ -108,7 +111,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
   const hasSectorData = sectorData.length > 0;
 
   return (
-    <section className="mb-7 rounded-[32px] bg-white px-[16px] pl-[24px]">
+    <section data-analytics-section="portfolio_exposure" className="mb-7 rounded-[32px] bg-white px-[16px] pl-[24px]">
       <h3 className="flex align-center items-center gap-2 border-b border-black/10 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
         <ExposureIcon />
         Portfolio Exposure
@@ -138,7 +141,21 @@ export default function PortfolioExposure({ portfolioView }: Props) {
               By <strong>Sector allocation</strong>
             </p>
             <div className="w-full">
-              <SectorDonutChart segments={sectorData} />
+              <SectorDonutChart
+                segments={sectorData}
+                onPillClick={(label, percentage) => {
+                  trackClick({
+                    buttonName: trackingEventsMap.dashboardPage.CLICK_SECTOR_ALLOCATION_PILL,
+                    pageName: trackingEventsMap.dashboardPage.PAGE,
+                    params: {
+                      section_name: "portfolio_exposure",
+                      chart_type: "sector_allocation",
+                      pill_label: label,
+                      pill_percentage: percentage,
+                    },
+                  });
+                }}
+              />
             </div>
           </div>
         )}
@@ -293,7 +310,13 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
   );
 }
 
-function SectorDonutChart({ segments }: { segments: ChartSegment[] }) {
+function SectorDonutChart({
+  segments,
+  onPillClick,
+}: {
+  segments: ChartSegment[];
+  onPillClick?: (label: string, percentage: number) => void;
+}) {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [showMoreOpen, setShowMoreOpen] = useState(false);
@@ -423,7 +446,10 @@ function SectorDonutChart({ segments }: { segments: ChartSegment[] }) {
             }
             onMouseEnter={() => setHoveredIndex(segIndex)}
             onMouseLeave={() => setHoveredIndex(null)}
-            onClick={() => setSelectedIndex(segIndex)}
+            onClick={() => {
+              setSelectedIndex(segIndex);
+              onPillClick?.(seg.label, seg.percentage);
+            }}
           >
             <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />
             <span className="max-w-[110px] truncate text-black/80">{seg.label}</span>
@@ -464,6 +490,7 @@ function SectorDonutChart({ segments }: { segments: ChartSegment[] }) {
                         onClick={() => {
                           setSelectedIndex(segIndex);
                           setShowMoreOpen(false);
+                          onPillClick?.(seg.label, seg.percentage);
                         }}
                       >
                         <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />

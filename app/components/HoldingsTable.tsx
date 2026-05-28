@@ -12,6 +12,8 @@ import {
 import { type PortfolioViewPosition } from "../lib/portfolioDataApi";
 import { appConfig } from "../lib/config";
 import { getStoredAuthToken } from "../lib/session";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 type Props = {
   positions: PortfolioViewPosition[];
@@ -57,6 +59,7 @@ function formatNumber(value: number) {
 }
 
 export default function HoldingsTable({ positions, loading }: Props) {
+  const { trackClick } = useAnalytics();
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const columns = useMemo(
@@ -158,7 +161,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
   });
 
   return (
-    <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
+    <section data-analytics-section="your_holdings" className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
       <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
         <HoldingsIcon />
         Your holdings
@@ -171,7 +174,31 @@ export default function HoldingsTable({ positions, loading }: Props) {
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
+                    onClick={() => {
+                      if (!header.column.getCanSort()) {
+                        return;
+                      }
+
+                      const nextSortingOrder = header.column.getNextSortingOrder();
+                      const sortDirection =
+                        nextSortingOrder === "asc" || nextSortingOrder === "desc"
+                          ? nextSortingOrder
+                          : "none";
+                      const columnName = String(header.column.columnDef.header ?? header.id);
+
+                      trackClick({
+                        buttonName: trackingEventsMap.dashboardPage.CLICK_HOLDINGS_SORT,
+                        pageName: trackingEventsMap.dashboardPage.PAGE,
+                        params: {
+                          section_name: trackingEventsMap.dashboardPage.SECTION_YOUR_HOLDINGS,
+                          column_id: header.id,
+                          column_name: columnName,
+                          sort_direction: sortDirection,
+                        },
+                      });
+
+                      header.column.toggleSorting(nextSortingOrder === "desc");
+                    }}
                     className={`sticky top-0 z-10 bg-white relative border-y border-black/10 px-4 py-[30px] text-sm font-semibold text-black ${
                       header.id === "security" ? "text-left" : "text-right"
                     }`}
@@ -222,10 +249,10 @@ export default function HoldingsTable({ positions, loading }: Props) {
               </tr>
             )}
             {!loading &&
-              table.getRowModel().rows.map((row) => (
+              table.getRowModel().rows.map((row, renderIndex) => (
                 <tr
                   key={row.id}
-                  className={`table w-full table-fixed ${row.index !== table.getRowModel().rows.length - 1 ? "mb-2" : ""}`}
+                  className={`table w-full table-fixed ${renderIndex !== table.getRowModel().rows.length - 1 ? "mb-2" : ""}`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     // Keep security left-aligned; right-align all numeric columns.

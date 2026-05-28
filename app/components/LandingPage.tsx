@@ -122,7 +122,7 @@ export function LandingPage() {
                   loop
                   muted
                   playsInline
-                  className="block h-auto w-full rounded-[36px] [clip-path:inset(2px_2px_round_36px)]"
+                  className="block h-auto w-full rounded-[36px] [clip-path:inset(2px_2px_round_36px)] 2xl:[clip-path:none]"
                 >
                   <source src="/Hero-Explainer.mp4" type="video/mp4" />
                   Your browser does not support the video tag.

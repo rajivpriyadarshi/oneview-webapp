@@ -114,4 +114,14 @@ export const trackingEventsMap = {
     API_DELETE_SUCCESS: "delete_documents_success",
     API_DELETE_FAILURE: "delete_documents_failure",
   },
+  dashboardPage: {
+    PAGE: "dashboard_page",
+    CLICK_CURRENCY_TOGGLE: "currency_toggle",
+    CLICK_ACCOUNT_FILTER: "account_filter",
+    CLICK_SECTOR_ALLOCATION_PILL: "sector_allocation_pill_click",
+    CLICK_HOLDINGS_SORT: "holdings_sort",
+    SECTION_PORTFOLIO_SUMMARY: "portfolio_summary",
+    SECTION_PORTFOLIO_EXPOSURE: "portfolio_exposure",
+    SECTION_YOUR_HOLDINGS: "your_holdings",
+  },
 } as const;

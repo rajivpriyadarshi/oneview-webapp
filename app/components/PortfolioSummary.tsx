@@ -37,7 +37,10 @@ export default function PortfolioSummary({
   const asOfDate = portfolioView?.as_of_date ? formatDate(portfolioView.as_of_date) : "";
 
   return (
-    <section className="relative mt-[32px] mb-7 flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6">
+    <section
+      data-analytics-section="portfolio_summary"
+      className="relative mt-[32px] mb-7 flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6"
+    >
       <div className="flex flex-col justify-between gap-6 md:gap-12 lg:gap-16">
         <div className="z-[1] flex flex-col">
           <p className="m-0 font-satoshi text-sm font-medium leading-[21px] tracking-[-0.02em] text-[#979596]">Total portfolio value</p>
@@ -66,7 +69,7 @@ export default function PortfolioSummary({
                 className={`relative z-10 w-[88px] whitespace-nowrap rounded-full px-5 py-2 text-base font-bold leading-6 tracking-[-0.04em] transition-colors duration-300 ${
                   currency === "INR" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
                 }`}
-                onClick={() => onCurrencyChange("INR")}
+                onClick={() => onCurrencyChange(currency === "INR" ? "USD" : "INR")}
               >
                 INR
               </button>
@@ -74,14 +77,14 @@ export default function PortfolioSummary({
                 className={`relative z-10 w-[88px] whitespace-nowrap rounded-full px-5 py-2 text-base font-bold leading-6 tracking-[-0.04em] transition-colors duration-300 ${
                   currency === "USD" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
                 }`}
-                onClick={() => onCurrencyChange("USD")}
+                onClick={() => onCurrencyChange(currency === "INR" ? "USD" : "INR")}
               >
                 USD
               </button>
             </div>
             <div className="group relative inline-flex items-center">
               <select
-                className="h-[58px] cursor-pointer appearance-none overflow-hidden whitespace-nowrap text-ellipsis rounded-full border border-white/20 bg-transparent px-7 font-satoshi text-base font-bold leading-6 tracking-[-0.04em] text-white outline-none transition hover:bg-white/[0.03]"
+                className="h-[58px] cursor-pointer appearance-none overflow-hidden whitespace-nowrap text-ellipsis rounded-full border border-white/20 bg-transparent pl-7 pr-12 font-satoshi text-base font-bold leading-6 tracking-[-0.04em] text-white outline-none transition hover:bg-white/[0.03]"
                 value={selectedAccountId}
                 onChange={(e) => {
                   const val = e.target.value;
