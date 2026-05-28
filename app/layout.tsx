@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import StoreProvider from "./store/StoreProvider";
+import AnalyticsTracker from "./components/AnalyticsTracker";
 import "./globals.css";
 
 const geist = Geist({
@@ -16,8 +17,8 @@ const inter = Inter({
 
 const butlerPro = localFont({
   src: [
-    { path: "./fonts/ButlerPro-Roman.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/ButlerPro-Bold.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/ButlerPro-Medium.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/ButlerPro-SemiBold.woff2", weight: "600", style: "normal" },
   ],
   variable: "--font-butler",
   display: "swap",
@@ -35,7 +36,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geist.variable} ${inter.variable} ${butlerPro.variable}`}>
-      <body><StoreProvider>{children}</StoreProvider></body>
+      <body>
+        <StoreProvider>
+          <AnalyticsTracker />
+          {children}
+        </StoreProvider>
+      </body>
     </html>
   );
 }
