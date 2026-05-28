@@ -660,10 +660,15 @@ button:disabled {
 
 .statement-content > p {
   margin: 10px 0 0;
-  color: #565656;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 1rem;
-  line-height: 24px;
+  color: #000;
+  text-align: center;
+  font-feature-settings: 'ss03' on;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 150%;
+  letter-spacing: -0.36px;
 }
 
 .statement-dropzone {
@@ -735,19 +740,28 @@ button:disabled {
 
 .statement-dropzone strong {
   margin-top: 14px;
-  color: #444;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 1.0625rem;
-  font-weight: 800;
-  line-height: 24px;
+  color: #000;
+  font-feature-settings: 'ss03' on;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 18px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 150%;
+  letter-spacing: -0.36px;
+  text-align: center;
 }
 
 .statement-dropzone span:last-child {
   width: 230px;
-  color: #686868;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 1rem;
-  line-height: 24px;
+  color: rgba(0, 0, 0, 0.70);
+  text-align: center;
+  font-feature-settings: 'ss03' on;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 150%;
+  letter-spacing: -0.28px;
 }
 
 .statement-upload-progress {
