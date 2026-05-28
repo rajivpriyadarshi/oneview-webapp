@@ -38,12 +38,6 @@ const butlerProSemiBold = localFont({
   display: "swap",
 });
 
-const satoshi = localFont({
-  src: [{ path: "./fonts/satoshi-variable.woff2", weight: "300 900", style: "normal" }],
-  variable: "--font-satoshi",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   title: "Meridian",
   description: "Meridian login",

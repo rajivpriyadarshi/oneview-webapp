@@ -1,6 +1,5 @@
 import { trackingEventsMap } from "../constants";
 import { Mixpanel, ZincAnalytics } from "../utils";
-import { Mixpanel, ZincAnalytics } from "../lib/analytics";
 
 type AnalyticsPayload = {
   pageName: string;
