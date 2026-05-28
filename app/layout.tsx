@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Inter } from "next/font/google";
 import localFont from "next/font/local";
+import { Suspense } from "react";
 import StoreProvider from "./store/StoreProvider";
 import AnalyticsTracker from "./components/AnalyticsTracker";
 import "./globals.css";
@@ -38,7 +39,9 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable} ${inter.variable} ${butlerPro.variable}`}>
       <body>
         <StoreProvider>
-          <AnalyticsTracker />
+          <Suspense fallback={null}>
+            <AnalyticsTracker />
+          </Suspense>
           {children}
         </StoreProvider>
       </body>
