@@ -150,7 +150,7 @@ export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
         </div>
 
         <button className="oneview-info-cta" onClick={onClose} type="button">
-          Create my Meridian
+          Create my Oneview
         </button>
         <p className="oneview-info-time">Takes only 2 minutes</p>
       </div>

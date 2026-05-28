@@ -650,25 +650,27 @@ button:disabled {
 
 .statement-content h1 {
   margin: 0 0 20px;
-  color: #050505;
-  font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 2.25rem;
+  color: #000;
+  text-align: center;
+  font-family: var(--font-butler), "ButlerPro", Georgia, "Times New Roman", serif;
+  font-size: 32px;
+  font-style: normal;
   font-weight: 500;
-  line-height: 48px;
-  letter-spacing: -1.2px;
+  line-height: 40px;
+  letter-spacing: -1.28px;
 }
 
 .statement-content > p {
   margin: 10px 0 0;
-  color: #000;
+  color: #5F5F5F;
   text-align: center;
   font-feature-settings: 'ss03' on;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 150%;
-  letter-spacing: -0.36px;
+  letter-spacing: -0.32px;
 }
 
 .statement-dropzone {
@@ -764,6 +766,17 @@ button:disabled {
   letter-spacing: -0.28px;
 }
 
+.select-files-text {
+  color: #7F4E0B;
+  font-feature-settings: 'ss03' on;
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
 .statement-upload-progress {
   width: min(100% - 56px, 300px);
   display: flex;
@@ -800,37 +813,38 @@ button:disabled {
 }
 
 .statement-file-loading {
-  width: min(100%, 610px);
+  border-radius: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.10);
   display: flex;
+  width: min(100%, 612px);
+  padding: 12px 16px;
+  flex-direction: row;
+  justify-content: flex-start;
   align-items: center;
   gap: 16px;
   margin: 0 0 22px;
-  padding: 16px 22px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 36px;
-  background: rgba(255, 255, 255, 0.24);
 }
 
 .statement-file-loader {
   --upload-progress: 0%;
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: #0000000A;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  display: flex;
+  padding: 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 6.857px;
   position: relative;
   flex: 0 0 auto;
 }
 
 .statement-file-loader::before {
   content: "";
-  width: 34px;
-  height: 34px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: conic-gradient(from -90deg, #7F4E0B var(--upload-progress), rgba(0, 0, 0, 0.14) 0);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  background: none;
+  display: none;
 }
 
 .statement-file-loader > span {
@@ -838,26 +852,59 @@ button:disabled {
 }
 
 .statement-file-loader.is-uploading {
-  background: #0000000A;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  display: flex;
+  padding: 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 6.857px;
 }
 
 .statement-file-loader.is-uploading::before {
+  display: block;
+  width: 16px;
+  height: 16px;
+  background: conic-gradient(from -90deg, #7F4E0B var(--upload-progress), rgba(0, 0, 0, 0.14) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
   animation: spin 1.2s linear infinite;
+}
+
+.statement-file-loader.is-uploaded {
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  display: flex;
+  padding: 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 6.857px;
+}
+
+.statement-file-loader.is-uploaded::before {
+  display: none;
 }
 
 .statement-file-meta {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: left;
 }
 
 .statement-file-meta strong {
   display: block;
   color: #000;
-  font-family: var(--font-geist), Arial, Helvetica, sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
-  line-height: 24px;
+  text-align: left;
+  font-feature-settings: 'ss03' on;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 150%;
+  letter-spacing: -0.32px;
   word-wrap: break-word;
   white-space: nowrap;
   overflow: hidden;
@@ -866,30 +913,39 @@ button:disabled {
 
 .statement-file-meta span {
   display: block;
-  color: #6b6b6b;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 1rem;
+  color: rgba(0, 0, 0, 0.70);
+  text-align: left;
+  font-feature-settings: 'ss03' on;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-style: normal;
   font-weight: 500;
-  line-height: 1.2;
-  margin-top: 2px;
+  line-height: 150%;
+  letter-spacing: -0.28px;
+  margin-top: 4px;
 }
 
 .statement-file-remove {
-  width: 48px;
-  height: 48px;
   border: 0;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
-  color: #3a3a3a;
-  font-size: 2.125rem;
-  line-height: 1;
-  display: grid;
-  place-items: center;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  display: flex;
+  padding: 16px;
+  align-items: center;
+  justify-content: center;
+  gap: 6.857px;
   flex: 0 0 auto;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.statement-file-remove:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .statement-file-remove:disabled {
   opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .statement-support {
@@ -993,8 +1049,8 @@ button:disabled {
 
 .statement-security {
   color: #383838;
-  font-size: 0.9375rem;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-size: 0.9rem;
+  font-family: "Satoshi";
   font-weight: 500;
   text-align: center;
   margin-top: 100px;
@@ -1019,6 +1075,7 @@ button:disabled {
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 600;
   cursor: pointer;
+  font-family: "Satoshi";
   transition: all 0.2s;
   white-space: nowrap;
   min-height: 64px;
@@ -2136,10 +2193,12 @@ button:disabled {
   gap: 6px;
   color: rgba(0, 0, 0, 0.70);
   border-radius: 20px;
-  font-size: 0.875rem;
-  font-family: var(--font-inter), Inter, sans-serif;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-style: normal;
   font-weight: 400;
-  line-height: 21px;
+  line-height: 150%;
+  letter-spacing: -0.56px;
   word-wrap: break-word;
   margin-bottom: 20px;
 }
@@ -2149,21 +2208,26 @@ button:disabled {
 }
 
 .oneview-info-title {
-  font-family: "ButlerPro", Georgia, serif;
-  font-size: 2rem;
+  font-family: var(--font-butler), "ButlerPro", Georgia, serif;
+  font-size: 32px;
+  font-style: normal;
   font-weight: 600;
-  line-height: 38.40px;
-  color: black;
+  line-height: 120%;
+  letter-spacing: -1.28px;
+  color: #000;
   word-wrap: break-word;
   margin: 0 0 16px;
 }
 
 .oneview-info-description {
   color: rgba(0, 0, 0, 0.70);
-  font-size: 0.875rem;
-  font-family: var(--font-inter), Inter, sans-serif;
+  font-feature-settings: 'ss03' on;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-style: normal;
   font-weight: 400;
-  line-height: 21px;
+  line-height: 150%;
+  letter-spacing: -0.28px;
   word-wrap: break-word;
   margin: 0;
 }
@@ -2342,21 +2406,28 @@ button:disabled {
 }
 
 .oneview-info-feature-title {
-  color: black;
-  font-size: 0.875rem;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  color: #000;
+  font-kerning: none;
+  font-feature-settings: 'liga' off;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-style: normal;
   font-weight: 700;
-  line-height: 16.80px;
+  line-height: 120%;
+  letter-spacing: -0.42px;
   word-wrap: break-word;
   margin: 0 0 4px;
 }
 
 .oneview-info-feature-text {
   color: #525252;
-  font-size: 0.875rem;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-kerning: none;
+  font-feature-settings: 'ss02' on, 'ss03' on, 'liga' off;
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-style: normal;
   font-weight: 500;
-  line-height: 21px;
+  line-height: 150%;
   word-wrap: break-word;
   margin: 0;
 }
@@ -2364,11 +2435,12 @@ button:disabled {
 .oneview-info-cta {
   width: 100%;
   padding: 20px 40px;
+  font-family: "Satoshi";
   background: #1a1a1a;
   color: white;
   border: none;
   border-radius: 80px;
-  font-size: 1.0625rem;
+  font-size: 1rem;
   font-weight: 600;
   transition: all 0.2s;
   margin-bottom: 12px;
@@ -2382,10 +2454,11 @@ button:disabled {
 
 .oneview-info-time {
   color: rgba(0, 0, 0, 0.70);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-family: var(--font-geist), Geist, sans-serif;
   font-weight: 400;
   line-height: 21px;
+  font-family: "Satoshi";
   word-wrap: break-word;
   text-align: center;
   margin: 0;

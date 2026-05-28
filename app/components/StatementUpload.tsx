@@ -9,11 +9,19 @@ import {
   useUploadBrokerStatementMutation,
   useListPortfoliosQuery,
   useGetProfileQuery,
+  useDeleteDocumentMutation,
 } from "../store/api";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
+
+const CHART_COLORS = [
+  "#FE5D26", "#388DE8", "#CE8016", "#6438E8", "#59886B",
+  "#444444", "#FFC75F", "#9EDE73", "#184D47", "#D2DB20",
+  "#939191", "#76FDB0", "#2F2B2C", "#FFB2FC", "#B0EDFF",
+  "#A3A1FB", "#7A2783", "#F46396"
+];
 
 export function StatementUpload() {
   const router = useRouter();
@@ -32,6 +40,7 @@ export function StatementUpload() {
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [hasStartedUploadFlow, setHasStartedUploadFlow] = useState(false);
+  const [uploadedDocumentId, setUploadedDocumentId] = useState<string | null>(null);
   const showUploadProgress = isUploading || hasUploadedStatement;
 
   const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
@@ -42,6 +51,7 @@ export function StatementUpload() {
   });
 
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
+  const [deleteDocument] = useDeleteDocumentMutation();
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -171,11 +181,7 @@ export function StatementUpload() {
       }
 
       stopUploadProgressAnimation();
-      setMessage(
-        `Uploaded ${response.positions_count ?? 0} positions from ${
-          response.account_name ?? uploadFile.name
-        }.`,
-      );
+      setUploadedDocumentId(String(response.document_id));
       setHasUploadedStatement(true);
     } catch (requestError) {
       if (
@@ -228,12 +234,23 @@ export function StatementUpload() {
     uploadProgressTimerRef.current = null;
   }
 
-  function clearSelectedFile() {
+  async function clearSelectedFile() {
     if (isUploading && uploadRequestRef.current?.abort) {
       uploadRequestRef.current.abort();
     }
+
+    // Delete the uploaded document if it exists
+    if (uploadedDocumentId && hasUploadedStatement) {
+      try {
+        await deleteDocument(uploadedDocumentId).unwrap();
+      } catch (err) {
+        console.error("Failed to delete document:", err);
+      }
+    }
+
     setSelectedFile(null);
     setHasUploadedStatement(false);
+    setUploadedDocumentId(null);
     setUploadProgress(0);
     setMessage("");
     setError("");
@@ -241,6 +258,23 @@ export function StatementUpload() {
       inputRef.current.value = "";
     }
   }
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name[0]?.toUpperCase() || "U";
+  };
+
+  const getColorFromName = (name: string) => {
+    const asciiSum = name.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    return CHART_COLORS[asciiSum % CHART_COLORS.length];
+  };
+
+  const displayName = profile?.name || "";
+  const initials = displayName ? getInitials(displayName) : "U";
+  const avatarColor = displayName ? getColorFromName(displayName) : CHART_COLORS[0];
 
   return (
     <main className="statement-page">
@@ -252,7 +286,24 @@ export function StatementUpload() {
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             aria-label="Profile menu"
           >
-            <div className="vault-avatar" />
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+              <circle cx="22" cy="22" r="22" fill={avatarColor} />
+              <text
+                x="22"
+                y="22"
+                textAnchor="middle"
+                dominantBaseline="central"
+                style={{
+                  fill: "#FFF",
+                  fontFamily: "Inter",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.64px",
+                }}
+              >
+                {initials}
+              </text>
+            </svg>
           </button>
           {showProfileMenu && (
             <>
@@ -324,35 +375,42 @@ export function StatementUpload() {
           <span className="upload-icon">
             <UploadIcon />
           </span>
-          <strong>Drop your statements here or select files</strong>
+          <strong>Drop your statements here or <span className="select-files-text">select files</span></strong>
           <span>CSV, XLSX, PDF (Max 10MB)</span>
         </label>
 
         {selectedFile ? (
           <div className="statement-file-loading" aria-live="polite">
             <div
-              className={`statement-file-loader${isUploading ? " is-uploading" : ""}`}
+              className={`statement-file-loader${isUploading ? " is-uploading" : ""}${hasUploadedStatement ? " is-uploaded" : ""}`}
               style={{ "--upload-progress": `${uploadProgress}%` } as CSSProperties}
             >
-              <span />
+              {hasUploadedStatement ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M13.3327 4L5.99935 11.3333L2.66602 8" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              ) : (
+                <span />
+              )}
             </div>
             <div className="statement-file-meta">
               <strong>{selectedFile.name}</strong>
               <span>
                 {formatFileSize(selectedFile.size)}
-                {showUploadProgress ? ` • ${uploadProgress}%` : ""}
+                {hasUploadedStatement ? " • Uploaded" : showUploadProgress ? ` • ${uploadProgress}%` : ""}
               </span>
             </div>
-            {!hasUploadedStatement ? (
-              <button
-                type="button"
-                className="statement-file-remove"
-                onClick={clearSelectedFile}
-                aria-label="Remove selected file"
-              >
-                ×
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="statement-file-remove"
+              onClick={clearSelectedFile}
+              aria-label="Remove selected file"
+              disabled={isUploading}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none">
+                <path d="M7.33268 0.666016L0.666016 7.33268M0.666016 0.666016L7.33268 7.33268" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
         ) : null}
 
