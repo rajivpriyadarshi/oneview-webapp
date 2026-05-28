@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 const CAROUSEL_IMAGES = [
   { src: "/by-asset-type.png", alt: "Assets by Type" },
@@ -14,6 +16,7 @@ interface OneviewInfoModalProps {
 }
 
 export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
+  const { trackClick } = useAnalytics();
   const [activeSlide, setActiveSlide] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [shouldRender, setShouldRender] = useState(isOpen);
@@ -62,12 +65,28 @@ export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
     }
   }, [activeSlide, totalSlides]);
 
+  function handleClose() {
+    trackClick({
+      buttonName: trackingEventsMap.documentsPage.CLICK_ONEVIEW_MODAL_CLOSE,
+      pageName: trackingEventsMap.documentsPage.PAGE,
+    });
+    onClose();
+  }
+
+  function handleCreateOneview() {
+    trackClick({
+      buttonName: trackingEventsMap.documentsPage.CLICK_ONEVIEW_MODAL_CREATE,
+      pageName: trackingEventsMap.documentsPage.PAGE,
+    });
+    onClose();
+  }
+
   if (!shouldRender) return null;
 
   return (
-    <div className={`modal-overlay${isClosing ? " is-closing" : ""}`} onClick={onClose}>
+    <div className={`modal-overlay${isClosing ? " is-closing" : ""}`} onClick={handleClose}>
       <div className={`oneview-info-modal${isClosing ? " is-closing" : ""}`} onClick={(e) => e.stopPropagation()}>
-        <button className="oneview-info-close" onClick={onClose} aria-label="Close modal">
+        <button className="oneview-info-close" onClick={handleClose} aria-label="Close modal">
           <CloseIcon />
         </button>
 
@@ -149,8 +168,8 @@ export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
           </div>
         </div>
 
-        <button className="oneview-info-cta" onClick={onClose} type="button">
-          Create my Meridian
+        <button className="oneview-info-cta" onClick={handleCreateOneview} type="button">
+          Create my Oneview
         </button>
         <p className="oneview-info-time">Takes only 2 minutes</p>
       </div>

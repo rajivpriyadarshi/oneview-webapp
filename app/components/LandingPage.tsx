@@ -53,7 +53,7 @@ export function LandingPage() {
 
         <div className="flex items-center gap-4">
           <Link
-            href="/dashboard"
+            href="/auth"
             className="bg-black text-white px-[24px] py-[16px] rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
             onClick={() =>
               trackClick({
@@ -93,7 +93,7 @@ export function LandingPage() {
             </p>
 
             <Link
-              href="/dashboard"
+              href="/auth"
               className="mb-6 inline-flex items-center gap-2 rounded-full bg-black px-[24px] py-[16px] text-[16px] font-semibold leading-6 text-white transition-colors hover:bg-gray-800"
               onClick={() =>
                 trackClick({

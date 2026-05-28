@@ -16,8 +16,16 @@ export type PasswordlessAuthSession = AuthSession & {
 };
 
 export type Profile = {
-  name: string;
+  id: number;
+  username: string;
   email: string;
+  display_name: string;
+  base_currency: string;
+  timezone: string;
+  is_active: boolean;
+  mailer_frequency: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export function initiateSignup(input: {
@@ -89,11 +97,13 @@ export function logout() {
 }
 
 export function getProfile() {
-  return apiRequest<Profile>("/auth/me/");
+  return apiRequest<Profile>("/me/");
 }
 
-export function updateProfile(input: { name: string }) {
-  return apiRequest<Profile>("/auth/me/", {
+export function updateProfile(
+  input: Partial<Pick<Profile, "display_name" | "base_currency" | "timezone" | "mailer_frequency">>,
+) {
+  return apiRequest<Profile>("/me/", {
     method: "PATCH",
     body: input,
   });

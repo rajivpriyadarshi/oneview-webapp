@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useRef, useState } from "react";
+import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import DocumentsTable, { type VaultDocument } from "./DocumentsTable";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
 import {
@@ -9,6 +9,8 @@ import {
   useUploadBrokerStatementMutation,
 } from "../store/api";
 import type { DocumentRecord } from "../lib/documentsApi";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
@@ -65,6 +67,7 @@ function mapDocToTableRow(doc: DocumentRecord): VaultDocument {
 }
 
 export function DocumentsVault() {
+  const { trackPage, trackClick, trackAPI } = useAnalytics();
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,6 +87,19 @@ export function DocumentsVault() {
   const accountCount = new Set(
     rawDocuments.flatMap((d) => (d.accounts as { id: number }[])?.map((a) => a.id) || []),
   ).size;
+
+  // Track page load
+  useEffect(() => {
+    trackPage({
+      pageName: trackingEventsMap.documentsVaultPage.PAGE,
+      params: {
+        page_url: window.location.href,
+        page_title: document.title,
+        total_documents: docCount,
+        total_accounts: accountCount,
+      },
+    });
+  }, []);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files || []);
@@ -109,6 +125,13 @@ export function DocumentsVault() {
     const files = Array.from(e.dataTransfer.files);
 
     if (files.length > 0) {
+      trackClick({
+        buttonName: trackingEventsMap.documentsVaultPage.DROP_FILES,
+        pageName: trackingEventsMap.documentsVaultPage.PAGE,
+        params: {
+          files_count: files.length,
+        },
+      });
       void handleUploadFiles(files);
     }
   }
@@ -148,6 +171,16 @@ export function DocumentsVault() {
       for (const { file, item } of validUploads) {
         updateUploadItem(item.id, { status: "uploading", error: undefined });
 
+        trackAPI({
+          pageName: trackingEventsMap.documentsVaultPage.PAGE,
+          params: {
+            event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_START,
+            file_name: file.name,
+            file_size: file.size,
+            file_type: file.type,
+          },
+        });
+
         try {
           const response = await uploadBrokerStatement({
             file,
@@ -156,15 +189,40 @@ export function DocumentsVault() {
             useLlmFallback: true,
           }).unwrap();
           if (response.status === "error") {
+            trackAPI({
+              pageName: trackingEventsMap.documentsVaultPage.PAGE,
+              params: {
+                event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
+                file_name: file.name,
+                error: response.error,
+              },
+            });
             updateUploadItem(item.id, {
               status: "error",
               error: response.error ?? "Unable to parse this statement.",
             });
           } else {
             successCount += 1;
+            trackAPI({
+              pageName: trackingEventsMap.documentsVaultPage.PAGE,
+              params: {
+                event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_SUCCESS,
+                file_name: file.name,
+                document_id: response.document_id,
+                positions_count: response.positions_count,
+              },
+            });
             updateUploadItem(item.id, { status: "complete" });
           }
         } catch (uploadError) {
+          trackAPI({
+            pageName: trackingEventsMap.documentsVaultPage.PAGE,
+            params: {
+              event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
+              file_name: file.name,
+              error: uploadError instanceof Error ? uploadError.message : "Upload failed",
+            },
+          });
           updateUploadItem(item.id, {
             status: "error",
             error: uploadError instanceof Error ? uploadError.message : "Upload failed.",
@@ -212,6 +270,16 @@ export function DocumentsVault() {
       return;
     }
 
+    trackClick({
+      buttonName: trackingEventsMap.documentsVaultPage.CLICK_UPLOAD_PANEL_CLOSE,
+      pageName: trackingEventsMap.documentsVaultPage.PAGE,
+      params: {
+        total_items: uploadItems.length,
+        successful_uploads: uploadItems.filter((item) => item.status === "complete").length,
+        failed_uploads: uploadItems.filter((item) => item.status === "error").length,
+      },
+    });
+
     setUploadItems([]);
     setUploadMessage("");
   }
@@ -221,6 +289,14 @@ export function DocumentsVault() {
       return;
     }
 
+    trackClick({
+      buttonName: trackingEventsMap.documentsVaultPage.CLICK_DELETE_CONFIRM,
+      pageName: trackingEventsMap.documentsVaultPage.PAGE,
+      params: {
+        files_count: documentsPendingDelete.length,
+      },
+    });
+
     setDeleting(true);
     setError("");
     setUploadMessage("");
@@ -229,11 +305,29 @@ export function DocumentsVault() {
       await Promise.all(
         documentsPendingDelete.map((document) => deleteDocumentMutation(document.id).unwrap()),
       );
+
+      trackAPI({
+        pageName: trackingEventsMap.documentsVaultPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.documentsVaultPage.API_DELETE_SUCCESS,
+          files_count: documentsPendingDelete.length,
+        },
+      });
+
       setUploadMessage(
         `Deleted ${documentsPendingDelete.length} file${documentsPendingDelete.length > 1 ? "s" : ""}.`,
       );
       setDocumentsPendingDelete([]);
     } catch (deleteError) {
+      trackAPI({
+        pageName: trackingEventsMap.documentsVaultPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.documentsVaultPage.API_DELETE_FAILURE,
+          files_count: documentsPendingDelete.length,
+          error: deleteError instanceof Error ? deleteError.message : "Delete failed",
+        },
+      });
+
       setError(
         deleteError instanceof Error
           ? deleteError.message
@@ -268,7 +362,13 @@ export function DocumentsVault() {
             <button
               type="button"
               className="download-instruction"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                trackClick({
+                  buttonName: trackingEventsMap.documentsVaultPage.CLICK_DOWNLOAD_INSTRUCTIONS,
+                  pageName: trackingEventsMap.documentsVaultPage.PAGE,
+                });
+                setIsModalOpen(true);
+              }}
             >
               See download instruction
             </button>
@@ -281,7 +381,13 @@ export function DocumentsVault() {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
+        onClick={() => {
+          trackClick({
+            buttonName: trackingEventsMap.documentsVaultPage.CLICK_UPLOAD_AREA,
+            pageName: trackingEventsMap.documentsVaultPage.PAGE,
+          });
+          fileInputRef.current?.click();
+        }}
       >
         <input
           ref={fileInputRef}
@@ -363,7 +469,16 @@ export function DocumentsVault() {
                 type="button"
                 className="docs-confirm-secondary"
                 disabled={deleting}
-                onClick={() => setDocumentsPendingDelete([])}
+                onClick={() => {
+                  trackClick({
+                    buttonName: trackingEventsMap.documentsVaultPage.CLICK_DELETE_CANCEL,
+                    pageName: trackingEventsMap.documentsVaultPage.PAGE,
+                    params: {
+                      files_count: documentsPendingDelete.length,
+                    },
+                  });
+                  setDocumentsPendingDelete([]);
+                }}
               >
                 Cancel
               </button>

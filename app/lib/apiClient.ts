@@ -31,6 +31,10 @@ export async function apiRequest<T>(
   if (!skipAuth) {
     const authToken = getStoredAuthToken();
 
+    if (!authToken) {
+      throw new ApiError(401, "Authentication required.");
+    }
+
     if (authToken) {
       requestHeaders.set("Authorization", `Token ${authToken}`);
     }

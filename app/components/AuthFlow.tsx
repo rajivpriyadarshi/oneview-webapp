@@ -19,9 +19,12 @@ import { store } from "../store/store";
 import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
 import { GoogleIdentityScript } from "./GoogleIdentityScript";
 import type { Profile } from "../lib/realAuthApi";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 export function AuthFlow() {
   const router = useRouter();
+  const { trackPage, trackClick, trackAPI, trackUserAttributes } = useAnalytics();
   const [step, setStep] = useState<"login" | "otp">("login");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
@@ -37,11 +40,22 @@ export function AuthFlow() {
   const [verifyPasswordlessOtp] = useVerifyPasswordlessOtpMutation();
   const [resendPasswordlessOtp] = useResendPasswordlessOtpMutation();
 
+  // Track page load
   useEffect(() => {
-    if (getStoredAuthToken()) {
-      routeByProfile();
-    }
-  }, [router]);
+    const pageName = step === "login" ? trackingEventsMap.authPage.PAGE : trackingEventsMap.otpPage.PAGE;
+    trackPage({
+      pageName,
+      params: {
+        page_url: window.location.href,
+        page_title: document.title,
+      },
+    });
+  }, [step]);
+
+  useEffect(() => {
+    clearAuthToken();
+    store.dispatch(api.util.resetApiState());
+  }, []);
 
   useEffect(() => {
     if (!isGoogleLoaded || !hiddenGoogleButtonRef.current) {
@@ -90,6 +104,11 @@ export function AuthFlow() {
   }, [step]);
 
   function handleGoogleSubmit() {
+    trackClick({
+      buttonName: trackingEventsMap.authPage.CLICK_GOOGLE_SIGNIN,
+      pageName: trackingEventsMap.authPage.PAGE,
+    });
+
     if (!hiddenGoogleButtonRef.current) {
       return;
     }
@@ -105,15 +124,37 @@ export function AuthFlow() {
     setError("");
     setIsSubmitting(true);
 
+    trackClick({
+      buttonName: trackingEventsMap.authPage.CLICK_EMAIL_CONTINUE,
+      pageName: trackingEventsMap.authPage.PAGE,
+      params: { email },
+    });
+
     try {
       const normalizedEmail = email.trim();
       validateEmail(normalizedEmail);
       await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
+
+      trackAPI({
+        pageName: trackingEventsMap.authPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.authPage.API_SEND_OTP_SUCCESS,
+          email: normalizedEmail,
+        },
+      });
+
       setEmail(normalizedEmail);
       setOtp(Array(6).fill(""));
       setResendCooldown(60);
       setStep("otp");
     } catch (requestError) {
+      trackAPI({
+        pageName: trackingEventsMap.authPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.authPage.API_SEND_OTP_FAILURE,
+          error: getErrorMessage(requestError),
+        },
+      });
       setError(getErrorMessage(requestError));
     } finally {
       setIsSubmitting(false);
@@ -126,6 +167,11 @@ export function AuthFlow() {
     setError("");
     setIsSubmitting(true);
 
+    trackClick({
+      buttonName: trackingEventsMap.otpPage.CLICK_VERIFY_OTP,
+      pageName: trackingEventsMap.otpPage.PAGE,
+    });
+
     try {
       const otpCode = otp.join("");
 
@@ -134,9 +180,25 @@ export function AuthFlow() {
       }
 
       const session = await verifyPasswordlessOtp({ email, otp: otpCode }).unwrap();
+
+      trackAPI({
+        pageName: trackingEventsMap.otpPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.otpPage.API_VERIFY_OTP_SUCCESS,
+          email,
+        },
+      });
+
       storeAuthToken(session.token);
       await routeByProfile();
     } catch (requestError) {
+      trackAPI({
+        pageName: trackingEventsMap.otpPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.otpPage.API_VERIFY_OTP_FAILURE,
+          error: getErrorMessage(requestError),
+        },
+      });
       setError(getErrorMessage(requestError));
     } finally {
       setIsSubmitting(false);
@@ -144,6 +206,11 @@ export function AuthFlow() {
   }
 
   function handleDifferentEmail() {
+    trackClick({
+      buttonName: trackingEventsMap.otpPage.CLICK_DIFFERENT_EMAIL,
+      pageName: trackingEventsMap.otpPage.PAGE,
+    });
+
     setStep("login");
     setError("");
     setOtp(Array(6).fill(""));
@@ -204,6 +271,11 @@ export function AuthFlow() {
       return;
     }
 
+    trackClick({
+      buttonName: trackingEventsMap.otpPage.CLICK_RESEND_OTP,
+      pageName: trackingEventsMap.otpPage.PAGE,
+    });
+
     setError("");
     setIsSubmitting(true);
 
@@ -220,15 +292,35 @@ export function AuthFlow() {
   }
 
   async function routeByProfile() {
+    if (!getStoredAuthToken()) {
+      store.dispatch(api.util.resetApiState());
+      return;
+    }
+
     try {
       const profileResult = await store.dispatch(api.endpoints.getProfile.initiate(undefined, { forceRefetch: true }));
       if (profileResult.error || !profileResult.data) {
         throw new Error("Failed to fetch profile");
       }
       const profile = profileResult.data;
+
+      // Set user identity in Mixpanel
+      trackUserAttributes({
+        id: String(profile.id),
+        email: profile.email,
+        fullName: profile.display_name,
+        username: profile.username,
+        baseCurrency: profile.base_currency,
+        timezone: profile.timezone,
+        isActive: String(profile.is_active),
+        mailerFrequency: profile.mailer_frequency,
+        createdAt: profile.created_at,
+      });
+
       router.replace(await getPostProfileRouteFromStore(profile));
     } catch {
       clearAuthToken();
+      store.dispatch(api.util.resetApiState());
       router.replace("/");
     }
   }
@@ -281,8 +373,32 @@ export function AuthFlow() {
 
             <p className="terms">
               By continuing, you agree to Zinc&apos;s Consumer{" "}
-              <a href="#">Terms</a> and <a href="#">Usage Policy</a>, and
-              acknowledge their <a href="#">Privacy Policy</a>.
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackClick({
+                    buttonName: trackingEventsMap.authPage.CLICK_TERMS_OF_SERVICE,
+                    pageName: trackingEventsMap.authPage.PAGE,
+                  });
+                }}
+              >
+                Terms
+              </a> and
+              acknowledge their <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackClick({
+                    buttonName: trackingEventsMap.authPage.CLICK_PRIVACY_POLICY,
+                    pageName: trackingEventsMap.authPage.PAGE,
+                  });
+                }}
+              >
+                Privacy Policy
+              </a>.
             </p>
           </form>
           <ZincBrand />
@@ -353,7 +469,7 @@ export function AuthFlow() {
 
 async function getPostProfileRouteFromStore(profile: Profile): Promise<string> {
   const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.name?.trim();
+  const displayName = profile.display_name?.trim();
 
   if (!displayName || displayName === emailPrefix) {
     return "/profile/setup";

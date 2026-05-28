@@ -19,6 +19,12 @@ export const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryE
   api,
   extraOptions,
 ) => {
+  const token = getStoredAuthToken();
+
+  if (!token && isProtectedRequest(args)) {
+    return { error: { status: 401, data: null } };
+  }
+
   const result = await rawBaseQuery(args, api, extraOptions);
 
   if (result.error?.status === 401) {
@@ -30,3 +36,9 @@ export const baseQuery: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryE
 
   return result;
 };
+
+function isProtectedRequest(args: string | FetchArgs) {
+  const url = typeof args === "string" ? args : args.url;
+
+  return !url.startsWith("/auth/");
+}

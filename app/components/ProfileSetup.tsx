@@ -8,9 +8,12 @@ import { api } from "../store/api";
 import { store } from "../store/store";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
 import type { Profile } from "../lib/realAuthApi";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 export function ProfileSetup() {
   const router = useRouter();
+  const { trackPage, trackClick, trackAPI, trackUserAttributes } = useAnalytics();
   const [displayName, setDisplayName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -19,6 +22,17 @@ export function ProfileSetup() {
     skip: !getStoredAuthToken(),
   });
   const [updateProfile] = useUpdateProfileMutation();
+
+  // Track page load
+  useEffect(() => {
+    trackPage({
+      pageName: trackingEventsMap.profileSetupPage.PAGE,
+      params: {
+        page_url: window.location.href,
+        page_title: document.title,
+      },
+    });
+  }, []);
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -65,12 +79,50 @@ export function ProfileSetup() {
       return;
     }
 
+    trackClick({
+      buttonName: trackingEventsMap.profileSetupPage.CLICK_PROCEED,
+      pageName: trackingEventsMap.profileSetupPage.PAGE,
+      params: {
+        name_length: trimmedName.length,
+      },
+    });
+
     setIsSubmitting(true);
 
     try {
-      const updatedProfile = await updateProfile({ name: trimmedName }).unwrap();
+      const updatedProfile = await updateProfile({ display_name: trimmedName }).unwrap();
+
+      trackAPI({
+        pageName: trackingEventsMap.profileSetupPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.profileSetupPage.API_UPDATE_PROFILE_SUCCESS,
+          name_length: trimmedName.length,
+        },
+      });
+
+      // Update user attributes in Mixpanel with the new name
+      trackUserAttributes({
+        id: String(updatedProfile.id),
+        email: updatedProfile.email,
+        fullName: updatedProfile.display_name,
+        username: updatedProfile.username,
+        baseCurrency: updatedProfile.base_currency,
+        timezone: updatedProfile.timezone,
+        isActive: String(updatedProfile.is_active),
+        mailerFrequency: updatedProfile.mailer_frequency,
+        createdAt: updatedProfile.created_at,
+      });
+
       router.replace(await getPostProfileRoute(updatedProfile));
     } catch (requestError) {
+      trackAPI({
+        pageName: trackingEventsMap.profileSetupPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.profileSetupPage.API_UPDATE_PROFILE_FAILURE,
+          error: requestError instanceof Error ? requestError.message : "Unable to save your name.",
+        },
+      });
+
       setError(
         requestError instanceof Error
           ? requestError.message
@@ -120,7 +172,7 @@ export function ProfileSetup() {
 
 async function getPostProfileRoute(profile: Profile): Promise<string> {
   const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.name?.trim();
+  const displayName = profile.display_name?.trim();
 
   if (!displayName || displayName === emailPrefix) {
     return "/profile/setup";

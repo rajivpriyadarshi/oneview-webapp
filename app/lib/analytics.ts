@@ -51,6 +51,10 @@ export const MixpanelAnalytics = {
     }
 
     try {
+      // Log in dev mode for debugging
+      if (APP_VERSION === "local" || APP_VERSION.includes("alpha")) {
+        console.log(`[Analytics] Event: ${event}`, params);
+      }
       mixpanel.track(event, params);
     } catch (error) {
       if (MIXPANEL_TOKEN) {
@@ -128,6 +132,24 @@ export const MixpanelAnalytics = {
       }
       if (payload.fullName) {
         userAttributes.$name = payload.fullName;
+      }
+      if (payload.username) {
+        userAttributes.username = payload.username;
+      }
+      if (payload.baseCurrency) {
+        userAttributes.base_currency = payload.baseCurrency;
+      }
+      if (payload.timezone) {
+        userAttributes.timezone = payload.timezone;
+      }
+      if (payload.isActive) {
+        userAttributes.is_active = payload.isActive;
+      }
+      if (payload.mailerFrequency) {
+        userAttributes.mailer_frequency = payload.mailerFrequency;
+      }
+      if (payload.createdAt) {
+        userAttributes.created_at = payload.createdAt;
       }
 
       mixpanel.people.set(userAttributes);

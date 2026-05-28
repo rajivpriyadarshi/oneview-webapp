@@ -1,5 +1,6 @@
 import { trackingEventsMap } from "../constants";
 import { Mixpanel, ZincAnalytics } from "../utils";
+import { Mixpanel, ZincAnalytics } from "../lib/analytics";
 
 type AnalyticsPayload = {
   pageName: string;
@@ -36,6 +37,10 @@ const useAnalytics = () => {
     ZincAnalytics.trackClick(payload);
   };
 
+  const trackAPI = (payload: AnalyticsPayload) => {
+    ZincAnalytics.trackAPI(payload);
+  };
+
   const trackHalfWayScroll = (pageName: string) => {
     ZincAnalytics.trackHalfPageScroll({ pageName });
   };
@@ -48,15 +53,21 @@ const useAnalytics = () => {
     ZincAnalytics.tractExitTime({ pageName });
   };
 
+  const trackUserAttributes = (payload: Record<string, string>) => {
+    ZincAnalytics.trackUserAttributes(payload);
+  };
+
   return {
     initialize,
     trackPage,
     trackSectionScroll,
     trackCTAClick,
     trackClick,
+    trackAPI,
     trackHalfWayScroll,
     trackEnterTime,
     tractExitTime,
+    trackUserAttributes,
   };
 };
 

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateUserProfile, type UserProfile } from "../lib/profileApi";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 import "./EditProfileModal.css";
 
 type Props = {
@@ -11,9 +13,18 @@ type Props = {
 };
 
 export default function EditProfileModal({ profile, onClose, onSave }: Props) {
+  const { trackClick, trackAPI } = useAnalytics();
   const [saving, setSaving] = useState(false);
   const [displayName, setDisplayName] = useState(profile.display_name);
   // const [mobileNumber, setMobileNumber] = useState("");
+
+  // Track modal open
+  useEffect(() => {
+    trackClick({
+      buttonName: trackingEventsMap.editProfileModal.MODAL_OPEN,
+      pageName: trackingEventsMap.profilePage.PAGE,
+    });
+  }, []);
 
   const handleSave = async () => {
     if (!displayName.trim()) {
@@ -21,53 +32,91 @@ export default function EditProfileModal({ profile, onClose, onSave }: Props) {
       return;
     }
 
+    trackClick({
+      buttonName: trackingEventsMap.editProfileModal.CLICK_SAVE,
+      pageName: trackingEventsMap.profilePage.PAGE,
+      params: {
+        name_changed: displayName !== profile.display_name,
+        name_length: displayName.trim().length,
+      },
+    });
+
     setSaving(true);
     try {
       const updated = await updateUserProfile({ display_name: displayName });
+
+      trackAPI({
+        pageName: trackingEventsMap.profilePage.PAGE,
+        params: {
+          event_name: trackingEventsMap.editProfileModal.API_UPDATE_PROFILE_SUCCESS,
+          name_length: displayName.trim().length,
+        },
+      });
+
       onSave(updated);
       onClose();
     } catch (error) {
       console.error("Failed to update profile:", error);
+
+      trackAPI({
+        pageName: trackingEventsMap.profilePage.PAGE,
+        params: {
+          event_name: trackingEventsMap.editProfileModal.API_UPDATE_PROFILE_FAILURE,
+          error: error instanceof Error ? error.message : "Update failed",
+        },
+      });
+
       alert("Failed to save changes. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
+  const handleClose = () => {
+    trackClick({
+      buttonName: trackingEventsMap.editProfileModal.MODAL_CLOSE,
+      pageName: trackingEventsMap.profilePage.PAGE,
+      params: {
+        name_changed: displayName !== profile.display_name,
+        saved: false,
+      },
+    });
+    onClose();
+  };
+
   return (
     <>
-      <div className="edit-profile-overlay" onClick={onClose} />
+      <div className="edit-profile-overlay" onClick={handleClose} />
       <div className="edit-profile-modal">
         <div className="edit-profile-header">
           <div>
             <h2 className="edit-profile-title">Edit profile</h2>
             <p className="edit-profile-subtitle">Add or change information about yourself</p>
           </div>
-          <button className="edit-profile-close" onClick={onClose}>
+          <button className="edit-profile-close" onClick={handleClose}>
             <CloseIcon />
           </button>
         </div>
 
         <div className="edit-profile-form">
-          <div className="edit-profile-field">
-            <label className="edit-profile-label">Full name</label>
+          <label className={`field ${displayName ? 'has-value' : ''}`}>
+            <span>Full name</span>
             <input
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="edit-profile-input"
-              placeholder="Enter your full name"
+              autoComplete="name"
             />
-          </div>
+          </label>
 
-          <div className="edit-profile-field">
-            <label className="edit-profile-label">Registered email address</label>
+          <div className="field has-value edit-profile-email-field">
+            <span>Registered email address</span>
             <div className="edit-profile-email-wrapper">
               <input
                 type="email"
                 value={profile.email}
                 disabled
-                className="edit-profile-input edit-profile-input-disabled"
+                className="edit-profile-input-disabled"
               />
               <VerifiedIcon />
             </div>

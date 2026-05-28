@@ -9,6 +9,8 @@ import {
   createColumnHelper,
   type SortingState,
 } from "@tanstack/react-table";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 export type VaultDocument = {
   id: string;
@@ -31,28 +33,53 @@ type Props = {
 
 const columnHelper = createColumnHelper<VaultDocument>();
 
-const GROUP_OPTIONS = ["Account", "Type", "Status"];
-
 export default function DocumentsTable({
   documents,
   loading = false,
   deleting = false,
   onRequestDelete,
 }: Props) {
+  const { trackClick } = useAnalytics();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [groupBy, setGroupBy] = useState("Account");
   const selectedDocuments = documents.filter((document) => selectedRows.has(document.id));
 
   const toggleAll = () => {
-    if (selectedRows.size === documents.length) {
-      setSelectedRows(new Set());
-    } else {
+    const isSelectingAll = selectedRows.size !== documents.length;
+
+    trackClick({
+      buttonName: isSelectingAll
+        ? trackingEventsMap.documentsVaultPage.CLICK_CHECKBOX_SELECT_ALL
+        : trackingEventsMap.documentsVaultPage.CLICK_CHECKBOX_DESELECT_ALL,
+      pageName: trackingEventsMap.documentsVaultPage.PAGE,
+      params: {
+        total_documents: documents.length,
+        previously_selected: selectedRows.size,
+      },
+    });
+
+    if (isSelectingAll) {
       setSelectedRows(new Set(documents.map((document) => document.id)));
+    } else {
+      setSelectedRows(new Set());
     }
   };
 
   const toggleRow = (id: string) => {
+    const isCurrentlySelected = selectedRows.has(id);
+
+    trackClick({
+      buttonName: isCurrentlySelected
+        ? trackingEventsMap.documentsVaultPage.CLICK_CHECKBOX_DESELECT_ROW
+        : trackingEventsMap.documentsVaultPage.CLICK_CHECKBOX_SELECT_ROW,
+      pageName: trackingEventsMap.documentsVaultPage.PAGE,
+      params: {
+        document_id: id,
+        total_selected_before: selectedRows.size,
+        total_selected_after: isCurrentlySelected ? selectedRows.size - 1 : selectedRows.size + 1,
+      },
+    });
+
     setSelectedRows((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -68,6 +95,14 @@ export default function DocumentsTable({
     if (selectedDocuments.length === 0 || deleting) {
       return;
     }
+
+    trackClick({
+      buttonName: trackingEventsMap.documentsVaultPage.CLICK_DELETE_BUTTON,
+      pageName: trackingEventsMap.documentsVaultPage.PAGE,
+      params: {
+        files_count: selectedDocuments.length,
+      },
+    });
 
     onRequestDelete?.(selectedDocuments);
   };
@@ -123,6 +158,17 @@ export default function DocumentsTable({
             href={row.original.fileUrl || "#"}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              trackClick({
+                buttonName: trackingEventsMap.documentsVaultPage.CLICK_VIEW_DOCUMENT,
+                pageName: trackingEventsMap.documentsVaultPage.PAGE,
+                params: {
+                  document_id: row.original.id,
+                  filename: row.original.filename,
+                  file_type: row.original.fileType,
+                },
+              });
+            }}
           >
             View
           </a>
@@ -132,11 +178,32 @@ export default function DocumentsTable({
     [selectedRows, documents.length, deleting, onRequestDelete],
   );
 
+  const handleSortingChange = (updaterOrValue: SortingState | ((old: SortingState) => SortingState)) => {
+    setSorting((prevSorting) => {
+      const newSorting = typeof updaterOrValue === "function" ? updaterOrValue(prevSorting) : updaterOrValue;
+
+      // Track sorting event when sorting changes
+      if (newSorting.length > 0 && JSON.stringify(newSorting) !== JSON.stringify(prevSorting)) {
+        const sortInfo = newSorting[0];
+        trackClick({
+          buttonName: trackingEventsMap.documentsVaultPage.CLICK_SORT_COLUMN,
+          pageName: trackingEventsMap.documentsVaultPage.PAGE,
+          params: {
+            column: sortInfo.id,
+            direction: sortInfo.desc ? "desc" : "asc",
+          },
+        });
+      }
+
+      return newSorting;
+    });
+  };
+
   const table = useReactTable({
     data: documents,
     columns,
     state: { sorting },
-    onSortingChange: setSorting,
+    onSortingChange: handleSortingChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -157,21 +224,6 @@ export default function DocumentsTable({
           >
             {deleting ? "Deleting..." : `Delete${selectedDocuments.length > 0 ? ` (${selectedDocuments.length})` : ""}`}
           </button>
-          <div className="docs-group-by">
-            <span className="docs-group-by-label">Group by:</span>
-            <div className="docs-group-by-select-wrapper">
-              <select
-                className="docs-group-by-select"
-                value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value)}
-              >
-                {GROUP_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
-              <ChevronDown />
-            </div>
-          </div>
         </div>
       </div>
       <div className="docs-table-wrapper">
