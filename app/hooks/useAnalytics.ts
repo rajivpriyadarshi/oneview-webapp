@@ -1,5 +1,5 @@
 import { trackingEventsMap } from "../constants";
-import { Mixpanel, ZincAnalytics } from "../lib/analytics";
+import { Mixpanel, ZincAnalytics } from "../utils";
 
 type AnalyticsPayload = {
   pageName: string;
@@ -71,3 +71,4 @@ const useAnalytics = () => {
 };
 
 export default useAnalytics;
+

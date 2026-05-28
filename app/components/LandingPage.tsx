@@ -143,7 +143,7 @@ export function LandingPage() {
             </div>
 
             <div className="flex items-center justify-center gap-5 text-[13.23px] leading-[19.84px] tracking-[0px] text-black/60 md:justify-end">
-              <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-black">
+              <Link href="/privacy" className="transition-colors hover:text-black">
                 Privacy
               </Link>
               <Link href="#" className="transition-colors hover:text-black">

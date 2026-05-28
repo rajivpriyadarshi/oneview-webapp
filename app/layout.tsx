@@ -6,16 +6,6 @@ import StoreProvider from "./store/StoreProvider";
 import Analytics from "./analytics";
 import "./globals.css";
 
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
-
 const butlerPro = localFont({
   src: [
     { path: "./fonts/ButlerPro-Medium.woff2", weight: "500", style: "normal" },
@@ -36,6 +26,18 @@ const satoshi = localFont({
   display: "swap",
 });
 
+const butlerProMedium = localFont({
+  src: [{ path: "./fonts/ButlerPro-Medium.woff2", weight: "500", style: "normal" }],
+  variable: "--font-butler-medium",
+  display: "swap",
+});
+
+const butlerProSemiBold = localFont({
+  src: [{ path: "./fonts/ButlerPro-SemiBold.woff2", weight: "600", style: "normal" }],
+  variable: "--font-butler-semibold",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Meridian",
   description: "Meridian login",
@@ -47,7 +49,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${inter.variable} ${butlerPro.variable} ${satoshi.variable}`}>
+    <html
+      lang="en"
+      className={`${butlerPro.variable} ${butlerProMedium.variable} ${butlerProSemiBold.variable} ${satoshi.variable}`}
+    >
       <body>
         <StoreProvider>
           <Suspense fallback={null}>
@@ -55,6 +60,7 @@ export default function RootLayout({
               {children}
             </Analytics>
           </Suspense>
+
         </StoreProvider>
       </body>
     </html>

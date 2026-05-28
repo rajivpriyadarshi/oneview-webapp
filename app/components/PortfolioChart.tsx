@@ -49,6 +49,7 @@ type Props = {
 };
 
 export default function PortfolioChart({ series, currency, loading }: Props) {
+  void loading;
   const currSymbol = currency === "USD" ? "$" : "₹";
 
   const labels = series.map((p) => p.date);
@@ -195,15 +196,8 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
   };
 
   return (
-    <div className="portfolio-chart">
-      {loading ? (
-        <div className="portfolio-chart-skeleton" aria-label="Loading chart">
-          <div className="portfolio-chart-skeleton-grid" />
-          <div className="portfolio-chart-skeleton-line" />
-        </div>
-      ) : (
-        <Line data={data} options={options} plugins={[dottedGridPlugin]} />
-      )}
+    <div className="relative min-h-[240px] w-full min-w-0 md:w-1/2 md:min-w-[300px] max-[900px]:h-[120px]">
+      <Line data={data} options={options} plugins={[dottedGridPlugin]} />
     </div>
   );
 }

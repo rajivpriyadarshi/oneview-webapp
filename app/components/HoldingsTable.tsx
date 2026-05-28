@@ -65,18 +65,20 @@ export default function HoldingsTable({ positions, loading }: Props) {
         id: "security",
         header: "Security",
         sortingFn: "alphanumeric",
+        minSize: 240,
+        size: 300,
         cell: (info) => {
           const row = info.row.original;
           return (
-            <div className="security-cell">
+            <div className="flex min-w-[220px] items-center gap-3">
               <InstrumentIcon
                 symbol={row.ticker}
                 name={row.name}
                 isProfitable={row.gain_amount >= 0}
               />
-              <div className="security-copy">
-                <span className="security-ticker">{row.ticker || "—"}</span>
-                <span className="security-name">{row.name || ""}</span>
+              <div className="min-w-0">
+                <span className="block text-base font-medium leading-6 text-black">{row.ticker || "—"}</span>
+                <span className="mt-0.5 block text-xs font-normal leading-[18px] text-black/50">{row.name || ""}</span>
               </div>
             </div>
           );
@@ -85,6 +87,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
       columnHelper.accessor("quantity", {
         header: "Quantity",
         sortingFn: "basic",
+        minSize: 110,
+        size: 130,
         cell: (info) => {
           return formatNumber(info.getValue());
         },
@@ -93,6 +97,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
         id: "current_price",
         header: "Current price",
         sortingFn: "basic",
+        minSize: 130,
+        size: 150,
         cell: (info) => {
           const row = info.row.original;
           const price = row.quantity > 0 ? row.market_value / row.quantity : 0;
@@ -102,6 +108,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
       columnHelper.accessor("market_value", {
         header: "Market value",
         sortingFn: "basic",
+        minSize: 135,
+        size: 160,
         cell: (info) => {
           return formatCurrencyAmount(info.getValue(), info.row.original.currency);
         },
@@ -109,6 +117,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
       columnHelper.accessor("cost_basis", {
         header: "Cost basis",
         sortingFn: "basic",
+        minSize: 135,
+        size: 160,
         cell: (info) => {
           return formatCurrencyAmount(info.getValue(), info.row.original.currency);
         },
@@ -117,6 +127,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
         id: "gain_loss",
         header: "Gain/Loss",
         sortingFn: "basic",
+        minSize: 150,
+        size: 180,
         cell: (info) => {
           const row = info.row.original;
           const gainAmount = row.gain_amount;
@@ -124,7 +136,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
           const isPositive = gainAmount >= 0;
 
           return (
-            <span className={`td-gain ${isPositive ? "positive" : "negative"}`}>
+            <span className={`text-right font-medium ${isPositive ? "text-green-600" : "text-red-600"}`}>
               {isPositive ? "+" : "-"}{formatCurrencyAmount(Math.abs(gainAmount), row.currency)} ({isPositive ? "+" : ""}{gainPct.toFixed(2)}%)
             </span>
           );
@@ -140,44 +152,70 @@ export default function HoldingsTable({ positions, loading }: Props) {
     state: { sorting },
     onSortingChange: setSorting,
     enableSortingRemoval: false,
+    columnResizeMode: "onChange",
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
   return (
-    <section className="holdings-section">
-      <h3 className="holdings-title">
+    <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
+      <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
         <HoldingsIcon />
         Your holdings
       </h3>
-      <div className="holdings-table-wrapper">
-        <table className="holdings-table">
-          <thead>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-0 border-separate border-spacing-0">
+          <thead className="table w-full table-fixed">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
-                    style={{ cursor: header.column.getCanSort() ? "pointer" : "default" }}
+                    className={`sticky top-0 z-10 bg-white relative border-y border-black/10 px-4 py-[30px] text-sm font-semibold text-black ${
+                      header.id === "security" ? "text-left" : "text-right"
+                    }`}
+                    style={{
+                      cursor: header.column.getCanSort() ? "pointer" : "default",
+                      width: header.getSize(),
+                    }}
                   >
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    <SortIndicator direction={header.column.getIsSorted()} />
+                    <div className={`flex items-center ${header.id === "security" ? "justify-start" : "justify-end"}`}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      <SortIndicator direction={header.column.getIsSorted()} />
+                    </div>
+                    {header.column.getCanResize() && (
+                      <div
+                        onMouseDown={header.getResizeHandler()}
+                        onTouchStart={header.getResizeHandler()}
+                        onClick={(e) => e.stopPropagation()}
+                        className={`absolute right-0 top-0 h-full w-2 cursor-col-resize select-none touch-none ${
+                          header.column.getIsResizing() ? "bg-black/10" : "bg-transparent"
+                        }`}
+                        aria-hidden="true"
+                      >
+                        <span
+                          className={`absolute right-0 top-1/2 h-6 w-px -translate-y-1/2 ${
+                            header.column.getIsResizing() ? "bg-black/40" : "bg-black/20"
+                          }`}
+                        />
+                      </div>
+                    )}
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
-          <tbody>
+          <tbody className="mt-2 mb-2 block max-h-[70vh] overflow-y-auto">
             {loading && (
-              <tr>
+              <tr className="table w-full table-fixed">
                 <td colSpan={6} style={{ textAlign: "center", padding: "40px" }}>
                   Loading...
                 </td>
               </tr>
             )}
             {!loading && positions.length === 0 && (
-              <tr>
+              <tr className="table w-full table-fixed">
                 <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "var(--muted)" }}>
                   No holdings found
                 </td>
@@ -185,9 +223,19 @@ export default function HoldingsTable({ positions, loading }: Props) {
             )}
             {!loading &&
               table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
+                <tr
+                  key={row.id}
+                  className={`table w-full table-fixed ${row.index !== table.getRowModel().rows.length - 1 ? "mb-2" : ""}`}
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
+                    // Keep security left-aligned; right-align all numeric columns.
+                    <td
+                      key={cell.id}
+                      className={`${row.index % 2 === 0 ? "bg-black/[0.03]" : "bg-black/[0.05]"} px-4 py-5 text-sm text-black first:rounded-l-xl first:pl-8 last:rounded-r-xl last:pr-8 ${
+                        cell.column.id === "security" ? "text-left" : "text-right"
+                      }`}
+                      style={{ width: cell.column.getSize() }}
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
@@ -266,7 +314,7 @@ function InstrumentIcon({
   if (useFallback || !iconUrl) {
     return (
       <span
-        className="instrument-icon fallback"
+        className="grid h-[34px] w-[34px] place-items-center rounded-full text-base font-semibold leading-none text-black/70 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]"
         style={{ backgroundColor: fallbackColor }}
         aria-hidden="true"
       >
@@ -279,7 +327,7 @@ function InstrumentIcon({
     <img
       src={iconUrl}
       alt=""
-      className="instrument-icon"
+      className="h-[34px] w-[34px] rounded-full bg-white object-contain"
       onError={() => setUseFallback(true)}
       onLoad={(event) => {
         const blankImage = isBlankImage(event.currentTarget);
@@ -383,7 +431,7 @@ function isBlankImage(image: HTMLImageElement) {
 
 function SortIndicator({ direction }: { direction: false | "asc" | "desc" }) {
   return (
-    <svg width="10" height="12" viewBox="0 0 6 9" fill="none" className="sort-icon">
+    <svg width="10" height="12" viewBox="0 0 6 9" fill="none" className="ml-1 inline-block align-middle">
       <path d="M0.5 3L3 0.5L5.5 3" stroke="black" strokeOpacity={direction === "asc" ? "1" : "0.5"} strokeLinecap="round" strokeLinejoin="round"/>
       <path d="M0.5 6L3 8.5L5.5 6" stroke="black" strokeOpacity={direction === "desc" ? "1" : "0.5"} strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
@@ -392,7 +440,7 @@ function SortIndicator({ direction }: { direction: false | "asc" | "desc" }) {
 
 function HoldingsIcon() {
   return (
-    <svg viewBox="0 0 18 18" fill="none" width="18" height="18">
+    <svg viewBox="0 0 18 18" fill="none" width="26" height="26">
       <path
         d="M4.99527 6.77795L1.42773 8.56172L8.30754 12.0016C8.40114 12.0484 8.44794 12.0718 8.49703 12.081C8.5405 12.0892 8.58512 12.0892 8.6286 12.081C8.67768 12.0718 8.72448 12.0484 8.81808 12.0016L15.6979 8.56172L12.1303 6.77795M4.99527 10.3455L1.42773 12.1293L8.30754 15.5692C8.40114 15.616 8.44794 15.6394 8.49703 15.6486C8.5405 15.6567 8.58512 15.6567 8.6286 15.6486C8.67768 15.6394 8.72448 15.616 8.81808 15.5692L15.6979 12.1293L12.1303 10.3455M1.42773 4.99418L8.30754 1.55428C8.40114 1.50748 8.44794 1.48408 8.49703 1.47487C8.5405 1.46671 8.58512 1.46671 8.6286 1.47487C8.67768 1.48408 8.72448 1.50748 8.81808 1.55428L15.6979 4.99418L8.81808 8.43408C8.72448 8.48088 8.67768 8.50428 8.6286 8.51349C8.58512 8.52165 8.5405 8.52165 8.49703 8.51349C8.44794 8.50428 8.40114 8.48088 8.30754 8.43408L1.42773 4.99418Z"
         stroke="currentColor"

@@ -271,7 +271,7 @@ button:disabled {
   font-feature-settings: 'ss03' on;
   text-overflow: ellipsis;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
   font-weight: 700;
   line-height: 24px;
@@ -322,7 +322,7 @@ button:disabled {
   max-width: 430px;
   margin: 0 0 30px;
   color: #5e5e5e;
-  font-size: 1rem;
+  font-size: 1.125rem;
   line-height: 1.45;
 }
 
@@ -385,7 +385,7 @@ button:disabled {
   padding: 0;
   background: transparent;
   color: #5b5b5b;
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 800;
 }
 
@@ -654,7 +654,7 @@ button:disabled {
   color: #000;
   text-align: center;
   font-family: var(--font-butler), "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 32px;
+  font-size: 2.25rem;
   font-style: normal;
   font-weight: 500;
   line-height: 40px;
@@ -667,7 +667,7 @@ button:disabled {
   text-align: center;
   font-feature-settings: 'ss03' on;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
   font-weight: 500;
   line-height: 150%;
@@ -746,7 +746,7 @@ button:disabled {
   color: #000;
   font-feature-settings: 'ss03' on;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 18px;
+  font-size: 1.0625rem;
   font-style: normal;
   font-weight: 700;
   line-height: 150%;
@@ -760,7 +760,7 @@ button:disabled {
   text-align: center;
   font-feature-settings: 'ss03' on;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.89rem;
   font-style: normal;
   font-weight: 400;
   line-height: 150%;
@@ -901,7 +901,7 @@ button:disabled {
   text-align: left;
   font-feature-settings: 'ss03' on;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
   font-weight: 700;
   line-height: 150%;
@@ -918,7 +918,7 @@ button:disabled {
   text-align: left;
   font-feature-settings: 'ss03' on;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.895rem;
   font-style: normal;
   font-weight: 500;
   line-height: 150%;
@@ -2195,7 +2195,7 @@ button:disabled {
   color: rgba(0, 0, 0, 0.70);
   border-radius: 20px;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
   line-height: 150%;
@@ -2210,7 +2210,7 @@ button:disabled {
 
 .oneview-info-title {
   font-family: var(--font-butler), "ButlerPro", Georgia, serif;
-  font-size: 32px;
+  font-size: 2rem;
   font-style: normal;
   font-weight: 600;
   line-height: 120%;
@@ -2224,7 +2224,7 @@ button:disabled {
   color: rgba(0, 0, 0, 0.70);
   font-feature-settings: 'ss03' on;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
   line-height: 150%;
@@ -2411,7 +2411,7 @@ button:disabled {
   font-kerning: none;
   font-feature-settings: 'liga' off;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 700;
   line-height: 120%;
@@ -2425,10 +2425,11 @@ button:disabled {
   font-kerning: none;
   font-feature-settings: 'ss02' on, 'ss03' on, 'liga' off;
   font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-style: normal;
   font-weight: 500;
   line-height: 150%;
+  font-family: "Satoshi";
   word-wrap: break-word;
   margin: 0;
 }
