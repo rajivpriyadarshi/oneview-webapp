@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import DashboardHeader from "../components/DashboardHeader";
@@ -8,7 +8,7 @@ import PortfolioSummary from "../components/PortfolioSummary";
 import PortfolioExposure from "../components/PortfolioExposure";
 import HoldingsTable from "../components/HoldingsTable";
 import { MeridianLogo } from "../components/MeridianLogo";
-import { getPreferredCurrency, setPreferredCurrency } from "../lib/currencyStorage";
+import { getUserProfile, updateUserProfile } from "../lib/profileApi";
 import {
   useListPortfoliosQuery,
   useGetAccountsByPortfolioIdQuery,
@@ -21,7 +21,19 @@ import "../onboarding/processing/processing.css";
 export default function DashboardPage() {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
-  const [currency, setCurrency] = useState(getPreferredCurrency());
+  const [currency, setCurrency] = useState("INR");
+
+  useEffect(() => {
+    getUserProfile()
+      .then((profile) => {
+        setCurrency(profile.base_currency);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch profile:", error);
+        // Fall back to INR if profile fetch fails
+        setCurrency("INR");
+      });
+  }, []);
 
   const { data: portfolios = [] } = useListPortfoliosQuery();
 
@@ -64,9 +76,13 @@ export default function DashboardPage() {
     setSelectedAccountId(accountId);
   };
 
-  const handleCurrencyChange = (curr: string) => {
+  const handleCurrencyChange = async (curr: string) => {
     setCurrency(curr);
-    setPreferredCurrency(curr);
+    try {
+      await updateUserProfile({ base_currency: curr });
+    } catch (error) {
+      console.error("Failed to update currency:", error);
+    }
   };
 
   const handlePortfolioChange = (portfolioId: number) => {

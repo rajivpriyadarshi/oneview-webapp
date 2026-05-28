@@ -110,7 +110,7 @@ button:disabled {
   margin: 0 0 67px;
   color: #17342f;
   font-family: var(--font-butler), Georgia, serif;
-  font-size: 42px;
+  font-size: 2.625rem;
   font-weight: 500;
 }
 
@@ -120,11 +120,11 @@ button:disabled {
   margin: 0;
   color: #092423;
   font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 32px;
+  font-size: 2rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 56px;
-  letter-spacing: -1.28px;
+  line-height: 3.5rem;
+  letter-spacing: -0.08rem;
 }
 
 .account-card h1 {
@@ -151,10 +151,10 @@ button:disabled {
   font-feature-settings: "ss03" on;
   text-overflow: ellipsis;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
   font-weight: 700;
-  line-height: 24px;
+  line-height: 1.5rem;
   letter-spacing: var(--Kerning-None, 0);
   white-space: nowrap;
 }
@@ -168,7 +168,7 @@ button:disabled {
 .or-divider {
   margin: 0;
   color: #5b5b5b;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
@@ -193,10 +193,10 @@ button:disabled {
   left: 23px;
   transform: translateY(-50%);
   color: #828282;
-  font-size: 16px;
+  font-size: 1rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 500;
-  line-height: 24px;
+  line-height: 1.5rem;
   pointer-events: none;
   transition: all 0.2s ease-in-out;
   background: transparent;
@@ -206,8 +206,8 @@ button:disabled {
 .field.has-value span {
   top: 18px;
   transform: translateY(0);
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
 }
 
 .field input,
@@ -223,18 +223,18 @@ button:disabled {
   font-feature-settings: "ss03" on;
   text-overflow: ellipsis;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-style: normal;
   font-weight: 700;
-  line-height: 24px;
+  line-height: 1.5rem;
   letter-spacing: var(--Kerning-None, 0);
   white-space: nowrap;
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
   flex-shrink: 0;
-  min-height: 24px;
-  max-height: 24px;
+  min-height: 1.5rem;
+  max-height: 1.5rem;
 }
 
 .continue-button {
@@ -244,7 +244,7 @@ button:disabled {
   border-radius: 999px;
   background: #000;
   color: #fff;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 800;
   margin-top: 32px;
 }
@@ -253,10 +253,10 @@ button:disabled {
   max-width: 430px;
   margin: 32px 0 0;
   color: black;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 400;
-  line-height: 18px;
+  line-height: 1.125rem;
   text-align: center;
 }
 
@@ -271,7 +271,7 @@ button:disabled {
   max-width: 459px;
   margin: 15px 0 0;
   color: #a40000;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   text-align: center;
 }
@@ -292,7 +292,7 @@ button:disabled {
   max-width: 430px;
   margin: 0 0 30px;
   color: #5e5e5e;
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1.45;
 }
 
@@ -303,7 +303,7 @@ button:disabled {
   gap: 12px;
   margin: 0 0 40px;
   color: #626262;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.3;
 }
 
@@ -332,7 +332,7 @@ button:disabled {
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.92);
   color: #050505;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 800;
   text-align: center;
 }
@@ -355,7 +355,7 @@ button:disabled {
   padding: 0;
   background: transparent;
   color: #5b5b5b;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 800;
 }
 
@@ -402,7 +402,7 @@ button:disabled {
   margin: 0 0 60px;
   color: #050505;
   font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 36px;
+  font-size: 2.25rem;
   font-weight: 500;
   line-height: 48px;
   letter-spacing: -1.2px;
@@ -431,7 +431,7 @@ button:disabled {
   color: #050505;
   text-align: center;
   font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 48px;
+  font-size: 3rem;
   font-style: normal;
   font-weight: 500;
   line-height: 60px;
@@ -454,7 +454,7 @@ button:disabled {
   border-radius: 999px;
   background: #000;
   color: #fff;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -483,7 +483,7 @@ button:disabled {
 
 .dashboard-nav .brand {
   gap: 12px;
-  font-size: 28px;
+  font-size: 1.75rem;
 }
 
 .dashboard-nav .oneview-mark {
@@ -517,7 +517,7 @@ button:disabled {
   margin: 0 0 16px;
   color: var(--green);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 48px;
+  font-size: 3rem;
   line-height: 1.05;
 }
 
@@ -525,7 +525,7 @@ button:disabled {
   max-width: 640px;
   margin: 0 0 28px;
   color: #4f4f4f;
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1.5;
 }
 
@@ -594,7 +594,7 @@ button:disabled {
   border: none;
   border-radius: 8px;
   background: none;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   color: var(--foreground);
@@ -621,7 +621,7 @@ button:disabled {
   margin: 0 0 20px;
   color: #050505;
   font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 36px;
+  font-size: 2.25rem;
   font-weight: 500;
   line-height: 48px;
   letter-spacing: -1.2px;
@@ -631,7 +631,7 @@ button:disabled {
   margin: 10px 0 0;
   color: #565656;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 24px;
 }
 
@@ -706,7 +706,7 @@ button:disabled {
   margin-top: 14px;
   color: #444;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 800;
   line-height: 24px;
 }
@@ -715,7 +715,7 @@ button:disabled {
   width: 230px;
   color: #686868;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 24px;
 }
 
@@ -747,7 +747,7 @@ button:disabled {
   min-width: 36px;
   color: #444;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-style: normal;
   font-weight: 800;
   line-height: 18px;
@@ -810,7 +810,7 @@ button:disabled {
   display: block;
   color: #000;
   font-family: var(--font-geist), Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
   line-height: 24px;
   word-wrap: break-word;
@@ -823,7 +823,7 @@ button:disabled {
   display: block;
   color: #6b6b6b;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
   line-height: 1.2;
   margin-top: 2px;
@@ -836,7 +836,7 @@ button:disabled {
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.06);
   color: #3a3a3a;
-  font-size: 34px;
+  font-size: 2.125rem;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -864,7 +864,7 @@ button:disabled {
 .brokers-text {
   color: rgba(0, 0, 0, 0.70);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 400;
   line-height: 24px;
   white-space: nowrap;
@@ -890,7 +890,7 @@ button:disabled {
   background: transparent;
   color: #7F4E0B;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 24px;
   text-decoration: underline;
@@ -908,7 +908,7 @@ button:disabled {
   margin-top: 10px;
   margin-bottom: 10px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 800;
 }
 
@@ -929,7 +929,7 @@ button:disabled {
   border-radius: 999px;
   background: #000;
   color: #fff;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
   line-height: 24px;
   padding: 20px;
@@ -946,7 +946,7 @@ button:disabled {
 
 .statement-security {
   color: #383838;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 500;
   text-align: center;
@@ -968,7 +968,7 @@ button:disabled {
   color: #1a1a1a;
   border: none;
   border-radius: 80px;
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 600;
   cursor: pointer;
@@ -990,7 +990,7 @@ button:disabled {
 }
 
 .statement-upload-success .statement-success {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 500;
   text-align: center;
@@ -1009,7 +1009,7 @@ button:disabled {
   border-radius: 999px;
   background: #000;
   color: #fff;
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 600;
   cursor: pointer;
@@ -1081,7 +1081,7 @@ button:disabled {
 .modal-title {
   margin: 0 0 8px;
   font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 500;
   line-height: 1.3;
   color: #050505;
@@ -1091,7 +1091,7 @@ button:disabled {
   margin: 0 0 28px;
   color: #6b6b6b;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 22px;
 }
 
@@ -1105,7 +1105,7 @@ button:disabled {
   margin-bottom: 6px;
   color: #8a8a8a;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
@@ -1121,7 +1121,7 @@ button:disabled {
   background: #fff;
   color: #050505;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: border-color 0.15s ease;
@@ -1176,7 +1176,7 @@ button:disabled {
   background: transparent;
   color: #333;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.12s ease;
@@ -1226,7 +1226,7 @@ button:disabled {
   background: #f0ebe4;
   color: #7b4700;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 800;
 }
 
@@ -1234,7 +1234,7 @@ button:disabled {
   padding-top: 6px;
   color: #333;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 22px;
 }
 
@@ -1251,7 +1251,7 @@ button:disabled {
   background: #000;
   color: #fff;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
   transition: opacity 0.15s ease;
@@ -1272,8 +1272,99 @@ button:disabled {
 .auth-callback-page p {
   margin: 0;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
+}
+
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+.sidebar {
+  width: 104px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 0 24px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 10;
+  background: #fff;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0;
+}
+
+.sidebar-logo {
+  display: grid;
+  place-items: center;
+  margin-bottom: 44px;
+  color: var(--foreground);
+}
+
+.sidebar-logo svg {
+  width: 52px;
+  height: 52px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.7);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--foreground);
+}
+
+.sidebar-btn.active {
+  background: rgba(108, 61, 11, 0.1);
+  color: #7f4e0b;
+}
+
+.sidebar-avatar {
+  margin-top: auto;
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+.avatar-btn {
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dashboard-main {
+  flex: 1;
+  margin-left: 104px;
+  padding: 40px;
+}
+
+.sidebar-toggle,
+.sidebar-backdrop {
+  display: none;
 }
 
 .vault-page {
@@ -1360,7 +1451,7 @@ button:disabled {
 .vault-header h1 {
   margin: 0 0 7px;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 36px;
+  font-size: 2.25rem;
   font-weight: 700;
   line-height: 1.1;
 }
@@ -1368,7 +1459,7 @@ button:disabled {
 .vault-header p {
   margin: 0;
   color: #4b4b4b;
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .vault-summary-grid {
@@ -1408,7 +1499,7 @@ button:disabled {
   align-items: center;
   gap: 7px;
   margin: 0;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -1427,7 +1518,7 @@ button:disabled {
   padding: 0;
   background: transparent;
   color: #7b4700;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
 }
 
@@ -1456,7 +1547,7 @@ button:disabled {
   border-radius: 999px;
   background: #fff;
   color: #060606;
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 
 .group-button span {
@@ -1490,7 +1581,7 @@ button:disabled {
 .table-head {
   min-height: 48px;
   color: #686776;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .table-head > div {
@@ -1516,7 +1607,7 @@ button:disabled {
   border-radius: 8px;
   background: #f8f8f8;
   color: #818181;
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 .checkbox {
@@ -1576,7 +1667,7 @@ button:disabled {
   border-radius: 5px;
   background: #fffdb8;
   color: #8c7b00;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1;
 }
 
@@ -1633,7 +1724,7 @@ button:disabled {
   .google-button,
   .continue-button {
     min-height: 58px;
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   .field {
@@ -1643,22 +1734,22 @@ button:disabled {
   }
 
   .field span {
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
 
   .terms {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .otp-copy {
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   .sent-line {
     flex-direction: column;
     gap: 7px;
     margin-bottom: 32px;
-    font-size: 15px;
+    font-size: 0.9375rem;
   }
 
   .otp-inputs {
@@ -1675,7 +1766,7 @@ button:disabled {
   }
 
   .retry-button {
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   .auth-shell-card .zinc-brand,
@@ -1700,7 +1791,7 @@ button:disabled {
   }
 
   .dashboard-content h1 {
-    font-size: 36px;
+    font-size: 2.25rem;
   }
 
   .statement-topbar {
@@ -1712,7 +1803,7 @@ button:disabled {
   }
 
   .statement-content h1 {
-    font-size: 30px;
+    font-size: 1.875rem;
     line-height: 39px;
   }
 
@@ -1750,7 +1841,7 @@ button:disabled {
   }
 
   .vault-header h1 {
-    font-size: 34px;
+    font-size: 2.125rem;
   }
 
   .vault-summary-grid {
@@ -1771,41 +1862,83 @@ button:disabled {
     min-width: 1030px;
   }
 
-  /* Shared sidebar mobile: horizontal top bar */
   .dashboard-layout {
+    flex-direction: row;
+  }
+
+  .sidebar-toggle {
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 35;
+    border: 0;
+    border-radius: 12px;
+    background: #fff;
+    color: #050505;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .sidebar-toggle span {
+    width: 20px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    border: 0;
+    background: rgba(0, 0, 0, 0.28);
   }
 
   .sidebar {
-    width: 100%;
-    height: auto;
+    width: 88px;
+    height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    flex-direction: row;
+    right: auto;
+    flex-direction: column;
     align-items: center;
-    padding: 14px 20px;
-    background: var(--background);
-    border-right: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    padding: 28px 0 18px;
+    background: #fff;
+    border-right: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: 0;
+    border-radius: 0;
     z-index: 20;
+    transform: translateX(-100%);
+    transition: transform 180ms ease;
+  }
+
+  .sidebar.is-open {
+    z-index: 30;
+    transform: translateX(0);
   }
 
   .sidebar-logo {
-    margin-bottom: 0;
-    margin-right: auto;
+    margin-right: 0;
+    margin-bottom: 40px;
   }
 
   .sidebar-logo svg {
-    width: 44px;
-    height: 44px;
+    width: 48px;
+    height: 48px;
   }
 
   .sidebar-nav {
-    flex-direction: row;
-    gap: 6px;
-    margin-right: 16px;
+    flex-direction: column;
+    gap: 12px;
+    margin-right: 0;
   }
 
   .sidebar-btn {
@@ -1822,7 +1955,7 @@ button:disabled {
   }
 
   .sidebar-avatar {
-    margin-top: 0;
+    margin-top: auto;
   }
 
   .avatar-placeholder {
@@ -1832,15 +1965,15 @@ button:disabled {
 
   .avatar-popover {
     position: absolute;
-    top: 100%;
-    right: 0;
-    left: auto;
-    bottom: auto;
+    top: auto;
+    right: auto;
+    left: 56px;
+    bottom: 0;
   }
 
   .dashboard-main {
     margin-left: 0;
-    padding: 40px;
+    padding: 72px 16px 20px;
   }
 }
 
@@ -1942,7 +2075,7 @@ button:disabled {
   gap: 6px;
   color: rgba(0, 0, 0, 0.70);
   border-radius: 20px;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 400;
   line-height: 21px;
@@ -1956,7 +2089,7 @@ button:disabled {
 
 .oneview-info-title {
   font-family: "ButlerPro", Georgia, serif;
-  font-size: 32px;
+  font-size: 2rem;
   font-weight: 600;
   line-height: 38.40px;
   color: black;
@@ -1966,7 +2099,7 @@ button:disabled {
 
 .oneview-info-description {
   color: rgba(0, 0, 0, 0.70);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: var(--font-inter), Inter, sans-serif;
   font-weight: 400;
   line-height: 21px;
@@ -2033,7 +2166,7 @@ button:disabled {
 }
 
 .oneview-info-card-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2044,14 +2177,14 @@ button:disabled {
 
 .oneview-info-card-value {
   font-family: "Cabinet Grotesk", "Satoshi", Arial, sans-serif;
-  font-size: 36px;
+  font-size: 2.25rem;
   font-weight: 700;
   margin: 0 0 4px;
   color: white;
 }
 
 .oneview-info-card-gain {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #4ade80;
   margin: 0;
@@ -2074,7 +2207,7 @@ button:disabled {
 }
 
 .oneview-info-portfolios-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -2099,7 +2232,7 @@ button:disabled {
 }
 
 .oneview-info-donut-header {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #6f6f6f;
   margin-bottom: 20px;
   text-align: center;
@@ -2149,7 +2282,7 @@ button:disabled {
 
 .oneview-info-feature-title {
   color: black;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 700;
   line-height: 16.80px;
@@ -2159,7 +2292,7 @@ button:disabled {
 
 .oneview-info-feature-text {
   color: #525252;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 500;
   line-height: 21px;
@@ -2174,7 +2307,7 @@ button:disabled {
   color: white;
   border: none;
   border-radius: 80px;
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 600;
   transition: all 0.2s;
   margin-bottom: 12px;
@@ -2188,7 +2321,7 @@ button:disabled {
 
 .oneview-info-time {
   color: rgba(0, 0, 0, 0.70);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: var(--font-geist), Geist, sans-serif;
   font-weight: 400;
   line-height: 21px;
@@ -2218,13 +2351,13 @@ button:disabled {
   }
 
   .statement-content h1 {
-    font-size: 34px;
+    font-size: 2.125rem;
     line-height: 1.15;
     letter-spacing: -0.5px;
   }
 
   .statement-content > p {
-    font-size: 15px;
+    font-size: 0.9375rem;
     line-height: 22px;
   }
 
@@ -2236,13 +2369,13 @@ button:disabled {
     gap: 8px;
     margin-top: 20px;
     margin-bottom: 14px;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 20px;
     text-align: center;
   }
 
   .brokers-text {
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 20px;
     white-space: normal;
   }
@@ -2254,7 +2387,7 @@ button:disabled {
 
   .download-instruction {
     display: inline-block;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 20px;
     white-space: normal;
   }
@@ -2268,7 +2401,7 @@ button:disabled {
 
   .statement-dropzone strong {
     margin-top: 10px;
-    font-size: 18px;
+    font-size: 1.125rem;
     line-height: 25px;
     max-width: 280px;
   }
@@ -2276,7 +2409,7 @@ button:disabled {
   .statement-dropzone span:last-child {
     width: auto;
     max-width: 260px;
-    font-size: 15px;
+    font-size: 0.9375rem;
     line-height: 22px;
   }
 
@@ -2300,23 +2433,23 @@ button:disabled {
   }
 
   .statement-file-meta strong {
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 20px;
   }
 
   .statement-file-meta span {
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 20px;
   }
 
   .statement-file-remove {
     width: 40px;
     height: 40px;
-    font-size: 28px;
+    font-size: 1.75rem;
   }
 
   .statement-security {
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 20px;
     margin-top: 16px;
   }
