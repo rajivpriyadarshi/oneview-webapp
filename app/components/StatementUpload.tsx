@@ -12,6 +12,8 @@ import {
   useDeleteDocumentMutation,
 } from "../store/api";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
@@ -25,6 +27,7 @@ const CHART_COLORS = [
 
 export function StatementUpload() {
   const router = useRouter();
+  const { trackPage, trackClick, trackAPI } = useAnalytics();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const uploadProgressTimerRef = useRef<number | null>(null);
   const uploadRequestRef = useRef<{ abort?: () => void } | null>(null);
@@ -84,6 +87,17 @@ export function StatementUpload() {
     setFirstName(displayName.split(/\s+/)[0]);
   }, [router, profile, profileError, portfolios, hasStartedUploadFlow]);
 
+  // Track page load
+  useEffect(() => {
+    trackPage({
+      pageName: trackingEventsMap.documentsPage.PAGE,
+      params: {
+        page_url: window.location.href,
+        page_title: document.title,
+      },
+    });
+  }, []);
+
   useEffect(() => {
     return () => {
       clearUploadProgressTimer();
@@ -119,6 +133,16 @@ export function StatementUpload() {
   }
 
   function selectFile(file: File) {
+    trackClick({
+      buttonName: trackingEventsMap.documentsPage.CLICK_UPLOAD_STATEMENT,
+      pageName: trackingEventsMap.documentsPage.PAGE,
+      params: {
+        file_name: file.name,
+        file_size: file.size,
+        file_type: file.type,
+      },
+    });
+
     setHasStartedUploadFlow(true);
     setError("");
     setMessage("");
@@ -175,10 +199,28 @@ export function StatementUpload() {
       const response = await request.unwrap();
 
       if (response.status === "error") {
+        trackAPI({
+          pageName: trackingEventsMap.documentsPage.PAGE,
+          params: {
+            event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+            error: response.error,
+            file_name: uploadFile.name,
+          },
+        });
         setError(response.error ?? "Unable to parse this statement.");
         stopUploadProgressAnimation(false);
         return;
       }
+
+      trackAPI({
+        pageName: trackingEventsMap.documentsPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.documentsPage.API_UPLOAD_SUCCESS,
+          document_id: response.document_id,
+          positions_count: response.positions_count,
+          file_name: uploadFile.name,
+        },
+      });
 
       stopUploadProgressAnimation();
       setUploadedDocumentId(String(response.document_id));
@@ -193,6 +235,16 @@ export function StatementUpload() {
         stopUploadProgressAnimation(false);
         return;
       }
+
+      trackAPI({
+        pageName: trackingEventsMap.documentsPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+          error: requestError instanceof Error ? requestError.message : "Upload failed",
+          file_name: uploadFile.name,
+        },
+      });
+
       stopUploadProgressAnimation(false);
       setError(
         requestError instanceof Error
@@ -235,6 +287,14 @@ export function StatementUpload() {
   }
 
   async function clearSelectedFile() {
+    trackClick({
+      buttonName: trackingEventsMap.documentsPage.CLICK_REMOVE_DOCUMENT,
+      pageName: trackingEventsMap.documentsPage.PAGE,
+      params: {
+        document_id: uploadedDocumentId,
+      },
+    });
+
     if (isUploading && uploadRequestRef.current?.abort) {
       uploadRequestRef.current.abort();
     }
@@ -243,8 +303,23 @@ export function StatementUpload() {
     if (uploadedDocumentId && hasUploadedStatement) {
       try {
         await deleteDocument(uploadedDocumentId).unwrap();
+        trackAPI({
+          pageName: trackingEventsMap.documentsPage.PAGE,
+          params: {
+            event_name: trackingEventsMap.documentsPage.API_DELETE_SUCCESS,
+            document_id: uploadedDocumentId,
+          },
+        });
       } catch (err) {
         console.error("Failed to delete document:", err);
+        trackAPI({
+          pageName: trackingEventsMap.documentsPage.PAGE,
+          params: {
+            event_name: trackingEventsMap.documentsPage.API_DELETE_FAILURE,
+            document_id: uploadedDocumentId,
+            error: err instanceof Error ? err.message : "Delete failed",
+          },
+        });
       }
     }
 
@@ -351,6 +426,10 @@ export function StatementUpload() {
             type="button"
             onClick={(e) => {
               e.preventDefault();
+              trackClick({
+                buttonName: trackingEventsMap.documentsPage.CLICK_DOWNLOAD_INSTRUCTIONS,
+                pageName: trackingEventsMap.documentsPage.PAGE,
+              });
               setIsModalOpen(true);
             }}
             className="download-instruction"
@@ -421,14 +500,26 @@ export function StatementUpload() {
           <button
             className="statement-sample-btn"
             type="button"
-            onClick={() => setIsSampleModalOpen(true)}
+            onClick={() => {
+              trackClick({
+                buttonName: trackingEventsMap.documentsPage.CLICK_CHECK_SAMPLE,
+                pageName: trackingEventsMap.documentsPage.PAGE,
+              });
+              setIsSampleModalOpen(true);
+            }}
           >
             Check a sample Oneview
           </button>
           <button
             className="statement-submit"
             type="button"
-            onClick={hasUploadedStatement ? () => router.replace("/onboarding/processing") : undefined}
+            onClick={hasUploadedStatement ? () => {
+              trackClick({
+                buttonName: trackingEventsMap.documentsPage.CLICK_SEE_ONEVIEW,
+                pageName: trackingEventsMap.documentsPage.PAGE,
+              });
+              router.replace("/onboarding/processing");
+            } : undefined}
             disabled={!hasUploadedStatement || isUploading}
             aria-busy={isUploading}
           >

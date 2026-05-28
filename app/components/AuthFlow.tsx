@@ -19,9 +19,12 @@ import { store } from "../store/store";
 import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
 import { GoogleIdentityScript } from "./GoogleIdentityScript";
 import type { Profile } from "../lib/realAuthApi";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 export function AuthFlow() {
   const router = useRouter();
+  const { trackPage, trackClick, trackAPI } = useAnalytics();
   const [step, setStep] = useState<"login" | "otp">("login");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
@@ -36,6 +39,18 @@ export function AuthFlow() {
   const [sendPasswordlessOtp] = useSendPasswordlessOtpMutation();
   const [verifyPasswordlessOtp] = useVerifyPasswordlessOtpMutation();
   const [resendPasswordlessOtp] = useResendPasswordlessOtpMutation();
+
+  // Track page load
+  useEffect(() => {
+    const pageName = step === "login" ? trackingEventsMap.authPage.PAGE : trackingEventsMap.otpPage.PAGE;
+    trackPage({
+      pageName,
+      params: {
+        page_url: window.location.href,
+        page_title: document.title,
+      },
+    });
+  }, [step]);
 
   useEffect(() => {
     if (getStoredAuthToken()) {
@@ -90,6 +105,11 @@ export function AuthFlow() {
   }, [step]);
 
   function handleGoogleSubmit() {
+    trackClick({
+      buttonName: trackingEventsMap.authPage.CLICK_GOOGLE_SIGNIN,
+      pageName: trackingEventsMap.authPage.PAGE,
+    });
+
     if (!hiddenGoogleButtonRef.current) {
       return;
     }
@@ -105,15 +125,37 @@ export function AuthFlow() {
     setError("");
     setIsSubmitting(true);
 
+    trackClick({
+      buttonName: trackingEventsMap.authPage.CLICK_EMAIL_CONTINUE,
+      pageName: trackingEventsMap.authPage.PAGE,
+      params: { email },
+    });
+
     try {
       const normalizedEmail = email.trim();
       validateEmail(normalizedEmail);
       await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
+
+      trackAPI({
+        pageName: trackingEventsMap.authPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.authPage.API_SEND_OTP_SUCCESS,
+          email: normalizedEmail,
+        },
+      });
+
       setEmail(normalizedEmail);
       setOtp(Array(6).fill(""));
       setResendCooldown(60);
       setStep("otp");
     } catch (requestError) {
+      trackAPI({
+        pageName: trackingEventsMap.authPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.authPage.API_SEND_OTP_FAILURE,
+          error: getErrorMessage(requestError),
+        },
+      });
       setError(getErrorMessage(requestError));
     } finally {
       setIsSubmitting(false);
@@ -126,6 +168,11 @@ export function AuthFlow() {
     setError("");
     setIsSubmitting(true);
 
+    trackClick({
+      buttonName: trackingEventsMap.otpPage.CLICK_VERIFY_OTP,
+      pageName: trackingEventsMap.otpPage.PAGE,
+    });
+
     try {
       const otpCode = otp.join("");
 
@@ -134,9 +181,25 @@ export function AuthFlow() {
       }
 
       const session = await verifyPasswordlessOtp({ email, otp: otpCode }).unwrap();
+
+      trackAPI({
+        pageName: trackingEventsMap.otpPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.otpPage.API_VERIFY_OTP_SUCCESS,
+          email,
+        },
+      });
+
       storeAuthToken(session.token);
       await routeByProfile();
     } catch (requestError) {
+      trackAPI({
+        pageName: trackingEventsMap.otpPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.otpPage.API_VERIFY_OTP_FAILURE,
+          error: getErrorMessage(requestError),
+        },
+      });
       setError(getErrorMessage(requestError));
     } finally {
       setIsSubmitting(false);
@@ -144,6 +207,11 @@ export function AuthFlow() {
   }
 
   function handleDifferentEmail() {
+    trackClick({
+      buttonName: trackingEventsMap.otpPage.CLICK_DIFFERENT_EMAIL,
+      pageName: trackingEventsMap.otpPage.PAGE,
+    });
+
     setStep("login");
     setError("");
     setOtp(Array(6).fill(""));
@@ -203,6 +271,11 @@ export function AuthFlow() {
     if (resendCooldown > 0 || isSubmitting) {
       return;
     }
+
+    trackClick({
+      buttonName: trackingEventsMap.otpPage.CLICK_RESEND_OTP,
+      pageName: trackingEventsMap.otpPage.PAGE,
+    });
 
     setError("");
     setIsSubmitting(true);
@@ -281,8 +354,32 @@ export function AuthFlow() {
 
             <p className="terms">
               By continuing, you agree to Zinc&apos;s Consumer{" "}
-              <a href="/privacy" target="_blank" rel="noopener noreferrer">Terms</a> and
-              acknowledge their <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackClick({
+                    buttonName: trackingEventsMap.authPage.CLICK_TERMS_OF_SERVICE,
+                    pageName: trackingEventsMap.authPage.PAGE,
+                  });
+                }}
+              >
+                Terms
+              </a> and
+              acknowledge their <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  trackClick({
+                    buttonName: trackingEventsMap.authPage.CLICK_PRIVACY_POLICY,
+                    pageName: trackingEventsMap.authPage.PAGE,
+                  });
+                }}
+              >
+                Privacy Policy
+              </a>.
             </p>
           </form>
           <ZincBrand />

@@ -8,9 +8,12 @@ import { api } from "../store/api";
 import { store } from "../store/store";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
 import type { Profile } from "../lib/realAuthApi";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 export function ProfileSetup() {
   const router = useRouter();
+  const { trackPage, trackClick, trackAPI } = useAnalytics();
   const [displayName, setDisplayName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -19,6 +22,17 @@ export function ProfileSetup() {
     skip: !getStoredAuthToken(),
   });
   const [updateProfile] = useUpdateProfileMutation();
+
+  // Track page load
+  useEffect(() => {
+    trackPage({
+      pageName: trackingEventsMap.profileSetupPage.PAGE,
+      params: {
+        page_url: window.location.href,
+        page_title: document.title,
+      },
+    });
+  }, []);
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -65,12 +79,37 @@ export function ProfileSetup() {
       return;
     }
 
+    trackClick({
+      buttonName: trackingEventsMap.profileSetupPage.CLICK_PROCEED,
+      pageName: trackingEventsMap.profileSetupPage.PAGE,
+      params: {
+        name_length: trimmedName.length,
+      },
+    });
+
     setIsSubmitting(true);
 
     try {
       const updatedProfile = await updateProfile({ name: trimmedName }).unwrap();
+
+      trackAPI({
+        pageName: trackingEventsMap.profileSetupPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.profileSetupPage.API_UPDATE_PROFILE_SUCCESS,
+          name_length: trimmedName.length,
+        },
+      });
+
       router.replace(await getPostProfileRoute(updatedProfile));
     } catch (requestError) {
+      trackAPI({
+        pageName: trackingEventsMap.profileSetupPage.PAGE,
+        params: {
+          event_name: trackingEventsMap.profileSetupPage.API_UPDATE_PROFILE_FAILURE,
+          error: requestError instanceof Error ? requestError.message : "Unable to save your name.",
+        },
+      });
+
       setError(
         requestError instanceof Error
           ? requestError.message

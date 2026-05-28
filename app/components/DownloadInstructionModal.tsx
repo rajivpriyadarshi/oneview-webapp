@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ReactNode } from "react";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 
 type Step = {
   text: string;
@@ -82,14 +84,43 @@ interface DownloadInstructionModalProps {
 }
 
 export function DownloadInstructionModal({ isOpen, onClose }: DownloadInstructionModalProps) {
+  const { trackClick } = useAnalytics();
   const [selectedBroker, setSelectedBroker] = useState(BROKERS[0]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   if (!isOpen) return null;
 
   function handleBrokerSelect(broker: typeof BROKERS[0]) {
+    trackClick({
+      buttonName: trackingEventsMap.documentsPage.CLICK_DOWNLOAD_MODAL_BROKER_SELECT,
+      pageName: trackingEventsMap.documentsPage.PAGE,
+      params: {
+        broker_name: broker.name,
+        broker_id: broker.id,
+      },
+    });
+
     setSelectedBroker(broker);
     setDropdownOpen(false);
+  }
+
+  function handleClose() {
+    trackClick({
+      buttonName: trackingEventsMap.documentsPage.CLICK_DOWNLOAD_MODAL_CLOSE,
+      pageName: trackingEventsMap.documentsPage.PAGE,
+    });
+    onClose();
+  }
+
+  function handleGotIt() {
+    trackClick({
+      buttonName: trackingEventsMap.documentsPage.CLICK_DOWNLOAD_MODAL_GOT_IT,
+      pageName: trackingEventsMap.documentsPage.PAGE,
+      params: {
+        selected_broker: selectedBroker.name,
+      },
+    });
+    onClose();
   }
 
   function renderStepText(step: Step): ReactNode {
@@ -139,9 +170,9 @@ export function DownloadInstructionModal({ isOpen, onClose }: DownloadInstructio
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label="Close modal">
+        <button className="modal-close" onClick={handleClose} aria-label="Close modal">
           <CloseIcon />
         </button>
 
@@ -189,7 +220,7 @@ export function DownloadInstructionModal({ isOpen, onClose }: DownloadInstructio
           ))}
         </ol>
 
-        <button className="modal-button" onClick={onClose} type="button">
+        <button className="modal-button" onClick={handleGotIt} type="button">
           Okay, got it
         </button>
       </div>
