@@ -25,10 +25,6 @@ export function LandingPage() {
   useEffect(() => {
     trackPage({
       pageName: trackingEventsMap.landingPage.PAGE,
-      params: {
-        page_url: window.location.href,
-        page_title: document.title,
-      },
     });
   }, []);
 
@@ -58,7 +54,7 @@ export function LandingPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard"
-            className="bg-black text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
+            className="bg-black text-white px-[24px] py-[16px] rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
             onClick={() =>
               trackClick({
                 buttonName: trackingEventsMap.landingPage.CLICK_TRY_MERIDIAN,
@@ -98,7 +94,7 @@ export function LandingPage() {
 
             <Link
               href="/dashboard"
-              className="mb-6 inline-flex items-center gap-2 rounded-full bg-black px-6 py-4 text-[16px] font-semibold leading-6 text-white transition-colors hover:bg-gray-800"
+              className="mb-6 inline-flex items-center gap-2 rounded-full bg-black px-[24px] py-[16px] text-[16px] font-semibold leading-6 text-white transition-colors hover:bg-gray-800"
               onClick={() =>
                 trackClick({
                   buttonName: trackingEventsMap.landingPage.CLICK_SEE_ONEVIEW,

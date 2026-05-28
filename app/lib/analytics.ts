@@ -42,6 +42,14 @@ export const MixpanelAnalytics = {
     initialized = true;
   },
   track(event: string, params: Record<string, unknown> = {}) {
+    if (!MIXPANEL_TOKEN) {
+      return;
+    }
+
+    if (!initialized) {
+      this.init();
+    }
+
     try {
       mixpanel.track(event, params);
     } catch (error) {
@@ -96,6 +104,14 @@ export const MixpanelAnalytics = {
     });
   },
   trackUserAttributes(payload: Record<string, string>) {
+    if (!MIXPANEL_TOKEN) {
+      return;
+    }
+
+    if (!initialized) {
+      this.init();
+    }
+
     try {
       if (payload.id) {
         mixpanel.identify(payload.id);
@@ -122,6 +138,14 @@ export const MixpanelAnalytics = {
     }
   },
   endSession() {
+    if (!MIXPANEL_TOKEN) {
+      return;
+    }
+
+    if (!initialized) {
+      this.init();
+    }
+
     try {
       mixpanel.reset();
     } catch (error) {
