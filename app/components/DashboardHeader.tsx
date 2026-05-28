@@ -25,7 +25,7 @@ export default function DashboardHeader({ updatedAt }: Props) {
   useEffect(() => {
     getProfile()
       .then((profile) => {
-        const name = profile.name?.trim().split(/\s+/)[0] || "";
+        const name = profile.display_name?.trim().split(/\s+/)[0] || "";
         setUserName(name);
       })
       .catch(() => {});

@@ -52,6 +52,10 @@ const useAnalytics = () => {
     ZincAnalytics.tractExitTime({ pageName });
   };
 
+  const trackUserAttributes = (payload: Record<string, string>) => {
+    ZincAnalytics.trackUserAttributes(payload);
+  };
+
   return {
     initialize,
     trackPage,
@@ -62,6 +66,7 @@ const useAnalytics = () => {
     trackHalfWayScroll,
     trackEnterTime,
     tractExitTime,
+    trackUserAttributes,
   };
 };
 

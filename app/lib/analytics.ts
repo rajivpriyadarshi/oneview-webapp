@@ -42,6 +42,14 @@ export const MixpanelAnalytics = {
     initialized = true;
   },
   track(event: string, params: Record<string, unknown> = {}) {
+    if (!MIXPANEL_TOKEN) {
+      return;
+    }
+
+    if (!initialized) {
+      this.init();
+    }
+
     try {
       // Log in dev mode for debugging
       if (APP_VERSION === "local" || APP_VERSION.includes("alpha")) {
@@ -100,6 +108,14 @@ export const MixpanelAnalytics = {
     });
   },
   trackUserAttributes(payload: Record<string, string>) {
+    if (!MIXPANEL_TOKEN) {
+      return;
+    }
+
+    if (!initialized) {
+      this.init();
+    }
+
     try {
       if (payload.id) {
         mixpanel.identify(payload.id);
@@ -117,6 +133,24 @@ export const MixpanelAnalytics = {
       if (payload.fullName) {
         userAttributes.$name = payload.fullName;
       }
+      if (payload.username) {
+        userAttributes.username = payload.username;
+      }
+      if (payload.baseCurrency) {
+        userAttributes.base_currency = payload.baseCurrency;
+      }
+      if (payload.timezone) {
+        userAttributes.timezone = payload.timezone;
+      }
+      if (payload.isActive) {
+        userAttributes.is_active = payload.isActive;
+      }
+      if (payload.mailerFrequency) {
+        userAttributes.mailer_frequency = payload.mailerFrequency;
+      }
+      if (payload.createdAt) {
+        userAttributes.created_at = payload.createdAt;
+      }
 
       mixpanel.people.set(userAttributes);
     } catch (error) {
@@ -126,6 +160,14 @@ export const MixpanelAnalytics = {
     }
   },
   endSession() {
+    if (!MIXPANEL_TOKEN) {
+      return;
+    }
+
+    if (!initialized) {
+      this.init();
+    }
+
     try {
       mixpanel.reset();
     } catch (error) {

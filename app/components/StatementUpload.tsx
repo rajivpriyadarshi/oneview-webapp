@@ -72,7 +72,7 @@ export function StatementUpload() {
     if (!profile) return;
 
     const emailPrefix = profile.email.split("@")[0];
-    const displayName = profile.name?.trim();
+    const displayName = profile.display_name?.trim();
 
     if (!displayName || displayName === emailPrefix) {
       router.replace("/profile/setup");
@@ -347,7 +347,7 @@ export function StatementUpload() {
     return CHART_COLORS[asciiSum % CHART_COLORS.length];
   };
 
-  const displayName = profile?.name || "";
+  const displayName = profile?.display_name || "";
   const initials = displayName ? getInitials(displayName) : "U";
   const avatarColor = displayName ? getColorFromName(displayName) : CHART_COLORS[0];
 

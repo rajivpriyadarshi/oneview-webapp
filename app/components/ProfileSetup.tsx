@@ -159,7 +159,7 @@ export function ProfileSetup() {
 
 async function getPostProfileRoute(profile: Profile): Promise<string> {
   const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.name?.trim();
+  const displayName = profile.display_name?.trim();
 
   if (!displayName || displayName === emailPrefix) {
     return "/profile/setup";

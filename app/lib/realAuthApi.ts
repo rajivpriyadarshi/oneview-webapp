@@ -16,8 +16,16 @@ export type PasswordlessAuthSession = AuthSession & {
 };
 
 export type Profile = {
-  name: string;
+  id: number;
+  username: string;
   email: string;
+  display_name: string;
+  base_currency: string;
+  timezone: string;
+  is_active: boolean;
+  mailer_frequency: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export function initiateSignup(input: {

@@ -24,7 +24,7 @@ import { trackingEventsMap } from "../constants";
 
 export function AuthFlow() {
   const router = useRouter();
-  const { trackPage, trackClick, trackAPI } = useAnalytics();
+  const { trackPage, trackClick, trackAPI, trackUserAttributes } = useAnalytics();
   const [step, setStep] = useState<"login" | "otp">("login");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
@@ -299,6 +299,20 @@ export function AuthFlow() {
         throw new Error("Failed to fetch profile");
       }
       const profile = profileResult.data;
+
+      // Set user identity in Mixpanel
+      trackUserAttributes({
+        id: String(profile.id),
+        email: profile.email,
+        fullName: profile.display_name,
+        username: profile.username,
+        baseCurrency: profile.base_currency,
+        timezone: profile.timezone,
+        isActive: String(profile.is_active),
+        mailerFrequency: profile.mailer_frequency,
+        createdAt: profile.created_at,
+      });
+
       router.replace(await getPostProfileRouteFromStore(profile));
     } catch {
       clearAuthToken();
@@ -450,7 +464,7 @@ export function AuthFlow() {
 
 async function getPostProfileRouteFromStore(profile: Profile): Promise<string> {
   const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.name?.trim();
+  const displayName = profile.display_name?.trim();
 
   if (!displayName || displayName === emailPrefix) {
     return "/profile/setup";
