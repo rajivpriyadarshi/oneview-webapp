@@ -185,7 +185,22 @@ export function DownloadInstructionModal({ isOpen, onClose }: DownloadInstructio
           <label className="broker-label">Select your broker</label>
           <button
             className="broker-dropdown"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
+            onClick={() => {
+              const newDropdownState = !dropdownOpen;
+
+              // Track dropdown open event
+              if (newDropdownState) {
+                trackClick({
+                  buttonName: trackingEventsMap.documentsVaultPage.CLICK_BROKER_DROPDOWN_OPEN,
+                  pageName: trackingEventsMap.documentsVaultPage.PAGE,
+                  params: {
+                    current_broker: selectedBroker.name,
+                  },
+                });
+              }
+
+              setDropdownOpen(newDropdownState);
+            }}
             type="button"
           >
             <span className="broker-dropdown-selected">

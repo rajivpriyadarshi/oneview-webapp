@@ -13,7 +13,7 @@ import { trackingEventsMap } from "../constants";
 
 export function ProfileSetup() {
   const router = useRouter();
-  const { trackPage, trackClick, trackAPI } = useAnalytics();
+  const { trackPage, trackClick, trackAPI, trackUserAttributes } = useAnalytics();
   const [displayName, setDisplayName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -98,6 +98,19 @@ export function ProfileSetup() {
           event_name: trackingEventsMap.profileSetupPage.API_UPDATE_PROFILE_SUCCESS,
           name_length: trimmedName.length,
         },
+      });
+
+      // Update user attributes in Mixpanel with the new name
+      trackUserAttributes({
+        id: String(updatedProfile.id),
+        email: updatedProfile.email,
+        fullName: updatedProfile.display_name,
+        username: updatedProfile.username,
+        baseCurrency: updatedProfile.base_currency,
+        timezone: updatedProfile.timezone,
+        isActive: String(updatedProfile.is_active),
+        mailerFrequency: updatedProfile.mailer_frequency,
+        createdAt: updatedProfile.created_at,
       });
 
       router.replace(await getPostProfileRoute(updatedProfile));

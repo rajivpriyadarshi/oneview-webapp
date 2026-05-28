@@ -216,37 +216,10 @@ function InstrumentIcon({
   const fallbackColor = fallbackColorDetails.color;
   const fallbackInitial = getFallbackIconInitial(fallbackSeed);
 
-  useEffect(() => {
-    console.info("[InstrumentIcon] computed fallback", {
-      symbol,
-      name,
-      fallbackSeed,
-      fallbackInitial,
-      asciiSum: fallbackColorDetails.asciiSum,
-      paletteSize: FALLBACK_ICON_COLORS.length,
-      colorIndex: fallbackColorDetails.colorIndex,
-      fallbackColor,
-      isProfitable,
-      initialUseFallback: !symbol,
-    });
-  }, [
-    fallbackColor,
-    fallbackColorDetails.asciiSum,
-    fallbackColorDetails.colorIndex,
-    fallbackInitial,
-    fallbackSeed,
-    isProfitable,
-    name,
-    symbol,
-  ]);
+  // Removed verbose logging to reduce console pollution
 
   useEffect(() => {
     if (!symbol) {
-      console.info("[InstrumentIcon] using fallback because symbol is missing", {
-        name,
-        fallbackSeed,
-        fallbackColor,
-      });
       setIconUrl("");
       setUseFallback(true);
       return;
@@ -255,11 +228,6 @@ function InstrumentIcon({
     const authToken = getStoredAuthToken();
 
     if (!authToken) {
-      console.info("[InstrumentIcon] using fallback because auth token is missing", {
-        symbol,
-        fallbackSeed,
-        fallbackColor,
-      });
       setIconUrl("");
       setUseFallback(true);
       return;
@@ -267,12 +235,6 @@ function InstrumentIcon({
 
     let objectUrl = "";
     let isMounted = true;
-
-    console.info("[InstrumentIcon] fetching icon", {
-      symbol,
-      fallbackSeed,
-      fallbackColor,
-    });
 
     fetchIcon(symbol, authToken)
       .then((blobUrl) => {
@@ -282,21 +244,11 @@ function InstrumentIcon({
         }
 
         objectUrl = blobUrl;
-        console.info("[InstrumentIcon] icon fetch returned blob URL", {
-          symbol,
-          blobUrl,
-        });
         setIconUrl(blobUrl);
         setUseFallback(false);
       })
-      .catch((error) => {
+      .catch(() => {
         if (isMounted) {
-          console.info("[InstrumentIcon] using fallback because icon fetch failed", {
-            symbol,
-            fallbackSeed,
-            fallbackColor,
-            error,
-          });
           setIconUrl("");
           setUseFallback(true);
         }
@@ -312,18 +264,6 @@ function InstrumentIcon({
   }, [fallbackColor, fallbackSeed, name, symbol]);
 
   if (useFallback || !iconUrl) {
-    console.info("[InstrumentIcon] rendering fallback badge", {
-      symbol,
-      name,
-      fallbackSeed,
-      fallbackInitial,
-      fallbackColor,
-      asciiSum: fallbackColorDetails.asciiSum,
-      colorIndex: fallbackColorDetails.colorIndex,
-      useFallback,
-      hasIconUrl: Boolean(iconUrl),
-    });
-
     return (
       <span
         className="instrument-icon fallback"
@@ -343,19 +283,7 @@ function InstrumentIcon({
       onError={() => setUseFallback(true)}
       onLoad={(event) => {
         const blankImage = isBlankImage(event.currentTarget);
-        console.info("[InstrumentIcon] loaded icon image", {
-          symbol,
-          naturalWidth: event.currentTarget.naturalWidth,
-          naturalHeight: event.currentTarget.naturalHeight,
-          blankImage,
-        });
-
         if (blankImage) {
-          console.info("[InstrumentIcon] using fallback because loaded icon is blank", {
-            symbol,
-            fallbackSeed,
-            fallbackColor,
-          });
           setUseFallback(true);
         }
       }}

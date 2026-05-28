@@ -20,9 +20,22 @@ export default function Sidebar() {
   const closeSidebar = () => setIsOpen(false);
 
   useEffect(() => {
-    getUserProfile()
-      .then((data) => setProfile(data))
-      .catch((error) => console.error("Failed to fetch profile:", error));
+    const fetchProfile = () => {
+      getUserProfile()
+        .then((data) => setProfile(data))
+        .catch((error) => console.error("Failed to fetch profile:", error));
+    };
+
+    // Initial fetch
+    fetchProfile();
+
+    // Listen for profile updates
+    const handleProfileUpdate = () => {
+      fetchProfile();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
   }, []);
 
   const getInitials = (name: string) => {

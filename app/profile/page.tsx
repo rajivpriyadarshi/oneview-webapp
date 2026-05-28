@@ -7,6 +7,8 @@ import { getUserProfile, updateUserProfile, type UserProfile } from "../lib/prof
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import EditProfileModal from "../components/EditProfileModal";
+import useAnalytics from "../hooks/useAnalytics";
+import { trackingEventsMap } from "../constants";
 import "./profile.css";
 
 const CHART_COLORS = [
@@ -18,6 +20,7 @@ const CHART_COLORS = [
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { trackPage, trackClick, trackAPI } = useAnalytics();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -36,27 +39,105 @@ export default function ProfilePage() {
       });
   }, [router]);
 
+  // Track page load
+  useEffect(() => {
+    if (profile) {
+      trackPage({
+        pageName: trackingEventsMap.profilePage.PAGE,
+        params: {
+          page_url: window.location.href,
+          page_title: document.title,
+        },
+      });
+    }
+  }, [profile]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!openDropdown) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.profile-dropdown')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openDropdown]);
+
   const handleCurrencyChange = async (newCurrency: string) => {
     if (!profile) return;
+
+    trackClick({
+      buttonName: trackingEventsMap.profilePage.CLICK_CURRENCY_CHANGE,
+      pageName: trackingEventsMap.profilePage.PAGE,
+      params: {
+        old_currency: profile.base_currency,
+        new_currency: newCurrency,
+      },
+    });
 
     try {
       setOpenDropdown(null);
       const updated = await updateUserProfile({ base_currency: newCurrency });
       setProfile(updated);
+
+      trackAPI({
+        pageName: trackingEventsMap.profilePage.PAGE,
+        params: {
+          event_name: trackingEventsMap.profilePage.API_UPDATE_CURRENCY_SUCCESS,
+          new_currency: newCurrency,
+        },
+      });
     } catch (error) {
       console.error("Failed to update currency:", error);
+
+      trackAPI({
+        pageName: trackingEventsMap.profilePage.PAGE,
+        params: {
+          event_name: trackingEventsMap.profilePage.API_UPDATE_CURRENCY_FAILURE,
+          error: error instanceof Error ? error.message : "Update failed",
+        },
+      });
     }
   };
 
   const handleEmailPreferenceChange = async (frequency: "DAILY" | "WEEKLY" | "MONTHLY") => {
     if (!profile) return;
 
+    trackClick({
+      buttonName: trackingEventsMap.profilePage.CLICK_EMAIL_PREFERENCE_CHANGE,
+      pageName: trackingEventsMap.profilePage.PAGE,
+      params: {
+        old_frequency: profile.mailer_frequency,
+        new_frequency: frequency,
+      },
+    });
+
     try {
       setOpenDropdown(null);
       const updated = await updateUserProfile({ mailer_frequency: frequency });
       setProfile(updated);
+
+      trackAPI({
+        pageName: trackingEventsMap.profilePage.PAGE,
+        params: {
+          event_name: trackingEventsMap.profilePage.API_UPDATE_EMAIL_PREF_SUCCESS,
+          new_frequency: frequency,
+        },
+      });
     } catch (error) {
       console.error("Failed to update email preference:", error);
+
+      trackAPI({
+        pageName: trackingEventsMap.profilePage.PAGE,
+        params: {
+          event_name: trackingEventsMap.profilePage.API_UPDATE_EMAIL_PREF_FAILURE,
+          error: error instanceof Error ? error.message : "Update failed",
+        },
+      });
     }
   };
 
@@ -74,6 +155,11 @@ export default function ProfilePage() {
   };
 
   const handleSignOut = () => {
+    trackClick({
+      buttonName: trackingEventsMap.profilePage.CLICK_SIGN_OUT,
+      pageName: trackingEventsMap.profilePage.PAGE,
+    });
+
     clearAuthToken();
     router.push("/");
   };
@@ -127,153 +213,183 @@ export default function ProfilePage() {
         <Sidebar />
         <main className="dashboard-main">
           <div className="profile-page">
-      <div className="profile-container">
-        <div className="profile-header">
-          <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-            <circle cx="60" cy="60" r="60" fill={avatarColor} />
-            <text
-              x="60"
-              y="60"
-              textAnchor="middle"
-              dominantBaseline="central"
-              style={{
-                fill: "#FFF",
-                fontFamily: "Inter",
-                fontSize: "46px",
-                fontWeight: 600,
-                letterSpacing: "-1.84px",
-              }}
-            >
-              {initials}
-            </text>
-          </svg>
+            <div className="profile-container">
+              <div className="profile-header">
+                <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+                  <circle cx="60" cy="60" r="60" fill={avatarColor} />
+                  <text
+                    x="60"
+                    y="60"
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    style={{
+                      fill: "#FFF",
+                      fontFamily: "Inter",
+                      fontSize: "46px",
+                      fontWeight: 600,
+                      letterSpacing: "-1.84px",
+                    }}
+                  >
+                    {initials}
+                  </text>
+                </svg>
 
-          <h1 className="profile-name">{profile.display_name}</h1>
-          <p className="profile-email">{profile.email}</p>
+                <h1 className="profile-name">{profile.display_name}</h1>
+                <p className="profile-email">{profile.email}</p>
 
-          <button className="profile-edit-btn" onClick={() => setShowEditModal(true)}>
-            <EditIcon />
-            Edit profile
-          </button>
-        </div>
+                <button className="profile-edit-btn" onClick={() => {
+                  trackClick({
+                    buttonName: trackingEventsMap.profilePage.CLICK_EDIT_PROFILE,
+                    pageName: trackingEventsMap.profilePage.PAGE,
+                  });
+                  setShowEditModal(true);
+                }}>
+                  <EditIcon />
+                  Edit profile
+                </button>
+              </div>
 
-        <h2 className="profile-section-label">Email preferences</h2>
+              <h2 className="profile-section-label">Email preferences</h2>
 
-        <div className="profile-section">
-          <div className="profile-menu-item">
-            <div className="profile-menu-item-left">
-              <EmailIcon />
-              <span>Email preferences</span>
-            </div>
-            <div className="profile-dropdown">
-              <button
-                type="button"
-                className="profile-select"
-                onClick={() => setOpenDropdown(openDropdown === "email" ? null : "email")}
-                aria-haspopup="listbox"
-                aria-expanded={openDropdown === "email"}
-              >
-                {emailFrequencyLabels[selectedEmailFrequency]}
-                <ChevronDown />
-              </button>
-              {openDropdown === "email" && (
-                <div className="profile-select-menu" role="listbox">
-                  {(["daily", "weekly", "monthly"] as const).map((value) => (
+              <div className="profile-section">
+                <div className="profile-menu-item">
+                  <div className="profile-menu-item-left">
+                    <EmailIcon />
+                    <span>Email preferences</span>
+                  </div>
+                  <div className="profile-dropdown">
                     <button
-                      key={value}
                       type="button"
-                      className={`profile-select-option${
-                        selectedEmailFrequency === value ? " is-selected" : ""
-                      }`}
-                      onClick={() => handleEmailPreferenceChange(emailFrequencyMap[value])}
-                      role="option"
-                      aria-selected={selectedEmailFrequency === value}
+                      className="profile-select"
+                      onClick={() => {
+                        if (openDropdown !== "email") {
+                          trackClick({
+                            buttonName: trackingEventsMap.profilePage.CLICK_EMAIL_PREFERENCE_DROPDOWN,
+                            pageName: trackingEventsMap.profilePage.PAGE,
+                          });
+                        }
+                        setOpenDropdown(openDropdown === "email" ? null : "email");
+                      }}
+                      aria-haspopup="listbox"
+                      aria-expanded={openDropdown === "email"}
                     >
-                      <span>{selectedEmailFrequency === value && <CheckIcon />}</span>
-                      {emailFrequencyLabels[value]}
+                      {emailFrequencyLabels[selectedEmailFrequency]}
+                      <ChevronDown />
                     </button>
-                  ))}
+                    {openDropdown === "email" && (
+                      <div className="profile-select-menu" role="listbox">
+                        {(["daily", "weekly", "monthly"] as const).map((value) => (
+                          <button
+                            key={value}
+                            type="button"
+                            className={`profile-select-option${selectedEmailFrequency === value ? " is-selected" : ""
+                              }`}
+                            onClick={() => handleEmailPreferenceChange(emailFrequencyMap[value])}
+                            role="option"
+                            aria-selected={selectedEmailFrequency === value}
+                          >
+                            <span>{selectedEmailFrequency === value && <CheckIcon />}</span>
+                            {emailFrequencyLabels[value]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
+
+              <h2 className="profile-section-label profile-section-label-other">Other</h2>
+
+              <div className="profile-section">
+                <div className="profile-menu-item">
+                  <div className="profile-menu-item-left">
+                    <CurrencyIcon />
+                    <span>Default currency</span>
+                  </div>
+                  <div className="profile-dropdown">
+                    <button
+                      type="button"
+                      className="profile-select"
+                      onClick={() => {
+                        if (openDropdown !== "currency") {
+                          trackClick({
+                            buttonName: trackingEventsMap.profilePage.CLICK_CURRENCY_DROPDOWN,
+                            pageName: trackingEventsMap.profilePage.PAGE,
+                          });
+                        }
+                        setOpenDropdown(openDropdown === "currency" ? null : "currency");
+                      }}
+                      aria-haspopup="listbox"
+                      aria-expanded={openDropdown === "currency"}
+                    >
+                      {profile.base_currency}
+                      <ChevronDown />
+                    </button>
+                    {openDropdown === "currency" && (
+                      <div className="profile-select-menu profile-select-menu-compact" role="listbox">
+                        {currencyOptions.map((currency) => (
+                          <button
+                            key={currency}
+                            type="button"
+                            className={`profile-select-option${profile.base_currency === currency ? " is-selected" : ""
+                              }`}
+                            onClick={() => handleCurrencyChange(currency)}
+                            role="option"
+                            aria-selected={profile.base_currency === currency}
+                          >
+                            <span>{profile.base_currency === currency && <CheckIcon />}</span>
+                            {currency}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="profile-section">
+                <button
+                  className="profile-menu-item profile-menu-btn"
+                  onClick={() => {
+                    trackClick({
+                      buttonName: trackingEventsMap.profilePage.CLICK_PRIVACY_POLICY,
+                      pageName: trackingEventsMap.profilePage.PAGE,
+                    });
+                    window.open("/privacy", "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  <div className="profile-menu-item-left">
+                    <ShieldIcon />
+                    <span>Privacy policy and Terms</span>
+                  </div>
+                  <ChevronRight />
+                </button>
+              </div>
+
+              <div className="profile-section">
+                <button
+                  className="profile-menu-item profile-menu-btn profile-signout"
+                  onClick={handleSignOut}
+                >
+                  <div className="profile-menu-item-left">
+                    <SignOutIcon />
+                    <span>Sign out</span>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-
-        <h2 className="profile-section-label profile-section-label-other">Other</h2>
-
-        <div className="profile-section">
-          <div className="profile-menu-item">
-            <div className="profile-menu-item-left">
-              <CurrencyIcon />
-              <span>Default currency</span>
-            </div>
-            <div className="profile-dropdown">
-              <button
-                type="button"
-                className="profile-select"
-                onClick={() => setOpenDropdown(openDropdown === "currency" ? null : "currency")}
-                aria-haspopup="listbox"
-                aria-expanded={openDropdown === "currency"}
-              >
-                {profile.base_currency}
-                <ChevronDown />
-              </button>
-              {openDropdown === "currency" && (
-                <div className="profile-select-menu profile-select-menu-compact" role="listbox">
-                  {currencyOptions.map((currency) => (
-                    <button
-                      key={currency}
-                      type="button"
-                      className={`profile-select-option${
-                        profile.base_currency === currency ? " is-selected" : ""
-                      }`}
-                      onClick={() => handleCurrencyChange(currency)}
-                      role="option"
-                      aria-selected={profile.base_currency === currency}
-                    >
-                      <span>{profile.base_currency === currency && <CheckIcon />}</span>
-                      {currency}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="profile-section">
-          <button
-            className="profile-menu-item profile-menu-btn"
-            onClick={() => router.push("/privacy")}
-          >
-            <div className="profile-menu-item-left">
-              <ShieldIcon />
-              <span>Privacy policy and Terms</span>
-            </div>
-            <ChevronRight />
-          </button>
-        </div>
-
-        <div className="profile-section">
-          <button
-            className="profile-menu-item profile-menu-btn profile-signout"
-            onClick={handleSignOut}
-          >
-            <div className="profile-menu-item-left">
-              <SignOutIcon />
-              <span>Sign out</span>
-            </div>
-          </button>
-        </div>
-      </div>
-    </div>
         </main>
       </div>
       {showEditModal && (
         <EditProfileModal
           profile={profile}
           onClose={() => setShowEditModal(false)}
-          onSave={(updated) => setProfile(updated)}
+          onSave={(updated) => {
+            setProfile(updated);
+            // Trigger profile refresh event for sidebar
+            window.dispatchEvent(new CustomEvent('profileUpdated'));
+          }}
         />
       )}
     </ProtectedRoute>
@@ -308,8 +424,8 @@ function CheckIcon() {
 function PasswordIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -350,14 +466,8 @@ function SignOutIcon() {
 
 function ChevronRight() {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path
-        d="M7.5 15L12.5 10L7.5 5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M8.66602 0.666016H12.666L12.666 4.66602M12.666 0.666016L7.33268 5.99935M5.33268 1.99935H3.86602C2.74591 1.99935 2.18586 1.99935 1.75803 2.21734C1.38171 2.40908 1.07575 2.71504 0.884003 3.09137C0.666016 3.51919 0.666016 4.07924 0.666016 5.19935V9.46602C0.666016 10.5861 0.666016 11.1462 0.884003 11.574C1.07575 11.9503 1.38171 12.2563 1.75803 12.448C2.18586 12.666 2.74591 12.666 3.86602 12.666H8.13268C9.25279 12.666 9.81284 12.666 10.2407 12.448C10.617 12.2563 10.9229 11.9503 11.1147 11.574C11.3327 11.1462 11.3327 10.5861 11.3327 9.46602V7.99935" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
