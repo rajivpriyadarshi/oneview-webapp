@@ -3,7 +3,7 @@ import { Geist, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { Suspense } from "react";
 import StoreProvider from "./store/StoreProvider";
-import AnalyticsTracker from "./components/AnalyticsTracker";
+import Analytics from "./analytics";
 import "./globals.css";
 
 const geist = Geist({
@@ -51,9 +51,10 @@ export default function RootLayout({
       <body>
         <StoreProvider>
           <Suspense fallback={null}>
-            <AnalyticsTracker />
+            <Analytics>
+              {children}
+            </Analytics>
           </Suspense>
-          {children}
         </StoreProvider>
       </body>
     </html>
