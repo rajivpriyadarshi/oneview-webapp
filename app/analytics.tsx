@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import useAnalytics from "@/app/hooks/useAnalytics";
+import useAnalytics from "./hooks/useAnalytics";
 
 export default function Analytics({ children }: { children: React.ReactNode }) {
   const { initialize } = useAnalytics();
