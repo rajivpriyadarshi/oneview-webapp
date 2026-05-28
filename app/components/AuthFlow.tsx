@@ -53,9 +53,14 @@ export function AuthFlow() {
   }, [step]);
 
   useEffect(() => {
-    if (getStoredAuthToken()) {
-      routeByProfile();
+    const authToken = getStoredAuthToken();
+
+    if (!authToken) {
+      store.dispatch(api.util.resetApiState());
+      return;
     }
+
+    routeByProfile();
   }, [router]);
 
   useEffect(() => {
@@ -293,6 +298,11 @@ export function AuthFlow() {
   }
 
   async function routeByProfile() {
+    if (!getStoredAuthToken()) {
+      store.dispatch(api.util.resetApiState());
+      return;
+    }
+
     try {
       const profileResult = await store.dispatch(api.endpoints.getProfile.initiate(undefined, { forceRefetch: true }));
       if (profileResult.error || !profileResult.data) {
@@ -316,6 +326,7 @@ export function AuthFlow() {
       router.replace(await getPostProfileRouteFromStore(profile));
     } catch {
       clearAuthToken();
+      store.dispatch(api.util.resetApiState());
       router.replace("/");
     }
   }
