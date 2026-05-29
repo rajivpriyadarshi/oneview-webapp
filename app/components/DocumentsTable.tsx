@@ -157,6 +157,7 @@ export default function DocumentsTable({
             <FileIcon type={info.row.original.fileType} />
             <span
               className="block min-w-0 truncate whitespace-nowrap font-satoshi text-[16px] font-bold leading-[24px] text-black"
+              style={{ fontFeatureSettings: "'ss03' on" }}
               title={info.getValue()}
             >
               {info.getValue()}
@@ -202,7 +203,8 @@ export default function DocumentsTable({
                 />
               </svg>
             </a>
-            <a
+            {/* View button - commented out for now */}
+            {/* <a
               className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-full bg-black text-white transition hover:bg-black/85"
               href={row.original.fileUrl || "#"}
               target="_blank"
@@ -237,7 +239,7 @@ export default function DocumentsTable({
                   strokeLinejoin="round"
                 />
               </svg>
-            </a>
+            </a> */}
           </div>
         ),
       }),
@@ -278,7 +280,7 @@ export default function DocumentsTable({
   return (
     <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
       <div className="mb-0 flex items-center justify-between gap-4 py-[24px]">
-        <h3 className="m-0 flex items-center gap-2 font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black">
+        <h3 className="m-0 flex items-center gap-2 font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
           <DocumentsIcon />
           Added statements
         </h3>
@@ -286,6 +288,7 @@ export default function DocumentsTable({
           <button
             type="button"
             className="min-h-10 cursor-pointer rounded-full border border-red-600/20 bg-red-600/10 px-[18px] font-satoshi text-sm font-bold text-red-700 transition hover:bg-red-600/15 disabled:cursor-not-allowed disabled:opacity-35"
+            style={{ fontFeatureSettings: "'ss03' on" }}
             disabled={selectedDocuments.length === 0 || deleting}
             onClick={requestDelete}
           >

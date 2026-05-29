@@ -574,6 +574,8 @@ button:disabled {
   background: url('/auth-Hero-bg.png') center/cover no-repeat fixed;
   position: relative;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .statement-topbar {
@@ -650,12 +652,14 @@ button:disabled {
 .statement-content {
   position: relative;
   z-index: 1;
-  margin: 110px auto 0;
-  padding-top: 8px;
+  margin: auto;
+  padding: 8px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
+  flex: 1;
 }
 
 .statement-content h1 {

@@ -60,6 +60,7 @@
   margin: 0;
   color: rgba(0, 0, 0, 0.70);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-weight: 400;
   line-height: 24px;

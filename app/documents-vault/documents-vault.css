@@ -30,6 +30,7 @@
 .docs-vault-subtitle {
   margin: 0;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 21px;
@@ -54,6 +55,7 @@
   color: #595959;
   font-size: 1rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-weight: 500;
   line-height: 150%;
   letter-spacing: -0.04em;
@@ -64,6 +66,7 @@
   color: #595959;
   font-size: 16px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-weight: 500;
   line-height: 150%;
   letter-spacing: -0.04em;
@@ -74,6 +77,7 @@
   color: #7f4e0b;
   font-size: 16px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-weight: 700;
   text-decoration: underline;
   line-height: 150%;
@@ -146,6 +150,7 @@
   color: #000;
   font-size: 18px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-weight: 700;
   line-height: 150%;
   letter-spacing: -0.02em;
@@ -156,6 +161,7 @@
   color: rgba(0, 0, 0, 0.70);
   font-size: 16px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-weight: 400;
   line-height: 150%;
   letter-spacing: -0.02em;
@@ -193,6 +199,7 @@
   color: black;
   font-size: 20px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-weight: 700;
   line-height: 130%;
   letter-spacing: -0.02em;
@@ -213,6 +220,7 @@
   background: rgba(220, 38, 38, 0.08);
   color: #b91c1c;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
@@ -656,6 +664,7 @@
   margin: 0;
   color: rgba(0, 0, 0, 0.66);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 0.9375rem;
   line-height: 22px;
 }
@@ -674,6 +683,7 @@
   border: 0;
   border-radius: 999px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-weight: 800;
   cursor: pointer;

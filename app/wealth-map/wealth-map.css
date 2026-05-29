@@ -28,7 +28,8 @@
 
 .wealth-map-date {
   margin: 0;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1.25rem;
   font-weight: 700;
   color: black;
