@@ -111,7 +111,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
   const hasSectorData = sectorData.length > 0;
 
   return (
-    <section data-analytics-section="portfolio_exposure" className="mb-7 rounded-[32px] bg-white px-[16px] pl-[24px]">
+    <section data-analytics-section="portfolio_exposure" className="mb-[16px] rounded-[32px] bg-white px-[16px] pl-[24px]">
       <h3 className="flex align-center items-center gap-2 border-b border-black/10 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
         <ExposureIcon />
         Portfolio Exposure

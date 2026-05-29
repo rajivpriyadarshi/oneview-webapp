@@ -39,7 +39,7 @@ export default function PortfolioSummary({
   return (
     <section
       data-analytics-section="portfolio_summary"
-      className="relative mt-[32px] mb-7 flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6"
+      className="relative mt-[32px] mb-[16px] flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6"
     >
       <div className="flex flex-col justify-between gap-6 md:gap-12 lg:gap-16">
         <div className="z-[1] flex flex-col">

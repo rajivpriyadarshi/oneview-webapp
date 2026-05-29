@@ -258,7 +258,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
                     // Keep security left-aligned; right-align all numeric columns.
                     <td
                       key={cell.id}
-                      className={`${row.index % 2 === 0 ? "bg-black/[0.03]" : "bg-black/[0.05]"} px-4 py-5 text-sm text-black first:rounded-l-xl first:pl-8 last:rounded-r-xl last:pr-8 ${
+                      className={`${row.index % 2 === 0 ? "bg-black/[0.03]" : "bg-black/[0.05]"} px-4 py-[24px] text-sm text-black first:rounded-l-xl last:rounded-r-xl ${
                         cell.column.id === "security" ? "text-left" : "text-right"
                       }`}
                       style={{ width: cell.column.getSize() }}
