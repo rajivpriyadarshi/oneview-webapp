@@ -1423,7 +1423,7 @@ button:disabled {
 }
 
 .sidebar {
-  width: 64px;
+  width: 80px;
   height: 100vh;
   display: flex;
   flex-direction: column;
