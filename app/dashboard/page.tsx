@@ -192,7 +192,7 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="flex min-h-screen overflow-x-hidden bg-[var(--background)]">
         <Sidebar />
-        <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[40px] md:ml-16 px-[60px]">
+        <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[80px] sm:pt-[40px] md:ml-16 px-6 sm:px-[60px]">
           <DashboardHeader updatedAt={selectedPortfolio?.updated_at} />
           {loading && !portfolioView ? (
             <div className="flex h-[calc(100vh-160px)] flex-col items-center justify-center gap-4">

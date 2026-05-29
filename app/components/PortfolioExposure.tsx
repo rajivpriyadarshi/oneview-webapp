@@ -117,7 +117,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         Portfolio Exposure
       </h3>
       <div className={`grid gap-0 ${!hasSectorData ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"}`}>
-        <div className="relative flex h-full min-w-0 flex-col items-center overflow-visible bg-white px-[30px] py-3.5 md:border-r md:border-black/15">
+        <div className="relative pt-[16px] pb-[46px] flex h-full justify-center min-w-0 flex-col items-center overflow-visible bg-white md:border-r md:border-black/15">
           <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
             By <strong>Asset type</strong>
           </p>
@@ -126,7 +126,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
           </div>
         </div>
 
-        <div className={`relative flex h-full min-w-0 flex-col items-center overflow-visible bg-white px-[30px] py-3.5 ${hasSectorData ? "md:border-r md:border-black/15" : ""}`}>
+        <div className={`relative pt-[16px] pb-[46px] flex h-full justify-center min-w-0 flex-col items-center overflow-visible bg-white ${hasSectorData ? "md:border-r md:border-black/15" : ""}`}>
           <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
             By <strong>Broker</strong>
           </p>
@@ -136,7 +136,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         </div>
 
         {hasSectorData && (
-          <div className="relative flex h-full min-w-0 flex-col items-center overflow-visible bg-white px-[30px] py-3.5">
+          <div className="relative pt-[16px] pb-[46px] flex h-full justify-center min-w-0 flex-col items-center overflow-visible bg-white">
             <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
               By <strong>Sector allocation</strong>
             </p>
@@ -323,11 +323,9 @@ function SectorDonutChart({
   const safeSelectedIndex = segments.length === 0 ? 0 : Math.min(selectedIndex, segments.length - 1);
   const activeIndex = hoveredIndex ?? safeSelectedIndex;
   const safeActiveIndex = segments.length === 0 ? 0 : Math.min(activeIndex, segments.length - 1);
-  const displayedIndexes = [
-    safeSelectedIndex,
-    ...segments.map((_, i) => i).filter((i) => i !== safeSelectedIndex),
-  ].slice(0, 4);
-  const remainingIndexes = segments.map((_, i) => i).filter((i) => !displayedIndexes.includes(i));
+  const nonSelectedIndexes = segments.map((_, i) => i).filter((i) => i !== safeSelectedIndex);
+  const secondRowIndexes = nonSelectedIndexes.slice(0, nonSelectedIndexes.length > 2 ? 1 : 2);
+  const remainingIndexes = nonSelectedIndexes.slice(secondRowIndexes.length);
   const remainingCount = remainingIndexes.length;
 
   const cx = 180;
@@ -427,9 +425,42 @@ function SectorDonutChart({
         </text>
       </svg>
 
-      {/* legend chips */}
-      <div className="flex w-full flex-wrap justify-center gap-2">
-        {displayedIndexes.map((segIndex) => {
+      {/* legend chips: max 2 rows, +n starts in second row */}
+      <div className="flex w-full flex-col items-center gap-2">
+        <div className="flex w-full justify-center">
+          {(() => {
+            const segIndex = safeSelectedIndex;
+            const seg = segments[segIndex];
+            const isActive = segIndex === safeActiveIndex;
+            return (
+              <div
+                key={seg.label}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition ${isActive ? "" : "border-black/10 bg-white"}`}
+                style={
+                  isActive
+                    ? {
+                        borderColor: toRgba(seg.color, 0.5),
+                        backgroundColor: toRgba(seg.color, 0.12),
+                      }
+                    : undefined
+                }
+                onMouseEnter={() => setHoveredIndex(segIndex)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => {
+                  setSelectedIndex(segIndex);
+                  onPillClick?.(seg.label, seg.percentage);
+                }}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />
+                <span className="max-w-[110px] truncate text-black/80">{seg.label}</span>
+                <span className="font-semibold text-black">{seg.percentage.toFixed(1)}%</span>
+              </div>
+            );
+          })()}
+        </div>
+
+        <div className="flex w-full flex-wrap justify-center gap-2">
+          {secondRowIndexes.map((segIndex) => {
           const seg = segments[segIndex];
           const isActive = segIndex === safeActiveIndex;
           return (
@@ -455,8 +486,8 @@ function SectorDonutChart({
             <span className="max-w-[110px] truncate text-black/80">{seg.label}</span>
             <span className="font-semibold text-black">{seg.percentage.toFixed(1)}%</span>
           </div>
-        )})}
-        {remainingCount > 0 && (
+          )})}
+          {remainingCount > 0 && (
           <div className="relative">
             <button
               type="button"
@@ -503,7 +534,8 @@ function SectorDonutChart({
               </>
             )}
           </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -551,14 +583,21 @@ function shadeHex(hex: string, percent: number) {
 
 function ExposureIcon() {
   return (
-    <svg viewBox="0 0 18 18" fill="none" width="26" height="26">
-      <path
-        d="M4.99527 6.77795L1.42773 8.56172L8.30754 12.0016C8.40114 12.0484 8.44794 12.0718 8.49703 12.081C8.5405 12.0892 8.58512 12.0892 8.6286 12.081C8.67768 12.0718 8.72448 12.0484 8.81808 12.0016L15.6979 8.56172L12.1303 6.77795M4.99527 10.3455L1.42773 12.1293L8.30754 15.5692C8.40114 15.616 8.44794 15.6394 8.49703 15.6486C8.5405 15.6567 8.58512 15.6567 8.6286 15.6486C8.67768 15.6394 8.72448 15.616 8.81808 15.5692L15.6979 12.1293L12.1303 10.3455M1.42773 4.99418L8.30754 1.55428C8.40114 1.50748 8.44794 1.48408 8.49703 1.47487C8.5405 1.46671 8.58512 1.46671 8.6286 1.47487C8.67768 1.48408 8.72448 1.50748 8.81808 1.55428L15.6979 4.99418L8.81808 8.43408C8.72448 8.48088 8.67768 8.50428 8.6286 8.51349C8.58512 8.52165 8.5405 8.52165 8.49703 8.51349C8.44794 8.50428 8.40114 8.48088 8.30754 8.43408L1.42773 4.99418Z"
-        stroke="currentColor"
-        strokeWidth="1.42702"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width="26" height="26" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <g clipPath="url(#clip0_portfolio_exposure_icon)">
+        <path
+          d="M15.1345 11.3374C14.6806 12.4108 13.9706 13.3568 13.0667 14.0924C12.1627 14.8281 11.0923 15.3312 9.94904 15.5576C8.80576 15.784 7.62442 15.727 6.5083 15.3914C5.39218 15.0558 4.37525 14.4519 3.54644 13.6325C2.71763 12.8131 2.10215 11.8031 1.75383 10.6909C1.40552 9.57868 1.33495 8.39807 1.54832 7.25228C1.76168 6.10649 2.25248 5.03041 2.97779 4.11812C3.70311 3.20583 4.64086 2.48511 5.70907 2.01896M15.1551 5.83135C15.4407 6.52093 15.6159 7.24995 15.6754 7.99162C15.69 8.17485 15.6974 8.26646 15.661 8.34899C15.6306 8.41793 15.5704 8.48316 15.5041 8.51896C15.4248 8.56183 15.3256 8.56183 15.1274 8.56183H9.1339C8.9341 8.56183 8.8342 8.56183 8.75789 8.52294C8.69076 8.48874 8.63619 8.43416 8.60198 8.36703C8.5631 8.29072 8.5631 8.19082 8.5631 7.99102V1.99756C8.5631 1.7993 8.5631 1.70017 8.60596 1.62081C8.64176 1.55452 8.707 1.49431 8.77594 1.46392C8.85846 1.42753 8.95008 1.43488 9.1333 1.44957C9.87498 1.50903 10.604 1.68424 11.2936 1.96987C12.1592 2.32845 12.9458 2.85401 13.6084 3.51656C14.2709 4.17912 14.7965 4.96568 15.1551 5.83135Z"
+          stroke="currentColor"
+          strokeWidth="1.42702"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+      <defs>
+        <clipPath id="clip0_portfolio_exposure_icon">
+          <rect width="17.1242" height="17.1242" fill="white" />
+        </clipPath>
+      </defs>
     </svg>
   );
 }

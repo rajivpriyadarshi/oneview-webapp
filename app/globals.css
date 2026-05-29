@@ -11,6 +11,12 @@
   --link-brown: #875000;
 }
 
+@media (min-width: 1024px) {
+  .holdings-security-column {
+    width: 30% !important;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1435,7 +1441,7 @@ button:disabled {
 .sidebar-logo {
   display: grid;
   place-items: center;
-  margin-bottom: 36px;
+  margin-bottom: 24px;
   color: var(--foreground);
   cursor: pointer;
   transition: opacity 0.15s ease;
@@ -1455,7 +1461,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 20px;
 }
 
 .sidebar-btn {
@@ -2070,7 +2076,7 @@ button:disabled {
 
   .sidebar-logo {
     margin-right: 0;
-    margin-bottom: 36px;
+    margin-bottom: 24px;
   }
 
   .sidebar-logo svg {
@@ -2080,7 +2086,7 @@ button:disabled {
 
   .sidebar-nav {
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
     margin-right: 0;
   }
 

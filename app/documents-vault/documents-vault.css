@@ -19,19 +19,21 @@
 .docs-vault-title {
   margin: 0;
   font-family: "ButlerPro", Georgia, serif;
-  font-size: 2rem;
+  font-size: 32px;
   font-weight: 500;
   line-height: 38.4px;
+  letter-spacing: -0.04em;
   color: black;
   word-wrap: break-word;
 }
 
 .docs-vault-subtitle {
   margin: 0;
-  font-family: var(--font-inter), sans-serif;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-size: 0.875rem;
-  font-weight: 400;
+  font-weight: 500;
   line-height: 21px;
+  letter-spacing: -0.02em;
   color: rgba(0, 0, 0, 0.70);
   word-wrap: break-word;
 }
@@ -53,7 +55,29 @@
   font-size: 1rem;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 500;
-  line-height: 24px;
+  line-height: 150%;
+  letter-spacing: -0.04em;
+  word-wrap: break-word;
+}
+
+.docs-vault-brokers .brokers-text-csv {
+  color: #595959;
+  font-size: 16px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-weight: 500;
+  line-height: 150%;
+  letter-spacing: -0.04em;
+  word-wrap: break-word;
+}
+
+.download-instruction {
+  color: #7f4e0b;
+  font-size: 16px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  text-decoration: underline;
+  line-height: 150%;
+  letter-spacing: -0.04em;
   word-wrap: break-word;
 }
 
@@ -119,26 +143,32 @@
 }
 
 .docs-dropzone strong {
-  color: #333;
-  font-size: 1rem;
+  color: #000;
+  font-size: 18px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 700;
+  line-height: 150%;
+  letter-spacing: -0.02em;
+  word-wrap: break-word;
 }
 
 .docs-dropzone span {
   color: rgba(0, 0, 0, 0.70);
-  font-size: 1rem;
-  font-family: var(--font-geist), sans-serif;
+  font-size: 16px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-weight: 400;
-  line-height: 24px;
+  line-height: 150%;
+  letter-spacing: -0.02em;
   word-wrap: break-word;
 }
 
 /* Table Section */
 .docs-table-section {
   background: #fff;
-  border-radius: 20px;
-  padding: 28px 32px;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 32px;
+  margin-bottom: 28px;
+  padding: 0 16px 0 24px;
+  border: 0;
   height: calc(100vh - 80px);
   max-height: calc(100vh - 80px);
   display: flex;
@@ -150,19 +180,22 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  padding: 24px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .docs-table-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   color: black;
-  font-size: 0.85625rem;
-  font-family: var(--font-inter), sans-serif;
-  font-weight: 600;
-  line-height: 17.81px;
+  font-size: 20px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  line-height: 130%;
+  letter-spacing: -0.02em;
   word-wrap: break-word;
 }
 
@@ -241,6 +274,7 @@
   overflow-x: auto;
   overflow-y: auto;
   flex: 1;
+  padding-right: 8px;
 }
 
 .docs-table {

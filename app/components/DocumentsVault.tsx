@@ -349,19 +349,19 @@ export function DocumentsVault() {
         </div>
         <div className="docs-vault-header-right">
           <div className="docs-vault-brokers">
-            <span className="brokers-text">We accept</span>
-            <div className="broker-icons">
-              <img src="/broker-icons/groww.png" alt="Groww" className="broker-icon" />
-              <img src="/broker-icons/fidelity.png" alt="Fidelity" className="broker-icon" />
-              <img src="/broker-icons/zerodha.png" alt="Zerodha" className="broker-icon" />
-              <img src="/broker-icons/vested.png" alt="Vested" className="broker-icon" />
-              <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="broker-icon" />
-              <img src="/broker-icons/ibkr.png" alt="IBKR" className="broker-icon" />
+            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]">We accept</span>
+            <div className="flex items-center gap-2">
+              <img src="/broker-icons/groww.png" alt="Groww" className="h-[28px] w-[28px] rounded-full object-cover" />
+              <img src="/broker-icons/fidelity.png" alt="Fidelity" className="h-[28px] w-[28px] rounded-full object-cover" />
+              <img src="/broker-icons/zerodha.png" alt="Zerodha" className="h-[28px] w-[28px] rounded-full object-cover" />
+              <img src="/broker-icons/vested.png" alt="Vested" className="h-[28px] w-[28px] rounded-full object-cover" />
+              <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="h-[28px] w-[28px] rounded-full object-cover" />
+              <img src="/broker-icons/ibkr.png" alt="IBKR" className="h-[28px] w-[28px] rounded-full object-cover" />
             </div>
-            <span className="brokers-text">and any CSV format</span>
+            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]">and any CSV format</span>
             <button
               type="button"
-              className="download-instruction"
+              className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#7F4E0B] underline"
               onClick={() => {
                 trackClick({
                   buttonName: trackingEventsMap.documentsVaultPage.CLICK_DOWNLOAD_INSTRUCTIONS,
@@ -397,13 +397,19 @@ export function DocumentsVault() {
           onChange={handleFileChange}
         />
         <div className="docs-dropzone-icon">
-          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-            <path d="M12 16V4M8 8l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M4 14v4a2 2 0 002 2h12a2 2 0 002-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <path
+              d="M14.9997 2.14258H2.14258M4.28544 9.28544L8.57115 4.99972L12.8569 9.28544M8.57115 4.99972V14.9997"
+              stroke="black"
+              strokeOpacity="0.7"
+              strokeWidth="1.42857"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </div>
-        <strong>{isDragging ? "Drop files to upload" : "Drop files here"}</strong>
-        <span>or click to browse CSV, XLSX, PDF files up to 10MB</span>
+        <strong>{isDragging ? "Drop files to upload" : "Drop your statements here"}</strong>
+        <span>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
       </div>
 
       {error && <p className="docs-error">{error}</p>}

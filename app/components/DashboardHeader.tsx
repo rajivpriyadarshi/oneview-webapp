@@ -20,7 +20,7 @@ function formatLastUpdated(dateStr?: string) {
 
 export default function DashboardHeader({ updatedAt }: Props) {
   const [userName, setUserName] = useState("");
-  const subtitle = 'See the consolidated view of all your investments';//formatLastUpdated(updatedAt);
+  const subtitle = 'See the unified view of all your investments';//formatLastUpdated(updatedAt);
 
   useEffect(() => {
     getProfile()
@@ -41,7 +41,7 @@ export default function DashboardHeader({ updatedAt }: Props) {
       </div>
       <Link
         href="/documents-vault"
-        className="inline-flex cursor-pointer items-center gap-3 rounded-full 
+        className="inline-flex cursor-pointer justify-center items-center gap-3 rounded-full 
         border-[1px] border-black/10 bg-transparent px-[24px] py-[16px] font-satoshi 
         text-base font-bold leading-6 tracking-[-0.04em] text-black transition hover:bg-black/[0.02]"
       >
