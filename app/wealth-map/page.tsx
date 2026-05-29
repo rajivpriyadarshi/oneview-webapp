@@ -6,7 +6,6 @@ import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import { useGetSankeyQuery } from "../store/api";
 import type { SankeyNode, SankeyResponse } from "../lib/portfolioDataApi";
-import "../portfolio/portfolio.css";
 import "../dashboard/home.css";
 import "./wealth-map.css";
 
