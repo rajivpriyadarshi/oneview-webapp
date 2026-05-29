@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import DashboardHeader from "../components/DashboardHeader";
@@ -144,6 +146,7 @@ export default function DashboardPage() {
 
   const valuationSeries = valuationsFetching ? [] : (valuationsData?.price_series ?? []);
   const loading = viewLoading || !portfolioView;
+  const isPortfolioEmpty = !loading && (portfolioView?.positions?.length ?? 0) === 0;
 
   const handleAccountChange = (accountId: number | "all") => {
     const selectedAccountName =
@@ -193,7 +196,6 @@ export default function DashboardPage() {
       <div className="flex min-h-screen overflow-x-hidden bg-[var(--background)]">
         <Sidebar />
         <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[80px] sm:pt-[40px] md:ml-16 px-6 sm:px-[60px]">
-          <DashboardHeader updatedAt={selectedPortfolio?.updated_at} />
           {loading && !portfolioView ? (
             <div className="flex h-[calc(100vh-160px)] flex-col items-center justify-center gap-4">
               <div className="relative mb-8 inline-flex items-center justify-center">
@@ -207,8 +209,30 @@ export default function DashboardPage() {
               </div>
               <p className="m-0 text-sm text-black/50">Loading your portfolio</p>
             </div>
+          ) : isPortfolioEmpty ? (
+            <section className="flex min-h-[calc(100vh-220px)] w-full items-center justify-center text-center">
+              <div className="mx-auto flex w-full max-w-[520px] flex-col items-center justify-center">
+                <div className="">
+                  <Image src="/nothing.png" alt="" width={168} height={168} aria-hidden="true" />
+                </div>
+                <h2 className="mt-[40px] font-['ButlerPro'] text-[24px] font-medium leading-[120%] tracking-[-0.04em] text-black break-words">
+                  Nothing to show in your unified view!
+                </h2>
+                <p className="mt-[8px] font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/70 break-words">
+                  Upload your statements to create your unified view
+                </p>
+                <Link
+                  href="/documents-vault"
+                  className="mt-[34px] inline-flex cursor-pointer items-center gap-3 rounded-full border border-black/10 px-[24px] py-[16px] font-satoshi text-[16px] font-bold leading-[24px] tracking-[-0.04em] text-black break-words transition hover:bg-black/[0.03]"
+                >
+                  <PlusIcon />
+                  Add statements
+                </Link>
+              </div>
+            </section>
           ) : (
             <>
+              <DashboardHeader updatedAt={selectedPortfolio?.updated_at} />
               <PortfolioSummary
                 portfolioView={portfolioView ?? null}
                 loading={loading}
@@ -230,5 +254,13 @@ export default function DashboardPage() {
         </main>
       </div>
     </ProtectedRoute>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5V19M5 12H19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }

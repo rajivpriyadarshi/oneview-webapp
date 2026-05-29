@@ -153,10 +153,11 @@ export default function DocumentsTable({
       columnHelper.accessor("filename", {
         header: "Filename",
         cell: (info) => (
-          <div className="flex min-w-0 items-center gap-3 font-medium text-black">
+          <div className="flex min-w-0 items-center gap-3">
             <FileIcon type={info.row.original.fileType} />
             <span
-              className="block min-w-0 truncate whitespace-nowrap"
+              className="block min-w-0 truncate whitespace-nowrap font-satoshi text-[16px] font-bold leading-[24px] text-black"
+              style={{ fontFeatureSettings: "'ss03' on" }}
               title={info.getValue()}
             >
               {info.getValue()}
@@ -278,22 +279,22 @@ export default function DocumentsTable({
 
   return (
     <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
-      <div className="mb-0 flex min-h-[100px] items-center justify-between gap-4 py-[28px]">
-        <h2 className="m-0 flex items-center gap-2 font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
+      <div className="mb-0 flex items-center justify-between gap-4 py-[24px]">
+        <h3 className="m-0 flex items-center gap-2 font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
           <DocumentsIcon />
           Added statements
-        </h2>
-        {selectedDocuments.length > 0 && (
+        </h3>
+        <div className="flex items-center gap-3">
           <button
             type="button"
-            className="h-8 cursor-pointer rounded-full border border-red-600/20 bg-red-600/10 px-4 py-0 font-satoshi text-sm font-bold leading-8 text-red-700 transition hover:bg-red-600/15 disabled:cursor-not-allowed disabled:opacity-35"
+            className="min-h-10 cursor-pointer rounded-full border border-red-600/20 bg-red-600/10 px-[18px] font-satoshi text-sm font-bold text-red-700 transition hover:bg-red-600/15 disabled:cursor-not-allowed disabled:opacity-35"
             style={{ fontFeatureSettings: "'ss03' on" }}
-            disabled={deleting}
+            disabled={selectedDocuments.length === 0 || deleting}
             onClick={requestDelete}
           >
-            {deleting ? "Deleting..." : `Delete (${selectedDocuments.length})`}
+            {deleting ? "Deleting..." : `Delete${selectedDocuments.length > 0 ? ` (${selectedDocuments.length})` : ""}`}
           </button>
-        )}
+        </div>
       </div>
       <div className="overflow-x-auto pb-4">
         <table className="w-full min-w-0 border-separate border-spacing-0">
@@ -304,7 +305,7 @@ export default function DocumentsTable({
                   <th
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
-                    className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-[30px] text-sm font-semibold text-black ${
+                    className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
                       header.id === "checkbox" ? "w-10" : ""
                     } ${
                       header.id === "checkbox" || header.id === "filename"
@@ -351,7 +352,7 @@ export default function DocumentsTable({
                   {row.getVisibleCells().map((cell, cellIndex) => (
                     <td
                       key={cell.id}
-                      className={`border-b border-black/10 bg-transparent px-4 py-[24px] text-sm text-black ${
+                      className={`border-b border-black/10 bg-transparent px-4 py-[24px] ${
                         cell.column.id === "checkbox" ? "w-10 text-left" : ""
                       } ${
                         cell.column.id === "filename"
@@ -359,6 +360,10 @@ export default function DocumentsTable({
                           : centerAlignedColumns.has(cell.column.id)
                             ? "text-center"
                             : ""
+                      } ${
+                        cell.column.id !== "checkbox" && cell.column.id !== "filename"
+                          ? "font-satoshi text-[16px] font-medium leading-[60px] text-black/80"
+                          : "text-sm text-black"
                       }`}
                       style={{ width: columnWidths[cell.column.id] ?? undefined }}
                     >
@@ -376,7 +381,7 @@ export default function DocumentsTable({
 
 function DocumentsIcon() {
   return (
-    <svg viewBox="0 0 18 18" fill="none" width="26" height="26">
+    <svg viewBox="0 0 18 18" fill="none" width="18" height="18">
       <path
         d="M4.99527 6.77795L1.42773 8.56172L8.30754 12.0016C8.40114 12.0484 8.44794 12.0718 8.49703 12.081C8.5405 12.0892 8.58512 12.0892 8.6286 12.081C8.67768 12.0718 8.72448 12.0484 8.81808 12.0016L15.6979 8.56172L12.1303 6.77795M4.99527 10.3455L1.42773 12.1293L8.30754 15.5692C8.40114 15.616 8.44794 15.6394 8.49703 15.6486C8.5405 15.6567 8.58512 15.6567 8.6286 15.6486C8.67768 15.6394 8.72448 15.616 8.81808 15.5692L15.6979 12.1293L12.1303 10.3455M1.42773 4.99418L8.30754 1.55428C8.40114 1.50748 8.44794 1.48408 8.49703 1.47487C8.5405 1.46671 8.58512 1.46671 8.6286 1.47487C8.67768 1.48408 8.72448 1.50748 8.81808 1.55428L15.6979 4.99418L8.81808 8.43408C8.72448 8.48088 8.67768 8.50428 8.6286 8.51349C8.58512 8.52165 8.5405 8.52165 8.49703 8.51349C8.44794 8.50428 8.40114 8.48088 8.30754 8.43408L1.42773 4.99418Z"
         stroke="currentColor"
