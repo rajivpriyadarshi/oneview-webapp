@@ -406,7 +406,17 @@ export function StatementUpload() {
           <br />
           to create your Meridian Oneview
         </h1>
-        <p>
+        <p
+          style={{
+            color: '#5F5F5F',
+            textAlign: 'center',
+            fontFamily: 'Satoshi',
+            fontSize: '1rem',
+            fontStyle: 'light',
+            fontWeight: 500,
+            lineHeight: '150%',
+            letterSpacing: '-0.64px',
+          }}>
           Securely drop your key investment accounts statements here. We don&apos;t
           share or sell your data
         </p>

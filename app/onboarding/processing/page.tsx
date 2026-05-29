@@ -9,9 +9,9 @@ export default function ProcessingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Simulate processing and redirect to portfolio after a delay
+    // Simulate processing and redirect to dashboard after a delay
     const timer = setTimeout(() => {
-      router.replace("/portfolio");
+      router.replace("/dashboard");
     }, 5000); // 5 seconds
 
     return () => clearTimeout(timer);

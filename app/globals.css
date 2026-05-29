@@ -31,7 +31,7 @@ body {
   margin: 0;
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-inter), var(--font-geist), Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter);
 }
 
 button,
@@ -41,7 +41,8 @@ input {
 
 button {
   cursor: pointer;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-family: var(--font-satoshi);
+  font-feature-settings: 'ss03' on;
 }
 
 button:disabled {
@@ -160,9 +161,9 @@ button:disabled {
   overflow: hidden;
   color: #000;
   text-align: center;
-  font-feature-settings: "ss03" on;
   text-overflow: ellipsis;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-style: normal;
   font-weight: 700;
@@ -206,9 +207,9 @@ button:disabled {
   transform: translateY(-50%);
   overflow: hidden;
   color: #828282;
-  font-feature-settings: 'ss03' on;
   text-overflow: ellipsis;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 500;
@@ -237,9 +238,9 @@ button:disabled {
   margin: 0;
   background: transparent;
   color: #262626;
-  font-feature-settings: "ss03" on;
   text-overflow: ellipsis;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-style: normal;
   font-weight: 700;
@@ -268,13 +269,13 @@ button:disabled {
   overflow: hidden;
   color: var(--Greyscale-Text-White, #FFF);
   text-align: center;
-  font-feature-settings: 'ss03' on;
   text-overflow: ellipsis;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-style: normal;
   font-weight: 700;
-  line-height: 24px;
+  line-height: 1.5rem;
   letter-spacing: var(--Kerning-None, 0);
   margin-top: 32px;
 }
@@ -284,7 +285,8 @@ button:disabled {
   margin: 32px 0 0;
   color: black;
   font-size: 0.75rem;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-weight: 400;
   line-height: 1.125rem;
   text-align: center;
@@ -436,7 +438,7 @@ button:disabled {
   font-family: "ButlerPro", Georgia, "Times New Roman", serif;
   font-size: 2.25rem;
   font-weight: 500;
-  line-height: 48px;
+  line-height: 3rem;
   letter-spacing: -1.2px;
 }
 
@@ -466,7 +468,7 @@ button:disabled {
   font-size: 3rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 60px;
+  line-height: 3.75rem;
   letter-spacing: -1.5px;
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
@@ -628,7 +630,8 @@ button:disabled {
   background: none;
   font-size: 0.875rem;
   font-weight: 500;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   color: var(--foreground);
   cursor: pointer;
   transition: background 0.15s ease;
@@ -657,7 +660,7 @@ button:disabled {
   font-size: 2.25rem;
   font-style: normal;
   font-weight: 500;
-  line-height: 40px;
+  line-height: 2.9arem;
   letter-spacing: -1.28px;
 }
 
@@ -665,8 +668,8 @@ button:disabled {
   margin: 10px 0 0;
   color: #5F5F5F;
   text-align: center;
+  font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
   font-size: 1rem;
   font-style: normal;
   font-weight: 500;
@@ -744,8 +747,8 @@ button:disabled {
 .statement-dropzone strong {
   margin-top: 14px;
   color: #000;
+  font-family: var(--font-satoshi);
   font-feature-settings: 'ss03' on;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
   font-size: 1.0625rem;
   font-style: normal;
   font-weight: 700;
@@ -758,8 +761,8 @@ button:disabled {
   width: 230px;
   color: rgba(0, 0, 0, 0.70);
   text-align: center;
+  font-family: var(--font-satoshi);
   font-feature-settings: 'ss03' on;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
   font-size: 0.89rem;
   font-style: normal;
   font-weight: 400;
@@ -769,7 +772,6 @@ button:disabled {
 
 .select-files-text {
   color: #7F4E0B;
-  font-feature-settings: 'ss03' on;
   font-family: inherit;
   font-size: inherit;
   font-style: inherit;
@@ -805,11 +807,12 @@ button:disabled {
 .statement-upload-progress em {
   min-width: 36px;
   color: #444;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.8125rem;
   font-style: normal;
   font-weight: 800;
-  line-height: 18px;
+  line-height: 1.125rem;
   text-align: right;
 }
 
@@ -899,8 +902,8 @@ button:disabled {
   display: block;
   color: #000;
   text-align: left;
+  font-family: var(--font-satoshi);
   font-feature-settings: 'ss03' on;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
   font-size: 1rem;
   font-style: normal;
   font-weight: 700;
@@ -916,8 +919,8 @@ button:disabled {
   display: block;
   color: rgba(0, 0, 0, 0.70);
   text-align: left;
+  font-family: var(--font-satoshi);
   font-feature-settings: 'ss03' on;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
   font-size: 0.895rem;
   font-style: normal;
   font-weight: 500;
@@ -965,10 +968,11 @@ button:disabled {
 
 .brokers-text {
   color: rgba(0, 0, 0, 0.70);
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-weight: 400;
-  line-height: 24px;
+  line-height: 1.5rem;
   white-space: nowrap;
 }
 
@@ -991,12 +995,20 @@ button:disabled {
   padding: 0;
   background: transparent;
   color: #7F4E0B;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  text-align: center;
+  font-feature-settings: 'ss03' on;
+  font-family: "Satoshi";
   font-size: 1rem;
+  font-style: normal;
   font-weight: 700;
-  line-height: 24px;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  line-height: 150%;
+  letter-spacing: -0.04rem;
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-skip-ink: none;
+  text-decoration-thickness: auto;
+  text-underline-offset: auto;
+  text-underline-position: from-font;
   cursor: pointer;
   transition: opacity 0.2s ease;
 }
@@ -1009,7 +1021,8 @@ button:disabled {
 .statement-success {
   margin-top: 10px;
   margin-bottom: 10px;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-weight: 800;
 }
@@ -1034,7 +1047,8 @@ button:disabled {
   font-size: 1rem;
   font-weight: 700;
   font-family: "Satoshi";
-  line-height: 24px;
+  font-feature-settings: 'ss03' on;
+  line-height: 1.5rem;
   padding: 20px;
   min-height: 64px;
 }
@@ -1052,6 +1066,7 @@ button:disabled {
   color: #383838;
   font-size: 0.9rem;
   font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-weight: 500;
   text-align: center;
   margin-top: 100px;
@@ -1073,10 +1088,12 @@ button:disabled {
   border: none;
   border-radius: 38px;
   font-size: 1.0625rem;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-weight: 600;
   cursor: pointer;
   font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   transition: all 0.2s;
   white-space: nowrap;
   min-height: 64px;
@@ -1097,7 +1114,8 @@ button:disabled {
 
 .statement-upload-success .statement-success {
   font-size: 1.125rem;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-weight: 500;
   text-align: center;
   margin: 0;
@@ -1116,7 +1134,8 @@ button:disabled {
   background: #000;
   color: #fff;
   font-size: 1.0625rem;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -1196,9 +1215,10 @@ button:disabled {
 .modal-subtitle {
   margin: 0 0 28px;
   color: #6b6b6b;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.9375rem;
-  line-height: 22px;
+  line-height: 1.375rem;
 }
 
 .broker-dropdown-container {
@@ -1210,7 +1230,8 @@ button:disabled {
   display: block;
   margin-bottom: 6px;
   color: #8a8a8a;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.8125rem;
   font-weight: 500;
 }
@@ -1226,7 +1247,8 @@ button:disabled {
   border-radius: 14px;
   background: #fff;
   color: #050505;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
@@ -1281,7 +1303,8 @@ button:disabled {
   border-radius: 10px;
   background: transparent;
   color: #333;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
@@ -1331,7 +1354,8 @@ button:disabled {
   border-radius: 50%;
   background: #f0ebe4;
   color: #7b4700;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.8125rem;
   font-weight: 800;
 }
@@ -1339,9 +1363,10 @@ button:disabled {
 .step-text {
   padding-top: 6px;
   color: #333;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.9375rem;
-  line-height: 22px;
+  line-height: 1.375rem;
 }
 
 .step-text strong {
@@ -1356,7 +1381,8 @@ button:disabled {
   border-radius: 999px;
   background: #000;
   color: #fff;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
@@ -1377,7 +1403,8 @@ button:disabled {
 
 .auth-callback-page p {
   margin: 0;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1.125rem;
   font-weight: 700;
 }
@@ -1920,7 +1947,7 @@ button:disabled {
 
   .statement-content h1 {
     font-size: 1.875rem;
-    line-height: 39px;
+    line-height: 2.4375rem;
   }
 
   .statement-dropzone {
@@ -2194,7 +2221,8 @@ button:disabled {
   gap: 6px;
   color: rgba(0, 0, 0, 0.70);
   border-radius: 20px;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-family: var(--font-satoshi);
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
@@ -2222,8 +2250,8 @@ button:disabled {
 
 .oneview-info-description {
   color: rgba(0, 0, 0, 0.70);
+  font-family: var(--font-satoshi);
   font-feature-settings: 'ss03' on;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
@@ -2302,7 +2330,8 @@ button:disabled {
 }
 
 .oneview-info-card-value {
-  font-family: "Cabinet Grotesk", "Satoshi", Arial, sans-serif;
+  font-family: "Cabinet Grotesk", "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 2.25rem;
   font-weight: 700;
   margin: 0 0 4px;
@@ -2410,7 +2439,8 @@ button:disabled {
   color: #000;
   font-kerning: none;
   font-feature-settings: 'liga' off;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-family: var(--font-satoshi);
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 700;
@@ -2423,13 +2453,14 @@ button:disabled {
 .oneview-info-feature-text {
   color: #525252;
   font-kerning: none;
-  font-feature-settings: 'ss02' on, 'ss03' on, 'liga' off;
-  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-family: var(--font-satoshi);
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 500;
   line-height: 150%;
   font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   word-wrap: break-word;
   margin: 0;
 }
@@ -2438,6 +2469,7 @@ button:disabled {
   width: 100%;
   padding: 20px 40px;
   font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   background: #1a1a1a;
   color: white;
   border: none;
@@ -2457,10 +2489,11 @@ button:disabled {
 .oneview-info-time {
   color: rgba(0, 0, 0, 0.70);
   font-size: 0.8rem;
-  font-family: var(--font-geist), Geist, sans-serif;
+  font-family: var(--font-geist);
   font-weight: 400;
-  line-height: 21px;
+  line-height: 1.3125rem;
   font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   word-wrap: break-word;
   text-align: center;
   margin: 0;
@@ -2494,7 +2527,7 @@ button:disabled {
 
   .statement-content > p {
     font-size: 0.9375rem;
-    line-height: 22px;
+    line-height: 1.375rem;
   }
 
   .statement-brokers {
@@ -2506,13 +2539,13 @@ button:disabled {
     margin-top: 20px;
     margin-bottom: 14px;
     font-size: 0.875rem;
-    line-height: 20px;
+    line-height: 1.25rem;
     text-align: center;
   }
 
   .brokers-text {
     font-size: 0.875rem;
-    line-height: 20px;
+    line-height: 1.25rem;
     white-space: normal;
   }
 
@@ -2524,7 +2557,7 @@ button:disabled {
   .download-instruction {
     display: inline-block;
     font-size: 0.875rem;
-    line-height: 20px;
+    line-height: 1.25rem;
     white-space: normal;
   }
 
@@ -2538,7 +2571,7 @@ button:disabled {
   .statement-dropzone strong {
     margin-top: 10px;
     font-size: 1.125rem;
-    line-height: 25px;
+    line-height: 1.5625rem;
     max-width: 280px;
   }
 
@@ -2546,7 +2579,7 @@ button:disabled {
     width: auto;
     max-width: 260px;
     font-size: 0.9375rem;
-    line-height: 22px;
+    line-height: 1.375rem;
   }
 
   .statement-file-loading {
@@ -2570,12 +2603,12 @@ button:disabled {
 
   .statement-file-meta strong {
     font-size: 0.875rem;
-    line-height: 20px;
+    line-height: 1.25rem;
   }
 
   .statement-file-meta span {
     font-size: 0.875rem;
-    line-height: 20px;
+    line-height: 1.25rem;
   }
 
   .statement-file-remove {
@@ -2586,7 +2619,7 @@ button:disabled {
 
   .statement-security {
     font-size: 0.875rem;
-    line-height: 20px;
+    line-height: 1.25rem;
     margin-top: 24px;
   }
 
