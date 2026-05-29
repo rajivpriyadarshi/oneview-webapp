@@ -6,9 +6,9 @@ import "./documents-vault.css";
 export default function DocumentsVaultPage() {
   return (
     <ProtectedRoute>
-      <div className="dashboard-layout">
+      <div className="flex min-h-screen overflow-x-hidden bg-[var(--background)]">
         <Sidebar />
-        <main className="dashboard-main">
+        <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[80px] sm:pt-[40px] md:ml-16 px-6 sm:px-[60px]">
           <DocumentsVault />
         </main>
       </div>

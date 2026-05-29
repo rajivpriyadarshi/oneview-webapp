@@ -69,9 +69,13 @@ export default function HoldingsTable({ positions, loading }: Props) {
         header: "Security",
         sortingFn: "alphanumeric",
         minSize: 240,
-        size: 300,
+        size: 324,
         cell: (info) => {
           const row = info.row.original;
+          const isEquity = row.asset_type?.toLowerCase() === "equity";
+          const securityLabel = isEquity
+            ? [row.ticker, row.name].filter(Boolean).join(" - ")
+            : (row.name || row.ticker || "—");
           return (
             <div className="flex min-w-[220px] items-center gap-3">
               <InstrumentIcon
@@ -79,10 +83,9 @@ export default function HoldingsTable({ positions, loading }: Props) {
                 name={row.name}
                 isProfitable={row.gain_amount >= 0}
               />
-              <div className="min-w-0">
-                <span className="block text-base font-medium leading-6 text-black">{row.ticker || "—"}</span>
-                <span className="mt-0.5 block text-xs font-normal leading-[18px] text-black/50">{row.name || ""}</span>
-              </div>
+              <span className="block flex-1 min-w-0 truncate text-base font-medium leading-6 text-black" title={securityLabel}>
+                {securityLabel}
+              </span>
             </div>
           );
         },
@@ -130,6 +133,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
         id: "gain_loss",
         header: "Gain/Loss",
         sortingFn: "basic",
+        enableResizing: false,
         minSize: 150,
         size: 180,
         cell: (info) => {
@@ -166,7 +170,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
         <HoldingsIcon />
         Your holdings
       </h3>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto pb-4">
         <table className="w-full min-w-0 border-separate border-spacing-0">
           <thead className="table w-full table-fixed">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -200,7 +204,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
                       header.column.toggleSorting(nextSortingOrder === "desc");
                     }}
                     className={`sticky top-0 z-10 bg-white relative border-y border-black/10 px-4 py-[30px] text-sm font-semibold text-black ${
-                      header.id === "security" ? "text-left" : "text-right"
+                      header.id === "security" ? "holdings-security-column text-left" : "text-right"
                     }`}
                     style={{
                       cursor: header.column.getCanSort() ? "pointer" : "default",
@@ -252,14 +256,14 @@ export default function HoldingsTable({ positions, loading }: Props) {
               table.getRowModel().rows.map((row, renderIndex) => (
                 <tr
                   key={row.id}
-                  className={`table w-full table-fixed ${renderIndex !== table.getRowModel().rows.length - 1 ? "mb-2" : ""}`}
+                  className={`table w-full table-fixed`}
                 >
                   {row.getVisibleCells().map((cell) => (
                     // Keep security left-aligned; right-align all numeric columns.
                     <td
                       key={cell.id}
-                      className={`${row.index % 2 === 0 ? "bg-black/[0.03]" : "bg-black/[0.05]"} px-4 py-[24px] text-sm text-black first:rounded-l-xl last:rounded-r-xl ${
-                        cell.column.id === "security" ? "text-left" : "text-right"
+                      className={`border-b border-black/10 bg-transparent px-4 py-[24px] text-sm text-black ${
+                        cell.column.id === "security" ? "holdings-security-column text-left" : "text-right"
                       }`}
                       style={{ width: cell.column.getSize() }}
                     >

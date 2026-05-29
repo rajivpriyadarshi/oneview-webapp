@@ -39,7 +39,7 @@ export default function PortfolioSummary({
   return (
     <section
       data-analytics-section="portfolio_summary"
-      className="relative mt-[32px] mb-[16px] flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6"
+      className="relative mt-[32px] mb-[16px] flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[20px] sm:px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6"
     >
       <div className="flex flex-col justify-between gap-6 md:gap-12 lg:gap-16">
         <div className="z-[1] flex flex-col">
@@ -53,20 +53,20 @@ export default function PortfolioSummary({
         </div>
         <div className="flex items-center gap-4 max-[720px]:flex-col max-[720px]:items-start max-[720px]:gap-3">
           {asOfDate && (
-            <span className="font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-white">
-              Prices as of <strong className="font-satoshi font-bold tracking-[-0.02em] text-white">{asOfDate}</strong>
+            <span className="font-satoshi text-[14px] font-normal leading-[21px] text-white break-words">
+              Prices as of <strong className="font-satoshi text-[14px] font-bold leading-[21px] text-white break-words">{asOfDate}</strong>
             </span>
           )}
           <div className="flex gap-2.5">
-            <div className="relative inline-flex items-center rounded-full border border-white/20 bg-white/5 p-1 font-satoshi text-sm font-bold leading-6 tracking-[-0.04em]">
+            <div className="relative inline-flex items-center rounded-full bg-white/5 p-1 font-satoshi text-sm font-bold leading-6 tracking-[-0.04em]">
               <span
                 aria-hidden="true"
-                className={`pointer-events-none absolute bottom-1 left-1 top-1 w-[88px] rounded-full bg-white/95 shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-out ${
-                  currency === "USD" ? "translate-x-[88px]" : "translate-x-0"
+                className={`pointer-events-none absolute bottom-1 left-1 top-1 w-[60px] rounded-full bg-white/95 shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-out ${
+                  currency === "USD" ? "translate-x-[60px]" : "translate-x-0"
                 }`}
               />
               <button
-                className={`relative z-10 w-[88px] whitespace-nowrap rounded-full px-5 py-2 text-base font-bold leading-6 tracking-[-0.04em] transition-colors duration-300 ${
+                className={`relative z-10 inline-flex h-[42px] w-[60px] appearance-none items-center justify-center whitespace-nowrap border-0 bg-transparent px-[12px] py-[6px] text-[14px] font-bold leading-5 tracking-[-0.04em] transition-colors duration-300 focus:outline-none ${
                   currency === "INR" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
                 }`}
                 onClick={() => onCurrencyChange(currency === "INR" ? "USD" : "INR")}
@@ -74,7 +74,7 @@ export default function PortfolioSummary({
                 INR
               </button>
               <button
-                className={`relative z-10 w-[88px] whitespace-nowrap rounded-full px-5 py-2 text-base font-bold leading-6 tracking-[-0.04em] transition-colors duration-300 ${
+                className={`relative z-10 inline-flex h-[42px] w-[60px] appearance-none items-center justify-center whitespace-nowrap border-0 bg-transparent px-[12px] py-[6px] text-[14px] font-bold leading-5 tracking-[-0.04em] transition-colors duration-300 focus:outline-none ${
                   currency === "USD" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
                 }`}
                 onClick={() => onCurrencyChange(currency === "INR" ? "USD" : "INR")}
