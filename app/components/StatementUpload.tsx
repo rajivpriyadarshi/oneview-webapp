@@ -263,7 +263,7 @@ export function StatementUpload() {
     const startedAt = window.performance.now();
     uploadProgressTimerRef.current = window.setInterval(() => {
       const elapsed = window.performance.now() - startedAt;
-      const nextProgress = Math.min(Math.round((elapsed / 3000) * 90), 90);
+      const nextProgress = Math.min(Math.round((elapsed / 9000) * 90), 90);
       setUploadProgress(nextProgress);
 
       if (nextProgress >= 90) {
