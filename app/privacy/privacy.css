@@ -18,9 +18,21 @@
 }
 
 .privacy-updated {
-  margin: 0 0 48px;
+  margin: 0 0 24px;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
+  font-weight: 500;
   color: rgba(0, 0, 0, 0.6);
+}
+
+.privacy-intro {
+  margin: 0 0 24px;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: rgba(0, 0, 0, 0.75);
 }
 
 .privacy-section {
@@ -28,16 +40,29 @@
 }
 
 .privacy-section h2 {
-  margin: 0 0 12px;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
-  font-size: 1.125rem;
+  margin: 0 0 16px;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: black;
+}
+
+.privacy-section h3 {
+  margin: 24px 0 12px;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
+  font-size: 1rem;
   font-weight: 700;
   color: black;
 }
 
 .privacy-section p {
-  margin: 0 0 12px;
+  margin: 0 0 16px;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.9375rem;
+  font-weight: 400;
   line-height: 1.7;
   color: rgba(0, 0, 0, 0.75);
 }
@@ -49,7 +74,10 @@
 
 .privacy-section li {
   margin-bottom: 8px;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.9375rem;
+  font-weight: 400;
   line-height: 1.7;
   color: rgba(0, 0, 0, 0.75);
 }
@@ -58,4 +86,19 @@
   color: var(--link-brown);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+.privacy-contact {
+  margin-top: 16px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 12px;
+}
+
+.privacy-contact p {
+  margin: 0 0 8px;
+}
+
+.privacy-contact p:last-child {
+  margin-bottom: 0;
 }

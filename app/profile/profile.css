@@ -36,7 +36,8 @@
 .profile-email {
   margin: 8px 0 0;
   color: rgba(0, 0, 0, 0.6);
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1.125rem;
   font-weight: 400;
   line-height: 1.4;
@@ -53,7 +54,8 @@
   border-radius: 999px;
   background: transparent;
   color: #7F4E0B;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.4;
@@ -69,7 +71,8 @@
   margin: 42px 0 16px;
   opacity: 0.5;
   color: #000;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-weight: 700;
   line-height: 1.4;
@@ -109,7 +112,8 @@
   align-items: center;
   gap: 12px;
   color: #000;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.4;
@@ -163,7 +167,8 @@
   border-radius: 999px;
   background: #fff;
   color: #000;
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -212,7 +217,8 @@
   border-radius: 10px;
   background: transparent;
   color: rgba(255, 255, 255, 0.86);
-  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
   font-size: 0.9375rem;
   font-weight: 700;
   line-height: 1.25;

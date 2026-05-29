@@ -374,7 +374,7 @@ export function AuthFlow() {
             <p className="terms">
               By continuing, you agree to Zinc&apos;s {" "}
               <a
-                href="/privacy"
+                href="/terms"
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
@@ -384,7 +384,7 @@ export function AuthFlow() {
                   });
                 }}
               >
-                Consumer Terms
+                Terms of Service
               </a> and
               acknowledge their <a
                 href="/privacy"
