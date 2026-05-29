@@ -342,14 +342,14 @@ export function DocumentsVault() {
     <div className="docs-vault-content">
       <header className="docs-vault-header">
         <div className="docs-vault-header-left">
-          <h1 className="docs-vault-title">Documents vault</h1>
-          <p className="docs-vault-subtitle">
+          <h1 className="docs-vault-title" style={{ fontFeatureSettings: "'ss03' on" }}>Documents vault</h1>
+          <p className="docs-vault-subtitle" style={{ fontFeatureSettings: "'ss03' on" }}>
             Total {docCount} files{accountCount > 0 ? ` across ${accountCount} accounts` : ""}
           </p>
         </div>
         <div className="docs-vault-header-right">
           <div className="docs-vault-brokers">
-            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]">We accept</span>
+            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]" style={{ fontFeatureSettings: "'ss03' on" }}>We accept</span>
             <div className="flex items-center gap-2">
               <img src="/broker-icons/groww.png" alt="Groww" className="h-[28px] w-[28px] rounded-full object-cover" />
               <img src="/broker-icons/fidelity.png" alt="Fidelity" className="h-[28px] w-[28px] rounded-full object-cover" />
@@ -358,10 +358,11 @@ export function DocumentsVault() {
               <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="h-[28px] w-[28px] rounded-full object-cover" />
               <img src="/broker-icons/ibkr.png" alt="IBKR" className="h-[28px] w-[28px] rounded-full object-cover" />
             </div>
-            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]">and any CSV format</span>
+            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]" style={{ fontFeatureSettings: "'ss03' on" }}>and any CSV format</span>
             <button
               type="button"
               className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#7F4E0B] underline"
+              style={{ fontFeatureSettings: "'ss03' on" }}
               onClick={() => {
                 trackClick({
                   buttonName: trackingEventsMap.documentsVaultPage.CLICK_DOWNLOAD_INSTRUCTIONS,
@@ -408,8 +409,8 @@ export function DocumentsVault() {
             />
           </svg>
         </div>
-        <strong>{isDragging ? "Drop files to upload" : "Drop your statements here"}</strong>
-        <span>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
+        <strong style={{ fontFeatureSettings: "'ss03' on" }}>{isDragging ? "Drop files to upload" : "Drop your statements here"}</strong>
+        <span style={{ fontFeatureSettings: "'ss03' on" }}>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
       </div>
 
       {error && <p className="docs-error">{error}</p>}

@@ -202,7 +202,8 @@ export default function DocumentsTable({
                 />
               </svg>
             </a>
-            <a
+            {/* View button - commented out for now */}
+            {/* <a
               className="inline-flex h-[40px] w-[40px] items-center justify-center rounded-full bg-black text-white transition hover:bg-black/85"
               href={row.original.fileUrl || "#"}
               target="_blank"
@@ -237,7 +238,7 @@ export default function DocumentsTable({
                   strokeLinejoin="round"
                 />
               </svg>
-            </a>
+            </a> */}
           </div>
         ),
       }),
@@ -277,21 +278,22 @@ export default function DocumentsTable({
 
   return (
     <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
-      <div className="mb-0 flex items-center justify-between gap-4 py-[24px]">
-        <h2 className="m-0 flex items-center gap-2 font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
+      <div className="mb-0 flex min-h-[100px] items-center justify-between gap-4 py-[28px]">
+        <h2 className="m-0 flex items-center gap-2 font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
           <DocumentsIcon />
           Added statements
         </h2>
-        <div className="flex items-center gap-3">
+        {selectedDocuments.length > 0 && (
           <button
             type="button"
-            className="min-h-10 cursor-pointer rounded-full border border-red-600/20 bg-red-600/10 px-[18px] font-satoshi text-sm font-bold text-red-700 transition hover:bg-red-600/15 disabled:cursor-not-allowed disabled:opacity-35"
-            disabled={selectedDocuments.length === 0 || deleting}
+            className="h-8 cursor-pointer rounded-full border border-red-600/20 bg-red-600/10 px-4 py-0 font-satoshi text-sm font-bold leading-8 text-red-700 transition hover:bg-red-600/15 disabled:cursor-not-allowed disabled:opacity-35"
+            style={{ fontFeatureSettings: "'ss03' on" }}
+            disabled={deleting}
             onClick={requestDelete}
           >
-            {deleting ? "Deleting..." : `Delete${selectedDocuments.length > 0 ? ` (${selectedDocuments.length})` : ""}`}
+            {deleting ? "Deleting..." : `Delete (${selectedDocuments.length})`}
           </button>
-        </div>
+        )}
       </div>
       <div className="overflow-x-auto pb-4">
         <table className="w-full min-w-0 border-separate border-spacing-0">
