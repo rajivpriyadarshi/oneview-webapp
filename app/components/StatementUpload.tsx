@@ -263,7 +263,7 @@ export function StatementUpload() {
     const startedAt = window.performance.now();
     uploadProgressTimerRef.current = window.setInterval(() => {
       const elapsed = window.performance.now() - startedAt;
-      const nextProgress = Math.min(Math.round((elapsed / 3000) * 90), 90);
+      const nextProgress = Math.min(Math.round((elapsed / 9000) * 90), 90);
       setUploadProgress(nextProgress);
 
       if (nextProgress >= 90) {
@@ -404,7 +404,7 @@ export function StatementUpload() {
         <h1 id="statement-title">
           Welcome {firstName}! Add your accounts statements
           <br />
-          to create your Meridian Oneview
+          to create your unified view
         </h1>
         <p
           style={{
@@ -518,7 +518,7 @@ export function StatementUpload() {
               setIsSampleModalOpen(true);
             }}
           >
-            Check a sample Oneview
+            Check sample
           </button>
           <button
             className="statement-submit"
@@ -533,7 +533,7 @@ export function StatementUpload() {
             disabled={!hasUploadedStatement || isUploading}
             aria-busy={isUploading}
           >
-            See your Oneview
+            See your unified view
             <ArrowRightIcon />
           </button>
         </div>

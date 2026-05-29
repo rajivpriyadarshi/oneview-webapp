@@ -93,13 +93,13 @@ export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
         <div className="oneview-info-header">
           <div className="oneview-info-badge">
             <SparkleIcon />
-            See what Meridian Oneview can do for you
+            See what Meridian can do for you
           </div>
           <h2 className="oneview-info-title">
             The most comprehensive view of your entire portfolio. Anywhere in the world!
           </h2>
           <p className="oneview-info-description">
-            Meridian Oneview brings all your investments together in one secure dashboard so you can see the complete picture and make smarter decisions.
+            Meridian brings all your investments together in one secure dashboard so you can see the complete picture and make smarter decisions.
           </p>
         </div>
 
@@ -169,7 +169,7 @@ export function OneviewInfoModal({ isOpen, onClose }: OneviewInfoModalProps) {
         </div>
 
         <button className="oneview-info-cta" onClick={handleCreateOneview} type="button">
-          Create my Oneview
+          Create my unified view
         </button>
         <p className="oneview-info-time">Takes only 2 minutes</p>
       </div>

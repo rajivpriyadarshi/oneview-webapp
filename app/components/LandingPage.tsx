@@ -62,7 +62,7 @@ export function LandingPage() {
               })
             }
           >
-            See your Oneview
+            See your unified view
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M5 12H19M12 19L19 12L12 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -77,7 +77,7 @@ export function LandingPage() {
           <div className="pt-8">
             <h1 className="mb-4 font-butler-medium text-[72px] font-medium leading-[86.4px] tracking-[-0.04em]">
               <div className="text-black">
-                Get a single view
+                Get a unified view
               </div>
               <div className="text-black">
                 of your holdings in
@@ -88,7 +88,7 @@ export function LandingPage() {
             </h1>
 
             <p className="mb-8 max-w-md text-[18px] font-normal leading-[27px] text-black/70">
-              Meridian lets you create a single view of all your investments across
+              Meridian lets you create a unified view of all your investments across
               different regions
             </p>
 
