@@ -83,7 +83,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
                 name={row.name}
                 isProfitable={row.gain_amount >= 0}
               />
-              <span className="block flex-1 min-w-0 truncate text-base font-medium leading-6 text-black" title={securityLabel}>
+              <span className="block min-w-0 flex-1 truncate font-satoshi text-[16px] font-bold leading-[24px] text-black" title={securityLabel}>
                 {securityLabel}
               </span>
             </div>
@@ -159,14 +159,13 @@ export default function HoldingsTable({ positions, loading }: Props) {
     state: { sorting },
     onSortingChange: setSorting,
     enableSortingRemoval: false,
-    columnResizeMode: "onChange",
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
 
   return (
     <section data-analytics-section="your_holdings" className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
-      <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
+      <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black">
         <HoldingsIcon />
         Your holdings
       </h3>
@@ -203,7 +202,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
 
                       header.column.toggleSorting(nextSortingOrder === "desc");
                     }}
-                    className={`sticky top-0 z-10 bg-white relative border-y border-black/10 px-4 py-[30px] text-sm font-semibold text-black ${
+                    className={`sticky top-0 z-10 bg-white relative border-y border-black/10 px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
                       header.id === "security" ? "holdings-security-column text-left" : "text-right"
                     }`}
                     style={{
@@ -215,23 +214,6 @@ export default function HoldingsTable({ positions, loading }: Props) {
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       <SortIndicator direction={header.column.getIsSorted()} />
                     </div>
-                    {header.column.getCanResize() && (
-                      <div
-                        onMouseDown={header.getResizeHandler()}
-                        onTouchStart={header.getResizeHandler()}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`absolute right-0 top-0 h-full w-2 cursor-col-resize select-none touch-none ${
-                          header.column.getIsResizing() ? "bg-black/10" : "bg-transparent"
-                        }`}
-                        aria-hidden="true"
-                      >
-                        <span
-                          className={`absolute right-0 top-1/2 h-6 w-px -translate-y-1/2 ${
-                            header.column.getIsResizing() ? "bg-black/40" : "bg-black/20"
-                          }`}
-                        />
-                      </div>
-                    )}
                   </th>
                 ))}
               </tr>
@@ -471,7 +453,7 @@ function SortIndicator({ direction }: { direction: false | "asc" | "desc" }) {
 
 function HoldingsIcon() {
   return (
-    <svg viewBox="0 0 18 18" fill="none" width="26" height="26">
+    <svg viewBox="0 0 18 18" fill="none" width="18" height="18">
       <path
         d="M4.99527 6.77795L1.42773 8.56172L8.30754 12.0016C8.40114 12.0484 8.44794 12.0718 8.49703 12.081C8.5405 12.0892 8.58512 12.0892 8.6286 12.081C8.67768 12.0718 8.72448 12.0484 8.81808 12.0016L15.6979 8.56172L12.1303 6.77795M4.99527 10.3455L1.42773 12.1293L8.30754 15.5692C8.40114 15.616 8.44794 15.6394 8.49703 15.6486C8.5405 15.6567 8.58512 15.6567 8.6286 15.6486C8.67768 15.6394 8.72448 15.616 8.81808 15.5692L15.6979 12.1293L12.1303 10.3455M1.42773 4.99418L8.30754 1.55428C8.40114 1.50748 8.44794 1.48408 8.49703 1.47487C8.5405 1.46671 8.58512 1.46671 8.6286 1.47487C8.67768 1.48408 8.72448 1.50748 8.81808 1.55428L15.6979 4.99418L8.81808 8.43408C8.72448 8.48088 8.67768 8.50428 8.6286 8.51349C8.58512 8.52165 8.5405 8.52165 8.49703 8.51349C8.44794 8.50428 8.40114 8.48088 8.30754 8.43408L1.42773 4.99418Z"
         stroke="currentColor"
