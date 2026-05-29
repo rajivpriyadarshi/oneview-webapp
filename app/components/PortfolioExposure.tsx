@@ -112,13 +112,13 @@ export default function PortfolioExposure({ portfolioView }: Props) {
 
   return (
     <section data-analytics-section="portfolio_exposure" className="mb-[16px] rounded-[32px] bg-white px-[16px] pl-[24px]">
-      <h3 className="flex align-center items-center gap-2 border-b border-black/10 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
+      <h3 className="flex align-center items-center gap-2 border-b border-black/10 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
         <ExposureIcon />
         Portfolio Exposure
       </h3>
       <div className={`grid gap-0 ${!hasSectorData ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"}`}>
         <div className="relative pt-[16px] pb-[46px] flex h-full justify-center min-w-0 flex-col items-center overflow-visible bg-white md:border-r md:border-black/15">
-          <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
+          <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
             By <strong>Asset type</strong>
           </p>
           <div className="w-full">
@@ -127,7 +127,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         </div>
 
         <div className={`relative pt-[16px] pb-[46px] flex h-full justify-center min-w-0 flex-col items-center overflow-visible bg-white ${hasSectorData ? "md:border-r md:border-black/15" : ""}`}>
-          <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
+          <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
             By <strong>Broker</strong>
           </p>
           <div className="w-full">
@@ -137,7 +137,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
 
         {hasSectorData && (
           <div className="relative pt-[16px] pb-[46px] flex h-full justify-center min-w-0 flex-col items-center overflow-visible bg-white">
-            <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black">
+            <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
               By <strong>Sector allocation</strong>
             </p>
             <div className="w-full">
@@ -298,9 +298,9 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
             }}
           >
             <div className="h-3 w-3 rounded-full" style={{ backgroundColor: seg.color }} />
-            <span className="text-[46px] font-satoshi text-[14px] font-bold leading-[150%] tracking-[-0.02em] text-black">{seg.label}</span>
+            <span className="text-[46px] font-satoshi text-[14px] font-bold leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>{seg.label}</span>
             <span className="text-[14px] leading-[150%] text-black/20">•</span>
-            <span className="font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/60">
+            <span className="font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/60" style={{ fontFeatureSettings: "'ss03' on" }}>
               {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
             </span>
           </div>

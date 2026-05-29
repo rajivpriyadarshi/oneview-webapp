@@ -41,6 +41,7 @@
   margin: 0;
   color: rgba(0, 0, 0, 0.6);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 0.875rem;
   font-weight: 400;
   line-height: 1.4;
@@ -97,6 +98,7 @@
   background: transparent;
   color: #262626;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.5rem;
@@ -117,6 +119,7 @@
   margin: 4px 0 0;
   color: rgba(0, 0, 0, 0.5);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 0.75rem;
   font-weight: 400;
   line-height: 1.4;
@@ -130,6 +133,7 @@
   background: #000;
   color: #fff;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.5;
@@ -150,6 +154,7 @@
   text-align: center;
   color: rgba(0, 0, 0, 0.5);
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   font-size: 1rem;
   padding: 40px;
 }

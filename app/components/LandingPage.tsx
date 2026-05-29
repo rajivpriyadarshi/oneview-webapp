@@ -33,7 +33,7 @@ export function LandingPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-white font-satoshi">
+    <div className="relative flex min-h-screen flex-col bg-white font-satoshi" style={{ fontFeatureSettings: "'ss03' on" }}>
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image

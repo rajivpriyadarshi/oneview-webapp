@@ -43,22 +43,22 @@ export default function PortfolioSummary({
     >
       <div className="flex flex-col justify-between gap-6 md:gap-12 lg:gap-16">
         <div className="z-[1] flex flex-col">
-          <p className="m-0 font-satoshi text-sm font-medium leading-[21px] tracking-[-0.02em] text-[#979596]">Total portfolio value</p>
-          <h2 className="m-0 mb-1 mt-2 font-satoshi text-[48px] font-bold leading-[120%] tracking-[-0.04em] text-white max-[720px]:text-[2.25rem]">
+          <p className="m-0 font-satoshi text-sm font-medium leading-[21px] tracking-[-0.02em] text-[#979596]" style={{ fontFeatureSettings: "'ss03' on" }}>Total portfolio value</p>
+          <h2 className="m-0 mb-1 mt-2 font-satoshi text-[48px] font-bold leading-[120%] tracking-[-0.04em] text-white max-[720px]:text-[2.25rem]" style={{ fontFeatureSettings: "'ss03' on" }}>
             {loading ? "..." : `${currSymbol}${marketValue}`}
           </h2>
-          <p className={`m-0 mb-6 font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#D8FF9A]" : "text-red-400"}`}>
+          <p className={`m-0 mb-6 font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#D8FF9A]" : "text-red-400"}`} style={{ fontFeatureSettings: "'ss03' on" }}>
             {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${formatLakhs(Math.abs(summary.total_gain_amount))} (${gainPct})`}
           </p>
         </div>
         <div className="flex items-center gap-4 max-[720px]:flex-col max-[720px]:items-start max-[720px]:gap-3">
           {asOfDate && (
-            <span className="font-satoshi text-[14px] font-normal leading-[21px] text-white break-words">
-              Prices as of <strong className="font-satoshi text-[14px] font-bold leading-[21px] text-white break-words">{asOfDate}</strong>
+            <span className="font-satoshi text-[14px] font-normal leading-[21px] text-white break-words" style={{ fontFeatureSettings: "'ss03' on" }}>
+              Prices as of <strong className="font-satoshi text-[14px] font-bold leading-[21px] text-white break-words" style={{ fontFeatureSettings: "'ss03' on" }}>{asOfDate}</strong>
             </span>
           )}
           <div className="flex gap-2.5">
-            <div className="relative inline-flex items-center rounded-full bg-white/5 p-1 font-satoshi text-sm font-bold leading-6 tracking-[-0.04em]">
+            <div className="relative inline-flex items-center rounded-full bg-white/5 p-1 font-satoshi text-sm font-bold leading-6 tracking-[-0.04em]" style={{ fontFeatureSettings: "'ss03' on" }}>
               <span
                 aria-hidden="true"
                 className={`pointer-events-none absolute bottom-1 left-1 top-1 w-[60px] rounded-full bg-white/95 shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-out ${
@@ -85,6 +85,7 @@ export default function PortfolioSummary({
             <div className="group relative inline-flex items-center">
               <select
                 className="h-[58px] cursor-pointer appearance-none overflow-hidden whitespace-nowrap text-ellipsis rounded-full border border-white/20 bg-transparent pl-7 pr-12 font-satoshi text-base font-bold leading-6 tracking-[-0.04em] text-white outline-none transition hover:bg-white/[0.03]"
+                style={{ fontFeatureSettings: "'ss03' on" }}
                 value={selectedAccountId}
                 onChange={(e) => {
                   const val = e.target.value;

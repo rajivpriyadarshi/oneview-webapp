@@ -89,6 +89,7 @@
   font-size: 0.875rem;
   font-weight: 500;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   color: var(--foreground);
   cursor: pointer;
   transition: background 0.15s ease;

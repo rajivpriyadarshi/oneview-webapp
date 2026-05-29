@@ -166,7 +166,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
 
   return (
     <section data-analytics-section="your_holdings" className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
-      <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black">
+      <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[20px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
         <HoldingsIcon />
         Your holdings
       </h3>
