@@ -404,7 +404,7 @@ export function StatementUpload() {
         <h1 id="statement-title">
           Welcome {firstName}! Add your accounts statements
           <br />
-          to create your Meridian Oneview
+          to create your unified view
         </h1>
         <p
           style={{
@@ -518,7 +518,7 @@ export function StatementUpload() {
               setIsSampleModalOpen(true);
             }}
           >
-            Check a sample Oneview
+            Check sample
           </button>
           <button
             className="statement-submit"
@@ -533,7 +533,7 @@ export function StatementUpload() {
             disabled={!hasUploadedStatement || isUploading}
             aria-busy={isUploading}
           >
-            See your Oneview
+            See your unified view
             <ArrowRightIcon />
           </button>
         </div>

@@ -30,7 +30,7 @@ export default function ProcessingPage() {
           </div>
         </div>
 
-        <h1 className="processing-title">Creating your Oneview</h1>
+        <h1 className="processing-title">Creating your unified view</h1>
         <p className="processing-subtitle">This may take a few minutes</p>
       </div>
     </main>

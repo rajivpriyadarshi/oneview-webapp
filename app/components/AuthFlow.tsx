@@ -372,7 +372,7 @@ export function AuthFlow() {
             {error ? <p className="form-error">{error}</p> : null}
 
             <p className="terms">
-              By continuing, you agree to Zinc&apos;s Consumer{" "}
+              By continuing, you agree to Zinc&apos;s {" "}
               <a
                 href="/privacy"
                 target="_blank"
@@ -384,7 +384,7 @@ export function AuthFlow() {
                   });
                 }}
               >
-                Terms
+                Consumer Terms
               </a> and
               acknowledge their <a
                 href="/privacy"
