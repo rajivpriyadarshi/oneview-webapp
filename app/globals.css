@@ -653,7 +653,7 @@ button:disabled {
   position: relative;
   z-index: 1;
   margin: auto;
-  margin-top: 120px;
+  margin-top: 80px;
   padding: 8px 20px;
   display: flex;
   flex-direction: column;
