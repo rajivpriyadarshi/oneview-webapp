@@ -43,7 +43,7 @@ export default function DocumentsTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const selectedDocuments = documents.filter((document) => selectedRows.has(document.id));
-  const centerAlignedColumns = new Set(["downloadedOn", "downloadedBy", "size", "type", "actions"]);
+  const centerAlignedColumns = new Set(["uploadedOn", "uploadedBy", "size", "type", "actions"]);
   const columnWidths: Record<string, string> = {
     checkbox: "4%",
     filename: "30%",
@@ -156,7 +156,7 @@ export default function DocumentsTable({
           <div className="flex min-w-0 items-center gap-3">
             <FileIcon type={info.row.original.fileType} />
             <span
-              className="block min-w-0 truncate whitespace-nowrap font-satoshi text-[16px] font-bold leading-[24px] text-black"
+              className="block min-w-0 truncate whitespace-nowrap font-satoshi text-[1rem] font-medium leading-[60px] tracking-[-0.64px] text-black"
               style={{ fontFeatureSettings: "'ss03' on" }}
               title={info.getValue()}
             >
@@ -167,19 +167,19 @@ export default function DocumentsTable({
       }),
       columnHelper.accessor("downloadedOn", {
         header: "Downloaded on",
-        cell: (info) => <span className="whitespace-nowrap">{info.getValue()}</span>,
+        cell: (info) => <span className="overflow-hidden truncate whitespace-nowrap font-satoshi text-[1rem] font-medium leading-[60px] tracking-[-0.64px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor("downloadedBy", {
         header: "Downloaded by",
-        cell: (info) => <span className="block truncate whitespace-nowrap">{info.getValue()}</span>,
+        cell: (info) => <span className="block overflow-hidden truncate whitespace-nowrap font-satoshi text-[1rem] font-medium leading-[60px] tracking-[-0.64px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor("size", {
         header: "Size",
-        cell: (info) => info.getValue(),
+        cell: (info) => <span className="overflow-hidden truncate font-satoshi text-[1rem] font-medium leading-[60px] tracking-[-0.64px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor("type", {
         header: "Type",
-        cell: (info) => info.getValue(),
+        cell: (info) => <span className="overflow-hidden truncate font-satoshi text-[1rem] font-medium leading-[60px] tracking-[-0.64px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>{info.getValue()}</span>,
       }),
       columnHelper.display({
         id: "actions",
@@ -279,21 +279,23 @@ export default function DocumentsTable({
 
   return (
     <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
-      <div className="mb-0 flex items-center justify-between gap-4 py-[24px]">
-        <h3 className="m-0 flex items-center gap-2 font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
+      <div className="mb-0 flex min-h-[100px] items-center justify-between gap-4 py-[24px]">
+        <h3 className="m-0 flex items-center gap-2 font-satoshi text-base font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
           <DocumentsIcon />
           Added statements
         </h3>
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            className="min-h-10 cursor-pointer rounded-full border border-red-600/20 bg-red-600/10 px-[18px] font-satoshi text-sm font-bold text-red-700 transition hover:bg-red-600/15 disabled:cursor-not-allowed disabled:opacity-35"
-            style={{ fontFeatureSettings: "'ss03' on" }}
-            disabled={selectedDocuments.length === 0 || deleting}
-            onClick={requestDelete}
-          >
-            {deleting ? "Deleting..." : `Delete${selectedDocuments.length > 0 ? ` (${selectedDocuments.length})` : ""}`}
-          </button>
+          {selectedDocuments.length > 0 && (
+            <button
+              type="button"
+              className="min-h-10 cursor-pointer rounded-full border border-red-600/20 bg-red-600/10 px-[16px] font-satoshi text-base font-bold text-red-700 transition hover:bg-red-600/15 disabled:cursor-not-allowed disabled:opacity-35"
+              style={{ fontFeatureSettings: "'ss03' on" }}
+              disabled={deleting}
+              onClick={requestDelete}
+            >
+              {deleting ? "Deleting..." : `Delete (${selectedDocuments.length})`}
+            </button>
+          )}
         </div>
       </div>
       <div className="overflow-x-auto pb-4">
@@ -305,7 +307,7 @@ export default function DocumentsTable({
                   <th
                     key={header.id}
                     onClick={header.column.getToggleSortingHandler()}
-                    className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
+                    className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-0 font-satoshi text-sm font-medium leading-[60px] text-[#74747E] ${
                       header.id === "checkbox" ? "w-10" : ""
                     } ${
                       header.id === "checkbox" || header.id === "filename"
@@ -317,6 +319,7 @@ export default function DocumentsTable({
                     style={{
                       cursor: header.column.getCanSort() ? "pointer" : "default",
                       width: columnWidths[header.id] ?? undefined,
+                      fontFeatureSettings: "'ss03' on",
                     }}
                   >
                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -362,10 +365,13 @@ export default function DocumentsTable({
                             : ""
                       } ${
                         cell.column.id !== "checkbox" && cell.column.id !== "filename"
-                          ? "font-satoshi text-[16px] font-medium leading-[60px] text-black/80"
+                          ? "font-satoshi text-base font-medium leading-[60px] text-black/80"
                           : "text-sm text-black"
                       }`}
-                      style={{ width: columnWidths[cell.column.id] ?? undefined }}
+                      style={{
+                        width: columnWidths[cell.column.id] ?? undefined,
+                        fontFeatureSettings: "'ss03' on",
+                      }}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
