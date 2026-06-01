@@ -115,14 +115,14 @@ export function LandingPage() {
 
           {/* Right Column - Video */}
           <div className="relative lg:pl-8">
-            <div className="relative rounded-[40px] bg-gradient-to-b from-white/5 via-[#FFFCF5] to-white/5 p-4 shadow-2xl bg-blend-overlay">
-              <div className="rounded-[36px] overflow-hidden bg-[#FFFCF5]">
+            <div className="relative rounded-[60px] bg-gradient-to-b from-white/5 via-[#FFFCF5] to-white/5 p-4 shadow-2xl bg-blend-overlay">
+              <div className="rounded-[60px] p-1 overflow-hidden bg-[#FFFCF5]">
                 <video
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="block h-auto w-full rounded-[36px] [clip-path:inset(2px_2px_round_36px)] 2xl:[clip-path:none]"
+                  className="block h-auto w-full rounded-[60px]"
                 >
                   <source src="/Hero-Explainer.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
