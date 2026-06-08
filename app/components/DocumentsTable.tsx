@@ -170,7 +170,7 @@ export default function DocumentsTable({
         cell: (info) => <span className="overflow-hidden truncate whitespace-nowrap font-satoshi text-[1rem] font-medium leading-[60px] tracking-[-0.64px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor("downloadedBy", {
-        header: "Downloaded by",
+        header: "Uploaded by",
         cell: (info) => <span className="block overflow-hidden truncate whitespace-nowrap font-satoshi text-[1rem] font-medium leading-[60px] tracking-[-0.64px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor("size", {
