@@ -6,12 +6,16 @@ import { OneviewBrand } from "./BrandMarks";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
 import { OneviewInfoModal } from "./OneviewInfoModal";
 import {
+  api,
   useUploadBrokerStatementMutation,
+  useLazyGetBrokerStatementJobStatusQuery,
   useListPortfoliosQuery,
   useGetProfileQuery,
   useDeleteDocumentMutation,
 } from "../store/api";
+import { useAppDispatch } from "../store/hooks";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
+import { pollBrokerStatementJobStatus } from "../lib/documentsApi";
 import useAnalytics from "../hooks/useAnalytics";
 import { trackingEventsMap } from "../constants";
 
@@ -27,16 +31,19 @@ const CHART_COLORS = [
 
 export function StatementUpload() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { trackPage, trackClick, trackAPI } = useAnalytics();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const uploadProgressTimerRef = useRef<number | null>(null);
   const uploadRequestRef = useRef<{ abort?: () => void } | null>(null);
+  const pollingAbortControllerRef = useRef<AbortController | null>(null);
   const [firstName, setFirstName] = useState("there");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [hasUploadedStatement, setHasUploadedStatement] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [processingLabel, setProcessingLabel] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,6 +61,7 @@ export function StatementUpload() {
   });
 
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
+  const [getBrokerStatementJobStatus] = useLazyGetBrokerStatementJobStatusQuery();
   const [deleteDocument] = useDeleteDocumentMutation();
 
   useEffect(() => {
@@ -101,6 +109,7 @@ export function StatementUpload() {
   useEffect(() => {
     return () => {
       clearUploadProgressTimer();
+      pollingAbortControllerRef.current?.abort();
     };
   }, []);
 
@@ -148,6 +157,7 @@ export function StatementUpload() {
     setMessage("");
     setHasUploadedStatement(false);
     setUploadProgress(0);
+    setProcessingLabel("");
 
     const lowerName = file.name.toLowerCase();
     const hasSupportedExtension = SUPPORTED_EXTENSIONS.some((extension) =>
@@ -212,6 +222,83 @@ export function StatementUpload() {
         return;
       }
 
+      if (response.status === "processing") {
+        stopUploadProgressAnimation(false);
+        setUploadProgress(90);
+        setProcessingLabel(response.message ?? "Extracting statement details.");
+
+        const abortController = new AbortController();
+        pollingAbortControllerRef.current = abortController;
+
+        const jobResult = await pollBrokerStatementJobStatus({
+          jobId: response.job_id,
+          signal: abortController.signal,
+          getStatus: (jobId) => getBrokerStatementJobStatus(jobId, false).unwrap(),
+          onProgress: (progress) => {
+            if (progress?.label) {
+              setProcessingLabel(progress.label);
+            }
+
+            if (typeof progress?.current === "number" && typeof progress.total === "number" && progress.total > 0) {
+              setUploadProgress(Math.min(95, Math.max(10, Math.round((progress.current / progress.total) * 95))));
+            }
+          },
+        });
+
+        pollingAbortControllerRef.current = null;
+
+        if (jobResult.status === "error") {
+          trackAPI({
+            pageName: trackingEventsMap.documentsPage.PAGE,
+            params: {
+              event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+              error: jobResult.error,
+              file_name: uploadFile.name,
+              job_id: response.job_id,
+            },
+          });
+          setError(jobResult.error ?? "Unable to process this statement.");
+          stopUploadProgressAnimation(false);
+          setProcessingLabel("");
+          return;
+        }
+
+        if (jobResult.status === "needs_review") {
+          trackAPI({
+            pageName: trackingEventsMap.documentsPage.PAGE,
+            params: {
+              event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+              error: jobResult.message,
+              file_name: uploadFile.name,
+              job_id: response.job_id,
+              status: "needs_review",
+            },
+          });
+          setMessage(jobResult.message ?? "Extraction complete but requires human review.");
+          stopUploadProgressAnimation(false);
+          setProcessingLabel("");
+          return;
+        }
+
+        dispatch(api.util.invalidateTags(["Documents", "Portfolios", "PortfolioView", "Sankey"]));
+        trackAPI({
+          pageName: trackingEventsMap.documentsPage.PAGE,
+          params: {
+            event_name: trackingEventsMap.documentsPage.API_UPLOAD_SUCCESS,
+            document_id: jobResult.document_id,
+            positions_count: jobResult.positions_count,
+            file_name: uploadFile.name,
+            job_id: response.job_id,
+          },
+        });
+
+        stopUploadProgressAnimation();
+        setProcessingLabel("");
+        setUploadedDocumentId(String(jobResult.document_id));
+        setHasUploadedStatement(true);
+        return;
+      }
+
       trackAPI({
         pageName: trackingEventsMap.documentsPage.PAGE,
         params: {
@@ -233,6 +320,7 @@ export function StatementUpload() {
         requestError.name === "AbortError"
       ) {
         stopUploadProgressAnimation(false);
+        setProcessingLabel("");
         return;
       }
 
@@ -240,20 +328,18 @@ export function StatementUpload() {
         pageName: trackingEventsMap.documentsPage.PAGE,
         params: {
           event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
-          error: requestError instanceof Error ? requestError.message : "Upload failed",
+          error: getRequestErrorMessage(requestError, "Upload failed"),
           file_name: uploadFile.name,
         },
       });
 
       stopUploadProgressAnimation(false);
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to upload this statement.",
-      );
+      setProcessingLabel("");
+      setError(getRequestErrorMessage(requestError, "Unable to upload this statement."));
     } finally {
       setIsUploading(false);
       uploadRequestRef.current = null;
+      pollingAbortControllerRef.current = null;
     }
   }
 
@@ -299,6 +385,10 @@ export function StatementUpload() {
       uploadRequestRef.current.abort();
     }
 
+    if (isUploading) {
+      pollingAbortControllerRef.current?.abort();
+    }
+
     // Delete the uploaded document if it exists
     if (uploadedDocumentId && hasUploadedStatement) {
       try {
@@ -327,6 +417,7 @@ export function StatementUpload() {
     setHasUploadedStatement(false);
     setUploadedDocumentId(null);
     setUploadProgress(0);
+    setProcessingLabel("");
     setMessage("");
     setError("");
     if (inputRef.current) {
@@ -486,7 +577,11 @@ export function StatementUpload() {
               <strong>{selectedFile.name}</strong>
               <span>
                 {formatFileSize(selectedFile.size)}
-                {hasUploadedStatement ? " • Uploaded" : showUploadProgress ? ` • ${uploadProgress}%` : ""}
+                {hasUploadedStatement
+                  ? " • Uploaded"
+                  : showUploadProgress
+                    ? ` • ${processingLabel || `${uploadProgress}%`}`
+                    : ""}
               </span>
             </div>
             <button
@@ -504,7 +599,7 @@ export function StatementUpload() {
         ) : null}
 
         {error ? <p className="statement-error">{error}</p> : null}
-        {message ? <p className="statement-success">{message}</p> : null}
+        {message ? <p className="statement-info">{message}</p> : null}
 
         <div className="statement-cta-group">
           <button
@@ -594,4 +689,30 @@ function formatFileSize(bytes: number): string {
   if (kb < 1024) return `${Math.round(kb)} KB`;
   const mb = kb / 1024;
   return `${mb.toFixed(1)} MB`;
+}
+
+function getRequestErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === "object") {
+    const data = "data" in error ? (error as { data?: unknown }).data : error;
+
+    if (data && typeof data === "object") {
+      for (const key of ["error", "message", "detail"]) {
+        const value = (data as Record<string, unknown>)[key];
+
+        if (typeof value === "string" && value) {
+          return value;
+        }
+      }
+    }
+
+    if (typeof data === "string" && data) {
+      return data;
+    }
+  }
+
+  return fallback;
 }

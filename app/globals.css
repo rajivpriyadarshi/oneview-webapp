@@ -1029,7 +1029,8 @@ button:disabled {
 }
 
 .statement-error,
-.statement-success {
+.statement-success,
+.statement-info {
   margin-top: 10px;
   margin-bottom: 10px;
   font-family: "Satoshi";
@@ -1044,6 +1045,10 @@ button:disabled {
 
 .statement-success {
   color: #0a6b3f;
+}
+
+.statement-info {
+  color: #7F4E0B;
 }
 
 .statement-submit {

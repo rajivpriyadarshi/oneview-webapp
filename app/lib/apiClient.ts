@@ -6,6 +6,7 @@ export const UNAUTHORIZED_EVENT = "oneview:unauthorized";
 type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: BodyInit | Record<string, unknown> | null;
   skipAuth?: boolean;
+  validateStatus?: (response: Response, payload: unknown) => boolean;
 };
 
 export class ApiError extends Error {
@@ -24,7 +25,7 @@ export async function apiRequest<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const { body, headers, skipAuth, ...requestOptions } = options;
+  const { body, headers, skipAuth, validateStatus, ...requestOptions } = options;
   const requestHeaders = new Headers(headers);
   const isFormData = body instanceof FormData;
 
@@ -56,7 +57,9 @@ export async function apiRequest<T>(
 
   const payload = await readPayload(response);
 
-  if (!response.ok) {
+  const isValidResponse = validateStatus?.(response, payload) ?? response.ok;
+
+  if (!isValidResponse) {
     if (response.status === 401) {
       clearAuthToken();
       notifyUnauthorized();

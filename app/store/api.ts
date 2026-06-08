@@ -10,6 +10,7 @@ import type {
 import type {
   DocumentRecord,
   DocumentPosition,
+  BrokerStatementJobStatusResponse,
   BrokerStatementUploadResponse,
 } from "../lib/documentsApi";
 import type { AuthSession, PasswordlessAuthSession, Profile } from "../lib/realAuthApi";
@@ -195,9 +196,22 @@ export const api = createApi({
         if (typeof storeData === "boolean") formData.set("store_data", String(storeData));
         if (portfolioName) formData.set("portfolio_name", portfolioName);
         if (typeof useLlmFallback === "boolean") formData.set("use_llm_fallback", String(useLlmFallback));
-        return { url: "/oneview/broker-statements/upload/", method: "POST", body: formData };
+        return {
+          url: "/oneview/broker-statements/upload/",
+          method: "POST",
+          body: formData,
+          validateStatus: (response) =>
+            response.status === 200 || response.status === 202 || response.status === 400,
+        };
       },
       invalidatesTags: ["Documents", "Portfolios", "PortfolioView", "Sankey"],
+    }),
+    getBrokerStatementJobStatus: builder.query<BrokerStatementJobStatusResponse, string>({
+      query: (jobId) => ({
+        url: `/oneview/broker-statements/jobs/${encodeURIComponent(jobId)}/status/`,
+        validateStatus: (response) =>
+          response.status === 200 || response.status === 202 || response.status === 400,
+      }),
     }),
   }),
 });
@@ -226,4 +240,5 @@ export const {
   useUpdateDocumentMutation,
   useDeleteDocumentMutation,
   useUploadBrokerStatementMutation,
+  useLazyGetBrokerStatementJobStatusQuery,
 } = api;

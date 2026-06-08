@@ -4,24 +4,29 @@ import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import DocumentsTable, { type VaultDocument } from "./DocumentsTable";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
 import {
+  api,
   useListDocumentsQuery,
   useDeleteDocumentMutation,
   useUploadBrokerStatementMutation,
+  useLazyGetBrokerStatementJobStatusQuery,
 } from "../store/api";
+import { useAppDispatch } from "../store/hooks";
 import type { DocumentRecord } from "../lib/documentsApi";
+import { pollBrokerStatementJobStatus } from "../lib/documentsApi";
 import useAnalytics from "../hooks/useAnalytics";
 import { trackingEventsMap } from "../constants";
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
 
-type UploadStatus = "queued" | "uploading" | "complete" | "error";
+type UploadStatus = "queued" | "uploading" | "processing" | "complete" | "review" | "error";
 
 type UploadItem = {
   id: string;
   name: string;
   size: string;
   status: UploadStatus;
+  detail?: string;
   error?: string;
 };
 
@@ -67,6 +72,7 @@ function mapDocToTableRow(doc: DocumentRecord): VaultDocument {
 }
 
 export function DocumentsVault() {
+  const dispatch = useAppDispatch();
   const { trackPage, trackClick, trackAPI } = useAnalytics();
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
@@ -81,6 +87,7 @@ export function DocumentsVault() {
   const { data: rawDocuments = [], isLoading: loading } = useListDocumentsQuery();
   const [deleteDocumentMutation] = useDeleteDocumentMutation();
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
+  const [getBrokerStatementJobStatus] = useLazyGetBrokerStatementJobStatusQuery();
 
   const documents = rawDocuments.map(mapDocToTableRow);
   const docCount = rawDocuments.length;
@@ -188,6 +195,7 @@ export function DocumentsVault() {
             storeData: true,
             useLlmFallback: true,
           }).unwrap();
+
           if (response.status === "error") {
             trackAPI({
               pageName: trackingEventsMap.documentsVaultPage.PAGE,
@@ -201,6 +209,68 @@ export function DocumentsVault() {
               status: "error",
               error: response.error ?? "Unable to parse this statement.",
             });
+          } else if (response.status === "processing") {
+            updateUploadItem(item.id, {
+              status: "processing",
+              detail: response.message ?? "Extracting statement details.",
+            });
+
+            const jobResult = await pollBrokerStatementJobStatus({
+              jobId: response.job_id,
+              getStatus: (jobId) => getBrokerStatementJobStatus(jobId, false).unwrap(),
+              onProgress: (progress) => {
+                updateUploadItem(item.id, {
+                  detail: progress?.label ?? "Extracting statement details.",
+                });
+              },
+            });
+
+            if (jobResult.status === "error") {
+              trackAPI({
+                pageName: trackingEventsMap.documentsVaultPage.PAGE,
+                params: {
+                  event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
+                  file_name: file.name,
+                  error: jobResult.error,
+                  job_id: response.job_id,
+                },
+              });
+              updateUploadItem(item.id, {
+                status: "error",
+                detail: undefined,
+                error: jobResult.error ?? "Unable to process this statement.",
+              });
+            } else if (jobResult.status === "needs_review") {
+              trackAPI({
+                pageName: trackingEventsMap.documentsVaultPage.PAGE,
+                params: {
+                  event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
+                  file_name: file.name,
+                  error: jobResult.message,
+                  job_id: response.job_id,
+                  status: "needs_review",
+                },
+              });
+              updateUploadItem(item.id, {
+                status: "review",
+                detail: undefined,
+                error: jobResult.message ?? "Extraction complete but requires human review.",
+              });
+            } else {
+              successCount += 1;
+              dispatch(api.util.invalidateTags(["Documents", "Portfolios", "PortfolioView", "Sankey"]));
+              trackAPI({
+                pageName: trackingEventsMap.documentsVaultPage.PAGE,
+                params: {
+                  event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_SUCCESS,
+                  file_name: file.name,
+                  document_id: jobResult.document_id,
+                  positions_count: jobResult.positions_count,
+                  job_id: response.job_id,
+                },
+              });
+              updateUploadItem(item.id, { status: "complete", detail: undefined, error: undefined });
+            }
           } else {
             successCount += 1;
             trackAPI({
@@ -212,7 +282,7 @@ export function DocumentsVault() {
                 positions_count: response.positions_count,
               },
             });
-            updateUploadItem(item.id, { status: "complete" });
+            updateUploadItem(item.id, { status: "complete", detail: undefined, error: undefined });
           }
         } catch (uploadError) {
           trackAPI({
@@ -220,12 +290,13 @@ export function DocumentsVault() {
             params: {
               event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
               file_name: file.name,
-              error: uploadError instanceof Error ? uploadError.message : "Upload failed",
+              error: getRequestErrorMessage(uploadError, "Upload failed"),
             },
           });
           updateUploadItem(item.id, {
             status: "error",
-            error: uploadError instanceof Error ? uploadError.message : "Upload failed.",
+            detail: undefined,
+            error: getRequestErrorMessage(uploadError, "Upload failed."),
           });
         }
       }
@@ -447,7 +518,7 @@ export function DocumentsVault() {
                   <span className={`docs-upload-status is-${item.status}`} />
                   <div>
                     <strong>{item.name}</strong>
-                    <span>{item.error ?? item.size}</span>
+                    <span>{item.error ?? item.detail ?? item.size}</span>
                   </div>
                 </div>
                 <span className="docs-upload-state">{getUploadStatusLabel(item.status)}</span>
@@ -508,7 +579,9 @@ export function DocumentsVault() {
 function getUploadStatusLabel(status: UploadStatus) {
   if (status === "queued") return "Queued";
   if (status === "uploading") return "Uploading";
+  if (status === "processing") return "Extracting";
   if (status === "complete") return "Uploaded";
+  if (status === "review") return "Review";
   return "Failed";
 }
 
@@ -519,6 +592,15 @@ function getUploadPanelTitle(items: UploadItem[], uploading: boolean) {
 
   const failedCount = items.filter((item) => item.status === "error").length;
   const completeCount = items.filter((item) => item.status === "complete").length;
+  const reviewCount = items.filter((item) => item.status === "review").length;
+
+  if (reviewCount > 0 && failedCount > 0) {
+    return "Upload complete with review and errors";
+  }
+
+  if (reviewCount > 0) {
+    return "Upload complete with review needed";
+  }
 
   if (failedCount > 0 && completeCount === 0) {
     return "Upload failed";
@@ -534,10 +616,47 @@ function getUploadPanelTitle(items: UploadItem[], uploading: boolean) {
 function getUploadPanelSubtitle(items: UploadItem[]) {
   const completeCount = items.filter((item) => item.status === "complete").length;
   const failedCount = items.filter((item) => item.status === "error").length;
+  const reviewCount = items.filter((item) => item.status === "review").length;
+
+  const parts = [`${completeCount} uploaded`];
+
+  if (reviewCount > 0) {
+    parts.push(`${reviewCount} need review`);
+  }
 
   if (failedCount > 0) {
-    return `${completeCount} uploaded, ${failedCount} failed`;
+    parts.push(`${failedCount} failed`);
+  }
+
+  if (parts.length > 1) {
+    return parts.join(", ");
   }
 
   return `${completeCount} of ${items.length} uploaded`;
+}
+
+function getRequestErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === "object") {
+    const data = "data" in error ? (error as { data?: unknown }).data : error;
+
+    if (data && typeof data === "object") {
+      for (const key of ["error", "message", "detail"]) {
+        const value = (data as Record<string, unknown>)[key];
+
+        if (typeof value === "string" && value) {
+          return value;
+        }
+      }
+    }
+
+    if (typeof data === "string" && data) {
+      return data;
+    }
+  }
+
+  return fallback;
 }
