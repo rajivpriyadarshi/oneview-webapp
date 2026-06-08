@@ -166,7 +166,7 @@ export default function DocumentsTable({
         ),
       }),
       columnHelper.accessor("downloadedOn", {
-        header: "Downloaded on",
+        header: "Uploaded on",
         cell: (info) => <span className="overflow-hidden truncate whitespace-nowrap font-satoshi text-[1rem] font-medium leading-[60px] tracking-[-0.64px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>{info.getValue()}</span>,
       }),
       columnHelper.accessor("downloadedBy", {
