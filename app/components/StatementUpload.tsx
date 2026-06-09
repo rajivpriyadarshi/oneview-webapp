@@ -38,6 +38,7 @@ type UploadItem = {
   size: number;
   status: UploadStatus;
   progress: number;
+  detail?: string;
   error?: string;
   documentId?: string;
 };
@@ -274,7 +275,11 @@ export function StatementUpload() {
               error: response.error ?? "Unable to parse this statement.",
             });
           } else if (response.status === "processing") {
-            updateUploadItem(item.id, { status: "uploading", progress: 90 });
+            updateUploadItem(item.id, {
+              status: "uploading",
+              progress: 90,
+              detail: response.message ?? "Extracting statement details.",
+            });
 
             const abortController = new AbortController();
             pollingAbortControllerRef.current = abortController;
@@ -294,8 +299,16 @@ export function StatementUpload() {
                       95,
                       Math.max(10, Math.round((progress.current / progress.total) * 95)),
                     );
-                    updateUploadItem(item.id, { progress: pct });
+                    updateUploadItem(item.id, {
+                      progress: pct,
+                      detail: progress.label ?? "Extracting statement details.",
+                    });
+                    return;
                   }
+
+                  updateUploadItem(item.id, {
+                    detail: progress?.label ?? "Extracting statement details.",
+                  });
                 },
               });
 
@@ -312,6 +325,7 @@ export function StatementUpload() {
                 updateUploadItem(item.id, {
                   status: "error",
                   progress: 0,
+                  detail: undefined,
                   error: jobResult.error ?? "Unable to process this statement.",
                 });
               } else if (jobResult.status === "needs_review") {
@@ -328,6 +342,7 @@ export function StatementUpload() {
                 updateUploadItem(item.id, {
                   status: "error",
                   progress: 0,
+                  detail: undefined,
                   error: jobResult.message ?? "Extraction complete but requires human review.",
                 });
               } else {
@@ -358,6 +373,7 @@ export function StatementUpload() {
                 updateUploadItem(item.id, {
                   status: "complete",
                   progress: 100,
+                  detail: getUploadCompleteDetail(jobResult.positions_count, item.size),
                   documentId: String(jobResult.document_id),
                 });
               }
@@ -378,6 +394,7 @@ export function StatementUpload() {
             updateUploadItem(item.id, {
               status: "complete",
               progress: 100,
+              detail: getUploadCompleteDetail(response.positions_count, item.size),
               documentId: String(response.document_id),
             });
           }
@@ -393,6 +410,7 @@ export function StatementUpload() {
           updateUploadItem(item.id, {
             status: "error",
             progress: 0,
+            detail: undefined,
             error: uploadError instanceof Error ? uploadError.message : "Upload failed.",
           });
         }
@@ -668,10 +686,10 @@ export function StatementUpload() {
                       <strong>{item.name}</strong>
                       <span>
                         {item.status === "complete"
-                          ? `${uploadItems.filter(i => i.status === "complete" && i.id <= item.id).length} holdings • ${formatFileSize(item.size)}`
+                          ? item.detail ?? formatFileSize(item.size)
                           : item.status === "error"
                             ? item.error
-                            : formatFileSize(item.size)
+                            : item.detail ?? formatFileSize(item.size)
                         }
                       </span>
                     </div>
@@ -746,6 +764,14 @@ function formatFileSize(bytes: number): string {
   if (kb < 1024) return `${Math.round(kb)} KB`;
   const mb = kb / 1024;
   return `${mb.toFixed(1)} MB`;
+}
+
+function getUploadCompleteDetail(positionsCount: number | undefined, size: number) {
+  if (typeof positionsCount !== "number") {
+    return formatFileSize(size);
+  }
+
+  return `${positionsCount} holding${positionsCount === 1 ? "" : "s"} • ${formatFileSize(size)}`;
 }
 
 function getRequestErrorMessage(error: unknown, fallback: string) {
