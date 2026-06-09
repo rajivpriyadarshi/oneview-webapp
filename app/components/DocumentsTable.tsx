@@ -423,7 +423,7 @@ export default function DocumentsTable({
                 </tr>
               ))}
             </thead>
-            <tbody className="mt-2 mb-2 block max-h-[70vh] overflow-y-auto">
+            <tbody className="mt-2 mb-2 block">
               {loading && (
                 <tr className="table w-full table-fixed">
                   <td colSpan={5} style={{ textAlign: "center", padding: "40px" }}>
@@ -564,7 +564,7 @@ function FileIcon({ type }: { type: string }) {
   const style = styles[type] ?? styles.file;
   return (
     <span
-      className={`grid h-7 w-7 flex-shrink-0 place-items-center rounded text-[7px] font-black uppercase text-white ${style}`}
+      className={`grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-[7px] font-black uppercase text-white ${style}`}
     >
       {type.toUpperCase()}
     </span>
@@ -652,16 +652,16 @@ function GroupSection({
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <td colSpan={5} className="bg-transparent px-4 pt-8 pb-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {brokerIcon ? (
                 <img
                   src={brokerIcon}
                   alt={groupName}
-                  className="w-5 h-5 rounded object-contain"
+                  className="w-5 h-5 rounded-full object-contain"
                 />
               ) : (
-                <span className="w-5 h-5 rounded bg-gray-200 flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
                   <svg
                     width="12"
                     height="12"
@@ -704,6 +704,7 @@ function GroupSection({
                 />
               </svg>
             </div>
+            <div className="flex-1 h-[1px]" style={{ backgroundImage: "repeating-linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 8px, transparent 8px, transparent 12px)" }} />
             {/* {lastUpdated && (
               <span className="text-[12px] italic text-[#7f4e0c85]">
                 Last updated on {lastUpdated}
@@ -889,20 +890,20 @@ function FolderView({
 
         return (
           <div key={groupName}>
-            <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex items-center gap-4 mb-4 px-2">
               <button
                 type="button"
-                className="flex items-center gap-2 hover:opacity-70 transition"
+                className="flex items-center gap-2 hover:opacity-70 transition flex-shrink-0"
                 onClick={() => toggleGroup(groupName)}
               >
                 {brokerIcon ? (
                   <img
                     src={brokerIcon}
                     alt={groupName}
-                    className="w-6 h-6 rounded"
+                    className="w-6 h-6 rounded-full"
                   />
                 ) : (
-                  <div className="w-6 h-6 rounded bg-black/10 flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-full bg-black/10 flex items-center justify-center">
                     <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                       <path
                         d="M2 4C2 2.89543 2.89543 2 4 2H7L8.5 4H12C13.1046 4 14 4.89543 14 6V12C14 13.1046 13.1046 14 12 14H4C2.89543 14 2 13.1046 2 12V4Z"
@@ -931,6 +932,7 @@ function FolderView({
                   />
                 </svg>
               </button>
+              <div className="flex-1 h-[1px]" style={{ backgroundImage: "repeating-linear-gradient(to right, rgba(0,0,0,0.15), rgba(0,0,0,0.15) 8px, transparent 8px, transparent 12px)" }} />
               {/* <span
                 className="text-[12px] font-normal italic text-[#7f4e0c85]"
                 style={{ fontFeatureSettings: "'ss03' on" }}
@@ -983,7 +985,7 @@ function FolderView({
                       </p>
                     </Tooltip>
                     <Tooltip text={doc.uploadedOn}>
-                      <p className="text-[10px] text-black/50 truncate max-w-[160px]">
+                      <p className="text-[12px] text-black/50 truncate max-w-[160px]">
                         {doc.uploadedOn}
                       </p>
                     </Tooltip>

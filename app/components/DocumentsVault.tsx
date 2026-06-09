@@ -379,7 +379,6 @@ export function DocumentsVault() {
         </div>
         <div className="docs-vault-header-right">
           <div className="docs-vault-brokers">
-            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]" style={{ fontFeatureSettings: "'ss03' on" }}>We accept</span>
             <div className="flex items-center gap-2">
               <img src="/broker-icons/groww.png" alt="Groww" className="h-[28px] w-[28px] rounded-full object-cover" />
               <img src="/broker-icons/fidelity.png" alt="Fidelity" className="h-[28px] w-[28px] rounded-full object-cover" />
@@ -388,11 +387,10 @@ export function DocumentsVault() {
               <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="h-[28px] w-[28px] rounded-full object-cover" />
               <img src="/broker-icons/ibkr.png" alt="IBKR" className="h-[28px] w-[28px] rounded-full object-cover" />
             </div>
-            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]" style={{ fontFeatureSettings: "'ss03' on" }}>and any CSV format</span>
             <button
               type="button"
-              className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#7F4E0B] underline transition-opacity duration-200 hover:opacity-70"
-              style={{ fontFeatureSettings: "'ss03' on" }}
+              className="font-satoshi font-medium leading-[150%] tracking-[-0.04em] text-[#7F4E0B] underline transition-opacity duration-200 hover:opacity-70"
+              style={{ fontFeatureSettings: "'ss03' on", fontSize: "16px" }}
               onClick={() => {
                 trackClick({
                   buttonName: trackingEventsMap.documentsVaultPage.CLICK_DOWNLOAD_INSTRUCTIONS,
@@ -439,7 +437,7 @@ export function DocumentsVault() {
             />
           </svg>
         </div>
-        <strong style={{ fontFeatureSettings: "'ss03' on" }}>{isDragging ? "Drop files to upload" : "Drop your statements here"}</strong>
+        <strong style={{ fontFeatureSettings: "'ss03' on" }}>{isDragging ? "Drop files to upload" : <>Drop your statements here or <span className="text-[#7f4e0b]">select files</span></>}</strong>
         <span style={{ fontFeatureSettings: "'ss03' on" }}>CSV, XLSX, PDF (Max 10MB)</span>
       </div>
 

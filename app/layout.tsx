@@ -8,6 +8,8 @@ import "./globals.css";
 
 const butlerPro = localFont({
   src: [
+    { path: "./fonts/ButlerPro-Light.woff2", weight: "300", style: "normal" },
+    { path: "./fonts/ButlerPro-Roman.woff2", weight: "400", style: "normal" },
     { path: "./fonts/ButlerPro-Medium.woff2", weight: "500", style: "normal" },
     { path: "./fonts/ButlerPro-SemiBold.woff2", weight: "600", style: "normal" },
   ],
