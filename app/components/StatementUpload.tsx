@@ -25,26 +25,36 @@ const CHART_COLORS = [
   "#A3A1FB", "#7A2783", "#F46396"
 ];
 
+type UploadStatus = "queued" | "uploading" | "complete" | "error";
+
+type UploadItem = {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  status: UploadStatus;
+  progress: number;
+  error?: string;
+  documentId?: string;
+};
+
 export function StatementUpload() {
   const router = useRouter();
   const { trackPage, trackClick, trackAPI } = useAnalytics();
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const uploadProgressTimerRef = useRef<number | null>(null);
-  const uploadRequestRef = useRef<{ abort?: () => void } | null>(null);
   const [firstName, setFirstName] = useState("there");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [hasUploadedStatement, setHasUploadedStatement] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [hasStartedUploadFlow, setHasStartedUploadFlow] = useState(false);
-  const [uploadedDocumentId, setUploadedDocumentId] = useState<string | null>(null);
-  const showUploadProgress = isUploading || hasUploadedStatement;
+
+  const hasCompletedUploads = uploadItems.some(item => item.status === "complete");
+  const hasAnyUploads = uploadItems.length > 0;
 
   const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
     skip: !getStoredAuthToken(),
@@ -98,17 +108,11 @@ export function StatementUpload() {
     });
   }, []);
 
-  useEffect(() => {
-    return () => {
-      clearUploadProgressTimer();
-    };
-  }, []);
-
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files || []);
 
-    if (file) {
-      selectFile(file);
+    if (files.length > 0) {
+      void handleUploadFiles(files);
     }
   }
 
@@ -125,189 +129,206 @@ export function StatementUpload() {
     event.preventDefault();
     setIsDragging(false);
 
-    const file = event.dataTransfer.files?.[0];
+    const files = Array.from(event.dataTransfer.files);
 
-    if (file) {
-      selectFile(file);
+    if (files.length > 0) {
+      trackClick({
+        buttonName: trackingEventsMap.documentsPage.DROP_FILES,
+        pageName: trackingEventsMap.documentsPage.PAGE,
+        params: {
+          files_count: files.length,
+        },
+      });
+      void handleUploadFiles(files);
     }
   }
 
-  function selectFile(file: File) {
-    trackClick({
-      buttonName: trackingEventsMap.documentsPage.CLICK_UPLOAD_STATEMENT,
-      pageName: trackingEventsMap.documentsPage.PAGE,
-      params: {
-        file_name: file.name,
-        file_size: file.size,
-        file_type: file.type,
-      },
-    });
-
-    setHasStartedUploadFlow(true);
-    setError("");
-    setMessage("");
-    setHasUploadedStatement(false);
-    setUploadProgress(0);
-
+  function validateFile(file: File): string {
     const lowerName = file.name.toLowerCase();
     const hasSupportedExtension = SUPPORTED_EXTENSIONS.some((extension) =>
       lowerName.endsWith(extension),
     );
 
     if (!hasSupportedExtension) {
-      setSelectedFile(null);
-      setError("Upload a CSV, XLSX, or PDF statement.");
-      return;
+      return "Only CSV, XLSX, or PDF files are supported.";
     }
 
     if (file.size > MAX_UPLOAD_SIZE) {
-      setSelectedFile(null);
-      setError("File size must be 10 MB or less.");
-      return;
+      return "File size must be 10 MB or less.";
     }
 
-    setSelectedFile(file);
-    void handleUpload(file);
+    return "";
   }
 
-  async function handleUpload(fileToUpload?: File) {
-    if (isUploading) {
-      return;
-    }
-
-    const uploadFile = fileToUpload ?? selectedFile;
-    if (!uploadFile) {
-      setError("Choose a statement to upload first.");
-      return;
-    }
-
+  async function handleUploadFiles(files: File[]) {
     setError("");
     setMessage("");
+    setHasStartedUploadFlow(true);
+
+    const preparedItems: UploadItem[] = files.map((file, index) => {
+      const validationError = validateFile(file);
+
+      trackClick({
+        buttonName: trackingEventsMap.documentsPage.CLICK_UPLOAD_STATEMENT,
+        pageName: trackingEventsMap.documentsPage.PAGE,
+        params: {
+          file_name: file.name,
+          file_size: file.size,
+          file_type: file.type,
+        },
+      });
+
+      return {
+        id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
+        file,
+        name: file.name,
+        size: file.size,
+        status: validationError ? "error" : "queued",
+        progress: 0,
+        error: validationError,
+      };
+    });
+
+    const validUploads = preparedItems.filter(item => item.status !== "error");
+
+    setUploadItems(prev => [...prev, ...preparedItems]);
+
+    if (validUploads.length === 0) {
+      setError("No supported files selected.");
+      return;
+    }
+
     setIsUploading(true);
-    setUploadProgress(0);
-    startUploadProgressAnimation();
 
     try {
-      const request = uploadBrokerStatement({
-        file: uploadFile,
-        name: uploadFile.name,
-        storeData: true,
-        portfolioName: "Main Portfolio",
-        useLlmFallback: true,
-      });
-      uploadRequestRef.current = request as unknown as { abort?: () => void };
-      const response = await request.unwrap();
+      let successCount = 0;
 
-      if (response.status === "error") {
+      for (const item of validUploads) {
+        updateUploadItem(item.id, { status: "uploading", progress: 0 });
+        startProgressAnimation(item.id);
+
         trackAPI({
           pageName: trackingEventsMap.documentsPage.PAGE,
           params: {
-            event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
-            error: response.error,
-            file_name: uploadFile.name,
+            event_name: trackingEventsMap.documentsPage.API_UPLOAD_FILE_START,
+            file_name: item.file.name,
+            file_size: item.file.size,
+            file_type: item.file.type,
           },
         });
-        setError(response.error ?? "Unable to parse this statement.");
-        stopUploadProgressAnimation(false);
-        return;
+
+        try {
+          const response = await uploadBrokerStatement({
+            file: item.file,
+            name: item.file.name,
+            storeData: true,
+            portfolioName: "Main Portfolio",
+            useLlmFallback: true,
+          }).unwrap();
+
+          if (response.status === "error") {
+            trackAPI({
+              pageName: trackingEventsMap.documentsPage.PAGE,
+              params: {
+                event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+                file_name: item.file.name,
+                error: response.error,
+              },
+            });
+            updateUploadItem(item.id, {
+              status: "error",
+              progress: 0,
+              error: response.error ?? "Unable to parse this statement.",
+            });
+          } else {
+            successCount += 1;
+            trackAPI({
+              pageName: trackingEventsMap.documentsPage.PAGE,
+              params: {
+                event_name: trackingEventsMap.documentsPage.API_UPLOAD_SUCCESS,
+                file_name: item.file.name,
+                document_id: response.document_id,
+                positions_count: response.positions_count,
+              },
+            });
+            updateUploadItem(item.id, {
+              status: "complete",
+              progress: 100,
+              documentId: String(response.document_id),
+            });
+          }
+        } catch (uploadError) {
+          trackAPI({
+            pageName: trackingEventsMap.documentsPage.PAGE,
+            params: {
+              event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+              file_name: item.file.name,
+              error: uploadError instanceof Error ? uploadError.message : "Upload failed",
+            },
+          });
+          updateUploadItem(item.id, {
+            status: "error",
+            progress: 0,
+            error: uploadError instanceof Error ? uploadError.message : "Upload failed.",
+          });
+        }
       }
 
-      trackAPI({
-        pageName: trackingEventsMap.documentsPage.PAGE,
-        params: {
-          event_name: trackingEventsMap.documentsPage.API_UPLOAD_SUCCESS,
-          document_id: response.document_id,
-          positions_count: response.positions_count,
-          file_name: uploadFile.name,
-        },
-      });
-
-      stopUploadProgressAnimation();
-      setUploadedDocumentId(String(response.document_id));
-      setHasUploadedStatement(true);
-    } catch (requestError) {
-      if (
-        typeof requestError === "object" &&
-        requestError !== null &&
-        "name" in requestError &&
-        requestError.name === "AbortError"
-      ) {
-        stopUploadProgressAnimation(false);
-        return;
+      if (successCount > 0) {
+        setMessage(`Uploaded ${successCount} file${successCount > 1 ? "s" : ""} successfully.`);
       }
-
-      trackAPI({
-        pageName: trackingEventsMap.documentsPage.PAGE,
-        params: {
-          event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
-          error: requestError instanceof Error ? requestError.message : "Upload failed",
-          file_name: uploadFile.name,
-        },
-      });
-
-      stopUploadProgressAnimation(false);
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Unable to upload this statement.",
-      );
     } finally {
       setIsUploading(false);
-      uploadRequestRef.current = null;
-    }
-  }
 
-  function startUploadProgressAnimation() {
-    clearUploadProgressTimer();
-
-    const startedAt = window.performance.now();
-    uploadProgressTimerRef.current = window.setInterval(() => {
-      const elapsed = window.performance.now() - startedAt;
-      const nextProgress = Math.min(Math.round((elapsed / 9000) * 90), 90);
-      setUploadProgress(nextProgress);
-
-      if (nextProgress >= 90) {
-        clearUploadProgressTimer();
+      if (inputRef.current) {
+        inputRef.current.value = "";
       }
-    }, 80);
-  }
-
-  function stopUploadProgressAnimation(complete = true) {
-    clearUploadProgressTimer();
-    setUploadProgress(complete ? 100 : 0);
-  }
-
-  function clearUploadProgressTimer() {
-    if (!uploadProgressTimerRef.current) {
-      return;
     }
-
-    window.clearInterval(uploadProgressTimerRef.current);
-    uploadProgressTimerRef.current = null;
   }
 
-  async function clearSelectedFile() {
+  function updateUploadItem(id: string, patch: Partial<UploadItem>) {
+    setUploadItems(items =>
+      items.map(item => item.id === id ? { ...item, ...patch } : item)
+    );
+  }
+
+  function startProgressAnimation(itemId: string) {
+    const interval = setInterval(() => {
+      setUploadItems(items =>
+        items.map(item => {
+          if (item.id === itemId && item.status === "uploading" && item.progress < 90) {
+            return { ...item, progress: Math.min(item.progress + 5, 90) };
+          }
+          return item;
+        })
+      );
+    }, 200);
+
+    setTimeout(() => clearInterval(interval), 20000);
+  }
+
+  async function removeUploadItem(itemId: string) {
+    const item = uploadItems.find(i => i.id === itemId);
+    if (!item) return;
+
     trackClick({
       buttonName: trackingEventsMap.documentsPage.CLICK_REMOVE_DOCUMENT,
       pageName: trackingEventsMap.documentsPage.PAGE,
       params: {
-        document_id: uploadedDocumentId,
+        document_id: item.documentId,
+        file_name: item.name,
       },
     });
 
-    if (isUploading && uploadRequestRef.current?.abort) {
-      uploadRequestRef.current.abort();
-    }
-
     // Delete the uploaded document if it exists
-    if (uploadedDocumentId && hasUploadedStatement) {
+    if (item.documentId && item.status === "complete") {
       try {
-        await deleteDocument(uploadedDocumentId).unwrap();
+        await deleteDocument(item.documentId).unwrap();
         trackAPI({
           pageName: trackingEventsMap.documentsPage.PAGE,
           params: {
             event_name: trackingEventsMap.documentsPage.API_DELETE_SUCCESS,
-            document_id: uploadedDocumentId,
+            document_id: item.documentId,
           },
         });
       } catch (err) {
@@ -316,22 +337,14 @@ export function StatementUpload() {
           pageName: trackingEventsMap.documentsPage.PAGE,
           params: {
             event_name: trackingEventsMap.documentsPage.API_DELETE_FAILURE,
-            document_id: uploadedDocumentId,
+            document_id: item.documentId,
             error: err instanceof Error ? err.message : "Delete failed",
           },
         });
       }
     }
 
-    setSelectedFile(null);
-    setHasUploadedStatement(false);
-    setUploadedDocumentId(null);
-    setUploadProgress(0);
-    setMessage("");
-    setError("");
-    if (inputRef.current) {
-      inputRef.current.value = "";
-    }
+    setUploadItems(items => items.filter(i => i.id !== itemId));
   }
 
   const getInitials = (name: string) => {
@@ -401,148 +414,159 @@ export function StatementUpload() {
       </header>
 
       <section className="statement-content" aria-labelledby="statement-title">
-        <h1 id="statement-title">
-          Welcome {firstName}! Add your accounts statements
-          <br />
-          to create your unified view
-        </h1>
-        <p
-          style={{
-            color: '#5F5F5F',
-            textAlign: 'center',
-            fontFamily: 'Satoshi',
-            fontSize: '1rem',
-            fontStyle: 'light',
-            fontWeight: 500,
-            lineHeight: '150%',
-            letterSpacing: '-0.64px',
-          }}>
-          Securely drop your key investment accounts statements here. We don&apos;t
-          share or sell your data
-        </p>
+        <div className="statement-grid">
+          {/* Left Column */}
+          <div className="statement-left">
+            <div className="statement-title-wrapper">
+              <p className="statement-welcome">Welcome {firstName}!</p>
+              <h1 id="statement-title" className="statement-title-desktop">
+                Add your account statements
+                <br />
+                to create your unified view
+              </h1>
+            </div>
 
-        <div className="statement-brokers">
-          <span className="brokers-text">We accept</span>
-          <div className="broker-icons">
-            <img src="/broker-icons/fidelity.png" alt="Fidelity" className="broker-icon" />
-            <img src="/broker-icons/zerodha.png" alt="Zerodha" className="broker-icon" />
-            <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="broker-icon" />
-            <img src="/broker-icons/groww.png" alt="Groww" className="broker-icon" />
-            <img src="/broker-icons/ibkr.png" alt="IBKR" className="broker-icon" />
-            <img src="/broker-icons/vested.png" alt="Vested" className="broker-icon" />
+            <div className="statement-brokers">              
+              <div className="broker-icons">
+                <img src="/broker-icons/groww.png" alt="Groww" className="broker-icon" />
+                <img src="/broker-icons/fidelity.png" alt="Fidelity" className="broker-icon" />
+                <img src="/broker-icons/zerodha.png" alt="Zerodha" className="broker-icon" />
+                <img src="/broker-icons/vested.png" alt="Vested" className="broker-icon" />
+                <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="broker-icon" />
+                <img src="/broker-icons/ibkr.png" alt="IBKR" className="broker-icon" />
+              </div>
+              <span className="brokers-text">and any CSV format</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  trackClick({
+                    buttonName: trackingEventsMap.documentsPage.CLICK_DOWNLOAD_INSTRUCTIONS,
+                    pageName: trackingEventsMap.documentsPage.PAGE,
+                  });
+                  setIsModalOpen(true);
+                }}
+                className="download-instruction"
+              >
+                See download instruction
+              </button>
+            </div>
+
+            <div className="statement-cta-group">
+              <button
+                className="statement-submit"
+                type="button"
+                onClick={hasCompletedUploads ? () => {
+                  trackClick({
+                    buttonName: trackingEventsMap.documentsPage.CLICK_SEE_ONEVIEW,
+                    pageName: trackingEventsMap.documentsPage.PAGE,
+                  });
+                  router.replace("/onboarding/processing");
+                } : undefined}
+                disabled={!hasCompletedUploads || isUploading}
+                aria-busy={isUploading}
+              >
+                See your unified view
+                <ArrowRightIcon />
+              </button>
+              <button
+                className="statement-sample-btn"
+                type="button"
+                onClick={() => {
+                  trackClick({
+                    buttonName: trackingEventsMap.documentsPage.CLICK_CHECK_SAMPLE,
+                    pageName: trackingEventsMap.documentsPage.PAGE,
+                  });
+                  setIsSampleModalOpen(true);
+                }}
+              >
+                Check sample
+              </button>
+            </div>
           </div>
-          <span className="brokers-text">and any CSV format</span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              trackClick({
-                buttonName: trackingEventsMap.documentsPage.CLICK_DOWNLOAD_INSTRUCTIONS,
-                pageName: trackingEventsMap.documentsPage.PAGE,
-              });
-              setIsModalOpen(true);
-            }}
-            className="download-instruction"
-          >
-            See download instruction
-          </button>
-        </div>
 
-        <label
-          className={`statement-dropzone${isDragging ? " is-dragging" : ""}${isUploading ? " is-disabled" : ""}`}
-          onDragOver={isUploading ? undefined : handleDragOver}
-          onDragLeave={isUploading ? undefined : handleDragLeave}
-          onDrop={isUploading ? undefined : handleDrop}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".csv,.xlsx,.pdf"
-            onChange={handleFileChange}
-            disabled={isUploading}
-          />
-          <span className="upload-icon">
-            <UploadIcon />
-          </span>
-          <strong>Drop your statements here or <span className="select-files-text">select files</span></strong>
-          <span>CSV, XLSX, PDF (Max 10MB)</span>
-        </label>
-
-        {selectedFile ? (
-          <div className="statement-file-loading" aria-live="polite">
-            <div
-              className={`statement-file-loader${isUploading ? " is-uploading" : ""}${hasUploadedStatement ? " is-uploaded" : ""}`}
-              style={{ "--upload-progress": `${uploadProgress}%` } as CSSProperties}
-            >
-              {hasUploadedStatement ? (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M13.3327 4L5.99935 11.3333L2.66602 8" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              ) : (
-                <span />
-              )}
-            </div>
-            <div className="statement-file-meta">
-              <strong>{selectedFile.name}</strong>
-              <span>
-                {formatFileSize(selectedFile.size)}
-                {hasUploadedStatement ? " • Uploaded" : showUploadProgress ? ` • ${uploadProgress}%` : ""}
-              </span>
-            </div>
-            <button
-              type="button"
-              className="statement-file-remove"
-              onClick={clearSelectedFile}
-              aria-label="Remove selected file"
-              disabled={isUploading}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none">
-                <path d="M7.33268 0.666016L0.666016 7.33268M0.666016 0.666016L7.33268 7.33268" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+          {/* Right Column */}
+          <div className="statement-right">
+            <p className="statement-security-top">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 1.33334L2.66667 3.33334V7.33334C2.66667 10.6667 5.33333 13.6667 8 14.6667C10.6667 13.6667 13.3333 10.6667 13.3333 7.33334V3.33334L8 1.33334Z" stroke="#4CAF50" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M6 8L7.33333 9.33333L10 6.66667" stroke="#4CAF50" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </button>
+              Your data stays encrypted • 100% Safe and Secure
+            </p>
+
+            <label
+              className={`statement-dropzone${isDragging ? " is-dragging" : ""}${isUploading ? " is-disabled" : ""}`}
+              onDragOver={isUploading ? undefined : handleDragOver}
+              onDragLeave={isUploading ? undefined : handleDragLeave}
+              onDrop={isUploading ? undefined : handleDrop}
+            >
+              <input
+                ref={inputRef}
+                type="file"
+                accept=".csv,.xlsx,.pdf"
+                multiple
+                onChange={handleFileChange}
+                disabled={isUploading}
+              />
+              <span className="upload-icon">
+                <UploadIcon />
+              </span>
+              <strong>Drop your statements here or <span className="select-files-text">select files</span></strong>
+              <span>CSV, XLSX, PDF (Max 10MB)</span>
+            </label>
+
+            {uploadItems.length > 0 && (
+              <div className="statement-uploads-list">
+                {uploadItems.map((item) => (
+                  <div key={item.id} className="statement-file-loading" aria-live="polite">
+                    <div
+                      className={`statement-file-loader${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "error" ? " is-error" : ""}`}
+                      style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
+                    >
+                      {item.status === "complete" ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M13.3327 4L5.99935 11.3333L2.66602 8" stroke="white" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : item.status === "error" ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                          <path d="M8 4V8M8 10.6667V12M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333C11.6819 1.33333 14.6667 4.3181 14.6667 8Z" stroke="#DC2626" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : (
+                        <span />
+                      )}
+                    </div>
+                    <div className="statement-file-meta">
+                      <strong>{item.name}</strong>
+                      <span>
+                        {item.status === "complete"
+                          ? `${uploadItems.filter(i => i.status === "complete" && i.id <= item.id).length} holdings • ${formatFileSize(item.size)}`
+                          : item.status === "error"
+                            ? item.error
+                            : formatFileSize(item.size)
+                        }
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="statement-file-remove"
+                      onClick={() => removeUploadItem(item.id)}
+                      aria-label="Remove selected file"
+                      disabled={isUploading && item.status === "uploading"}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none">
+                        <path d="M7.33268 0.666016L0.666016 7.33268M0.666016 0.666016L7.33268 7.33268" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {error ? <p className="statement-error">{error}</p> : null}
+            {message ? <p className="statement-success">{message}</p> : null}
           </div>
-        ) : null}
-
-        {error ? <p className="statement-error">{error}</p> : null}
-        {message ? <p className="statement-success">{message}</p> : null}
-
-        <div className="statement-cta-group">
-          <button
-            className="statement-sample-btn"
-            type="button"
-            onClick={() => {
-              trackClick({
-                buttonName: trackingEventsMap.documentsPage.CLICK_CHECK_SAMPLE,
-                pageName: trackingEventsMap.documentsPage.PAGE,
-              });
-              setIsSampleModalOpen(true);
-            }}
-          >
-            Check sample
-          </button>
-          <button
-            className="statement-submit"
-            type="button"
-            onClick={hasUploadedStatement ? () => {
-              trackClick({
-                buttonName: trackingEventsMap.documentsPage.CLICK_SEE_ONEVIEW,
-                pageName: trackingEventsMap.documentsPage.PAGE,
-              });
-              router.replace("/onboarding/processing");
-            } : undefined}
-            disabled={!hasUploadedStatement || isUploading}
-            aria-busy={isUploading}
-          >
-            See your unified view
-            <ArrowRightIcon />
-          </button>
         </div>
-
-        <div style={{ height: '24px' }} />
-
-        <p className="statement-security">
-          Your data stays encrypted • 100% Safe and Secure
-        </p>
       </section>
 
       <DownloadInstructionModal
