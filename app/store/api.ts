@@ -13,6 +13,10 @@ import type {
   BrokerStatementJobStatusResponse,
   BrokerStatementUploadResponse,
 } from "../lib/documentsApi";
+import {
+  isBrokerStatementJobStatusValid,
+  isBrokerStatementUploadStatusValid,
+} from "../lib/documentsApi";
 import type { AuthSession, PasswordlessAuthSession, Profile } from "../lib/realAuthApi";
 
 export const api = createApi({
@@ -200,8 +204,7 @@ export const api = createApi({
           url: "/oneview/broker-statements/upload/",
           method: "POST",
           body: formData,
-          validateStatus: (response) =>
-            response.status === 200 || response.status === 202 || response.status === 400 || response.status === 409,
+          validateStatus: isBrokerStatementUploadStatusValid,
         };
       },
       invalidatesTags: ["Documents", "Portfolios", "PortfolioView", "Sankey"],
@@ -209,8 +212,7 @@ export const api = createApi({
     getBrokerStatementJobStatus: builder.query<BrokerStatementJobStatusResponse, string>({
       query: (jobId) => ({
         url: `/oneview/broker-statements/jobs/${encodeURIComponent(jobId)}/status/`,
-        validateStatus: (response) =>
-          response.status === 200 || response.status === 202 || response.status === 400,
+        validateStatus: isBrokerStatementJobStatusValid,
       }),
     }),
   }),

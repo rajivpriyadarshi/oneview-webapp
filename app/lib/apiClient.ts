@@ -65,7 +65,7 @@ export async function apiRequest<T>(
       notifyUnauthorized();
     }
 
-    throw new ApiError(response.status, getErrorMessage(payload), payload);
+    throw new ApiError(response.status, getPayloadErrorMessage(payload), payload);
   }
 
   return payload as T;
@@ -73,6 +73,23 @@ export async function apiRequest<T>(
 
 export function isApiUnauthorized(error: unknown) {
   return error instanceof ApiError && error.status === 401;
+}
+
+export function getRequestErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof ApiError) {
+    return error.message || fallback;
+  }
+
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+
+  if (error && typeof error === "object") {
+    const data = "data" in error ? (error as { data?: unknown }).data : error;
+    return getPayloadErrorMessage(data, fallback);
+  }
+
+  return fallback;
 }
 
 function buildApiUrl(path: string) {
@@ -112,20 +129,22 @@ async function readPayload(response: Response) {
   return response.text();
 }
 
-function getErrorMessage(payload: unknown) {
+function getPayloadErrorMessage(payload: unknown, fallback = "Request failed. Please try again.") {
   if (typeof payload === "string" && payload) {
     return payload;
   }
 
-  if (payload && typeof payload === "object" && "error" in payload) {
-    const error = (payload as { error?: unknown }).error;
+  if (payload && typeof payload === "object") {
+    for (const key of ["error", "message", "detail"]) {
+      const value = (payload as Record<string, unknown>)[key];
 
-    if (typeof error === "string") {
-      return error;
+      if (typeof value === "string" && value) {
+        return value;
+      }
     }
   }
 
-  return "Request failed. Please try again.";
+  return fallback;
 }
 
 function notifyUnauthorized() {

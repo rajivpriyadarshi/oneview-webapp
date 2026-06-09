@@ -110,6 +110,14 @@ export type BrokerStatementJobStatusResponse =
 export const BROKER_STATEMENT_JOB_POLL_INTERVAL_MS = 5000;
 export const BROKER_STATEMENT_JOB_TIMEOUT_MS = 5 * 60 * 1000;
 
+export function isBrokerStatementUploadStatusValid(response: { status: number }) {
+  return [200, 202, 400, 409].includes(response.status);
+}
+
+export function isBrokerStatementJobStatusValid(response: { status: number }) {
+  return [200, 202, 400].includes(response.status);
+}
+
 export async function pollBrokerStatementJobStatus(input: {
   jobId: string;
   getStatus: (jobId: string) => Promise<BrokerStatementJobStatusResponse>;
@@ -272,8 +280,7 @@ export function uploadBrokerStatement(input: {
     {
       method: "POST",
       body: formData,
-      validateStatus: (response) =>
-        response.status === 200 || response.status === 202 || response.status === 400 || response.status === 409,
+      validateStatus: isBrokerStatementUploadStatusValid,
     },
   );
 }
@@ -282,8 +289,7 @@ export function getBrokerStatementJobStatus(jobId: string) {
   return apiRequest<BrokerStatementJobStatusResponse>(
     `/oneview/broker-statements/jobs/${encodeURIComponent(jobId)}/status/`,
     {
-      validateStatus: (response) =>
-        response.status === 200 || response.status === 202 || response.status === 400,
+      validateStatus: isBrokerStatementJobStatusValid,
     },
   );
 }

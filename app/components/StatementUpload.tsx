@@ -16,6 +16,7 @@ import {
 import { useAppDispatch } from "../store/hooks";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
 import { pollBrokerStatementJobStatus } from "../lib/documentsApi";
+import { getRequestErrorMessage } from "../lib/apiClient";
 import useAnalytics from "../hooks/useAnalytics";
 import { trackingEventsMap } from "../constants";
 
@@ -404,14 +405,14 @@ export function StatementUpload() {
             params: {
               event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
               file_name: item.file.name,
-              error: uploadError instanceof Error ? uploadError.message : "Upload failed",
+              error: getRequestErrorMessage(uploadError, "Upload failed"),
             },
           });
           updateUploadItem(item.id, {
             status: "error",
             progress: 0,
             detail: undefined,
-            error: uploadError instanceof Error ? uploadError.message : "Upload failed.",
+            error: getRequestErrorMessage(uploadError, "Upload failed."),
           });
         }
       }
@@ -772,30 +773,4 @@ function getUploadCompleteDetail(positionsCount: number | undefined, size: numbe
   }
 
   return `${positionsCount} holding${positionsCount === 1 ? "" : "s"} • ${formatFileSize(size)}`;
-}
-
-function getRequestErrorMessage(error: unknown, fallback: string) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (error && typeof error === "object") {
-    const data = "data" in error ? (error as { data?: unknown }).data : error;
-
-    if (data && typeof data === "object") {
-      for (const key of ["error", "message", "detail"]) {
-        const value = (data as Record<string, unknown>)[key];
-
-        if (typeof value === "string" && value) {
-          return value;
-        }
-      }
-    }
-
-    if (typeof data === "string" && data) {
-      return data;
-    }
-  }
-
-  return fallback;
 }
