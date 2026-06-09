@@ -113,22 +113,27 @@
   gap: 8px;
   min-height: 180px;
   margin-bottom: 28px;
-  padding: 40px 24px;
-  border: 2px dashed rgba(0, 0, 0, 0.15);
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.02);
+  padding: 60px 24px;
+  border: 1px dashed rgba(127, 78, 11, 0.4);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.06);
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
 .docs-dropzone:hover {
-  border-color: rgba(0, 0, 0, 0.28);
-  background: rgba(0, 0, 0, 0.035);
+  border-color: rgba(127, 78, 11, 0.6);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.08);
 }
 
 .docs-dropzone.is-dragging {
-  border-color: rgba(0, 0, 0, 0.4);
-  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(127, 78, 11, 0.8);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.1);
 }
 
 .docs-dropzone input {
@@ -148,17 +153,18 @@
 
 .docs-dropzone strong {
   color: #000;
-  font-size: 18px;
+  font-size: 22px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-feature-settings: 'ss03' on;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 150%;
   letter-spacing: -0.02em;
   word-wrap: break-word;
+  margin-bottom: -8px;
 }
 
 .docs-dropzone span {
-  color: rgba(0, 0, 0, 0.70);
+  color: #0000005e;
   font-size: 16px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-feature-settings: 'ss03' on;
@@ -692,11 +698,21 @@
 .docs-confirm-secondary {
   background: #f1f1f1;
   color: #1f1f1f;
+  transition: all 0.2s ease;
+}
+
+.docs-confirm-secondary:hover:not(:disabled) {
+  background: #e5e5e5;
 }
 
 .docs-confirm-danger {
   background: #dc2626;
   color: #fff;
+  transition: all 0.2s ease;
+}
+
+.docs-confirm-danger:hover:not(:disabled) {
+  background: #b91c1c;
 }
 
 .docs-confirm-secondary:disabled,
