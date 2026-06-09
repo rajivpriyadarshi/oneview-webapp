@@ -1029,7 +1029,8 @@ button:disabled {
 }
 
 .statement-error,
-.statement-success {
+.statement-success,
+.statement-info {
   margin-top: 10px;
   margin-bottom: 10px;
   font-family: "Satoshi";
@@ -1044,6 +1045,10 @@ button:disabled {
 
 .statement-success {
   color: #0a6b3f;
+}
+
+.statement-info {
+  color: #7F4E0B;
 }
 
 .statement-submit {
@@ -2764,9 +2769,14 @@ button:disabled {
 
 .statement-file-loader.is-uploading::before {
   content: '';
-  position: absolute;
-  inset: 0;
-  background: conic-gradient(from 0deg, transparent 0%, rgba(127, 78, 11, 0.3) var(--upload-progress, 0%), transparent var(--upload-progress, 0%));
+  position: static;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: conic-gradient(from -90deg, #7F4E0B var(--upload-progress, 0%), rgba(0, 0, 0, 0.14) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
   animation: rotate 2s linear infinite;
 }
 

@@ -6,12 +6,17 @@ import { OneviewBrand } from "./BrandMarks";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
 import { OneviewInfoModal } from "./OneviewInfoModal";
 import {
+  api,
   useUploadBrokerStatementMutation,
+  useLazyGetBrokerStatementJobStatusQuery,
   useListPortfoliosQuery,
   useGetProfileQuery,
   useDeleteDocumentMutation,
 } from "../store/api";
+import { useAppDispatch } from "../store/hooks";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
+import { pollBrokerStatementJobStatus } from "../lib/documentsApi";
+import { getRequestErrorMessage } from "../lib/apiClient";
 import useAnalytics from "../hooks/useAnalytics";
 import { trackingEventsMap } from "../constants";
 
@@ -34,14 +39,17 @@ type UploadItem = {
   size: number;
   status: UploadStatus;
   progress: number;
+  detail?: string;
   error?: string;
   documentId?: string;
 };
 
 export function StatementUpload() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { trackPage, trackClick, trackAPI } = useAnalytics();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const pollingAbortControllerRef = useRef<AbortController | null>(null);
   const [firstName, setFirstName] = useState("there");
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -64,6 +72,7 @@ export function StatementUpload() {
   });
 
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
+  const [getBrokerStatementJobStatus] = useLazyGetBrokerStatementJobStatusQuery();
   const [deleteDocument] = useDeleteDocumentMutation();
 
   useEffect(() => {
@@ -106,6 +115,12 @@ export function StatementUpload() {
         page_title: document.title,
       },
     });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      pollingAbortControllerRef.current?.abort();
+    };
   }, []);
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -226,7 +241,27 @@ export function StatementUpload() {
             useLlmFallback: true,
           }).unwrap();
 
-          if (response.status === "error") {
+          if (response.status === "duplicate") {
+            const uploadDate = new Date(response.uploaded_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+            trackAPI({
+              pageName: trackingEventsMap.documentsPage.PAGE,
+              params: {
+                event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+                error: "duplicate",
+                file_name: item.file.name,
+                existing_document_id: response.existing_document_id,
+              },
+            });
+            updateUploadItem(item.id, {
+              status: "error",
+              progress: 0,
+              error: `This file was already uploaded on ${uploadDate}.`,
+            });
+          } else if (response.status === "error") {
             trackAPI({
               pageName: trackingEventsMap.documentsPage.PAGE,
               params: {
@@ -240,6 +275,112 @@ export function StatementUpload() {
               progress: 0,
               error: response.error ?? "Unable to parse this statement.",
             });
+          } else if (response.status === "processing") {
+            updateUploadItem(item.id, {
+              status: "uploading",
+              progress: 90,
+              detail: response.message ?? "Extracting statement details.",
+            });
+
+            const abortController = new AbortController();
+            pollingAbortControllerRef.current = abortController;
+
+            try {
+              const jobResult = await pollBrokerStatementJobStatus({
+                jobId: response.job_id,
+                signal: abortController.signal,
+                getStatus: (jobId) => getBrokerStatementJobStatus(jobId, false).unwrap(),
+                onProgress: (progress) => {
+                  if (
+                    typeof progress?.current === "number" &&
+                    typeof progress.total === "number" &&
+                    progress.total > 0
+                  ) {
+                    const pct = Math.min(
+                      95,
+                      Math.max(10, Math.round((progress.current / progress.total) * 95)),
+                    );
+                    updateUploadItem(item.id, {
+                      progress: pct,
+                      detail: progress.label ?? "Extracting statement details.",
+                    });
+                    return;
+                  }
+
+                  updateUploadItem(item.id, {
+                    detail: progress?.label ?? "Extracting statement details.",
+                  });
+                },
+              });
+
+              if (jobResult.status === "error") {
+                trackAPI({
+                  pageName: trackingEventsMap.documentsPage.PAGE,
+                  params: {
+                    event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+                    error: jobResult.error,
+                    file_name: item.file.name,
+                    job_id: response.job_id,
+                  },
+                });
+                updateUploadItem(item.id, {
+                  status: "error",
+                  progress: 0,
+                  detail: undefined,
+                  error: jobResult.error ?? "Unable to process this statement.",
+                });
+              } else if (jobResult.status === "needs_review") {
+                trackAPI({
+                  pageName: trackingEventsMap.documentsPage.PAGE,
+                  params: {
+                    event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+                    error: jobResult.message,
+                    file_name: item.file.name,
+                    job_id: response.job_id,
+                    status: "needs_review",
+                  },
+                });
+                updateUploadItem(item.id, {
+                  status: "error",
+                  progress: 0,
+                  detail: undefined,
+                  error: jobResult.message ?? "Extraction complete but requires human review.",
+                });
+              } else {
+                successCount += 1;
+                dispatch(
+                  api.util.invalidateTags([
+                    "Documents",
+                    "Portfolios",
+                    "PortfolioView",
+                    "Sankey",
+                  ]),
+                );
+                trackAPI({
+                  pageName: trackingEventsMap.documentsPage.PAGE,
+                  params: {
+                    event_name: trackingEventsMap.documentsPage.API_UPLOAD_SUCCESS,
+                    document_id: jobResult.document_id,
+                    positions_count: jobResult.positions_count,
+                    file_name: item.file.name,
+                    job_id: response.job_id,
+                  },
+                });
+                if (jobResult.storage?.overwrote_existing) {
+                  setMessage(
+                    `Updated ${jobResult.storage.positions_updated} existing positions for this statement date.`,
+                  );
+                }
+                updateUploadItem(item.id, {
+                  status: "complete",
+                  progress: 100,
+                  detail: getUploadCompleteDetail(jobResult.positions_count, item.size),
+                  documentId: String(jobResult.document_id),
+                });
+              }
+            } finally {
+              pollingAbortControllerRef.current = null;
+            }
           } else {
             successCount += 1;
             trackAPI({
@@ -254,6 +395,7 @@ export function StatementUpload() {
             updateUploadItem(item.id, {
               status: "complete",
               progress: 100,
+              detail: getUploadCompleteDetail(response.positions_count, item.size),
               documentId: String(response.document_id),
             });
           }
@@ -263,13 +405,14 @@ export function StatementUpload() {
             params: {
               event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
               file_name: item.file.name,
-              error: uploadError instanceof Error ? uploadError.message : "Upload failed",
+              error: getRequestErrorMessage(uploadError, "Upload failed"),
             },
           });
           updateUploadItem(item.id, {
             status: "error",
             progress: 0,
-            error: uploadError instanceof Error ? uploadError.message : "Upload failed.",
+            detail: undefined,
+            error: getRequestErrorMessage(uploadError, "Upload failed."),
           });
         }
       }
@@ -319,6 +462,10 @@ export function StatementUpload() {
         file_name: item.name,
       },
     });
+
+    if (item.status === "uploading") {
+      pollingAbortControllerRef.current?.abort();
+    }
 
     // Delete the uploaded document if it exists
     if (item.documentId && item.status === "complete") {
@@ -540,10 +687,10 @@ export function StatementUpload() {
                       <strong>{item.name}</strong>
                       <span>
                         {item.status === "complete"
-                          ? `${uploadItems.filter(i => i.status === "complete" && i.id <= item.id).length} holdings • ${formatFileSize(item.size)}`
+                          ? item.detail ?? formatFileSize(item.size)
                           : item.status === "error"
                             ? item.error
-                            : formatFileSize(item.size)
+                            : item.detail ?? formatFileSize(item.size)
                         }
                       </span>
                     </div>
@@ -618,4 +765,12 @@ function formatFileSize(bytes: number): string {
   if (kb < 1024) return `${Math.round(kb)} KB`;
   const mb = kb / 1024;
   return `${mb.toFixed(1)} MB`;
+}
+
+function getUploadCompleteDetail(positionsCount: number | undefined, size: number) {
+  if (typeof positionsCount !== "number") {
+    return formatFileSize(size);
+  }
+
+  return `${positionsCount} holding${positionsCount === 1 ? "" : "s"} • ${formatFileSize(size)}`;
 }

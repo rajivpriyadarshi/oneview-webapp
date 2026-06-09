@@ -602,6 +602,12 @@
   animation: docs-upload-spin 900ms linear infinite;
 }
 
+.docs-upload-status.is-processing {
+  border-color: rgba(127, 78, 11, 0.18);
+  border-top-color: #7F4E0B;
+  animation: docs-upload-spin 900ms linear infinite;
+}
+
 .docs-upload-status.is-complete {
   border-color: #128044;
   background: #128044;
@@ -623,6 +629,11 @@
 .docs-upload-status.is-error {
   border-color: #dc2626;
   background: #dc2626;
+}
+
+.docs-upload-status.is-review {
+  border-color: #b7791f;
+  background: #b7791f;
 }
 
 .docs-upload-state {

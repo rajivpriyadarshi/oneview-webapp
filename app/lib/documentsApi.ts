@@ -32,8 +32,8 @@ export type DocumentPosition = {
   account_name: string;
 };
 
-export type BrokerStatementUploadResponse = {
-  status: "success" | "error";
+export type BrokerStatementUploadSuccessResponse = {
+  status: "success";
   document_id: string | number;
   broker?: string;
   statement_date?: string;
@@ -43,7 +43,6 @@ export type BrokerStatementUploadResponse = {
   total_invested?: string;
   total_current?: string;
   currency?: string;
-  error?: string;
   warnings?: string[];
   positions?: unknown[];
   positions_truncated?: boolean;
@@ -52,11 +51,143 @@ export type BrokerStatementUploadResponse = {
     portfolio: string;
     account: string;
     account_id: number;
+    account_created?: boolean;
     positions_created: number;
     positions_updated: number;
     listings_created: number;
+    overwrote_existing?: boolean;
   };
 };
+
+export type BrokerStatementUploadProcessingResponse = {
+  status: "processing";
+  job_id: string;
+  document_id: string | number;
+  message?: string;
+};
+
+export type BrokerStatementDuplicateResponse = {
+  status: "duplicate";
+  detail: string;
+  existing_document_id: number;
+  existing_document_name: string;
+  uploaded_at: string;
+};
+
+export type BrokerStatementErrorResponse = {
+  status: "error";
+  job_id?: string;
+  document_id?: string | number;
+  error?: string;
+};
+
+export type BrokerStatementUploadResponse =
+  | BrokerStatementUploadSuccessResponse
+  | BrokerStatementUploadProcessingResponse
+  | BrokerStatementDuplicateResponse
+  | BrokerStatementErrorResponse;
+
+export type BrokerStatementJobProgress = {
+  label?: string;
+  current?: number;
+  total?: number;
+};
+
+export type BrokerStatementJobStatusResponse =
+  | BrokerStatementUploadSuccessResponse
+  | {
+      status: "processing";
+      job_id: string;
+      progress?: BrokerStatementJobProgress;
+    }
+  | {
+      status: "needs_review";
+      job_id: string;
+      message?: string;
+    }
+  | BrokerStatementErrorResponse;
+
+export const BROKER_STATEMENT_JOB_POLL_INTERVAL_MS = 5000;
+export const BROKER_STATEMENT_JOB_TIMEOUT_MS = 5 * 60 * 1000;
+
+export function isBrokerStatementUploadStatusValid(response: { status: number }) {
+  return [200, 202, 400, 409].includes(response.status);
+}
+
+export function isBrokerStatementJobStatusValid(response: { status: number }) {
+  return [200, 202, 400].includes(response.status);
+}
+
+export async function pollBrokerStatementJobStatus(input: {
+  jobId: string;
+  getStatus: (jobId: string) => Promise<BrokerStatementJobStatusResponse>;
+  onProgress?: (progress?: BrokerStatementJobProgress) => void;
+  signal?: AbortSignal;
+  intervalMs?: number;
+  timeoutMs?: number;
+}) {
+  const {
+    jobId,
+    getStatus,
+    onProgress,
+    signal,
+    intervalMs = BROKER_STATEMENT_JOB_POLL_INTERVAL_MS,
+    timeoutMs = BROKER_STATEMENT_JOB_TIMEOUT_MS,
+  } = input;
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt <= timeoutMs) {
+    if (signal?.aborted) {
+      throw createAbortError();
+    }
+
+    const response = await getStatus(jobId);
+
+    if (response.status !== "processing") {
+      return response;
+    }
+
+    onProgress?.(response.progress);
+
+    const elapsed = Date.now() - startedAt;
+    const remaining = timeoutMs - elapsed;
+
+    if (remaining <= 0) {
+      break;
+    }
+
+    await wait(Math.min(intervalMs, remaining), signal);
+  }
+
+  throw new Error("Statement processing timed out. Try again in a few minutes.");
+}
+
+function wait(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(createAbortError());
+      return;
+    }
+
+    const timeoutId = globalThis.setTimeout(() => {
+      signal?.removeEventListener("abort", handleAbort);
+      resolve();
+    }, ms);
+
+    function handleAbort() {
+      globalThis.clearTimeout(timeoutId);
+      reject(createAbortError());
+    }
+
+    signal?.addEventListener("abort", handleAbort, { once: true });
+  });
+}
+
+function createAbortError() {
+  const error = new Error("Polling aborted.");
+  error.name = "AbortError";
+  return error;
+}
 
 export async function listDocuments() {
   const response = await apiRequest<DocumentRecord[] | { results: DocumentRecord[] }>(
@@ -149,6 +280,16 @@ export function uploadBrokerStatement(input: {
     {
       method: "POST",
       body: formData,
+      validateStatus: isBrokerStatementUploadStatusValid,
+    },
+  );
+}
+
+export function getBrokerStatementJobStatus(jobId: string) {
+  return apiRequest<BrokerStatementJobStatusResponse>(
+    `/oneview/broker-statements/jobs/${encodeURIComponent(jobId)}/status/`,
+    {
+      validateStatus: isBrokerStatementJobStatusValid,
     },
   );
 }
