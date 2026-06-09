@@ -51,9 +51,11 @@ export type BrokerStatementUploadSuccessResponse = {
     portfolio: string;
     account: string;
     account_id: number;
+    account_created?: boolean;
     positions_created: number;
     positions_updated: number;
     listings_created: number;
+    overwrote_existing?: boolean;
   };
 };
 
@@ -62,6 +64,14 @@ export type BrokerStatementUploadProcessingResponse = {
   job_id: string;
   document_id: string | number;
   message?: string;
+};
+
+export type BrokerStatementDuplicateResponse = {
+  status: "duplicate";
+  detail: string;
+  existing_document_id: number;
+  existing_document_name: string;
+  uploaded_at: string;
 };
 
 export type BrokerStatementErrorResponse = {
@@ -74,6 +84,7 @@ export type BrokerStatementErrorResponse = {
 export type BrokerStatementUploadResponse =
   | BrokerStatementUploadSuccessResponse
   | BrokerStatementUploadProcessingResponse
+  | BrokerStatementDuplicateResponse
   | BrokerStatementErrorResponse;
 
 export type BrokerStatementJobProgress = {
@@ -262,7 +273,7 @@ export function uploadBrokerStatement(input: {
       method: "POST",
       body: formData,
       validateStatus: (response) =>
-        response.status === 200 || response.status === 202 || response.status === 400,
+        response.status === 200 || response.status === 202 || response.status === 400 || response.status === 409,
     },
   );
 }

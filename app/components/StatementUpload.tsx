@@ -208,6 +208,26 @@ export function StatementUpload() {
       uploadRequestRef.current = request as unknown as { abort?: () => void };
       const response = await request.unwrap();
 
+      if (response.status === "duplicate") {
+        const uploadDate = new Date(response.uploaded_at).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
+        trackAPI({
+          pageName: trackingEventsMap.documentsPage.PAGE,
+          params: {
+            event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+            error: "duplicate",
+            file_name: uploadFile.name,
+            existing_document_id: response.existing_document_id,
+          },
+        });
+        setError(`This file was already uploaded on ${uploadDate}.`);
+        stopUploadProgressAnimation(false);
+        return;
+      }
+
       if (response.status === "error") {
         trackAPI({
           pageName: trackingEventsMap.documentsPage.PAGE,
@@ -294,6 +314,9 @@ export function StatementUpload() {
 
         stopUploadProgressAnimation();
         setProcessingLabel("");
+        if (jobResult.storage?.overwrote_existing) {
+          setMessage(`Updated ${jobResult.storage.positions_updated} existing positions for this statement date.`);
+        }
         setUploadedDocumentId(String(jobResult.document_id));
         setHasUploadedStatement(true);
         return;
@@ -310,6 +333,9 @@ export function StatementUpload() {
       });
 
       stopUploadProgressAnimation();
+      if (response.storage?.overwrote_existing) {
+        setMessage(`Updated ${response.storage.positions_updated} existing positions for this statement date.`);
+      }
       setUploadedDocumentId(String(response.document_id));
       setHasUploadedStatement(true);
     } catch (requestError) {

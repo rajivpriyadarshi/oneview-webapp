@@ -201,7 +201,7 @@ export const api = createApi({
           method: "POST",
           body: formData,
           validateStatus: (response) =>
-            response.status === 200 || response.status === 202 || response.status === 400,
+            response.status === 200 || response.status === 202 || response.status === 400 || response.status === 409,
         };
       },
       invalidatesTags: ["Documents", "Portfolios", "PortfolioView", "Sankey"],

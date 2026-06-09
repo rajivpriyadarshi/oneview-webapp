@@ -196,7 +196,26 @@ export function DocumentsVault() {
             useLlmFallback: true,
           }).unwrap();
 
-          if (response.status === "error") {
+          if (response.status === "duplicate") {
+            const uploadDate = new Date(response.uploaded_at).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            });
+            trackAPI({
+              pageName: trackingEventsMap.documentsVaultPage.PAGE,
+              params: {
+                event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
+                file_name: file.name,
+                error: "duplicate",
+                existing_document_id: response.existing_document_id,
+              },
+            });
+            updateUploadItem(item.id, {
+              status: "error",
+              error: `This file was already uploaded on ${uploadDate}.`,
+            });
+          } else if (response.status === "error") {
             trackAPI({
               pageName: trackingEventsMap.documentsVaultPage.PAGE,
               params: {
@@ -269,9 +288,12 @@ export function DocumentsVault() {
                   job_id: response.job_id,
                 },
               });
-              updateUploadItem(item.id, { status: "complete", detail: undefined, error: undefined });
+              const detail = jobResult.storage?.overwrote_existing
+                ? `Updated ${jobResult.storage.positions_updated} existing positions`
+                : undefined;
+              updateUploadItem(item.id, { status: "complete", detail, error: undefined });
             }
-          } else {
+          } else if (response.status === "success") {
             successCount += 1;
             trackAPI({
               pageName: trackingEventsMap.documentsVaultPage.PAGE,
@@ -282,7 +304,10 @@ export function DocumentsVault() {
                 positions_count: response.positions_count,
               },
             });
-            updateUploadItem(item.id, { status: "complete", detail: undefined, error: undefined });
+            const detail = response.storage?.overwrote_existing
+              ? `Updated ${response.storage.positions_updated} existing positions`
+              : undefined;
+            updateUploadItem(item.id, { status: "complete", detail, error: undefined });
           }
         } catch (uploadError) {
           trackAPI({
