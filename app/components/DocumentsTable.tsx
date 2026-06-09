@@ -704,11 +704,11 @@ function GroupSection({
                 />
               </svg>
             </div>
-            {lastUpdated && (
+            {/* {lastUpdated && (
               <span className="text-[12px] italic text-[#7f4e0c85]">
                 Last updated on {lastUpdated}
               </span>
-            )}
+            )} */}
           </div>
         </td>
       </tr>
@@ -931,7 +931,7 @@ function FolderView({
                   />
                 </svg>
               </button>
-              <span
+              {/* <span
                 className="text-[12px] font-normal italic text-[#7f4e0c85]"
                 style={{ fontFeatureSettings: "'ss03' on" }}
               >
@@ -941,7 +941,7 @@ function FolderView({
                   day: "numeric",
                   year: "numeric",
                 })}
-              </span>
+              </span> */}
             </div>
 
             {!isCollapsed && (
