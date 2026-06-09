@@ -21,6 +21,7 @@ import {
 } from "../store/api";
 
 export default function DashboardPage() {
+  console.log("[Dashboard] Component mounting");
   const { trackPage, trackClick, trackSectionScroll } = useAnalytics();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
@@ -28,6 +29,7 @@ export default function DashboardPage() {
   const sectionInViewRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
+    console.log("[Dashboard] Component mounted");
     trackPage({
       pageName: trackingEventsMap.dashboardPage.PAGE,
     });
@@ -111,13 +113,16 @@ export default function DashboardPage() {
   }, []);
 
   const { data: portfolios = [] } = useListPortfoliosQuery();
+  console.log("[Dashboard] Portfolios data:", portfolios);
 
   const activePortfolioId = selectedPortfolioId ?? portfolios[0]?.id ?? null;
   const selectedPortfolio = portfolios.find((p) => p.id === activePortfolioId) ?? null;
+  console.log("[Dashboard] Active portfolio ID:", activePortfolioId);
 
   const { data: accounts = [] } = useGetAccountsByPortfolioIdQuery(activePortfolioId!, {
     skip: !activePortfolioId,
   });
+  console.log("[Dashboard] Accounts data:", accounts);
 
   const accountIds = useMemo(
     () => (selectedAccountId === "all" ? [] : [selectedAccountId]),
@@ -138,15 +143,18 @@ export default function DashboardPage() {
     { accountIds, currency },
     { skip: !activePortfolioId },
   );
+  console.log("[Dashboard] Portfolio view:", portfolioView, "Loading:", viewLoading);
 
   const { data: valuationsData, isFetching: valuationsFetching } = useGetValuationsViewQuery(
     { accountIds, currency, fromDate, toDate },
     { skip: !activePortfolioId },
   );
+  console.log("[Dashboard] Valuations data:", valuationsData);
 
   const valuationSeries = valuationsFetching ? [] : (valuationsData?.price_series ?? []);
   const loading = viewLoading || !portfolioView;
   const isPortfolioEmpty = !loading && (portfolioView?.positions?.length ?? 0) === 0;
+  console.log("[Dashboard] Loading:", loading, "Empty:", isPortfolioEmpty);
 
   const handleAccountChange = (accountId: number | "all") => {
     const selectedAccountName =
@@ -209,27 +217,6 @@ export default function DashboardPage() {
               </div>
               <p className="m-0 text-sm text-black/50">Loading your portfolio</p>
             </div>
-          ) : isPortfolioEmpty ? (
-            <section className="flex min-h-[calc(100vh-220px)] w-full items-center justify-center text-center">
-              <div className="mx-auto flex w-full max-w-[520px] flex-col items-center justify-center">
-                <div className="">
-                  <Image src="/nothing.png" alt="" width={168} height={168} aria-hidden="true" />
-                </div>
-                <h2 className="mt-[40px] font-['ButlerPro'] text-[24px] font-medium leading-[120%] tracking-[-0.04em] text-black break-words">
-                  Nothing to show in your unified view!
-                </h2>
-                <p className="mt-[8px] font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/70 break-words">
-                  Upload your statements to create your unified view
-                </p>
-                <Link
-                  href="/documents-vault"
-                  className="mt-[34px] inline-flex cursor-pointer items-center gap-3 rounded-full border border-black/10 px-[24px] py-[16px] font-satoshi text-[16px] font-bold leading-[24px] tracking-[-0.04em] text-black break-words transition hover:bg-black/[0.03]"
-                >
-                  <PlusIcon />
-                  Add statements
-                </Link>
-              </div>
-            </section>
           ) : (
             <>
               <DashboardHeader updatedAt={selectedPortfolio?.updated_at} />
@@ -247,8 +234,33 @@ export default function DashboardPage() {
                 onCurrencyChange={handleCurrencyChange}
                 valuationSeries={valuationSeries}
               />
-              <PortfolioExposure portfolioView={portfolioView ?? null} />
-              <HoldingsTable positions={portfolioView?.positions || []} loading={loading} />
+              {isPortfolioEmpty ? (
+                <section className="flex min-h-[calc(100vh-220px)] w-full items-center justify-center text-center">
+                  <div className="mx-auto flex w-full max-w-[520px] flex-col items-center justify-center">
+                    <div className="">
+                      <Image src="/nothing.png" alt="" width={168} height={168} aria-hidden="true" />
+                    </div>
+                    <h2 className="mt-[40px] font-['ButlerPro'] text-[24px] font-medium leading-[120%] tracking-[-0.04em] text-black">
+                      Nothing to show in your unified view!
+                    </h2>
+                    <p className="mt-[8px] font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/70">
+                      Upload your statements to create your unified view
+                    </p>
+                    <Link
+                      href="/documents-vault"
+                      className="mt-[34px] inline-flex cursor-pointer items-center gap-3 rounded-full border border-black/10 px-[24px] py-[16px] font-satoshi text-[16px] font-bold leading-[24px] tracking-[-0.04em] text-black transition hover:bg-black/5"
+                    >
+                      <PlusIcon />
+                      Add statements
+                    </Link>
+                  </div>
+                </section>
+              ) : (
+                <>
+                  <PortfolioExposure portfolioView={portfolioView ?? null} />
+                  <HoldingsTable positions={portfolioView?.positions || []} loading={loading} />
+                </>
+              )}
             </>
           )}
         </main>
