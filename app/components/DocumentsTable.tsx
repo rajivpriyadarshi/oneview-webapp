@@ -90,18 +90,14 @@ export default function DocumentsTable({
     selectedRows.has(document.id)
   );
   const centerAlignedColumns = new Set([
-    "uploadedOn",
-    "uploadedBy",
-    "type",
     "actions",
   ]);
   const columnWidths: Record<string, string> = {
     checkbox: "4%",
-    filename: "34%",
-    uploadedOn: "20%",
-    uploadedBy: "18%",
-    type: "12%",
-    actions: "12%",
+    filename: "40%",
+    uploadedOn: "24%",
+    type: "16%",
+    actions: "16%",
   };
 
   const groupedDocuments = useMemo(
@@ -242,30 +238,19 @@ export default function DocumentsTable({
         header: "Uploaded on",
         cell: (info) => (
           <span
-            className="overflow-hidden truncate whitespace-nowrap font-satoshi text-[16px] font-normal leading-[60px] tracking-[-0.64px] text-black/50"
-            style={{ fontFeatureSettings: "'ss03' on" }}
+            className="overflow-hidden truncate whitespace-nowrap font-satoshi text-[14px] font-normal leading-[60px] text-black/50"
+            style={{ fontFeatureSettings: "'ss03' on", letterSpacing: "-0.01em" }}
           >
             {info.getValue()}
           </span>
         ),
       }),
-      columnHelper.accessor("uploadedBy", {
-        header: "Uploaded by",
-        cell: (info) => (
-          <span
-            className="block overflow-hidden truncate whitespace-nowrap font-satoshi text-[16px] font-normal leading-[60px] tracking-[-0.64px] text-black/50"
-            style={{ fontFeatureSettings: "'ss03' on" }}
-          >
-            {info.getValue()}
-          </span>
-        ),
-      }),
-      columnHelper.accessor("type", {
+            columnHelper.accessor("type", {
         header: "Type",
         cell: (info) => (
           <span
-            className="overflow-hidden truncate font-satoshi text-[16px] font-normal leading-[60px] tracking-[-0.64px] text-black/50"
-            style={{ fontFeatureSettings: "'ss03' on" }}
+            className="overflow-hidden truncate font-satoshi text-[14px] font-normal leading-[60px] text-black/50"
+            style={{ fontFeatureSettings: "'ss03' on", letterSpacing: "-0.01em" }}
           >
             {info.getValue()}
           </span>
@@ -416,11 +401,9 @@ export default function DocumentsTable({
                       className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
                         header.id === "checkbox" ? "w-10" : ""
                       } ${
-                        header.id === "checkbox" || header.id === "filename"
-                          ? "text-left"
-                          : centerAlignedColumns.has(header.id)
-                            ? "text-center"
-                            : ""
+                        centerAlignedColumns.has(header.id)
+                          ? "text-center"
+                          : "text-left"
                       }`}
                       style={{
                         cursor: header.column.getCanSort() ? "pointer" : "default",
@@ -443,7 +426,7 @@ export default function DocumentsTable({
             <tbody className="mt-2 mb-2 block max-h-[70vh] overflow-y-auto">
               {loading && (
                 <tr className="table w-full table-fixed">
-                  <td colSpan={6} style={{ textAlign: "center", padding: "40px" }}>
+                  <td colSpan={5} style={{ textAlign: "center", padding: "40px" }}>
                     Loading...
                   </td>
                 </tr>
@@ -451,7 +434,7 @@ export default function DocumentsTable({
               {!loading && documents.length === 0 && (
                 <tr className="table w-full table-fixed">
                   <td
-                    colSpan={6}
+                    colSpan={5}
                     style={{
                       textAlign: "center",
                       padding: "40px",
@@ -488,14 +471,12 @@ export default function DocumentsTable({
                               key={cell.id}
                               className={`border-b border-black/10 bg-transparent px-4 py-[16px] ${
                                 cell.column.id === "checkbox"
-                                  ? "w-10 text-left"
+                                  ? "w-10"
                                   : ""
                               } ${
-                                cell.column.id === "filename"
-                                  ? "text-left"
-                                  : centerAlignedColumns.has(cell.column.id)
-                                    ? "text-center"
-                                    : ""
+                                centerAlignedColumns.has(cell.column.id)
+                                  ? "text-center"
+                                  : "text-left"
                               } ${
                                 cell.column.id !== "checkbox" &&
                                 cell.column.id !== "filename"
@@ -670,7 +651,7 @@ function GroupSection({
         className="table w-full table-fixed cursor-pointer select-none"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <td colSpan={6} className="bg-transparent px-4 pt-4 pb-2">
+        <td colSpan={5} className="bg-transparent px-4 pt-8 pb-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {brokerIcon ? (
