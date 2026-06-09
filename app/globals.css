@@ -1008,12 +1008,12 @@ button:disabled {
   color: #7F4E0B;
   text-align: center;
   font-feature-settings: 'ss03' on;
-  font-family: "Satoshi";
-  font-size: 1rem;
+  font-family: var(--font-satoshi), "Satoshi", sans-serif;
+  font-size: 14px;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 150%;
-  letter-spacing: -0.04rem;
+  letter-spacing: -0.56px;
   text-decoration-line: underline;
   text-decoration-style: solid;
   text-decoration-skip-ink: none;
@@ -2859,11 +2859,16 @@ button:disabled {
     max-width: 640px;
   }
 
+  .statement-title-wrapper {
+    margin-bottom: 40px;
+  }
+
+  .statement-welcome {
+    text-align: left;
+  }
+
   .statement-title-desktop {
     text-align: left !important;
-    font-size: 2.75rem !important;
-    line-height: 1.15 !important;
-    margin-bottom: 40px !important;
   }
 
   .statement-brokers {
