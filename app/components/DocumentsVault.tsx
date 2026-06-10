@@ -269,8 +269,9 @@ export function DocumentsVault() {
               jobId: response.job_id,
               getStatus: (jobId) => getBrokerStatementJobStatus(jobId, false).unwrap(),
               onProgress: (progress) => {
+                const label = progress?.label?.replace(/^OCR/i, "Scanning") ?? "Extracting statement details.";
                 updateUploadItem(item.id, {
-                  detail: progress?.label ?? "Extracting statement details.",
+                  detail: label,
                 });
               },
             });
