@@ -994,11 +994,18 @@ button:disabled {
 }
 
 .broker-icon {
-  width: 20px;
-  height: 20px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  border: 2px solid #fff;
+  margin-left: -8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+.broker-icon:first-child {
+  margin-left: 0;
 }
 
 .download-instruction {
@@ -1052,10 +1059,11 @@ button:disabled {
 }
 
 .statement-submit {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 15px;
+  width: 100%;
   border: 0;
   border-radius: 999px;
   background: #000;
@@ -1094,7 +1102,6 @@ button:disabled {
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  margin-top: 30px;
 }
 
 .statement-sample-btn {
@@ -2660,7 +2667,6 @@ button:disabled {
     width: 100%;
     gap: 10px;
     padding: 0;
-    margin-top: 18px;
   }
 
   .statement-sample-btn,
@@ -2683,8 +2689,8 @@ button:disabled {
 .statement-left {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
 }
 
 .statement-right {
@@ -2716,16 +2722,18 @@ button:disabled {
   text-align: center;
   color: #000;
   font-family: var(--font-butler), "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 52px;
+  font-size: 64px;
   font-style: normal;
   font-weight: 400;
-  line-height: 120%;
-  letter-spacing: -1.56px;
+  line-height: 110%;
+  letter-spacing: -2px;
 }
 
 .statement-security-top {
   display: flex;
   align-items: center;
+  justify-content: center;
+  align-self: center;
   gap: 8px;
   color: rgba(0, 0, 0, 0.70);
   font-family: var(--font-satoshi);
@@ -2844,17 +2852,14 @@ button:disabled {
 /* Desktop layout */
 @media (min-width: 1024px) {
   .statement-content {
-    margin-top: 60px;
     padding: 40px 80px;
-    align-items: flex-start;
-    justify-content: flex-start;
     text-align: left;
   }
 
   .statement-grid {
     flex-direction: row;
     gap: 80px;
-    align-items: flex-start;
+    align-items: center;
     width: 100%;
   }
 
@@ -2862,15 +2867,13 @@ button:disabled {
     flex: 0 0 45%;
     max-width: 560px;
     padding-top: 0;
+    align-items: flex-start;
+    text-align: left;
   }
 
   .statement-right {
     flex: 0 0 55%;
     max-width: 640px;
-  }
-
-  .statement-title-wrapper {
-    margin-bottom: 40px;
   }
 
   .statement-welcome {
@@ -2879,20 +2882,21 @@ button:disabled {
 
   .statement-title-desktop {
     text-align: left !important;
+    font-size: 76px;
+    letter-spacing: -2.5px;
   }
 
   .statement-brokers {
     text-align: left !important;
     justify-content: flex-start !important;
     align-items: center !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     margin-top: 0 !important;
-    margin-bottom: 40px !important;
   }
 
   .statement-cta-group {
     flex-direction: column !important;
-    align-items: stretch !important;
+    align-items: flex-start !important;
     width: 100%;
     gap: 12px !important;
   }

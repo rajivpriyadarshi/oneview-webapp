@@ -147,13 +147,6 @@ export function StatementUpload() {
     const files = Array.from(event.dataTransfer.files);
 
     if (files.length > 0) {
-      trackClick({
-        buttonName: trackingEventsMap.documentsPage.DROP_FILES,
-        pageName: trackingEventsMap.documentsPage.PAGE,
-        params: {
-          files_count: files.length,
-        },
-      });
       void handleUploadFiles(files);
     }
   }
@@ -222,15 +215,6 @@ export function StatementUpload() {
         updateUploadItem(item.id, { status: "uploading", progress: 0 });
         startProgressAnimation(item.id);
 
-        trackAPI({
-          pageName: trackingEventsMap.documentsPage.PAGE,
-          params: {
-            event_name: trackingEventsMap.documentsPage.API_UPLOAD_FILE_START,
-            file_name: item.file.name,
-            file_size: item.file.size,
-            file_type: item.file.type,
-          },
-        });
 
         try {
           const response = await uploadBrokerStatement({
@@ -582,7 +566,6 @@ export function StatementUpload() {
                 <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="broker-icon" />
                 <img src="/broker-icons/ibkr.png" alt="IBKR" className="broker-icon" />
               </div>
-              <span className="brokers-text">and any CSV format</span>
               <button
                 type="button"
                 onClick={(e) => {
@@ -600,22 +583,6 @@ export function StatementUpload() {
             </div>
 
             <div className="statement-cta-group">
-              <button
-                className="statement-submit"
-                type="button"
-                onClick={hasCompletedUploads ? () => {
-                  trackClick({
-                    buttonName: trackingEventsMap.documentsPage.CLICK_SEE_ONEVIEW,
-                    pageName: trackingEventsMap.documentsPage.PAGE,
-                  });
-                  router.replace("/onboarding/processing");
-                } : undefined}
-                disabled={!hasCompletedUploads || isUploading}
-                aria-busy={isUploading}
-              >
-                See your unified view
-                <ArrowRightIcon />
-              </button>
               <button
                 className="statement-sample-btn"
                 type="button"
@@ -709,6 +676,25 @@ export function StatementUpload() {
                 ))}
               </div>
             )}
+
+            <div className="statement-upload-actions">
+              <button
+                className="statement-submit"
+                type="button"
+                onClick={hasCompletedUploads ? () => {
+                  trackClick({
+                    buttonName: trackingEventsMap.documentsPage.CLICK_SEE_ONEVIEW,
+                    pageName: trackingEventsMap.documentsPage.PAGE,
+                  });
+                  router.replace("/onboarding/processing");
+                } : undefined}
+                disabled={!hasCompletedUploads || isUploading}
+                aria-busy={isUploading}
+              >
+                See your unified view
+                <ArrowRightIcon />
+              </button>
+            </div>
 
             {error ? <p className="statement-error">{error}</p> : null}
             {message ? <p className="statement-success">{message}</p> : null}
