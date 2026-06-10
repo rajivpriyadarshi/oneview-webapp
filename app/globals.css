@@ -36,7 +36,9 @@ body {
 body {
   margin: 0;
   color: var(--foreground);
-  background: var(--background);
+  background:
+    radial-gradient(circle, #B5ADA4 0.8px, transparent 0.8px) 0 0 / 24px 24px,
+    var(--background);
   font-family: var(--font-inter);
 }
 
@@ -1442,9 +1444,11 @@ button:disabled {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 10;
+  z-index: 60;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 0;
+  background: #ffffff26;
+  backdrop-filter: blur(30px);
 }
 
 .sidebar-logo {
@@ -2905,4 +2909,72 @@ button:disabled {
     width: 100%;
     max-width: none;
   }
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes bounce-dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slot-spin {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-10em); }
+}
+
+@keyframes slot-spin-infinite {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-10em); }
+}
+
+@keyframes slot-spin-suffix {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3em); }
+}
+
+
+@keyframes slot-flip {
+  0% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slot-roll-2 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-1em); }
+}
+@keyframes slot-roll-3 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-2em); }
+}
+@keyframes slot-roll-4 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3em); }
+}
+@keyframes slot-roll-5 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4em); }
+}
+@keyframes slot-roll-6 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-5em); }
+}
+@keyframes slot-roll-7 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-6em); }
+}
+@keyframes slot-roll-8 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-7em); }
+}
+@keyframes slot-roll-9 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-8em); }
+}
+@keyframes slot-roll-10 {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-9em); }
 }

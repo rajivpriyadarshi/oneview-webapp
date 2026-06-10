@@ -25,8 +25,8 @@ export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR",
   }, []);
 
   return (
-    <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <div className="flex flex-col gap-1">
+    <header className="fixed top-0 right-0 z-50 mb-8 flex flex-col gap-4 border-b border-black/10 bg-[#ffffff26] px-6 py-4 backdrop-blur-[30px] sm:px-[60px] md:left-16 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-0">
         <h1 className="m-0 font-['ButlerPro'] text-[32px] font-normal leading-[38.4px] tracking-[-0.04em] text-black">
           Welcome {userName ? `${userName}` : ""}
         </h1>
@@ -39,26 +39,58 @@ export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR",
           </span>
         )}
         {onCurrencyChange && (
-          <div className="relative inline-flex items-center rounded-full border border-black/10 p-1 font-satoshi text-sm font-bold leading-6 tracking-[-0.04em]" style={{ fontFeatureSettings: "'ss03' on" }}>
-            <span
-              aria-hidden="true"
-              className={`pointer-events-none absolute bottom-1 left-1 top-1 w-[52px] rounded-full bg-[#1a1a1a] shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-out ${
-                currency === "USD" ? "translate-x-[52px]" : "translate-x-0"
-              }`}
-            />
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              borderRadius: "38px",
+              background: "rgba(0,0,0,0.9)",
+              padding: "2px",
+            }}
+          >
             <button
-              className={`relative z-10 inline-flex h-[36px] w-[52px] appearance-none items-center justify-center whitespace-nowrap border-0 bg-transparent px-[10px] py-[4px] text-[14px] font-bold leading-5 tracking-[-0.04em] transition-colors duration-300 focus:outline-none ${
-                currency === "INR" ? "text-white" : "text-black/40 hover:text-black/70"
-              }`}
               onClick={() => onCurrencyChange("INR")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "20px",
+                padding: "8px 16px",
+                fontSize: "16px",
+                fontWeight: 400,
+                fontFamily: "var(--font-satoshi), sans-serif",
+                lineHeight: 1.3,
+                letterSpacing: "-0.56px",
+                whiteSpace: "nowrap",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                background: currency === "INR" ? "#fff" : "transparent",
+                color: currency === "INR" ? "#2f2b2c" : "rgba(255,255,255,0.6)",
+              }}
             >
               INR
             </button>
             <button
-              className={`relative z-10 inline-flex h-[36px] w-[52px] appearance-none items-center justify-center whitespace-nowrap border-0 bg-transparent px-[10px] py-[4px] text-[14px] font-bold leading-5 tracking-[-0.04em] transition-colors duration-300 focus:outline-none ${
-                currency === "USD" ? "text-white" : "text-black/40 hover:text-black/70"
-              }`}
               onClick={() => onCurrencyChange("USD")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "20px",
+                padding: "8px 16px",
+                fontSize: "16px",
+                fontWeight: 400,
+                fontFamily: "var(--font-satoshi), sans-serif",
+                lineHeight: 1.3,
+                letterSpacing: "-0.56px",
+                whiteSpace: "nowrap",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                background: currency === "USD" ? "#fff" : "transparent",
+                color: currency === "USD" ? "#2f2b2c" : "rgba(255,255,255,0.6)",
+              }}
             >
               USD
             </button>
