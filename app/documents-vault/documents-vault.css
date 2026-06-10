@@ -20,7 +20,7 @@
   margin: 0;
   font-family: "ButlerPro", Georgia, serif;
   font-size: 32px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 38.4px;
   letter-spacing: -0.04em;
   color: black;
@@ -31,11 +31,11 @@
   margin: 0;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-feature-settings: 'ss03' on;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
   line-height: 21px;
   letter-spacing: -0.02em;
-  color: rgba(0, 0, 0, 0.70);
+  color: #00000078;
   word-wrap: break-word;
 }
 
@@ -114,21 +114,48 @@
   min-height: 180px;
   margin-bottom: 28px;
   padding: 40px 24px;
-  border: 2px dashed rgba(0, 0, 0, 0.15);
-  border-radius: 20px;
-  background: rgba(0, 0, 0, 0.02);
+  border: none;
+  border-radius: 32px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)) padding-box,
+    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box;
+  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
+  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
+  background-repeat: no-repeat;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.06);
   cursor: pointer;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition: background 160ms ease, box-shadow 160ms ease;
 }
 
 .docs-dropzone:hover {
-  border-color: rgba(0, 0, 0, 0.28);
-  background: rgba(0, 0, 0, 0.035);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)) padding-box,
+    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box;
+  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
+  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
+  background-repeat: no-repeat;
+  box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.08);
 }
 
 .docs-dropzone.is-dragging {
-  border-color: rgba(0, 0, 0, 0.4);
-  background: rgba(255, 255, 255, 0.5);
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) padding-box,
+    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
+    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box;
+  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
+  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
+  background-repeat: no-repeat;
+  box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.1);
 }
 
 .docs-dropzone input {
@@ -141,24 +168,36 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.04);
   color: #151515;
   margin-bottom: 8px;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.docs-dropzone:hover .docs-dropzone-icon {
+  transform: scale(1.1);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .docs-dropzone strong {
   color: #000;
-  font-size: 18px;
+  font-size: 20px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-feature-settings: 'ss03' on;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 150%;
   letter-spacing: -0.02em;
   word-wrap: break-word;
+  margin-bottom: -8px;
 }
 
-.docs-dropzone span {
-  color: rgba(0, 0, 0, 0.70);
+.docs-dropzone strong span {
+  color: #7f4e0b;
+  font-size: inherit;
+}
+
+.docs-dropzone > span {
+  color: #0000005e;
   font-size: 16px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-feature-settings: 'ss03' on;
@@ -175,8 +214,6 @@
   margin-bottom: 28px;
   padding: 0 16px 0 24px;
   border: 0;
-  height: calc(100vh - 80px);
-  max-height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
 }
@@ -703,11 +740,21 @@
 .docs-confirm-secondary {
   background: #f1f1f1;
   color: #1f1f1f;
+  transition: all 0.2s ease;
+}
+
+.docs-confirm-secondary:hover:not(:disabled) {
+  background: #e5e5e5;
 }
 
 .docs-confirm-danger {
   background: #dc2626;
   color: #fff;
+  transition: all 0.2s ease;
+}
+
+.docs-confirm-danger:hover:not(:disabled) {
+  background: #b91c1c;
 }
 
 .docs-confirm-secondary:disabled,

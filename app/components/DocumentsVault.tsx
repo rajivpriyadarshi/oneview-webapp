@@ -58,17 +58,47 @@ function getFileType(name: string, contentType: string) {
   return "csv";
 }
 
+function extractBrokerFromName(name: string): string {
+  const match = name.match(/^([^-]+)\s*-/);
+  if (match) {
+    return match[1].trim();
+  }
+  return "Other";
+}
+
+function getBrokerDisplayName(broker: string | undefined): string {
+  if (!broker) return "Other";
+  const brokerNames: Record<string, string> = {
+    zerodha: "Zerodha",
+    ibkr: "IBKR",
+    fidelity: "Fidelity",
+    groww: "Groww",
+    vested: "Vested",
+    schwab: "Charles Schwab",
+    kotak: "Kotak",
+  };
+  return brokerNames[broker.toLowerCase()] || broker.charAt(0).toUpperCase() + broker.slice(1);
+}
+
 function mapDocToTableRow(doc: DocumentRecord): VaultDocument {
+  const brokerName = doc.broker
+    ? getBrokerDisplayName(doc.broker)
+    : extractBrokerFromName(doc.display_name || doc.name);
+
   return {
     id: String(doc.id),
-    filename: doc.name,
-    downloadedOn: formatDate(doc.created_at),
-    downloadedBy: doc.uploaded_by_username || "Manual",
+    filename: doc.display_name || doc.name,
+    uploadedOn: formatDate(doc.created_at),
+    uploadedOnRaw: doc.created_at,
+    uploadedBy: doc.uploaded_by_username || "Manual",
     size: formatFileSize(doc.file_size),
-    type: "Investments",
-    status: "Processed",
+    type: doc.document_type === "investments" ? "Investments" : (doc.document_type || "Investments"),
+    status: doc.processing_status === "processed" ? "Processed" : (doc.processing_status || "Processed"),
     fileType: getFileType(doc.name, doc.content_type),
     fileUrl: doc.file_url || doc.file,
+    account: brokerName,
+    holdingsCount: doc.positions_count,
+    holdingsValue: doc.holdings_value,
   };
 }
 
@@ -446,7 +476,6 @@ export function DocumentsVault() {
         </div>
         <div className="docs-vault-header-right">
           <div className="docs-vault-brokers">
-            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]" style={{ fontFeatureSettings: "'ss03' on" }}>We accept</span>
             <div className="flex items-center gap-2">
               <img src="/broker-icons/groww.png" alt="Groww" className="h-[28px] w-[28px] rounded-full object-cover" />
               <img src="/broker-icons/fidelity.png" alt="Fidelity" className="h-[28px] w-[28px] rounded-full object-cover" />
@@ -455,11 +484,10 @@ export function DocumentsVault() {
               <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="h-[28px] w-[28px] rounded-full object-cover" />
               <img src="/broker-icons/ibkr.png" alt="IBKR" className="h-[28px] w-[28px] rounded-full object-cover" />
             </div>
-            <span className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#595959]" style={{ fontFeatureSettings: "'ss03' on" }}>and any CSV format</span>
             <button
               type="button"
-              className="font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.04em] text-[#7F4E0B] underline"
-              style={{ fontFeatureSettings: "'ss03' on" }}
+              className="font-satoshi font-medium leading-[150%] tracking-[-0.04em] text-[#7F4E0B] underline transition-opacity duration-200 hover:opacity-70"
+              style={{ fontFeatureSettings: "'ss03' on", fontSize: "16px" }}
               onClick={() => {
                 trackClick({
                   buttonName: trackingEventsMap.documentsVaultPage.CLICK_DOWNLOAD_INSTRUCTIONS,
@@ -506,8 +534,8 @@ export function DocumentsVault() {
             />
           </svg>
         </div>
-        <strong style={{ fontFeatureSettings: "'ss03' on" }}>{isDragging ? "Drop files to upload" : "Drop your statements here"}</strong>
-        <span style={{ fontFeatureSettings: "'ss03' on" }}>Supported file types: CSV, XLSX, PDF (Max 10MB)</span>
+        <strong style={{ fontFeatureSettings: "'ss03' on" }}>{isDragging ? "Drop files to upload" : <>Drop your statements here or <span className="text-[#7f4e0b]">select files</span></>}</strong>
+        <span style={{ fontFeatureSettings: "'ss03' on" }}>CSV, XLSX, PDF (Max 10MB)</span>
       </div>
 
       {error && <p className="docs-error">{error}</p>}
