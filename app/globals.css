@@ -571,128 +571,14 @@ button:disabled {
   line-height: 1.5;
 }
 
-.statement-page {
-  height: 100vh;
-  background: url('/auth-Hero-bg.png') center/cover no-repeat fixed;
-  position: relative;
-  overflow-y: auto;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.statement-topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 67px;
-  background: rgba(246, 243, 238, 0.85);
-  backdrop-filter: blur(10px);
-}
 
 .statement-topbar .oneview-logo {
   width: 116px;
-}
-
-.statement-profile {
-  position: relative;
-  z-index: 100;
-}
-
-.statement-avatar-btn {
-  border: 0;
-  background: none;
-  padding: 0;
-  cursor: pointer;
-}
-
-.profile-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-}
-
-.profile-menu-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  padding: 6px;
-  min-width: 140px;
-  z-index: 1000;
-}
-
-.profile-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 14px;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  font-size: 0.875rem;
-  font-weight: 500;
-  font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
-  color: var(--foreground);
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.profile-menu-item:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.statement-content {
-  position: relative;
-  z-index: 1;
-  margin: auto;
-  margin-top: 80px;
-  padding: 8px 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  flex: 1;
-  width: 100%;
-}
-
-.statement-content h1 {
-  margin: 0 0 20px;
-  color: #000;
-  text-align: center;
-  font-family: var(--font-butler-roman-display), "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 2.25rem;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 120%;
-  letter-spacing: 4%;
-}
-
-.statement-content > p {
-  margin: 10px 0 0;
-  color: #5F5F5F;
-  text-align: center;
-  font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
-  font-size: 1rem;
-  font-style: normal;
-  font-weight: 500;
-  line-height: 150%;
-  letter-spacing: -0.32px;
+  height: auto;
 }
 
 .statement-dropzone {
+  position: relative;
   width: min(100%, 610px);
   min-height: 319px;
   display: flex;
@@ -704,15 +590,7 @@ button:disabled {
   padding: 40px 24px;
   border: none;
   border-radius: 32px;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)) padding-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box;
-  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
-  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
-  background-repeat: no-repeat;
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.06);
@@ -720,29 +598,22 @@ button:disabled {
   transition: background 160ms ease, box-shadow 160ms ease;
 }
 
+.statement-dropzone-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border-radius: 32px;
+}
+
 .statement-dropzone:hover {
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)) padding-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box;
-  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
-  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
-  background-repeat: no-repeat;
+  background: rgba(255, 255, 255, 0.96);
   box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.08);
 }
 
 .statement-dropzone.is-dragging {
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) padding-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box;
-  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
-  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
-  background-repeat: no-repeat;
+  background: rgba(255, 255, 255, 1);
   box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.1);
 }
 
@@ -786,8 +657,7 @@ button:disabled {
   to { transform: rotate(360deg); }
 }
 
-.statement-dropzone svg path,
-.statement-submit svg path {
+.statement-dropzone svg path {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -1926,23 +1796,6 @@ button:disabled {
     font-size: 2.25rem;
   }
 
-  .statement-topbar {
-    padding: 16px 20px;
-  }
-
-  .statement-content {
-    margin-top: 52px;
-  }
-
-  .statement-content h1 {
-    font-size: 1.875rem;
-    line-height: 2.4375rem;
-  }
-
-  .statement-dropzone {
-    min-height: 240px;
-  }
-
   .vault-page {
     grid-template-columns: 1fr;
   }
@@ -2488,107 +2341,7 @@ button:disabled {
   margin: 0;
 }
 
-@media (max-width: 1024px) {
-  .statement-content {
-    margin-top: 124px;
-    padding-top: 12px;
-  }
-}
-
 @media (max-width: 768px) {
-  .statement-topbar {
-    padding: 12px 16px;
-  }
-
-  .statement-content {
-    margin-top: 112px;
-    padding: 0 14px 24px;
-    padding-top: 10px;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .statement-content h1 {
-    font-size: 2.125rem;
-    line-height: 1.15;
-    letter-spacing: -0.5px;
-  }
-
-  .statement-content > p {
-    font-size: 0.9375rem;
-    line-height: 1.375rem;
-  }
-
-  .statement-brokers {
-    width: 100%;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    margin-top: 20px;
-    margin-bottom: 14px;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    text-align: center;
-  }
-
-  .brokers-text {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    white-space: normal;
-  }
-
-  .broker-icons {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .download-instruction {
-    display: inline-block;
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    white-space: normal;
-  }
-
-  .statement-dropzone {
-    min-height: 260px;
-    border-radius: 20px;
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-
-  .statement-dropzone strong {
-    margin-top: 10px;
-    font-size: 24px;
-    line-height: 130%;
-    letter-spacing: -0.02em;
-    max-width: 280px;
-  }
-
-  .statement-dropzone span:last-child {
-    width: auto;
-    max-width: 260px;
-    font-size: 14px;
-    line-height: 150%;
-  }
-
-
-  .statement-file-loader {
-    width: 58px;
-    height: 58px;
-  }
-
-  .statement-file-loader::before {
-    width: 28px;
-    height: 28px;
-  }
-
-  .statement-security {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-    margin-top: 24px;
-  }
-
   .oneview-info-modal {
     width: 100%;
     max-height: calc(100vh - 20px);
@@ -2755,70 +2508,6 @@ button:disabled {
 
 /* Desktop layout */
 @media (min-width: 1024px) {
-  .statement-content {
-    padding: 0px 80px;
-    text-align: left;
-  }
-
-  .statement-grid {
-    flex-direction: row;
-    gap: 80px;
-    align-items: flex-start;
-    width: 100%;
-  }
-
-  .statement-left {
-    flex: 0 0 45%;
-    max-width: 560px;
-    position: sticky;
-    top: 80px;
-    height: calc(100vh - 80px);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: flex-start;
-    text-align: left;
-    padding-bottom: 40px;
-  }
-
-  .statement-right {
-    flex: 0 0 55%;
-    max-width: 640px;
-    min-height: calc(100vh - 80px);
-    justify-content: center;
-    padding-top: 80px;
-    padding-bottom: 80px;
-  }
-
-  .statement-welcome {
-    text-align: left;
-  }
-
-  .statement-title-desktop {
-    text-align: left !important;
-    font-size: 52px;
-    letter-spacing: -0.03em;
-  }
-
-  .statement-brokers {
-    text-align: left !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    margin-top: 0 !important;
-  }
-
-  .statement-cta-group {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    width: 100%;
-    gap: 12px !important;
-  }
-
-  .statement-submit {
-    order: -1;
-  }
-
   .statement-dropzone {
     width: 100%;
     max-width: none;

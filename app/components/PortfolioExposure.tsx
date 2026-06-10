@@ -228,7 +228,7 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
           {hoveredIndex !== null && (() => {
             const pos = getHoverLabelPosition(segmentsWithAngles[hoveredIndex].midAngle);
             const label = segments[hoveredIndex].label;
-            const value = `${currSymbol}${formatValue(segments[hoveredIndex].value)}`;
+            const value = `${currSymbol}${formatValue(segments[hoveredIndex].value, currency)}`;
             const pct = `${segments[hoveredIndex].percentage.toFixed(1)}%`;
 
             // Estimate box width based on longest text (rough approximation: 7px per char for label, 6px for others)
@@ -301,7 +301,7 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
             <span className="text-[46px] font-satoshi text-[14px] font-bold leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>{seg.label}</span>
             <span className="text-[14px] leading-[150%] text-black/20">•</span>
             <span className="font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/60" style={{ fontFeatureSettings: "'ss03' on" }}>
-              {currSymbol}{formatValue(seg.value)} ({seg.percentage.toFixed(1)}%)
+              {currSymbol}{formatValue(seg.value, currency)} ({seg.percentage.toFixed(1)}%)
             </span>
           </div>
         ))}
@@ -548,9 +548,14 @@ function capitalize(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase().replace(/_/g, " ");
 }
 
-function formatValue(num: number) {
+function formatValue(num: number, currency = "INR") {
   const abs = Math.abs(num);
   const sign = num < 0 ? "-" : "";
+  if (currency === "USD") {
+    if (abs >= 1000000) return `${sign}${(abs / 1000000).toFixed(2)}M`;
+    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}K`;
+    return num.toFixed(2);
+  }
   if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
   if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(2)}L`;
   if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}K`;

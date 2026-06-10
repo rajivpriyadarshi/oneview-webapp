@@ -87,6 +87,11 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
     const num = typeof value === "string" ? parseFloat(value) : value;
     const abs = Math.abs(num);
     const sign = num < 0 ? "-" : "";
+    if (currency === "USD") {
+      if (abs >= 1000000) return `${sign}${currSymbol}${(abs / 1000000).toFixed(2)}M`;
+      if (abs >= 1000) return `${sign}${currSymbol}${(abs / 1000).toFixed(1)}K`;
+      return `${sign}${currSymbol}${abs.toFixed(0)}`;
+    }
     if (abs >= 10000000) return `${sign}${currSymbol}${(abs / 10000000).toFixed(2)}Cr`;
     if (abs >= 100000) return `${sign}${currSymbol}${(abs / 100000).toFixed(1)}L`;
     if (abs >= 1000) return `${sign}${currSymbol}${(abs / 1000).toFixed(1)}K`;
