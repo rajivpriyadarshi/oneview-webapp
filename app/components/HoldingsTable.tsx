@@ -164,7 +164,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
   });
 
   return (
-    <section data-analytics-section="your_holdings" className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
+    <section data-analytics-section="your_holdings" className="mb-7 flex flex-col rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
       <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
         <HoldingsIcon />
         Your holdings
@@ -202,7 +202,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
 
                       header.column.toggleSorting(nextSortingOrder === "desc");
                     }}
-                    className={`sticky top-0 z-10 bg-white relative border-y border-black/10 px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
+                    className={`sticky top-0 z-10 bg-transparent relative border-y border-black/10 px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
                       header.id === "security" ? "holdings-security-column text-left" : "text-right"
                     }`}
                     style={{

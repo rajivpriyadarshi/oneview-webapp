@@ -89,6 +89,17 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
   const options: any = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 800,
+      easing: "easeInOutQuart",
+    },
+    transitions: {
+      active: {
+        animation: {
+          duration: 400,
+        },
+      },
+    },
     interaction: {
       mode: "index",
       intersect: false,

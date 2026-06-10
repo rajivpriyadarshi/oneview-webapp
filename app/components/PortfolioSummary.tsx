@@ -65,8 +65,21 @@ export default function PortfolioSummary({
     >
       <div className="mb-[-10px]">
         <div className="group relative inline-flex items-center">
+          <span
+            className="pointer-events-none invisible absolute whitespace-nowrap pl-5 pr-10 font-satoshi text-[14px] font-bold leading-6 tracking-[-0.04em]"
+            style={{ fontFeatureSettings: "'ss03' on" }}
+            aria-hidden="true"
+            ref={(el) => {
+              if (el) {
+                const select = el.nextElementSibling as HTMLSelectElement | null;
+                if (select) select.style.width = `${el.offsetWidth + 2}px`;
+              }
+            }}
+          >
+            {selectedAccountId === "all" ? "All accounts" : (accounts.find(a => a.id === selectedAccountId)?.name || "")}
+          </span>
           <select
-            className="h-[48px] cursor-pointer appearance-none overflow-hidden whitespace-nowrap text-ellipsis rounded-full border border-black/10 bg-[#ffffff78] pl-5 pr-10 font-satoshi text-[14px] font-bold leading-6 tracking-[-0.04em] text-black outline-none backdrop-blur-[20px] transition hover:bg-black/[0.02]"
+            className="h-[48px] cursor-pointer appearance-none whitespace-nowrap rounded-full border border-black/10 bg-[#ffffff78] pl-5 pr-10 font-satoshi text-[14px] font-bold leading-6 tracking-[-0.04em] text-black outline-none backdrop-blur-[20px] transition hover:bg-black/[0.02]"
             style={{ fontFeatureSettings: "'ss03' on" }}
             value={selectedAccountId}
             onChange={(e) => {
@@ -77,7 +90,7 @@ export default function PortfolioSummary({
             <option value="all">All accounts</option>
             {accounts.map((acc) => (
               <option key={acc.id} value={acc.id}>
-                {truncateLabel(acc.name)}
+                {acc.name}
               </option>
             ))}
           </select>
@@ -228,14 +241,10 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
     );
   }
 
-  const maxLen = Math.max(currentText.length, prevText.length);
-  const paddedCurrent = currentText.padStart(maxLen);
-  const paddedPrev = prevText.padStart(maxLen);
-
   return (
     <h2 className={className} style={{ display: "flex", alignItems: "baseline" }}>
-      {paddedCurrent.split("").map((char, i) => {
-        const prevChar = paddedPrev[i] || "";
+      {currentText.split("").map((char, i) => {
+        const prevChar = prevText[i] || "";
         const isDigit = DIGITS.includes(char) && DIGITS.includes(prevChar);
 
         if (!isAnimating || char === prevChar) {

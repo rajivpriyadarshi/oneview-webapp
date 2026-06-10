@@ -4,31 +4,40 @@
 }
 
 .docs-vault-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 4rem;
+  z-index: 50;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
+  align-items: center;
+  padding: 16px 60px;
+  margin-bottom: 0;
+  background: #ffffff26;
+  backdrop-filter: blur(30px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .docs-vault-header-left {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0;
 }
 
 .docs-vault-title {
   margin: 0;
   font-family: "ButlerPro", Georgia, serif;
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 400;
-  line-height: 38.4px;
+  line-height: 28.8px;
   letter-spacing: -0.04em;
   color: black;
   word-wrap: break-word;
 }
 
 .docs-vault-subtitle {
-  margin: 0;
+  margin: -2px 0 0;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-feature-settings: 'ss03' on;
   font-size: 14px;
@@ -772,6 +781,8 @@
 /* Responsive */
 @media (max-width: 768px) {
   .docs-vault-header {
+    left: 0;
+    padding: 16px 24px;
     flex-direction: column;
     gap: 16px;
   }

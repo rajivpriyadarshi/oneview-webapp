@@ -26,11 +26,11 @@ export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR",
 
   return (
     <header className="fixed top-0 right-0 z-50 mb-8 flex flex-col gap-4 border-b border-black/10 bg-[#ffffff26] px-6 py-4 backdrop-blur-[30px] sm:px-[60px] md:left-16 md:flex-row md:items-center md:justify-between">
-      <div className="flex flex-col gap-0">
-        <h1 className="m-0 font-['ButlerPro'] text-[32px] font-normal leading-[38.4px] tracking-[-0.04em] text-black">
+      <div className="flex flex-col">
+        <h1 className="m-0 font-['ButlerPro'] text-[24px] font-normal leading-[28.8px] tracking-[-0.04em] text-black">
           Welcome {userName ? `${userName}` : ""}
         </h1>
-        {subtitle && <p className="m-0 font-['Satoshi'] text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-[#00000078]" style={{ fontFeatureSettings: "'ss03' on" }}>{subtitle}</p>}
+        {subtitle && <p className="m-0 mt-[-2px] font-['Satoshi'] text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-[#00000078]" style={{ fontFeatureSettings: "'ss03' on" }}>{subtitle}</p>}
       </div>
       <div className="flex items-center gap-4">
         {asOfDate && (
@@ -99,8 +99,8 @@ export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR",
         <Link
           href="/documents-vault"
           className="inline-flex cursor-pointer justify-center items-center gap-[10px] rounded-full
-          border-[1px] border-black/10 bg-transparent px-[24px] py-[16px] font-satoshi
-          text-[16px] font-bold leading-6 tracking-[-0.04em] text-black transition hover:bg-black/[0.02]"
+          border-[1px] border-black/10 bg-transparent pt-[10px] pb-[10px] pl-[12px] pr-[16px] font-satoshi
+          text-[16px] font-medium leading-6 tracking-[-0.01em] text-black transition hover:bg-black/[0.02]"
           style={{ fontFeatureSettings: "'ss03' on" }}
         >
           <PlusIcon />
