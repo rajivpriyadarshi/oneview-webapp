@@ -111,7 +111,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
   const hasSectorData = sectorData.length > 0;
 
   return (
-    <section data-analytics-section="portfolio_exposure" className="mb-[16px] rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
+    <section data-analytics-section="portfolio_exposure" className="relative z-10 mb-[16px] overflow-visible rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
       <h3 className="flex align-center items-center gap-2 border-b border-black/10 pl-[6px] py-[24px] font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
         <ExposureIcon />
         Portfolio Exposure
@@ -493,7 +493,7 @@ function SectorDonutChart({
           <div className="relative">
             <button
               type="button"
-              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-xs text-black/70"
+              className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1.5 text-[14px] text-black/70"
               onClick={() => setShowMoreOpen((prev) => !prev)}
             >
               <span className="font-medium">+{remainingCount} more</span>
