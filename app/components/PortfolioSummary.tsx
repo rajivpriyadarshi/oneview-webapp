@@ -194,7 +194,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
         {placeholder.split("").map((char, i) => {
           if (DIGITS.includes(char)) {
             return (
-              <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1 }}>
+              <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
                 <span
                   style={{
                     display: "flex",
@@ -219,7 +219,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
           }
           if (char === "L" || char === "K" || char === "M") {
             return (
-              <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1 }}>
+              <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
                 <span
                   style={{
                     display: "flex",
@@ -235,7 +235,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
               </span>
             );
           }
-          return <span key={i}>{char}</span>;
+          return <span key={i} style={{ marginRight: "-0.03em" }}>{char}</span>;
         })}
       </h2>
     );
@@ -263,7 +263,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
 
 function SlotChar({ char }: { char: string }) {
   return (
-    <span className="inline-block">
+    <span className="inline-block" style={{ marginRight: "-0.03em" }}>
       {char === " " ? " " : char}
     </span>
   );
@@ -271,7 +271,7 @@ function SlotChar({ char }: { char: string }) {
 
 function FlipChar({ char }: { char: string }) {
   return (
-    <span className="inline-block overflow-hidden" style={{ height: "1em", lineHeight: 1 }}>
+    <span className="inline-block overflow-hidden" style={{ height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
       <span
         style={{
           display: "inline-block",
@@ -296,7 +296,7 @@ function RollingDigit({ from, to }: { from: string; to: string }) {
   const totalHeight = steps.length;
 
   return (
-    <span className="inline-block overflow-hidden" style={{ height: "1em", lineHeight: 1 }}>
+    <span className="inline-block overflow-hidden" style={{ height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
       <span
         style={{
           display: "inline-flex",
