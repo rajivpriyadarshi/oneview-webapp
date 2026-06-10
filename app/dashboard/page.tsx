@@ -248,7 +248,7 @@ export default function DashboardPage() {
                     </p>
                     <Link
                       href="/documents-vault"
-                      className="mt-[34px] inline-flex cursor-pointer items-center gap-3 rounded-full border border-black/10 px-[24px] py-[16px] font-satoshi text-[16px] font-bold leading-[24px] tracking-[-0.04em] text-black transition hover:bg-black/5"
+                      className="mt-[34px] inline-flex cursor-pointer items-center gap-[10px] rounded-full border border-black/10 px-[24px] py-[16px] font-satoshi text-[16px] font-bold leading-[24px] tracking-[-0.04em] text-black transition hover:bg-black/5"
                     >
                       <PlusIcon />
                       Add statements

@@ -332,7 +332,7 @@ export default function DocumentsTable({
     <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
       <div className="mb-0 flex min-h-[100px] items-center justify-between gap-4 py-[24px]">
         <h3
-          className="m-0 flex items-center gap-2 font-satoshi text-base font-bold leading-[130%] tracking-[-0.02em] text-black"
+          className="m-0 flex items-center gap-2 font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black"
           style={{ fontFeatureSettings: "'ss03' on" }}
         >
           <DocumentsIcon />

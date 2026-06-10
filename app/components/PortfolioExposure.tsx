@@ -401,9 +401,9 @@ function SectorDonutChart({
           y={cy - 10}
           textAnchor="middle"
           dominantBaseline="middle"
-          fontSize="36"
+          fontSize="42"
           fontWeight="800"
-          fontFamily="Geist, Inter, sans-serif"
+          fontFamily="Satoshi, sans-serif"
           fill="#0f0f0f"
           letterSpacing="-1"
         >
@@ -412,12 +412,12 @@ function SectorDonutChart({
         {/* center label */}
         <text
           x={cx}
-          y={cy + 16}
+          y={cy + 24}
           textAnchor="middle"
           dominantBaseline="middle"
-          fontSize="13"
+          fontSize="14"
           fontWeight="500"
-          fontFamily="Geist, Inter, sans-serif"
+          fontFamily="Satoshi, sans-serif"
           fill="#888"
           letterSpacing="0"
         >
