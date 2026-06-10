@@ -93,7 +93,7 @@ export default function DocumentsTable({
     "actions",
   ]);
   const columnWidths: Record<string, string> = {
-    checkbox: "4%",
+    checkbox: "48px",
     filename: "40%",
     uploadedOn: "24%",
     type: "16%",
@@ -330,7 +330,7 @@ export default function DocumentsTable({
 
   return (
     <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
-      <div className="mb-0 flex min-h-[100px] items-center justify-between gap-4 py-[24px]">
+      <div className="mb-0 flex min-h-[100px] flex-wrap items-center justify-between gap-4 py-[24px]">
         <h3
           className="m-0 flex items-center gap-2 font-satoshi text-base font-bold leading-[130%] tracking-[-0.02em] text-black"
           style={{ fontFeatureSettings: "'ss03' on" }}
@@ -338,7 +338,7 @@ export default function DocumentsTable({
           <DocumentsIcon />
           Added statements
         </h3>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {selectedDocuments.length > 0 && (
             <button
               type="button"
@@ -390,7 +390,7 @@ export default function DocumentsTable({
       </div>
       {viewMode === "list" ? (
         <div className="overflow-x-auto pb-4">
-          <table className="w-full min-w-0 border-separate border-spacing-0">
+          <table className="w-full min-w-[750px] border-separate border-spacing-0">
             <thead className="table w-full table-fixed">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -398,7 +398,7 @@ export default function DocumentsTable({
                     <th
                       key={header.id}
                       onClick={header.column.getToggleSortingHandler()}
-                      className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
+                      className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] whitespace-nowrap ${
                         header.id === "checkbox" ? "w-10" : ""
                       } ${
                         centerAlignedColumns.has(header.id)
@@ -469,7 +469,7 @@ export default function DocumentsTable({
                           {row.getVisibleCells().map((cell) => (
                             <td
                               key={cell.id}
-                              className={`border-b border-black/10 bg-transparent px-4 py-[16px] ${
+                              className={`border-b border-black/10 bg-transparent px-4 py-[16px] whitespace-nowrap ${
                                 cell.column.id === "checkbox"
                                   ? "w-10"
                                   : ""
@@ -951,7 +951,7 @@ function FolderView({
                 {docs.map((doc) => (
                   <div
                     key={doc.id}
-                    className={`relative flex flex-col items-center gap-1 p-4 rounded-xl cursor-pointer transition-all group border ${
+                    className={`relative flex flex-col items-center gap-1 p-4 rounded-xl cursor-pointer transition-all group border min-w-0 ${
                       selectedRows.has(doc.id)
                         ? "bg-blue-50 ring-2 ring-blue-500 border-blue-200"
                         : "bg-[#fafafa] border-black/5 hover:bg-[#f5f5f5] hover:border-black/10"
@@ -980,12 +980,12 @@ function FolderView({
                       )}
                     </div>
                     <Tooltip text={doc.filename}>
-                      <p className="text-xs text-center text-[#1a1a1a] font-medium truncate max-w-[160px]">
+                      <p className="text-xs text-center text-[#1a1a1a] font-medium truncate w-full max-w-full px-1">
                         {doc.filename}
                       </p>
                     </Tooltip>
                     <Tooltip text={doc.uploadedOn}>
-                      <p className="text-[12px] text-black/50 truncate max-w-[160px]">
+                      <p className="text-[12px] text-black/50 truncate w-full max-w-full text-center px-1">
                         {doc.uploadedOn}
                       </p>
                     </Tooltip>
@@ -1075,7 +1075,7 @@ function TimelineView({
   return (
     <div className="pb-4 px-4">
       <div className="relative">
-        <div className="absolute left-[19px] top-0 bottom-0 w-[2px] bg-black/10" />
+        <div className="absolute left-5 top-0 bottom-0 w-[2px] bg-black/10" />
 
         {Object.entries(groupedByMonth).map(([monthKey, docs]) => (
           <div key={monthKey} className="relative mb-8 last:mb-0">
@@ -1155,9 +1155,21 @@ function TimelineView({
                       {doc.holdingsValue &&
                         ` · ${formatHoldingsValue(doc.holdingsValue)}`}
                     </p>
+                    <p className="text-xs text-black/40 mt-1 sm:hidden">
+                      {new Date(doc.uploadedOnRaw).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}{" "}
+                      at{" "}
+                      {new Date(doc.uploadedOnRaw).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-black/40">
+                  <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                    <span className="text-xs text-black/40 whitespace-nowrap">
                       {new Date(doc.uploadedOnRaw).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -1194,6 +1206,30 @@ function TimelineView({
                       </a>
                     )}
                   </div>
+                  {selectedRows.has(doc.id) && (
+                    <a
+                      href={doc.fileUrl || "#"}
+                      download
+                      className="sm:hidden flex-shrink-0 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 hover:shadow-lg"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Download"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
+                        <path
+                          d="M14 10V10.8C14 11.9201 14 12.4802 13.782 12.908C13.5903 13.2843 13.2843 13.5903 12.908 13.782C12.4802 14 11.9201 14 10.8 14H5.2C4.07989 14 3.51984 14 3.09202 13.782C2.71569 13.5903 2.40973 13.2843 2.21799 12.908C2 12.4802 2 11.9201 2 10.8V10M4.66667 6.66667L8 10L11.3333 6.66667M8 10V2"
+                          stroke="white"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </a>
+                  )}
                 </div>
               ))}
             </div>
@@ -1296,7 +1332,7 @@ function Tooltip({
 
   return (
     <div
-      className="relative inline-block"
+      className="relative inline-block max-w-full"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
