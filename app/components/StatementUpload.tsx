@@ -50,6 +50,8 @@ export function StatementUpload() {
   const { trackPage, trackClick, trackAPI } = useAnalytics();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const pollingAbortControllerRef = useRef<AbortController | null>(null);
+  const uploadQueueRef = useRef<UploadItem[]>([]);
+  const isProcessingQueueRef = useRef(false);
   const [firstName, setFirstName] = useState("there");
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -198,7 +200,6 @@ export function StatementUpload() {
     });
 
     const validUploads = preparedItems.filter(item => item.status !== "error");
-
     setUploadItems(prev => [...prev, ...preparedItems]);
 
     if (validUploads.length === 0) {
@@ -206,12 +207,18 @@ export function StatementUpload() {
       return;
     }
 
+    uploadQueueRef.current.push(...validUploads);
+
+    if (isProcessingQueueRef.current) return;
+
+    isProcessingQueueRef.current = true;
     setIsUploading(true);
 
     try {
       let successCount = 0;
 
-      for (const item of validUploads) {
+      while (uploadQueueRef.current.length > 0) {
+        const item = uploadQueueRef.current.shift()!;
         updateUploadItem(item.id, { status: "uploading", progress: 0 });
         startProgressAnimation(item.id);
 
@@ -405,6 +412,7 @@ export function StatementUpload() {
         setMessage(`Uploaded ${successCount} file${successCount > 1 ? "s" : ""} successfully.`);
       }
     } finally {
+      isProcessingQueueRef.current = false;
       setIsUploading(false);
 
       if (inputRef.current) {
@@ -610,10 +618,10 @@ export function StatementUpload() {
             </p>
 
             <label
-              className={`statement-dropzone${isDragging ? " is-dragging" : ""}${isUploading ? " is-disabled" : ""}`}
-              onDragOver={isUploading ? undefined : handleDragOver}
-              onDragLeave={isUploading ? undefined : handleDragLeave}
-              onDrop={isUploading ? undefined : handleDrop}
+              className={`statement-dropzone${isDragging ? " is-dragging" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
               <input
                 ref={inputRef}
@@ -621,7 +629,7 @@ export function StatementUpload() {
                 accept=".csv,.xlsx,.pdf"
                 multiple
                 onChange={handleFileChange}
-                disabled={isUploading}
+                disabled={false}
               />
               <span className="upload-icon">
                 <UploadIcon />
@@ -631,9 +639,9 @@ export function StatementUpload() {
             </label>
 
             {uploadItems.length > 0 && (
-              <div className="statement-uploads-list">
+              <div className="flex flex-col gap-[10px]">
                 {uploadItems.map((item) => (
-                  <div key={item.id} className="statement-file-loading" aria-live="polite">
+                  <div key={item.id} className="w-full flex flex-row items-center gap-4 px-4 py-3 rounded-3xl border border-black/10" style={{ background: '#FFFFFF24', backdropFilter: 'blur(44px)', WebkitBackdropFilter: 'blur(44px)' }} aria-live="polite">
                     <div
                       className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "error" ? " is-error" : ""}`}
                       style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
@@ -644,7 +652,7 @@ export function StatementUpload() {
                         </svg>
                       ) : item.status === "error" ? (
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
-                          <path d="M8 4V8M8 10.6667V12M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333C11.6819 1.33333 14.6667 4.3181 14.6667 8Z" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M8 4V8M8 10.6667V12M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333C11.6819 1.33333 14.6667 4.3181 14.6667 8Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       ) : (
                         <span />
@@ -663,13 +671,13 @@ export function StatementUpload() {
                     </div>
                     <button
                       type="button"
-                      className="statement-file-remove"
+                      className="ml-auto flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-black/[0.04] hover:bg-black/[0.08] transition-colors cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed border-0"
                       onClick={() => removeUploadItem(item.id)}
                       aria-label="Remove selected file"
                       disabled={isUploading && item.status === "uploading"}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none">
-                        <path d="M7.33268 0.666016L0.666016 7.33268M0.666016 0.666016L7.33268 7.33268" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.3337 4.66669L4.66699 11.3334M4.66699 4.66669L11.3337 11.3334" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </button>
                   </div>
