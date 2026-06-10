@@ -553,21 +553,69 @@ function DocumentsIcon() {
 }
 
 function FileIcon({ type }: { type: string }) {
-  const styles: Record<string, string> = {
-    xls: "bg-[linear-gradient(90deg,#128044_0_35%,#21a365_35%_100%)]",
-    pdf: "bg-[#e31b2f]",
-    png: "bg-[linear-gradient(135deg,#dfe6ee_0_62%,#b6c4d4_62%)] text-[#6958ff]",
-    docx: "bg-[#2b579a]",
-    csv: "bg-[#22a768]",
-    file: "bg-[#6b7280]",
+  const colors: Record<
+    string,
+    { bg: string; text: string; docBg?: string; docFold?: string }
+  > = {
+    pdf: { bg: "#e31b2f", text: "white", docBg: "#F5E6E8", docFold: "#E8CDD1" },
+    xls: { bg: "#217346", text: "white", docBg: "#E6F2EC", docFold: "#C9E4D5" },
+    xlsx: { bg: "#217346", text: "white", docBg: "#E6F2EC", docFold: "#C9E4D5" },
+    csv: { bg: "#22a768", text: "white", docBg: "#E8F5EE", docFold: "#C9E8D7" },
+    docx: { bg: "#2b579a", text: "white", docBg: "#E6EBF2", docFold: "#C9D4E4" },
+    png: { bg: "#8B5CF6", text: "white", docBg: "#F3EEFE", docFold: "#E4D9FC" },
+    jpg: { bg: "#8B5CF6", text: "white", docBg: "#F3EEFE", docFold: "#E4D9FC" },
+    jpeg: { bg: "#8B5CF6", text: "white", docBg: "#F3EEFE", docFold: "#E4D9FC" },
+    file: { bg: "#6b7280", text: "white", docBg: "#E5E7EB", docFold: "#D1D5DB" },
   };
-  const style = styles[type] ?? styles.file;
+  const { bg, text, docBg, docFold } = colors[type] ?? colors.file;
+  const isImage = ["png", "jpg", "jpeg"].includes(type);
+
+  if (isImage) {
+    return (
+      <div className="relative flex-shrink-0">
+        <svg width="28" height="34" viewBox="0 0 48 56" fill="none">
+          <path
+            d="M4 4C4 1.79086 5.79086 0 8 0H30L44 14V52C44 54.2091 42.2091 56 40 56H8C5.79086 56 4 54.2091 4 52V4Z"
+            fill={docBg}
+          />
+          <path
+            d="M30 0L44 14H34C31.7909 14 30 12.2091 30 10V0Z"
+            fill={docFold}
+          />
+          <circle cx="16" cy="24" r="4" fill={bg} opacity="0.6" />
+          <path d="M8 34L16 26L22 32L28 24L36 34H8Z" fill={bg} opacity="0.6" />
+          <rect x="8" y="36" width="28" height="14" rx="2" fill={bg} />
+        </svg>
+        <span
+          className="absolute bottom-[5px] left-1/2 -translate-x-1/2 text-[5px] font-bold uppercase"
+          style={{ color: text }}
+        >
+          {type}
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <span
-      className={`grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-[7px] font-black uppercase text-white ${style}`}
-    >
-      {type.toUpperCase()}
-    </span>
+    <div className="relative flex-shrink-0">
+      <svg width="28" height="34" viewBox="0 0 48 56" fill="none">
+        <path
+          d="M4 4C4 1.79086 5.79086 0 8 0H30L44 14V52C44 54.2091 42.2091 56 40 56H8C5.79086 56 4 54.2091 4 52V4Z"
+          fill={docBg}
+        />
+        <path
+          d="M30 0L44 14H34C31.7909 14 30 12.2091 30 10V0Z"
+          fill={docFold}
+        />
+        <rect x="8" y="36" width="28" height="14" rx="2" fill={bg} />
+      </svg>
+      <span
+        className="absolute bottom-[5px] left-1/2 -translate-x-1/2 text-[5px] font-bold uppercase"
+        style={{ color: text }}
+      >
+        {type === "xlsx" ? "xls" : type}
+      </span>
+    </div>
   );
 }
 
@@ -951,7 +999,7 @@ function FolderView({
                 {docs.map((doc) => (
                   <div
                     key={doc.id}
-                    className={`relative flex flex-col items-center gap-1 p-4 rounded-xl cursor-pointer transition-all group border ${
+                    className={`relative flex flex-col items-center gap-1 px-4 py-[32px] rounded-[28px] cursor-pointer transition-all group border ${
                       selectedRows.has(doc.id)
                         ? "bg-blue-50 ring-2 ring-blue-500 border-blue-200"
                         : "bg-[#fafafa] border-black/5 hover:bg-[#f5f5f5] hover:border-black/10"
@@ -1115,7 +1163,7 @@ function TimelineView({
               {docs.map((doc) => (
                 <div
                   key={doc.id}
-                  className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:bg-[#f5f5f5] ${
+                  className={`flex items-center gap-4 p-4 rounded-[28px] cursor-pointer transition-all hover:bg-[#f5f5f5] ${
                     selectedRows.has(doc.id)
                       ? "bg-blue-50 ring-2 ring-blue-500"
                       : "bg-[#fafafa]"
