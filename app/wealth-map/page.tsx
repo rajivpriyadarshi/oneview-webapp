@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
-import { useGetSankeyQuery } from "../store/api";
+import { useGetSankeyQuery, useListDocumentsQuery } from "../store/api";
 import type { SankeyNode, SankeyResponse } from "../lib/portfolioDataApi";
 import "../dashboard/home.css";
 import "./wealth-map.css";
@@ -33,6 +33,15 @@ export default function WealthMapPage() {
     accountIds: [],
     currency: "INR",
   });
+  const { data: rawDocuments = [] } = useListDocumentsQuery();
+  const docCount = rawDocuments.length;
+  const accountCount = new Set(
+    rawDocuments.map((d) =>
+      d.broker
+        ? d.broker
+        : (d.display_name || d.name).match(/^([^-]+)\s*-/)?.[1]?.trim() ?? "Other"
+    )
+  ).size;
 
   return (
     <ProtectedRoute>
@@ -42,7 +51,9 @@ export default function WealthMapPage() {
           <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="flex flex-col gap-1">
               <h1 className="m-0 font-[var(--font-butler)] text-[2rem] font-medium leading-[38.4px] text-black">Wealth map</h1>
-              <p className="m-0 font-[var(--font-inter)] text-sm font-normal leading-[21px] text-black/70">Total 8 files across 3 accounts</p>
+              <p className="m-0 font-[var(--font-inter)] text-sm font-normal leading-[21px] text-black/70">
+                Total {docCount} files{accountCount > 0 ? ` across ${accountCount} brokers` : ""}
+              </p>
             </div>
             <Link
               href="/documents-vault"

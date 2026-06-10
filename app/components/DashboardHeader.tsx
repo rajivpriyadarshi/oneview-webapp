@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getProfile } from "../lib/realAuthApi";
+import { useListCurrenciesQuery } from "../store/api";
 
 type Props = {
   updatedAt?: string;
@@ -14,6 +15,10 @@ type Props = {
 export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR", onCurrencyChange }: Props) {
   const [userName, setUserName] = useState("");
   const subtitle = 'See the unified view of all your investments';
+  const { data: currencies } = useListCurrenciesQuery();
+  const currencyList = currencies && currencies.length > 0
+    ? currencies.map(c => c.currency_code)
+    : ["INR", "USD"];
 
   useEffect(() => {
     getProfile()
@@ -48,52 +53,32 @@ export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR",
               padding: "2px",
             }}
           >
-            <button
-              onClick={() => onCurrencyChange("INR")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "20px",
-                padding: "8px 16px",
-                fontSize: "16px",
-                fontWeight: 400,
-                fontFamily: "var(--font-satoshi), sans-serif",
-                lineHeight: 1.3,
-                letterSpacing: "-0.56px",
-                whiteSpace: "nowrap",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                background: currency === "INR" ? "#fff" : "transparent",
-                color: currency === "INR" ? "#2f2b2c" : "rgba(255,255,255,0.6)",
-              }}
-            >
-              INR
-            </button>
-            <button
-              onClick={() => onCurrencyChange("USD")}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "20px",
-                padding: "8px 16px",
-                fontSize: "16px",
-                fontWeight: 400,
-                fontFamily: "var(--font-satoshi), sans-serif",
-                lineHeight: 1.3,
-                letterSpacing: "-0.56px",
-                whiteSpace: "nowrap",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                background: currency === "USD" ? "#fff" : "transparent",
-                color: currency === "USD" ? "#2f2b2c" : "rgba(255,255,255,0.6)",
-              }}
-            >
-              USD
-            </button>
+            {currencyList.map((code) => (
+              <button
+                key={code}
+                onClick={() => onCurrencyChange(code)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "20px",
+                  padding: "8px 16px",
+                  fontSize: "16px",
+                  fontWeight: 400,
+                  fontFamily: "var(--font-satoshi), sans-serif",
+                  lineHeight: 1.3,
+                  letterSpacing: "-0.56px",
+                  whiteSpace: "nowrap",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.3s",
+                  background: currency === code ? "#fff" : "transparent",
+                  color: currency === code ? "#2f2b2c" : "rgba(255,255,255,0.6)",
+                }}
+              >
+                {code}
+              </button>
+            ))}
           </div>
         )}
         <Link

@@ -18,54 +18,38 @@ type ChartSegment = {
 
 // Color palette for charts - designed for visual distinction and accessibility
 const CHART_COLORS = [
-  "#4d558a",
-  "#e39f4b",
-  "#6438E8",
-  "#CE8016",  
+  "#7F4E0B",
+  "#CE8016",
+  "#A29076",
+  "#444341",
+  "#CAC0B2",
+  "#FE5D26",
+  "#FFC75F",
+  "#9EDE73",
   "#59886B",
-  "#444444",    
-  "#FFC75F",    
-  "#9EDE73", 
-  "#184D47",   
-  "#D2DB20", 
-  "#939191",  
-  "#76FDB0", 
-  "#2F2B2C", 
-  "#FFB2FC", 
-  "#B0EDFF",
-  "#A3A1FB",
-  "#7A2783",
-  "#F46396"
+  "#184D47",
+  "#D2DB20",
+  "#76FDB0",
 ];
+
+function getChartColor(index: number, palette: string[]): string {
+  const cycle = Math.floor(index / palette.length);
+  const base = palette[index % palette.length];
+  if (cycle === 0) return base;
+  // Each cycle lightens by 20 or darkens by 20, alternating
+  const shift = cycle % 2 === 1 ? 20 * cycle : -20 * cycle;
+  return shadeHex(base, shift);
+}
 
 const ASSET_COLORS = CHART_COLORS;
 const BROKER_COLORS = CHART_COLORS.map((color) => shadeHex(color, -18));
-const SECTOR_COLORS = [
-  "#F5A623",
-  "#2BC5BD",
-  "#5B7FE8",
-  "#E84393",
-  "#9B4DCA",
-  "#E85454",
-  "#27B16C",
-  "#F5D842",
-  "#E87B28",
-  "#4DB6AC",
-  "#7986CB",
-  "#EF5350",
-  "#26A69A",
-  "#AB47BC",
-  "#FFA726",
-  "#66BB6A",
-  "#42A5F5",
-  "#EC407A",
-];
+const SECTOR_COLORS = CHART_COLORS;
 
 export default function PortfolioExposure({ portfolioView }: Props) {
   const { trackClick } = useAnalytics();
-  const assetPalette = useMemo(() => getShiftedPalette(ASSET_COLORS, "asset"), []);
-  const brokerPalette = useMemo(() => getShiftedPalette(BROKER_COLORS, "broker"), []);
-  const sectorPalette = useMemo(() => getShiftedPalette(SECTOR_COLORS, "sector"), []);
+  const assetPalette = ASSET_COLORS;
+  const brokerPalette = useMemo(() => [...BROKER_COLORS.slice(4), ...BROKER_COLORS.slice(0, 4)], []);
+  const sectorPalette = useMemo(() => [...SECTOR_COLORS.slice(8), ...SECTOR_COLORS.slice(0, 8)], []);
 
   const assetTypeData = useMemo(() => {
     if (!portfolioView?.asset_allocation) return [];
@@ -77,7 +61,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         label: capitalize(label),
         value: data.market_value,
         percentage: data.weight_pct ?? (total > 0 ? (data.market_value / total) * 100 : 0),
-        color: assetPalette[i % assetPalette.length],
+        color: getChartColor(i, assetPalette),
       }));
   }, [assetPalette, portfolioView]);
 
@@ -90,7 +74,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         label: capitalize(acc.institution_name || acc.account_name),
         value: acc.market_value,
         percentage: total > 0 ? (acc.market_value / total) * 100 : 0,
-        color: brokerPalette[i % brokerPalette.length],
+        color: getChartColor(i, brokerPalette),
       }));
   }, [brokerPalette, portfolioView]);
 
@@ -104,7 +88,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         label: capitalize(label),
         value: data.market_value,
         percentage: data.weight_pct ?? (total > 0 ? (data.market_value / total) * 100 : 0),
-        color: sectorPalette[i % sectorPalette.length],
+        color: getChartColor(i, sectorPalette),
       }));
   }, [portfolioView, sectorPalette]);
 

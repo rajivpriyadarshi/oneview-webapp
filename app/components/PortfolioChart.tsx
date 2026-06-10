@@ -206,6 +206,16 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
     },
   };
 
+  if (!hasData) {
+    return (
+      <div className="relative min-h-[240px] w-full min-w-0 max-[900px]:h-[160px] flex items-center justify-center">
+        <a href="/onboarding/documents" className="block w-full">
+          <img src="/empty-state.png" alt="No chart data — add statements" className="max-h-[240px] w-full object-contain opacity-70 cursor-pointer hover:opacity-90 transition-opacity" />
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-[240px] w-full min-w-0 max-[900px]:h-[160px]">
       <Line data={data} options={options} />

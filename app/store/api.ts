@@ -12,6 +12,7 @@ import type {
   DocumentPosition,
   BrokerStatementJobStatusResponse,
   BrokerStatementUploadResponse,
+  BrokerStatementJob,
 } from "../lib/documentsApi";
 import {
   isBrokerStatementJobStatusValid,
@@ -215,6 +216,14 @@ export const api = createApi({
         validateStatus: isBrokerStatementJobStatusValid,
       }),
     }),
+    listBrokerStatementJobs: builder.query<BrokerStatementJob[], void>({
+      query: () => ({ url: "/oneview/broker-statements/jobs/" }),
+      providesTags: ["Documents"],
+    }),
+    listCurrencies: builder.query<{ currency_code: string; name: string | null; symbol: string | null; decimals: number }[], void>({
+      query: () => ({ url: "/wealth/currencies/" }),
+      transformResponse: (response: { currencies: { currency_code: string; name: string | null; symbol: string | null; decimals: number }[] }) => response.currencies,
+    }),
   }),
 });
 
@@ -243,4 +252,6 @@ export const {
   useDeleteDocumentMutation,
   useUploadBrokerStatementMutation,
   useLazyGetBrokerStatementJobStatusQuery,
+  useListBrokerStatementJobsQuery,
+  useListCurrenciesQuery,
 } = api;

@@ -298,3 +298,20 @@ export function getBrokerStatementJobStatus(jobId: string) {
     },
   );
 }
+
+export type BrokerStatementJob = {
+  job_id: string;
+  status: "queued" | "running" | "completed" | "failed" | "needs_review";
+  original_filename: string;
+  document_id: number | null;
+  created_at: string;
+  updated_at: string;
+  progress: { label?: string; current?: number; total?: number } | null;
+  broker_detected: string | null;
+  positions_count: number | null;
+  error_summary: string | null;
+};
+
+export function listBrokerStatementJobs() {
+  return apiRequest<BrokerStatementJob[]>("/oneview/broker-statements/jobs/");
+}

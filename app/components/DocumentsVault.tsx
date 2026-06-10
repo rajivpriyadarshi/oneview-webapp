@@ -122,9 +122,7 @@ export function DocumentsVault() {
 
   const documents = rawDocuments.map(mapDocToTableRow);
   const docCount = rawDocuments.length;
-  const accountCount = new Set(
-    rawDocuments.flatMap((d) => (d.accounts as { id: number }[])?.map((a) => a.id) || []),
-  ).size;
+  const accountCount = new Set(documents.map((d) => d.account)).size;
 
   // Track page load
   useEffect(() => {
@@ -478,12 +476,21 @@ export function DocumentsVault() {
         <div className="docs-vault-header-right">
           <div className="docs-vault-brokers">
             <div className="flex items-center gap-2">
-              <img src="/broker-icons/groww.png" alt="Groww" className="h-[28px] w-[28px] rounded-full object-cover" />
-              <img src="/broker-icons/fidelity.png" alt="Fidelity" className="h-[28px] w-[28px] rounded-full object-cover" />
-              <img src="/broker-icons/zerodha.png" alt="Zerodha" className="h-[28px] w-[28px] rounded-full object-cover" />
-              <img src="/broker-icons/vested.png" alt="Vested" className="h-[28px] w-[28px] rounded-full object-cover" />
-              <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="h-[28px] w-[28px] rounded-full object-cover" />
-              <img src="/broker-icons/ibkr.png" alt="IBKR" className="h-[28px] w-[28px] rounded-full object-cover" />
+              {[
+                { src: "/broker-icons/groww.png", name: "Groww" },
+                { src: "/broker-icons/fidelity.png", name: "Fidelity" },
+                { src: "/broker-icons/zerodha.png", name: "Zerodha" },
+                { src: "/broker-icons/vested.png", name: "Vested" },
+                { src: "/broker-icons/shwab.png", name: "Charles Schwab" },
+                { src: "/broker-icons/ibkr.png", name: "IBKR" },
+              ].map(({ src, name }) => (
+                <div key={name} className="group relative">
+                  <img src={src} alt={name} className="h-[28px] w-[28px] rounded-full object-cover" />
+                  <span className="pointer-events-none absolute top-full left-1/2 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-[#1a1a1a] px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                    {name}
+                  </span>
+                </div>
+              ))}
             </div>
             <button
               type="button"

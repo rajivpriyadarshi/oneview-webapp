@@ -24,10 +24,9 @@ const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const SUPPORTED_EXTENSIONS = [".csv", ".xlsx", ".pdf"];
 
 const CHART_COLORS = [
-  "#FE5D26", "#388DE8", "#CE8016", "#6438E8", "#59886B",
-  "#444444", "#FFC75F", "#9EDE73", "#184D47", "#D2DB20",
-  "#939191", "#76FDB0", "#2F2B2C", "#FFB2FC", "#B0EDFF",
-  "#A3A1FB", "#7A2783", "#F46396"
+  "#7F4E0B", "#CE8016", "#A29076", "#444341", "#CAC0B2",
+  "#FE5D26", "#FFC75F", "#9EDE73", "#59886B", "#184D47",
+  "#D2DB20", "#76FDB0",
 ];
 
 type UploadStatus = "queued" | "uploading" | "complete" | "error" | "review";
@@ -768,6 +767,35 @@ export function StatementUpload() {
                     </button>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Review banner */}
+            {uploadItems.some(i => i.status === "review") && (
+              <div className="w-full flex items-center justify-between gap-4 px-5 py-4 rounded-2xl" style={{ background: "rgba(0,0,0,0.06)" }}>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-black/[0.08] flex items-center justify-center mt-0.5">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="black" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-satoshi text-[14px] font-semibold leading-[150%] tracking-[-0.28px] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
+                      We encountered a few statements that we couldn't process with full accuracy. Our team is reviewing them.
+                    </span>
+                    <span className="font-satoshi text-[13px] font-normal leading-[150%] tracking-[-0.26px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
+                      This may take a 3–4 hours. We'll notify you as soon as your dashboard is ready.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="flex-shrink-0 font-satoshi text-[14px] font-semibold leading-[150%] tracking-[-0.28px] text-black border border-black/15 rounded-full px-5 py-2.5 bg-white hover:bg-black/[0.04] transition-colors cursor-pointer whitespace-nowrap"
+                  style={{ fontFeatureSettings: "'ss03' on" }}
+                  onClick={() => router.push("/vault")}
+                >
+                  See details
+                </button>
               </div>
             )}
 
