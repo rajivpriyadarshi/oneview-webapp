@@ -85,7 +85,7 @@ export default function DocumentsTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [groupBy, setGroupBy] = useState<GroupOption>("Account");
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const selectedDocuments = documents.filter((document) =>
     selectedRows.has(document.id)
   );
@@ -778,6 +778,41 @@ function ViewToggle({
       <button
         type="button"
         className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+          viewMode === "timeline"
+            ? "bg-black text-white"
+            : "bg-transparent text-black/50 hover:text-black"
+        }`}
+        onClick={() => onViewModeChange("timeline")}
+        title="Timeline view"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect
+            x="2"
+            y="2.5"
+            width="12"
+            height="11"
+            rx="1.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M2 6H14" stroke="currentColor" strokeWidth="1.5" />
+          <path
+            d="M5.5 1V3.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10.5 1V3.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
           viewMode === "list"
             ? "bg-black text-white"
             : "bg-transparent text-black/50 hover:text-black"
@@ -840,41 +875,6 @@ function ViewToggle({
             rx="1"
             stroke="currentColor"
             strokeWidth="1.5"
-          />
-        </svg>
-      </button>
-      <button
-        type="button"
-        className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
-          viewMode === "timeline"
-            ? "bg-black text-white"
-            : "bg-transparent text-black/50 hover:text-black"
-        }`}
-        onClick={() => onViewModeChange("timeline")}
-        title="Timeline view"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect
-            x="2"
-            y="2.5"
-            width="12"
-            height="11"
-            rx="1.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <path d="M2 6H14" stroke="currentColor" strokeWidth="1.5" />
-          <path
-            d="M5.5 1V3.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M10.5 1V3.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
           />
         </svg>
       </button>
@@ -1123,11 +1123,12 @@ function TimelineView({
   return (
     <div className="pb-4 px-4">
       <div className="relative">
-        <div className="absolute left-5 top-0 bottom-0 w-[2px] bg-black/10" />
-
-        {Object.entries(groupedByMonth).map(([monthKey, docs]) => (
+        {Object.entries(groupedByMonth).map(([monthKey, docs], idx, arr) => (
           <div key={monthKey} className="relative mb-8 last:mb-0">
-            <div className="flex items-center gap-4 mb-4">
+            {idx < arr.length - 1 && (
+              <div className="absolute left-5 top-5 bottom-[-32px] w-[2px] bg-black/10" />
+            )}
+            <div className="flex items-center gap-4 mb-2">
               <div className="w-10 h-10 rounded-full bg-white border-2 border-black/10 flex items-center justify-center z-10">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <rect
@@ -1163,10 +1164,10 @@ function TimelineView({
               {docs.map((doc) => (
                 <div
                   key={doc.id}
-                  className={`flex items-center gap-4 p-4 rounded-[28px] cursor-pointer transition-all hover:bg-[#f5f5f5] ${
+                  className={`flex items-center gap-4 p-4 rounded-[28px] cursor-pointer transition-all hover:bg-[#f0f0f0] ${
                     selectedRows.has(doc.id)
                       ? "bg-blue-50 ring-2 ring-blue-500"
-                      : "bg-[#fafafa]"
+                      : "bg-[#f6f6f6]"
                   }`}
                   onClick={() => onToggleRow(doc.id)}
                 >
