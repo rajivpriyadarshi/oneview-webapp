@@ -114,7 +114,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
     <section data-analytics-section="portfolio_exposure" className="relative z-10 mb-[16px] overflow-visible rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
       <h3 className="flex align-center items-center gap-2 border-b border-black/10 pl-[6px] py-[24px] font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
         <ExposureIcon />
-        Portfolio Exposure
+        Portfolio exposure
       </h3>
       <div className={`grid gap-0 ${!hasSectorData ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"}`}>
         <div className="relative pt-[32px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-transparent md:border-r md:border-black/15">
