@@ -30,7 +30,7 @@ const CHART_COLORS = [
   "#A3A1FB", "#7A2783", "#F46396"
 ];
 
-type UploadStatus = "queued" | "uploading" | "complete" | "error";
+type UploadStatus = "queued" | "uploading" | "complete" | "error" | "review";
 
 type UploadItem = {
   id: string;
@@ -50,6 +50,8 @@ export function StatementUpload() {
   const { trackPage, trackClick, trackAPI } = useAnalytics();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const pollingAbortControllerRef = useRef<AbortController | null>(null);
+  const uploadQueueRef = useRef<UploadItem[]>([]);
+  const isProcessingQueueRef = useRef(false);
   const [firstName, setFirstName] = useState("there");
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -198,7 +200,6 @@ export function StatementUpload() {
     });
 
     const validUploads = preparedItems.filter(item => item.status !== "error");
-
     setUploadItems(prev => [...prev, ...preparedItems]);
 
     if (validUploads.length === 0) {
@@ -206,12 +207,18 @@ export function StatementUpload() {
       return;
     }
 
+    uploadQueueRef.current.push(...validUploads);
+
+    if (isProcessingQueueRef.current) return;
+
+    isProcessingQueueRef.current = true;
     setIsUploading(true);
 
     try {
       let successCount = 0;
 
-      for (const item of validUploads) {
+      while (uploadQueueRef.current.length > 0) {
+        const item = uploadQueueRef.current.shift()!;
         updateUploadItem(item.id, { status: "uploading", progress: 0 });
         startProgressAnimation(item.id);
 
@@ -325,7 +332,7 @@ export function StatementUpload() {
                   },
                 });
                 updateUploadItem(item.id, {
-                  status: "error",
+                  status: "review",
                   progress: 0,
                   detail: undefined,
                   error: jobResult.message ?? "Extraction complete but requires human review.",
@@ -405,6 +412,7 @@ export function StatementUpload() {
         setMessage(`Uploaded ${successCount} file${successCount > 1 ? "s" : ""} successfully.`);
       }
     } finally {
+      isProcessingQueueRef.current = false;
       setIsUploading(false);
 
       if (inputRef.current) {
@@ -610,10 +618,10 @@ export function StatementUpload() {
             </p>
 
             <label
-              className={`statement-dropzone${isDragging ? " is-dragging" : ""}${isUploading ? " is-disabled" : ""}`}
-              onDragOver={isUploading ? undefined : handleDragOver}
-              onDragLeave={isUploading ? undefined : handleDragLeave}
-              onDrop={isUploading ? undefined : handleDrop}
+              className={`statement-dropzone${isDragging ? " is-dragging" : ""}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
               <input
                 ref={inputRef}
@@ -621,7 +629,7 @@ export function StatementUpload() {
                 accept=".csv,.xlsx,.pdf"
                 multiple
                 onChange={handleFileChange}
-                disabled={isUploading}
+                disabled={false}
               />
               <span className="upload-icon">
                 <UploadIcon />
@@ -631,31 +639,35 @@ export function StatementUpload() {
             </label>
 
             {uploadItems.length > 0 && (
-              <div className="statement-uploads-list">
+              <div className="flex flex-col gap-[10px]">
                 {uploadItems.map((item) => (
-                  <div key={item.id} className="statement-file-loading" aria-live="polite">
+                  <div key={item.id} className="w-full flex flex-row items-center gap-4 px-4 py-3 rounded-3xl border border-black/10" style={{ background: '#FFFFFF24', backdropFilter: 'blur(44px)', WebkitBackdropFilter: 'blur(44px)' }} aria-live="polite">
                     <div
-                      className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "error" ? " is-error" : ""}`}
+                      className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "review" ? " is-review" : ""}${item.status === "error" ? " is-error" : ""}`}
                       style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
                     >
                       {item.status === "complete" ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
-                          <path d="M13.3327 4L5.99935 11.3333L2.66602 8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : item.status === "review" ? (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2V6M12 18V22M6 12H2M22 12H18M19.0784 19.0784L16.25 16.25M19.0784 4.99994L16.25 7.82837M4.92157 19.0784L7.75 16.25M4.92157 4.99994L7.75 7.82837" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       ) : item.status === "error" ? (
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
-                          <path d="M8 4V8M8 10.6667V12M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333C11.6819 1.33333 14.6667 4.3181 14.6667 8Z" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M8 4V8M8 10.6667V12M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333C11.6819 1.33333 14.6667 4.3181 14.6667 8Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       ) : (
                         <span />
                       )}
                     </div>
-                    <div className="statement-file-meta">
-                      <strong>{item.name}</strong>
-                      <span>
+                    <div className="flex-1 flex flex-col gap-[2px] min-w-0">
+                      <strong className="font-satoshi text-[15px] font-semibold leading-[150%] tracking-[-0.3px] text-black overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontFeatureSettings: "'ss03' on" }}>{item.name}</strong>
+                      <span className="font-satoshi text-[13px] font-medium leading-[150%] tracking-[-0.26px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
                         {item.status === "complete"
                           ? item.detail ?? formatFileSize(item.size)
-                          : item.status === "error"
+                          : item.status === "error" || item.status === "review"
                             ? item.error
                             : item.detail ?? formatFileSize(item.size)
                         }
@@ -663,13 +675,13 @@ export function StatementUpload() {
                     </div>
                     <button
                       type="button"
-                      className="statement-file-remove"
+                      className="ml-auto flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-black/[0.04] hover:bg-black/[0.08] transition-colors cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed border-0"
                       onClick={() => removeUploadItem(item.id)}
                       aria-label="Remove selected file"
                       disabled={isUploading && item.status === "uploading"}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none">
-                        <path d="M7.33268 0.666016L0.666016 7.33268M0.666016 0.666016L7.33268 7.33268" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.3337 4.66669L4.66699 11.3334M4.66699 4.66669L11.3337 11.3334" stroke="black" strokeOpacity="0.7" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </button>
                   </div>
