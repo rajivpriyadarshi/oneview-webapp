@@ -30,7 +30,7 @@ const CHART_COLORS = [
   "#A3A1FB", "#7A2783", "#F46396"
 ];
 
-type UploadStatus = "queued" | "uploading" | "complete" | "error";
+type UploadStatus = "queued" | "uploading" | "complete" | "error" | "review";
 
 type UploadItem = {
   id: string;
@@ -332,7 +332,7 @@ export function StatementUpload() {
                   },
                 });
                 updateUploadItem(item.id, {
-                  status: "error",
+                  status: "review",
                   progress: 0,
                   detail: undefined,
                   error: jobResult.message ?? "Extraction complete but requires human review.",
@@ -643,12 +643,16 @@ export function StatementUpload() {
                 {uploadItems.map((item) => (
                   <div key={item.id} className="w-full flex flex-row items-center gap-4 px-4 py-3 rounded-3xl border border-black/10" style={{ background: '#FFFFFF24', backdropFilter: 'blur(44px)', WebkitBackdropFilter: 'blur(44px)' }} aria-live="polite">
                     <div
-                      className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "error" ? " is-error" : ""}`}
+                      className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "review" ? " is-review" : ""}${item.status === "error" ? " is-error" : ""}`}
                       style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
                     >
                       {item.status === "complete" ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
-                          <path d="M13.3327 4L5.99935 11.3333L2.66602 8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : item.status === "review" ? (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 2V6M12 18V22M6 12H2M22 12H18M19.0784 19.0784L16.25 16.25M19.0784 4.99994L16.25 7.82837M4.92157 19.0784L7.75 16.25M4.92157 4.99994L7.75 7.82837" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       ) : item.status === "error" ? (
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
@@ -658,12 +662,12 @@ export function StatementUpload() {
                         <span />
                       )}
                     </div>
-                    <div className="statement-file-meta">
-                      <strong>{item.name}</strong>
-                      <span>
+                    <div className="flex-1 flex flex-col gap-[2px] min-w-0">
+                      <strong className="font-satoshi text-[15px] font-semibold leading-[150%] tracking-[-0.3px] text-black overflow-hidden text-ellipsis whitespace-nowrap" style={{ fontFeatureSettings: "'ss03' on" }}>{item.name}</strong>
+                      <span className="font-satoshi text-[13px] font-medium leading-[150%] tracking-[-0.26px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
                         {item.status === "complete"
                           ? item.detail ?? formatFileSize(item.size)
-                          : item.status === "error"
+                          : item.status === "error" || item.status === "review"
                             ? item.error
                             : item.detail ?? formatFileSize(item.size)
                         }

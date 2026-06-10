@@ -2739,6 +2739,10 @@ button:disabled {
   background: #DC2626;
 }
 
+.statement-file-loader.is-review {
+  background: #C5A400 !important;
+}
+
 @keyframes rotate {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
