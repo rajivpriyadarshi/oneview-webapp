@@ -77,9 +77,12 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
 
   const formatLabel = (value: number | string) => {
     const num = typeof value === "string" ? parseFloat(value) : value;
-    if (num >= 100000) return `${currSymbol}${(num / 100000).toFixed(1)}L`;
-    if (num >= 1000) return `${currSymbol}${(num / 1000).toFixed(1)}K`;
-    return `${currSymbol}${num.toFixed(0)}`;
+    const abs = Math.abs(num);
+    const sign = num < 0 ? "-" : "";
+    if (abs >= 10000000) return `${sign}${currSymbol}${(abs / 10000000).toFixed(2)}Cr`;
+    if (abs >= 100000) return `${sign}${currSymbol}${(abs / 100000).toFixed(1)}L`;
+    if (abs >= 1000) return `${sign}${currSymbol}${(abs / 1000).toFixed(1)}K`;
+    return `${sign}${currSymbol}${abs.toFixed(0)}`;
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

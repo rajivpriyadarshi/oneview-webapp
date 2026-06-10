@@ -112,11 +112,16 @@ export default function PortfolioSummary({
 }
 
 function formatLakhs(value: number) {
-  if (Math.abs(value) >= 100000) {
-    return `${(value / 100000).toFixed(1)}L`;
+  const abs = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  if (abs >= 10000000) {
+    return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
   }
-  if (Math.abs(value) >= 1000) {
-    return `${(value / 1000).toFixed(1)}K`;
+  if (abs >= 100000) {
+    return `${sign}${(abs / 100000).toFixed(1)}L`;
+  }
+  if (abs >= 1000) {
+    return `${sign}${(abs / 1000).toFixed(1)}K`;
   }
   return value.toFixed(2);
 }
