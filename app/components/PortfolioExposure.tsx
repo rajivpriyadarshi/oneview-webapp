@@ -111,13 +111,13 @@ export default function PortfolioExposure({ portfolioView }: Props) {
   const hasSectorData = sectorData.length > 0;
 
   return (
-    <section data-analytics-section="portfolio_exposure" className="mb-[16px] rounded-[32px] bg-white px-[16px] pl-[24px]">
+    <section data-analytics-section="portfolio_exposure" className="mb-[16px] rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
       <h3 className="flex align-center items-center gap-2 border-b border-black/10 pl-[6px] py-[24px] font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
         <ExposureIcon />
         Portfolio Exposure
       </h3>
       <div className={`grid gap-0 ${!hasSectorData ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3"}`}>
-        <div className="relative pt-[16px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-white md:border-r md:border-black/15">
+        <div className="relative pt-[32px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-transparent md:border-r md:border-black/15">
           <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
             By <strong>Asset type</strong>
           </p>
@@ -126,7 +126,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
           </div>
         </div>
 
-        <div className={`relative pt-[16px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-white ${hasSectorData ? "md:border-r md:border-black/15" : ""}`}>
+        <div className={`relative pt-[32px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-transparent ${hasSectorData ? "md:border-r md:border-black/15" : ""}`}>
           <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
             By <strong>Broker</strong>
           </p>
@@ -136,7 +136,7 @@ export default function PortfolioExposure({ portfolioView }: Props) {
         </div>
 
         {hasSectorData && (
-          <div className="relative pt-[16px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-white">
+          <div className="relative pt-[32px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-transparent">
             <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
               By <strong>Sector allocation</strong>
             </p>
@@ -367,6 +367,8 @@ function SectorDonutChart({
 
   const active = segments[safeActiveIndex];
 
+  if (!active) return null;
+
   return (
     <div className="flex flex-col items-center gap-4">
       <svg
@@ -401,9 +403,9 @@ function SectorDonutChart({
           y={cy - 10}
           textAnchor="middle"
           dominantBaseline="middle"
-          fontSize="36"
+          fontSize="38"
           fontWeight="800"
-          fontFamily="Geist, Inter, sans-serif"
+          fontFamily="Satoshi, sans-serif"
           fill="#0f0f0f"
           letterSpacing="-1"
         >
@@ -412,12 +414,12 @@ function SectorDonutChart({
         {/* center label */}
         <text
           x={cx}
-          y={cy + 16}
+          y={cy + 24}
           textAnchor="middle"
           dominantBaseline="middle"
-          fontSize="13"
+          fontSize="14"
           fontWeight="500"
-          fontFamily="Geist, Inter, sans-serif"
+          fontFamily="Satoshi, sans-serif"
           fill="#888"
           letterSpacing="0"
         >

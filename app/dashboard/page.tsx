@@ -139,7 +139,7 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const { data: portfolioView, isLoading: viewLoading } = useGetPortfolioViewQuery(
+  const { data: portfolioView, isLoading: viewLoading, isFetching: viewFetching } = useGetPortfolioViewQuery(
     { accountIds, currency },
     { skip: !activePortfolioId },
   );
@@ -201,10 +201,10 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen overflow-x-hidden bg-[var(--background)]">
+      <div className="flex min-h-screen overflow-x-hidden bg-transparent">
         <Sidebar />
-        <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[80px] sm:pt-[40px] md:ml-16 px-6 sm:px-[60px]">
-          {loading && !portfolioView ? (
+        <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[120px] md:ml-16 px-6 sm:px-[60px]">
+          {viewLoading && !portfolioView ? (
             <div className="flex h-[calc(100vh-160px)] flex-col items-center justify-center gap-4">
               <div className="relative mb-8 inline-flex items-center justify-center">
                 <svg width="56" height="56" viewBox="0 0 31 30" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-20 w-20">
@@ -219,10 +219,16 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              <DashboardHeader updatedAt={selectedPortfolio?.updated_at} />
+              <DashboardHeader
+                updatedAt={selectedPortfolio?.updated_at}
+                asOfDate={portfolioView?.as_of_date ? new Date(portfolioView.as_of_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : undefined}
+                currency={currency}
+                onCurrencyChange={handleCurrencyChange}
+              />
               <PortfolioSummary
                 portfolioView={portfolioView ?? null}
                 loading={loading}
+                valuesRefetching={viewFetching}
                 chartLoading={valuationsFetching}
                 accounts={accounts}
                 selectedAccountId={selectedAccountId}
@@ -248,7 +254,7 @@ export default function DashboardPage() {
                     </p>
                     <Link
                       href="/documents-vault"
-                      className="mt-[34px] inline-flex cursor-pointer items-center gap-3 rounded-full border border-black/10 px-[24px] py-[16px] font-satoshi text-[16px] font-bold leading-[24px] tracking-[-0.04em] text-black transition hover:bg-black/5"
+                      className="mt-[34px] inline-flex cursor-pointer items-center gap-[10px] rounded-full border border-black/10 px-[24px] py-[16px] font-satoshi text-[16px] font-bold leading-[24px] tracking-[-0.04em] text-black transition hover:bg-black/5"
                     >
                       <PlusIcon />
                       Add statements

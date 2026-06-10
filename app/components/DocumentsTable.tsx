@@ -85,7 +85,7 @@ export default function DocumentsTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [groupBy, setGroupBy] = useState<GroupOption>("Account");
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useState<ViewMode>("timeline");
   const selectedDocuments = documents.filter((document) =>
     selectedRows.has(document.id)
   );
@@ -329,10 +329,10 @@ export default function DocumentsTable({
   });
 
   return (
-    <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
+    <section className="mb-7 flex flex-col rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
       <div className="mb-0 flex min-h-[100px] flex-wrap items-center justify-between gap-4 py-[24px]">
         <h3
-          className="m-0 flex items-center gap-2 font-satoshi text-base font-bold leading-[130%] tracking-[-0.02em] text-black"
+          className="m-0 flex items-center gap-2 font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black"
           style={{ fontFeatureSettings: "'ss03' on" }}
         >
           <DocumentsIcon />
@@ -398,7 +398,7 @@ export default function DocumentsTable({
                     <th
                       key={header.id}
                       onClick={header.column.getToggleSortingHandler()}
-                      className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] whitespace-nowrap ${
+                      className={`sticky top-0 z-10 border-y border-black/10 bg-transparent px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] whitespace-nowrap ${
                         header.id === "checkbox" ? "w-10" : ""
                       } ${
                         centerAlignedColumns.has(header.id)
@@ -553,21 +553,69 @@ function DocumentsIcon() {
 }
 
 function FileIcon({ type }: { type: string }) {
-  const styles: Record<string, string> = {
-    xls: "bg-[linear-gradient(90deg,#128044_0_35%,#21a365_35%_100%)]",
-    pdf: "bg-[#e31b2f]",
-    png: "bg-[linear-gradient(135deg,#dfe6ee_0_62%,#b6c4d4_62%)] text-[#6958ff]",
-    docx: "bg-[#2b579a]",
-    csv: "bg-[#22a768]",
-    file: "bg-[#6b7280]",
+  const colors: Record<
+    string,
+    { bg: string; text: string; docBg?: string; docFold?: string }
+  > = {
+    pdf: { bg: "#e31b2f", text: "white", docBg: "#F5E6E8", docFold: "#E8CDD1" },
+    xls: { bg: "#217346", text: "white", docBg: "#E6F2EC", docFold: "#C9E4D5" },
+    xlsx: { bg: "#217346", text: "white", docBg: "#E6F2EC", docFold: "#C9E4D5" },
+    csv: { bg: "#22a768", text: "white", docBg: "#E8F5EE", docFold: "#C9E8D7" },
+    docx: { bg: "#2b579a", text: "white", docBg: "#E6EBF2", docFold: "#C9D4E4" },
+    png: { bg: "#8B5CF6", text: "white", docBg: "#F3EEFE", docFold: "#E4D9FC" },
+    jpg: { bg: "#8B5CF6", text: "white", docBg: "#F3EEFE", docFold: "#E4D9FC" },
+    jpeg: { bg: "#8B5CF6", text: "white", docBg: "#F3EEFE", docFold: "#E4D9FC" },
+    file: { bg: "#6b7280", text: "white", docBg: "#E5E7EB", docFold: "#D1D5DB" },
   };
-  const style = styles[type] ?? styles.file;
+  const { bg, text, docBg, docFold } = colors[type] ?? colors.file;
+  const isImage = ["png", "jpg", "jpeg"].includes(type);
+
+  if (isImage) {
+    return (
+      <div className="relative flex-shrink-0">
+        <svg width="28" height="34" viewBox="0 0 48 56" fill="none">
+          <path
+            d="M4 4C4 1.79086 5.79086 0 8 0H30L44 14V52C44 54.2091 42.2091 56 40 56H8C5.79086 56 4 54.2091 4 52V4Z"
+            fill={docBg}
+          />
+          <path
+            d="M30 0L44 14H34C31.7909 14 30 12.2091 30 10V0Z"
+            fill={docFold}
+          />
+          <circle cx="16" cy="24" r="4" fill={bg} opacity="0.6" />
+          <path d="M8 34L16 26L22 32L28 24L36 34H8Z" fill={bg} opacity="0.6" />
+          <rect x="8" y="36" width="28" height="14" rx="2" fill={bg} />
+        </svg>
+        <span
+          className="absolute bottom-[5px] left-1/2 -translate-x-1/2 text-[5px] font-bold uppercase"
+          style={{ color: text }}
+        >
+          {type}
+        </span>
+      </div>
+    );
+  }
+
   return (
-    <span
-      className={`grid h-7 w-7 flex-shrink-0 place-items-center rounded-lg text-[7px] font-black uppercase text-white ${style}`}
-    >
-      {type.toUpperCase()}
-    </span>
+    <div className="relative flex-shrink-0">
+      <svg width="28" height="34" viewBox="0 0 48 56" fill="none">
+        <path
+          d="M4 4C4 1.79086 5.79086 0 8 0H30L44 14V52C44 54.2091 42.2091 56 40 56H8C5.79086 56 4 54.2091 4 52V4Z"
+          fill={docBg}
+        />
+        <path
+          d="M30 0L44 14H34C31.7909 14 30 12.2091 30 10V0Z"
+          fill={docFold}
+        />
+        <rect x="8" y="36" width="28" height="14" rx="2" fill={bg} />
+      </svg>
+      <span
+        className="absolute bottom-[5px] left-1/2 -translate-x-1/2 text-[5px] font-bold uppercase"
+        style={{ color: text }}
+      >
+        {type === "xlsx" ? "xls" : type}
+      </span>
+    </div>
   );
 }
 
@@ -730,6 +778,41 @@ function ViewToggle({
       <button
         type="button"
         className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+          viewMode === "timeline"
+            ? "bg-black text-white"
+            : "bg-transparent text-black/50 hover:text-black"
+        }`}
+        onClick={() => onViewModeChange("timeline")}
+        title="Timeline view"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect
+            x="2"
+            y="2.5"
+            width="12"
+            height="11"
+            rx="1.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          />
+          <path d="M2 6H14" stroke="currentColor" strokeWidth="1.5" />
+          <path
+            d="M5.5 1V3.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10.5 1V3.5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
           viewMode === "list"
             ? "bg-black text-white"
             : "bg-transparent text-black/50 hover:text-black"
@@ -792,41 +875,6 @@ function ViewToggle({
             rx="1"
             stroke="currentColor"
             strokeWidth="1.5"
-          />
-        </svg>
-      </button>
-      <button
-        type="button"
-        className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
-          viewMode === "timeline"
-            ? "bg-black text-white"
-            : "bg-transparent text-black/50 hover:text-black"
-        }`}
-        onClick={() => onViewModeChange("timeline")}
-        title="Timeline view"
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect
-            x="2"
-            y="2.5"
-            width="12"
-            height="11"
-            rx="1.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <path d="M2 6H14" stroke="currentColor" strokeWidth="1.5" />
-          <path
-            d="M5.5 1V3.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-          <path
-            d="M10.5 1V3.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
           />
         </svg>
       </button>
@@ -951,7 +999,7 @@ function FolderView({
                 {docs.map((doc) => (
                   <div
                     key={doc.id}
-                    className={`relative flex flex-col items-center gap-1 p-4 rounded-xl cursor-pointer transition-all group border min-w-0 ${
+                    className={`relative flex flex-col items-center gap-1 px-4 py-[32px] rounded-[28px] cursor-pointer transition-all group border min-w-0 ${
                       selectedRows.has(doc.id)
                         ? "bg-blue-50 ring-2 ring-blue-500 border-blue-200"
                         : "bg-[#fafafa] border-black/5 hover:bg-[#f5f5f5] hover:border-black/10"
@@ -1075,11 +1123,12 @@ function TimelineView({
   return (
     <div className="pb-4 px-4">
       <div className="relative">
-        <div className="absolute left-5 top-0 bottom-0 w-[2px] bg-black/10" />
-
-        {Object.entries(groupedByMonth).map(([monthKey, docs]) => (
+        {Object.entries(groupedByMonth).map(([monthKey, docs], idx, arr) => (
           <div key={monthKey} className="relative mb-8 last:mb-0">
-            <div className="flex items-center gap-4 mb-4">
+            {idx < arr.length - 1 && (
+              <div className="absolute left-5 top-5 bottom-[-32px] w-[2px] bg-black/10" />
+            )}
+            <div className="flex items-center gap-4 mb-2">
               <div className="w-10 h-10 rounded-full bg-white border-2 border-black/10 flex items-center justify-center z-10">
                 <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                   <rect
@@ -1115,10 +1164,10 @@ function TimelineView({
               {docs.map((doc) => (
                 <div
                   key={doc.id}
-                  className={`flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all hover:bg-[#f5f5f5] ${
+                  className={`flex items-center gap-4 p-4 rounded-[28px] cursor-pointer transition-all hover:bg-[#f0f0f0] ${
                     selectedRows.has(doc.id)
                       ? "bg-blue-50 ring-2 ring-blue-500"
-                      : "bg-[#fafafa]"
+                      : "bg-[#f6f6f6]"
                   }`}
                   onClick={() => onToggleRow(doc.id)}
                 >

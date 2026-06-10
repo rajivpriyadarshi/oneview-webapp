@@ -14,34 +14,6 @@ import { type ValuationSeriesPoint } from "../lib/portfolioDataApi";
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, Tooltip);
 
-const dottedGridPlugin = {
-  id: "dottedGrid",
-  beforeDraw(chart: ChartJS) {
-    const { ctx, chartArea, scales } = chart;
-    if (!chartArea) return;
-    const yScale = scales.y;
-    if (!yScale) return;
-
-    ctx.save();
-    const ticks = yScale.ticks;
-    for (const tick of ticks) {
-      const y = yScale.getPixelForValue(tick.value as number);
-      const startX = chartArea.left;
-      const endX = chartArea.right;
-      const dotRadius = 0.7;
-      const gap = 8;
-
-      ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-      for (let x = startX; x <= endX; x += gap) {
-        ctx.beginPath();
-        ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    ctx.restore();
-  },
-};
-
 type Props = {
   series: ValuationSeriesPoint[];
   currency: string;
@@ -77,26 +49,34 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
     datasets: [
       {
         data: dataPoints,
-        borderColor: "#d4c85c",
+        borderColor: (ctx: { chart: ChartJS }) => {
+          const chart = ctx.chart;
+          const { ctx: canvasCtx, chartArea } = chart;
+          if (!chartArea) return "#2F1E07";
+          const gradient = canvasCtx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+          gradient.addColorStop(0, "#2F1E07");
+          gradient.addColorStop(1, "#58442A");
+          return gradient;
+        },
         borderWidth: 2,
         backgroundColor: (ctx: { chart: ChartJS }) => {
           const chart = ctx.chart;
           const { ctx: canvasCtx, chartArea } = chart;
           if (!chartArea) return "transparent";
           const gradient = canvasCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, "rgba(180, 170, 60, 0.5)");
-          gradient.addColorStop(0.6, "rgba(180, 170, 60, 0.15)");
-          gradient.addColorStop(1, "rgba(180, 170, 60, 0)");
+          gradient.addColorStop(0, "rgba(47, 30, 7, 0.15)");
+          gradient.addColorStop(0.7, "rgba(88, 68, 42, 0.05)");
+          gradient.addColorStop(1, "rgba(88, 68, 42, 0)");
           return gradient;
         },
         fill: true,
         tension: 0.35,
         pointRadius: dataPoints.map((_, i) => (i === dataPoints.length - 1 ? 5 : 0)),
-        pointBackgroundColor: "#d4c85c",
-        pointBorderColor: "rgba(212, 200, 92, 0.4)",
+        pointBackgroundColor: "#2F1E07",
+        pointBorderColor: "rgba(47, 30, 7, 0.3)",
         pointBorderWidth: 4,
         pointHoverRadius: 6,
-        pointHoverBackgroundColor: "#d4c85c",
+        pointHoverBackgroundColor: "#2F1E07",
         pointHoverBorderColor: "#fff",
         pointHoverBorderWidth: 2,
       },
@@ -117,6 +97,17 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
   const options: any = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 800,
+      easing: "easeInOutQuart",
+    },
+    transitions: {
+      active: {
+        animation: {
+          duration: 400,
+        },
+      },
+    },
     interaction: {
       mode: "index",
       intersect: false,
@@ -129,7 +120,7 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
         backgroundColor: "rgba(0, 0, 0, 0.85)",
         titleColor: "#fff",
         bodyColor: "#fff",
-        borderColor: "rgba(255, 255, 255, 0.2)",
+        borderColor: "rgba(0, 0, 0, 0.1)",
         borderWidth: 1,
         padding: 12,
         displayColors: false,
@@ -158,7 +149,7 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
       x: {
         display: true,
         ticks: {
-          color: "rgba(255, 255, 255, 0.5)",
+          color: "rgba(0, 0, 0, 0.4)",
           font: { size: 10, weight: "500", family: "Satoshi, var(--font-inter), sans-serif" },
           maxRotation: 0,
           autoSkip: true,
@@ -180,8 +171,8 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
         max: yMax,
         ticks: {
           count: 5,
-          color: "white",
-          font: { size: 8, weight: "500", family: "Satoshi, var(--font-inter), sans-serif", lineHeight: 1.5 },
+          color: "rgba(0, 0, 0, 0.4)",
+          font: { size: 9, weight: "500", family: "Satoshi, var(--font-inter), sans-serif", lineHeight: 1.5 },
           callback: formatLabel,
           padding: 12,
         },
@@ -199,8 +190,8 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
   };
 
   return (
-    <div className="relative min-h-[240px] w-full min-w-0 md:w-1/2 md:min-w-[300px] max-[900px]:h-[120px]">
-      <Line data={data} options={options} plugins={[dottedGridPlugin]} />
+    <div className="relative min-h-[240px] w-full min-w-0 max-[900px]:h-[160px]">
+      <Line data={data} options={options} />
     </div>
   );
 }

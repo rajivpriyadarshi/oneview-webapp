@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
 import PortfolioChart from "./PortfolioChart";
 import { type PortfolioViewResponse, type Account, type ValuationSeriesPoint } from "../lib/portfolioDataApi";
 import { type Portfolio } from "../lib/portfoliosApi";
@@ -5,6 +8,7 @@ import { type Portfolio } from "../lib/portfoliosApi";
 type Props = {
   portfolioView: PortfolioViewResponse | null;
   loading: boolean;
+  valuesRefetching?: boolean;
   chartLoading: boolean;
   accounts: Account[];
   selectedAccountId: number | "all";
@@ -20,6 +24,7 @@ type Props = {
 export default function PortfolioSummary({
   portfolioView,
   loading,
+  valuesRefetching,
   chartLoading,
   accounts,
   selectedAccountId,
@@ -28,90 +33,95 @@ export default function PortfolioSummary({
   onCurrencyChange,
   valuationSeries,
 }: Props) {
+  const [prevCurrency, setPrevCurrency] = useState(currency);
+  const [currencyChanging, setCurrencyChanging] = useState(false);
+
+  useEffect(() => {
+    if (currency !== prevCurrency) {
+      setCurrencyChanging(true);
+      setPrevCurrency(currency);
+      const timeout = setTimeout(() => setCurrencyChanging(false), 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [currency, prevCurrency]);
+
+  useEffect(() => {
+    if (currencyChanging && !valuesRefetching && !loading) {
+      setCurrencyChanging(false);
+    }
+  }, [valuesRefetching, loading, currencyChanging]);
+
   const summary = portfolioView?.summary;
   const currSymbol = currency === "USD" ? "$" : "₹";
   const marketValue = summary ? formatLakhs(summary.total_market_value) : "—";
-  const gainAmount = summary ? formatLakhs(summary.total_gain_amount) : "—";
+  const gainAmount = summary ? formatLakhs(Math.abs(summary.total_gain_amount)) : "—";
   const gainPct = summary?.total_gain_pct != null ? `${summary.total_gain_pct.toFixed(2)}%` : "";
   const isPositive = summary ? summary.total_gain_amount >= 0 : true;
-  const asOfDate = portfolioView?.as_of_date ? formatDate(portfolioView.as_of_date) : "";
 
   return (
     <section
       data-analytics-section="portfolio_summary"
-      className="relative mt-[32px] mb-[16px] flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[20px] sm:px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6"
+      className="relative mb-[16px] py-[32px]"
     >
-      <div className="flex flex-col justify-between gap-6 md:gap-12 lg:gap-16">
-        <div className="z-[1] flex flex-col">
-          <p className="m-0 font-satoshi text-sm font-medium leading-[21px] tracking-[-0.02em] text-[#979596]" style={{ fontFeatureSettings: "'ss03' on" }}>Total portfolio value</p>
-          <h2 className="m-0 mb-1 mt-2 font-satoshi text-[48px] font-bold leading-[120%] tracking-[-0.04em] text-white max-[720px]:text-[2.25rem]" style={{ fontFeatureSettings: "'ss03' on" }}>
-            {loading ? "..." : `${currSymbol}${marketValue}`}
-          </h2>
-          <p className={`m-0 mb-6 font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#D8FF9A]" : "text-red-400"}`} style={{ fontFeatureSettings: "'ss03' on" }}>
-            {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${formatLakhs(Math.abs(summary.total_gain_amount))} (${gainPct})`}
-          </p>
-        </div>
-        <div className="flex items-center gap-4 max-[720px]:flex-col max-[720px]:items-start max-[720px]:gap-3">
-          {asOfDate && (
-            <span className="font-satoshi text-[14px] font-normal leading-[21px] text-white break-words" style={{ fontFeatureSettings: "'ss03' on" }}>
-              Prices as of <strong className="font-satoshi text-[14px] font-bold leading-[21px] text-white break-words" style={{ fontFeatureSettings: "'ss03' on" }}>{asOfDate}</strong>
-            </span>
-          )}
-          <div className="flex gap-2.5">
-            <div className="relative inline-flex items-center rounded-full bg-white/5 p-1 font-satoshi text-sm font-bold leading-6 tracking-[-0.04em]" style={{ fontFeatureSettings: "'ss03' on" }}>
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none absolute bottom-1 left-1 top-1 w-[60px] rounded-full bg-white/95 shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-out ${
-                  currency === "USD" ? "translate-x-[60px]" : "translate-x-0"
-                }`}
-              />
-              <button
-                className={`relative z-10 inline-flex h-[42px] w-[60px] appearance-none items-center justify-center whitespace-nowrap border-0 bg-transparent px-[12px] py-[6px] text-[14px] font-bold leading-5 tracking-[-0.04em] transition-colors duration-300 focus:outline-none ${
-                  currency === "INR" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
-                }`}
-                onClick={() => onCurrencyChange(currency === "INR" ? "USD" : "INR")}
-              >
-                INR
-              </button>
-              <button
-                className={`relative z-10 inline-flex h-[42px] w-[60px] appearance-none items-center justify-center whitespace-nowrap border-0 bg-transparent px-[12px] py-[6px] text-[14px] font-bold leading-5 tracking-[-0.04em] transition-colors duration-300 focus:outline-none ${
-                  currency === "USD" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
-                }`}
-                onClick={() => onCurrencyChange(currency === "INR" ? "USD" : "INR")}
-              >
-                USD
-              </button>
-            </div>
-            <div className="group relative inline-flex items-center">
-              <select
-                className="h-[58px] cursor-pointer appearance-none overflow-hidden whitespace-nowrap text-ellipsis rounded-full border border-white/20 bg-transparent pl-7 pr-12 font-satoshi text-base font-bold leading-6 tracking-[-0.04em] text-white outline-none transition hover:bg-white/[0.03]"
-                style={{ fontFeatureSettings: "'ss03' on" }}
-                value={selectedAccountId}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  onAccountChange(val === "all" ? "all" : Number(val));
-                }}
-              >
-                <option value="all">All accounts</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {truncateLabel(acc.name)}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-4 text-white transition-transform duration-200 ease-out group-focus-within:rotate-180" />
-            </div>
-          </div>
+      <div className="mb-[-10px]">
+        <div className="group relative inline-flex items-center">
+          <span
+            className="pointer-events-none invisible absolute whitespace-nowrap pl-5 pr-10 font-satoshi text-[14px] font-bold leading-6 tracking-[-0.04em]"
+            style={{ fontFeatureSettings: "'ss03' on" }}
+            aria-hidden="true"
+            ref={(el) => {
+              if (el) {
+                const select = el.nextElementSibling as HTMLSelectElement | null;
+                if (select) select.style.width = `${el.offsetWidth + 2}px`;
+              }
+            }}
+          >
+            {selectedAccountId === "all" ? "All accounts" : (accounts.find(a => a.id === selectedAccountId)?.name || "")}
+          </span>
+          <select
+            className="h-[48px] cursor-pointer appearance-none whitespace-nowrap rounded-full border border-black/10 bg-[#ffffff] pl-5 pr-10 font-satoshi text-[14px] font-bold leading-6 tracking-[-0.04em] text-black outline-none backdrop-blur-[20px] transition hover:bg-black/[0.02]"
+            style={{ fontFeatureSettings: "'ss03' on" }}
+            value={selectedAccountId}
+            onChange={(e) => {
+              const val = e.target.value;
+              onAccountChange(val === "all" ? "all" : Number(val));
+            }}
+          >
+            <option value="all">All accounts</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.name}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-4 text-black/60" />
         </div>
       </div>
-      <PortfolioChart series={valuationSeries} currency={currency} loading={chartLoading} />
+
+      <div className="flex items-stretch justify-between gap-8 max-[900px]:flex-col max-[900px]:gap-6">
+        <div className="flex flex-col justify-center gap-0">
+          <p className="m-0 mb-[12px] font-satoshi text-[16px] font-normal leading-[21px] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
+            Total assets
+          </p>
+          <RollingText
+            text={loading ? "..." : `${currSymbol}${marketValue}`}
+            isLoading={currencyChanging || !!valuesRefetching}
+            className="m-0 font-['ButlerPro'] text-[140px] font-normal leading-[100%] tracking-[-0.04em] text-[#2F1E07] max-[720px]:text-[64px]"
+          />
+          <p
+            className={`m-0 mt-[-16px] font-satoshi text-[16px] font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#128044]" : "text-red-600"}`}
+            style={{ fontFeatureSettings: "'ss03' on" }}
+          >
+            {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${gainAmount} (${gainPct})`}
+          </p>
+        </div>
+
+        <div className="flex-1 min-w-0 max-w-[55%] max-[900px]:max-w-full">
+          <PortfolioChart series={valuationSeries} currency={currency} loading={chartLoading} />
+        </div>
+      </div>
     </section>
   );
-}
-
-function formatDate(dateStr?: string) {
-  const date = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
-  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 function formatLakhs(value: number) {
@@ -136,8 +146,170 @@ function truncateLabel(value: string, maxLength = 16) {
 
 function ChevronDown({ className = "" }: { className?: string }) {
   return (
-    <svg width="14" height="8" viewBox="0 0 14 8" fill="none" className={className}>
-      <path d="M1 1L7 7L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg width="12" height="7" viewBox="0 0 14 8" fill="none" className={className}>
+      <path d="M1 1L7 7L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
+  );
+}
+
+const DIGITS = "0123456789";
+const CHARS = "₹$0123456789.LKM";
+
+function RollingText({ text, isLoading, className }: { text: string; isLoading: boolean; className: string }) {
+  const [prevText, setPrevText] = useState(text);
+  const [currentText, setCurrentText] = useState(text);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const isFirstRender = useRef(true);
+  const lastStableText = useRef(text === "..." ? "" : text);
+
+  useEffect(() => {
+    if (text !== "...") {
+      lastStableText.current = text;
+    }
+  }, [text]);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      setCurrentText(text);
+      setPrevText(text);
+      return;
+    }
+    if (text !== currentText && text !== "...") {
+      setPrevText(currentText);
+      setCurrentText(text);
+      setIsAnimating(true);
+      const timeout = setTimeout(() => setIsAnimating(false), 600);
+      return () => clearTimeout(timeout);
+    }
+    if (text === "...") {
+      setCurrentText(text);
+    }
+  }, [text]);
+
+  if (text === "..." || isLoading) {
+    const placeholder = lastStableText.current || "₹00.0L";
+    return (
+      <h2 className={className} style={{ display: "flex", alignItems: "baseline" }}>
+        {placeholder.split("").map((char, i) => {
+          if (DIGITS.includes(char)) {
+            return (
+              <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1 }}>
+                <span
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    animation: `slot-spin-infinite 0.8s infinite linear`,
+                    animationDelay: `${i * 0.1}s`,
+                  }}
+                >
+                  <span style={{ height: "1em", lineHeight: 1 }}>0</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>1</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>2</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>3</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>4</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>5</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>6</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>7</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>8</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>9</span>
+                </span>
+              </span>
+            );
+          }
+          if (char === "L" || char === "K" || char === "M") {
+            return (
+              <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1 }}>
+                <span
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    animation: `slot-spin-suffix 1s infinite linear`,
+                    animationDelay: `${i * 0.1}s`,
+                  }}
+                >
+                  <span style={{ height: "1em", lineHeight: 1 }}>L</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>K</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>M</span>
+                </span>
+              </span>
+            );
+          }
+          return <span key={i}>{char}</span>;
+        })}
+      </h2>
+    );
+  }
+
+  return (
+    <h2 className={className} style={{ display: "flex", alignItems: "baseline" }}>
+      {currentText.split("").map((char, i) => {
+        const prevChar = prevText[i] || "";
+        const isDigit = DIGITS.includes(char) && DIGITS.includes(prevChar);
+
+        if (!isAnimating || char === prevChar) {
+          return <SlotChar key={i} char={char} />;
+        }
+
+        if (isDigit) {
+          return <RollingDigit key={i} from={prevChar} to={char} />;
+        }
+
+        return <FlipChar key={i} char={char} />;
+      })}
+    </h2>
+  );
+}
+
+function SlotChar({ char }: { char: string }) {
+  return (
+    <span className="inline-block">
+      {char === " " ? " " : char}
+    </span>
+  );
+}
+
+function FlipChar({ char }: { char: string }) {
+  return (
+    <span className="inline-block overflow-hidden" style={{ height: "1em", lineHeight: 1 }}>
+      <span
+        style={{
+          display: "inline-block",
+          animation: "slot-flip 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards",
+        }}
+      >
+        {char}
+      </span>
+    </span>
+  );
+}
+
+function RollingDigit({ from, to }: { from: string; to: string }) {
+  const fromNum = parseInt(from);
+  const toNum = parseInt(to);
+  const diff = ((toNum - fromNum) + 10) % 10;
+  const steps: string[] = [];
+  for (let i = 0; i <= diff; i++) {
+    steps.push(String((fromNum + i) % 10));
+  }
+
+  const totalHeight = steps.length;
+
+  return (
+    <span className="inline-block overflow-hidden" style={{ height: "1em", lineHeight: 1 }}>
+      <span
+        style={{
+          display: "inline-flex",
+          flexDirection: "column",
+          animation: `slot-roll-${steps.length} 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards`,
+        }}
+      >
+        {steps.map((digit, i) => (
+          <span key={i} className="inline-block" style={{ height: "1em", lineHeight: 1 }}>
+            {digit}
+          </span>
+        ))}
+      </span>
+    </span>
   );
 }

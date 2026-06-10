@@ -6,21 +6,14 @@ import { getProfile } from "../lib/realAuthApi";
 
 type Props = {
   updatedAt?: string;
+  asOfDate?: string;
+  currency?: string;
+  onCurrencyChange?: (currency: string) => void;
 };
 
-function formatLastUpdated(dateStr?: string) {
-  if (!dateStr) return "";
-  const date = new Date(dateStr);
-  const month = date.toLocaleDateString("en-US", { month: "short" });
-  const day = date.getDate();
-  const year = date.getFullYear();
-  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-  return `Last updated: ${month} ${day}, ${year} at ${time}`;
-}
-
-export default function DashboardHeader({ updatedAt }: Props) {
+export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR", onCurrencyChange }: Props) {
   const [userName, setUserName] = useState("");
-  const subtitle = 'See the unified view of all your investments';//formatLastUpdated(updatedAt);
+  const subtitle = 'See the unified view of all your investments';
 
   useEffect(() => {
     getProfile()
@@ -32,23 +25,88 @@ export default function DashboardHeader({ updatedAt }: Props) {
   }, []);
 
   return (
-    <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-      <div className="flex flex-col gap-1">
-        <h1 className="m-0 font-['ButlerPro'] text-[32px] font-medium leading-[38.4px] tracking-[-0.04em] text-black">
+    <header className="fixed top-0 right-0 z-50 mb-8 flex flex-col gap-4 border-b border-black/10 bg-[#ffffff26] px-6 py-4 backdrop-blur-[30px] sm:px-[60px] md:left-16 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col">
+        <h1 className="m-0 font-['ButlerPro'] text-[24px] font-normal leading-[28.8px] tracking-[-0.04em] text-black">
           Welcome {userName ? `${userName}` : ""}
         </h1>
-        {subtitle && <p className="m-0 font-['Satoshi'] text-sm font-medium leading-[21px] tracking-[-0.02em] text-black/70" style={{ fontFeatureSettings: "'ss03' on" }}>{subtitle}</p>}
+        {subtitle && <p className="m-0 mt-[-2px] font-['Satoshi'] text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-[#00000078]" style={{ fontFeatureSettings: "'ss03' on" }}>{subtitle}</p>}
       </div>
-      <Link
-        href="/documents-vault"
-        className="inline-flex cursor-pointer justify-center items-center gap-3 rounded-full
-        border-[1px] border-black/10 bg-transparent px-[24px] py-[16px] font-satoshi
-        text-base font-bold leading-6 tracking-[-0.04em] text-black transition hover:bg-black/[0.02]"
-        style={{ fontFeatureSettings: "'ss03' on" }}
-      >
-        <PlusIcon />
-        Add statements
-      </Link>
+      <div className="flex items-center gap-4">
+        {asOfDate && (
+          <span className="font-satoshi text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
+            Price as of {asOfDate}
+          </span>
+        )}
+        {onCurrencyChange && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              borderRadius: "38px",
+              background: "linear-gradient(90deg, #2F1E07 0%, #58442A 100%)",
+              padding: "2px",
+            }}
+          >
+            <button
+              onClick={() => onCurrencyChange("INR")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "20px",
+                padding: "8px 16px",
+                fontSize: "16px",
+                fontWeight: 400,
+                fontFamily: "var(--font-satoshi), sans-serif",
+                lineHeight: 1.3,
+                letterSpacing: "-0.56px",
+                whiteSpace: "nowrap",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                background: currency === "INR" ? "#fff" : "transparent",
+                color: currency === "INR" ? "#2f2b2c" : "rgba(255,255,255,0.6)",
+              }}
+            >
+              INR
+            </button>
+            <button
+              onClick={() => onCurrencyChange("USD")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "20px",
+                padding: "8px 16px",
+                fontSize: "16px",
+                fontWeight: 400,
+                fontFamily: "var(--font-satoshi), sans-serif",
+                lineHeight: 1.3,
+                letterSpacing: "-0.56px",
+                whiteSpace: "nowrap",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.3s",
+                background: currency === "USD" ? "#fff" : "transparent",
+                color: currency === "USD" ? "#2f2b2c" : "rgba(255,255,255,0.6)",
+              }}
+            >
+              USD
+            </button>
+          </div>
+        )}
+        <Link
+          href="/documents-vault"
+          className="inline-flex cursor-pointer justify-center items-center gap-[10px] rounded-full
+          border-[1px] border-black/10 bg-transparent pt-[10px] pb-[10px] pl-[12px] pr-[16px] font-satoshi
+          text-[16px] font-medium leading-6 tracking-[-0.01em] text-black transition hover:bg-black/[0.02]"
+          style={{ fontFeatureSettings: "'ss03' on" }}
+        >
+          <PlusIcon />
+          Add statements
+        </Link>
+      </div>
     </header>
   );
 }

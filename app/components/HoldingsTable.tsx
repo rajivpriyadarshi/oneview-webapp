@@ -93,8 +93,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
       columnHelper.accessor("quantity", {
         header: "Quantity",
         sortingFn: "basic",
-        minSize: 110,
-        size: 130,
+        minSize: 100,
+        size: 100,
         cell: (info) => {
           return formatNumber(info.getValue());
         },
@@ -103,8 +103,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
         id: "current_price",
         header: "Current price",
         sortingFn: "basic",
-        minSize: 130,
-        size: 150,
+        minSize: 120,
+        size: 120,
         cell: (info) => {
           const row = info.row.original;
           const price = row.quantity > 0 ? row.market_value / row.quantity : 0;
@@ -134,8 +134,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
         header: "Gain/Loss",
         sortingFn: "basic",
         enableResizing: false,
-        minSize: 150,
-        size: 180,
+        minSize: 220,
+        size: 220,
         cell: (info) => {
           const row = info.row.original;
           const gainAmount = row.gain_amount;
@@ -164,7 +164,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
   });
 
   return (
-    <section data-analytics-section="your_holdings" className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
+    <section data-analytics-section="your_holdings" className="mb-7 flex flex-col rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
       <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
         <HoldingsIcon />
         Your holdings
@@ -202,7 +202,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
 
                       header.column.toggleSorting(nextSortingOrder === "desc");
                     }}
-                    className={`sticky top-0 z-10 bg-white relative border-y border-black/10 px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
+                    className={`sticky top-0 z-10 bg-transparent relative border-y border-black/10 px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] ${
                       header.id === "security" ? "holdings-security-column text-left" : "text-right"
                     }`}
                     style={{
@@ -244,7 +244,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
                     // Keep security left-aligned; right-align all numeric columns.
                     <td
                       key={cell.id}
-                      className={`border-b border-black/10 bg-transparent px-4 py-[24px] text-sm text-black ${
+                      className={`border-b border-black/10 bg-transparent px-4 py-[24px] text-[16px] text-black ${
                         cell.column.id === "security" ? "holdings-security-column text-left" : "text-right"
                       }`}
                       style={{ width: cell.column.getSize() }}
