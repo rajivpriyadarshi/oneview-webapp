@@ -627,7 +627,7 @@ export function StatementUpload() {
                 <UploadIcon />
               </span>
               <strong>Drop your statements here or <span className="select-files-text">select files</span></strong>
-              <span>CSV, XLSX, PDF (Max 10MB)</span>
+              <span className="font-satoshi text-[14px] font-normal leading-[150%] tracking-[-0.02em] text-center" style={{ fontFeatureSettings: "'ss03' on" }}>CSV, XLSX, PDF (Max 10MB)</span>
             </label>
 
             {uploadItems.length > 0 && (
@@ -635,7 +635,7 @@ export function StatementUpload() {
                 {uploadItems.map((item) => (
                   <div key={item.id} className="statement-file-loading" aria-live="polite">
                     <div
-                      className={`statement-file-loader${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "error" ? " is-error" : ""}`}
+                      className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "error" ? " is-error" : ""}`}
                       style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
                     >
                       {item.status === "complete" ? (
