@@ -122,7 +122,11 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
         enabled: true,
         mode: "index",
         intersect: false,
-        backgroundColor: "rgba(0, 0, 0, 0.85)",
+        backgroundColor: (context: { tooltip: { dataPoints?: { parsed: { y: number } }[] } }) => {
+          const startValue = dataPoints[0] ?? 0;
+          const currentValue = context.tooltip?.dataPoints?.[0]?.parsed?.y ?? startValue;
+          return currentValue >= startValue ? "rgba(18, 128, 68, 0.9)" : "rgba(220, 38, 38, 0.9)";
+        },
         titleColor: "#fff",
         bodyColor: "#fff",
         borderColor: "rgba(0, 0, 0, 0.1)",
@@ -145,6 +149,14 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
           },
           label: (context: { parsed: { y: number } }) => {
             return formatLabel(context.parsed.y);
+          },
+          afterBody: (tooltipItems: { parsed: { y: number } }[]) => {
+            const startValue = dataPoints[0] ?? 0;
+            const currentValue = tooltipItems[0]?.parsed?.y ?? startValue;
+            const diff = currentValue - startValue;
+            const pct = startValue !== 0 ? ((diff / startValue) * 100).toFixed(2) : "0.00";
+            const sign = diff >= 0 ? "+" : "";
+            return `${sign}${formatLabel(diff)} (${sign}${pct}%)`;
           },
         },
       },
