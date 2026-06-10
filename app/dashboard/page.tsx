@@ -219,7 +219,12 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              <DashboardHeader updatedAt={selectedPortfolio?.updated_at} />
+              <DashboardHeader
+                updatedAt={selectedPortfolio?.updated_at}
+                asOfDate={portfolioView?.as_of_date ? new Date(portfolioView.as_of_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : undefined}
+                currency={currency}
+                onCurrencyChange={handleCurrencyChange}
+              />
               <PortfolioSummary
                 portfolioView={portfolioView ?? null}
                 loading={loading}

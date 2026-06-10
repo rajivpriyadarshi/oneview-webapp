@@ -31,87 +31,56 @@ export default function PortfolioSummary({
   const summary = portfolioView?.summary;
   const currSymbol = currency === "USD" ? "$" : "₹";
   const marketValue = summary ? formatLakhs(summary.total_market_value) : "—";
-  const gainAmount = summary ? formatLakhs(summary.total_gain_amount) : "—";
+  const gainAmount = summary ? formatLakhs(Math.abs(summary.total_gain_amount)) : "—";
   const gainPct = summary?.total_gain_pct != null ? `${summary.total_gain_pct.toFixed(2)}%` : "";
   const isPositive = summary ? summary.total_gain_amount >= 0 : true;
-  const asOfDate = portfolioView?.as_of_date ? formatDate(portfolioView.as_of_date) : "";
 
   return (
     <section
       data-analytics-section="portfolio_summary"
-      className="relative mt-[32px] mb-[16px] flex min-h-[180px] items-stretch justify-between gap-5 overflow-hidden rounded-[20px] bg-[#2F2B2C] px-[20px] sm:px-[48px] py-[40px] pb-[50px] max-[900px]:flex-col max-[900px]:gap-6"
+      className="relative mb-[16px] overflow-hidden rounded-[32px] bg-white px-[24px] sm:px-[48px] py-[40px]"
     >
-      <div className="flex flex-col justify-between gap-6 md:gap-12 lg:gap-16">
-        <div className="z-[1] flex flex-col">
-          <p className="m-0 font-satoshi text-sm font-medium leading-[21px] tracking-[-0.02em] text-[#979596]" style={{ fontFeatureSettings: "'ss03' on" }}>Total portfolio value</p>
-          <h2 className="m-0 mb-1 mt-2 font-satoshi text-[48px] font-bold leading-[120%] tracking-[-0.04em] text-white max-[720px]:text-[2.25rem]" style={{ fontFeatureSettings: "'ss03' on" }}>
-            {loading ? "..." : `${currSymbol}${marketValue}`}
-          </h2>
-          <p className={`m-0 mb-6 font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#D8FF9A]" : "text-red-400"}`} style={{ fontFeatureSettings: "'ss03' on" }}>
-            {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${formatLakhs(Math.abs(summary.total_gain_amount))} (${gainPct})`}
-          </p>
-        </div>
-        <div className="flex items-center gap-4 max-[720px]:flex-col max-[720px]:items-start max-[720px]:gap-3">
-          {asOfDate && (
-            <span className="font-satoshi text-[14px] font-normal leading-[21px] text-white break-words" style={{ fontFeatureSettings: "'ss03' on" }}>
-              Prices as of <strong className="font-satoshi text-[14px] font-bold leading-[21px] text-white break-words" style={{ fontFeatureSettings: "'ss03' on" }}>{asOfDate}</strong>
-            </span>
-          )}
-          <div className="flex gap-2.5">
-            <div className="relative inline-flex items-center rounded-full bg-white/5 p-1 font-satoshi text-sm font-bold leading-6 tracking-[-0.04em]" style={{ fontFeatureSettings: "'ss03' on" }}>
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none absolute bottom-1 left-1 top-1 w-[60px] rounded-full bg-white/95 shadow-[0_2px_4px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-out ${
-                  currency === "USD" ? "translate-x-[60px]" : "translate-x-0"
-                }`}
-              />
-              <button
-                className={`relative z-10 inline-flex h-[42px] w-[60px] appearance-none items-center justify-center whitespace-nowrap border-0 bg-transparent px-[12px] py-[6px] text-[14px] font-bold leading-5 tracking-[-0.04em] transition-colors duration-300 focus:outline-none ${
-                  currency === "INR" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
-                }`}
-                onClick={() => onCurrencyChange(currency === "INR" ? "USD" : "INR")}
-              >
-                INR
-              </button>
-              <button
-                className={`relative z-10 inline-flex h-[42px] w-[60px] appearance-none items-center justify-center whitespace-nowrap border-0 bg-transparent px-[12px] py-[6px] text-[14px] font-bold leading-5 tracking-[-0.04em] transition-colors duration-300 focus:outline-none ${
-                  currency === "USD" ? "text-[#2F2B2C]" : "text-white/60 hover:text-white/85"
-                }`}
-                onClick={() => onCurrencyChange(currency === "INR" ? "USD" : "INR")}
-              >
-                USD
-              </button>
-            </div>
-            <div className="group relative inline-flex items-center">
-              <select
-                className="h-[58px] cursor-pointer appearance-none overflow-hidden whitespace-nowrap text-ellipsis rounded-full border border-white/20 bg-transparent pl-7 pr-12 font-satoshi text-base font-bold leading-6 tracking-[-0.04em] text-white outline-none transition hover:bg-white/[0.03]"
-                style={{ fontFeatureSettings: "'ss03' on" }}
-                value={selectedAccountId}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  onAccountChange(val === "all" ? "all" : Number(val));
-                }}
-              >
-                <option value="all">All accounts</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {truncateLabel(acc.name)}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-4 text-white transition-transform duration-200 ease-out group-focus-within:rotate-180" />
-            </div>
-          </div>
+      <div className="mb-6">
+        <div className="group relative inline-flex items-center">
+          <select
+            className="h-[48px] cursor-pointer appearance-none overflow-hidden whitespace-nowrap text-ellipsis rounded-full border border-black/10 bg-transparent pl-5 pr-10 font-satoshi text-[14px] font-bold leading-6 tracking-[-0.04em] text-black outline-none transition hover:bg-black/[0.02]"
+            style={{ fontFeatureSettings: "'ss03' on" }}
+            value={selectedAccountId}
+            onChange={(e) => {
+              const val = e.target.value;
+              onAccountChange(val === "all" ? "all" : Number(val));
+            }}
+          >
+            <option value="all">All accounts</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {truncateLabel(acc.name)}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-4 text-black/60" />
         </div>
       </div>
-      <PortfolioChart series={valuationSeries} currency={currency} loading={chartLoading} />
+
+      <div className="flex items-stretch justify-between gap-8 max-[900px]:flex-col max-[900px]:gap-6">
+        <div className="flex flex-col justify-center gap-2">
+          <p className="m-0 font-satoshi text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
+            Total assets
+          </p>
+          <h2 className="m-0 font-['ButlerPro'] text-[72px] font-medium leading-[100%] tracking-[-0.04em] text-black max-[720px]:text-[48px]">
+            {loading ? "..." : `${currSymbol}${marketValue}`}
+          </h2>
+          <p className={`m-0 mt-2 font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#128044]" : "text-red-600"}`} style={{ fontFeatureSettings: "'ss03' on" }}>
+            {loading || !summary ? "" : `${isPositive ? "+" : "-"}${gainAmount} L (${gainPct})`}
+          </p>
+        </div>
+
+        <div className="flex-1 min-w-0 max-w-[60%] max-[900px]:max-w-full">
+          <PortfolioChart series={valuationSeries} currency={currency} loading={chartLoading} />
+        </div>
+      </div>
     </section>
   );
-}
-
-function formatDate(dateStr?: string) {
-  const date = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
-  return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 function formatLakhs(value: number) {
@@ -131,8 +100,8 @@ function truncateLabel(value: string, maxLength = 16) {
 
 function ChevronDown({ className = "" }: { className?: string }) {
   return (
-    <svg width="14" height="8" viewBox="0 0 14 8" fill="none" className={className}>
-      <path d="M1 1L7 7L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg width="12" height="7" viewBox="0 0 14 8" fill="none" className={className}>
+      <path d="M1 1L7 7L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
