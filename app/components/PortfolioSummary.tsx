@@ -53,8 +53,8 @@ export default function PortfolioSummary({
 
   const summary = portfolioView?.summary;
   const currSymbol = currency === "USD" ? "$" : "₹";
-  const marketValue = summary ? formatLakhs(summary.total_market_value) : "—";
-  const gainAmount = summary ? formatLakhs(Math.abs(summary.total_gain_amount)) : "—";
+  const marketValue = summary ? formatLakhs(summary.total_market_value, currency) : "—";
+  const gainAmount = summary ? formatLakhs(Math.abs(summary.total_gain_amount), currency) : "—";
   const gainPct = summary?.total_gain_pct != null ? `${summary.total_gain_pct.toFixed(2)}%` : "";
   const isPositive = summary ? summary.total_gain_amount >= 0 : true;
 
@@ -124,18 +124,17 @@ export default function PortfolioSummary({
   );
 }
 
-function formatLakhs(value: number) {
+function formatLakhs(value: number, currency = "INR") {
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
-  if (abs >= 10000000) {
-    return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
+  if (currency === "USD") {
+    if (abs >= 1000000) return `${sign}${(abs / 1000000).toFixed(2)}M`;
+    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)}K`;
+    return value.toFixed(2);
   }
-  if (abs >= 100000) {
-    return `${sign}${(abs / 100000).toFixed(1)}L`;
-  }
-  if (abs >= 1000) {
-    return `${sign}${(abs / 1000).toFixed(1)}K`;
-  }
+  if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
+  if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)}L`;
+  if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)}K`;
   return value.toFixed(2);
 }
 

@@ -46,10 +46,19 @@ function getCurrencySymbol(currency?: string): string {
 }
 
 function formatCurrencyAmount(value: number, currency?: string) {
-  return `${getCurrencySymbol(currency)}${value.toLocaleString("en-IN", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  const sym = getCurrencySymbol(currency);
+  const abs = Math.abs(value);
+  const sign = value < 0 ? "-" : "";
+  const cur = currency?.toUpperCase();
+  if (cur === "USD") {
+    if (abs >= 1000000) return `${sign}${sym}${(abs / 1000000).toFixed(2)}M`;
+    if (abs >= 1000) return `${sign}${sym}${(abs / 1000).toFixed(1)}K`;
+    return `${sign}${sym}${abs.toFixed(2)}`;
+  }
+  if (abs >= 10000000) return `${sign}${sym}${(abs / 10000000).toFixed(2)}Cr`;
+  if (abs >= 100000) return `${sign}${sym}${(abs / 100000).toFixed(1)}L`;
+  if (abs >= 1000) return `${sign}${sym}${(abs / 1000).toFixed(1)}K`;
+  return `${sign}${sym}${abs.toFixed(2)}`;
 }
 
 function formatNumber(value: number) {
@@ -126,7 +135,8 @@ export default function HoldingsTable({ positions, loading }: Props) {
         minSize: 135,
         size: 160,
         cell: (info) => {
-          return formatCurrencyAmount(info.getValue(), info.row.original.currency);
+          const val = info.getValue();
+          return val === 0 ? "N/A" : formatCurrencyAmount(val, info.row.original.currency);
         },
       }),
       columnHelper.accessor("gain_amount", {

@@ -623,6 +623,9 @@ export function StatementUpload() {
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             >
+              <svg className="statement-dropzone-border" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                <rect x="1" y="1" rx="31" ry="31" fill="none" stroke="rgba(127,78,11,0.3)" strokeWidth="2" strokeDasharray="14 8" style={{ width: "calc(100% - 2px)", height: "calc(100% - 2px)" }} />
+              </svg>
               <input
                 ref={inputRef}
                 type="file"
