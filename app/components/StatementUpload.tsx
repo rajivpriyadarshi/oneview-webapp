@@ -639,12 +639,12 @@ export function StatementUpload() {
                       style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
                     >
                       {item.status === "complete" ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M13.3327 4L5.99935 11.3333L2.66602 8" stroke="white" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
+                          <path d="M13.3327 4L5.99935 11.3333L2.66602 8" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       ) : item.status === "error" ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                          <path d="M8 4V8M8 10.6667V12M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333C11.6819 1.33333 14.6667 4.3181 14.6667 8Z" stroke="#DC2626" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
+                          <path d="M8 4V8M8 10.6667V12M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333C11.6819 1.33333 14.6667 4.3181 14.6667 8Z" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       ) : (
                         <span />
