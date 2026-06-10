@@ -115,6 +115,7 @@
 
 /* Dropzone */
 .docs-dropzone {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -125,45 +126,31 @@
   padding: 40px 24px;
   border: none;
   border-radius: 32px;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)) padding-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box;
-  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
-  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
-  background-repeat: no-repeat;
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  background: #ffffffab;
+  backdrop-filter: blur(21px);
+  -webkit-backdrop-filter: blur(21px);
   box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   transition: background 160ms ease, box-shadow 160ms ease;
 }
 
+svg.docs-dropzone-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border-radius: 32px;
+}
+
 .docs-dropzone:hover {
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.75)) padding-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.7) 0, rgba(127, 78, 11, 0.7) 12px, transparent 12px, transparent 18px) border-box;
-  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
-  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
-  background-repeat: no-repeat;
+  background: #ffffffc0;
   box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.08);
 }
 
 .docs-dropzone.is-dragging {
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)) padding-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(90deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box,
-    repeating-linear-gradient(180deg, rgba(127, 78, 11, 0.8) 0, rgba(127, 78, 11, 0.8) 12px, transparent 12px, transparent 18px) border-box;
-  background-size: 100% 100%, 100% 2px, 2px 100%, 100% 2px, 2px 100%;
-  background-position: 0 0, 0 0, 100% 0, 0 100%, 0 0;
-  background-repeat: no-repeat;
+  background: #ffffffd9;
+  border-color: rgba(127, 78, 11, 0.8);
   box-shadow: 0px 4px 12px 0px rgba(0, 0, 0, 0.1);
 }
 

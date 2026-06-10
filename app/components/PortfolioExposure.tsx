@@ -367,6 +367,8 @@ function SectorDonutChart({
 
   const active = segments[safeActiveIndex];
 
+  if (!active) return null;
+
   return (
     <div className="flex flex-col items-center gap-4">
       <svg

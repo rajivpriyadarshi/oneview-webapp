@@ -44,7 +44,7 @@ export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR",
               display: "inline-flex",
               alignItems: "center",
               borderRadius: "38px",
-              background: "rgba(0,0,0,0.9)",
+              background: "linear-gradient(90deg, #2F1E07 0%, #58442A 100%)",
               padding: "2px",
             }}
           >

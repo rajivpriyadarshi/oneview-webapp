@@ -106,7 +106,7 @@ export default function PortfolioSummary({
           <RollingText
             text={loading ? "..." : `${currSymbol}${marketValue}`}
             isLoading={currencyChanging || !!valuesRefetching}
-            className="m-0 font-['ButlerPro'] text-[140px] font-normal leading-[100%] tracking-[-0.04em] text-black/80 max-[720px]:text-[64px]"
+            className="m-0 font-['ButlerPro'] text-[140px] font-normal leading-[100%] tracking-[-0.04em] text-[#2F1E07] max-[720px]:text-[64px]"
           />
           <p
             className={`m-0 mt-[-16px] font-satoshi text-[16px] font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#128044]" : "text-red-600"}`}

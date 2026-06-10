@@ -49,26 +49,34 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
     datasets: [
       {
         data: dataPoints,
-        borderColor: "#1a1a1a",
+        borderColor: (ctx: { chart: ChartJS }) => {
+          const chart = ctx.chart;
+          const { ctx: canvasCtx, chartArea } = chart;
+          if (!chartArea) return "#2F1E07";
+          const gradient = canvasCtx.createLinearGradient(chartArea.left, 0, chartArea.right, 0);
+          gradient.addColorStop(0, "#2F1E07");
+          gradient.addColorStop(1, "#58442A");
+          return gradient;
+        },
         borderWidth: 2,
         backgroundColor: (ctx: { chart: ChartJS }) => {
           const chart = ctx.chart;
           const { ctx: canvasCtx, chartArea } = chart;
           if (!chartArea) return "transparent";
           const gradient = canvasCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          gradient.addColorStop(0, "rgba(0, 0, 0, 0.15)");
-          gradient.addColorStop(0.7, "rgba(0, 0, 0, 0.05)");
-          gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+          gradient.addColorStop(0, "rgba(47, 30, 7, 0.15)");
+          gradient.addColorStop(0.7, "rgba(88, 68, 42, 0.05)");
+          gradient.addColorStop(1, "rgba(88, 68, 42, 0)");
           return gradient;
         },
         fill: true,
         tension: 0.35,
         pointRadius: dataPoints.map((_, i) => (i === dataPoints.length - 1 ? 5 : 0)),
-        pointBackgroundColor: "#1a1a1a",
-        pointBorderColor: "rgba(26, 26, 26, 0.3)",
+        pointBackgroundColor: "#2F1E07",
+        pointBorderColor: "rgba(47, 30, 7, 0.3)",
         pointBorderWidth: 4,
         pointHoverRadius: 6,
-        pointHoverBackgroundColor: "#1a1a1a",
+        pointHoverBackgroundColor: "#2F1E07",
         pointHoverBorderColor: "#fff",
         pointHoverBorderWidth: 2,
       },

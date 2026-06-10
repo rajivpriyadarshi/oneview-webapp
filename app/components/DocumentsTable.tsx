@@ -329,7 +329,7 @@ export default function DocumentsTable({
   });
 
   return (
-    <section className="mb-7 flex flex-col rounded-[32px] bg-white px-[16px] pl-[24px]">
+    <section className="mb-7 flex flex-col rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
       <div className="mb-0 flex min-h-[100px] flex-wrap items-center justify-between gap-4 py-[24px]">
         <h3
           className="m-0 flex items-center gap-2 font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black"
@@ -398,7 +398,7 @@ export default function DocumentsTable({
                     <th
                       key={header.id}
                       onClick={header.column.getToggleSortingHandler()}
-                      className={`sticky top-0 z-10 border-y border-black/10 bg-white px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] whitespace-nowrap ${
+                      className={`sticky top-0 z-10 border-y border-black/10 bg-transparent px-4 py-0 font-satoshi text-[14px] font-medium leading-[60px] text-[#74747E] whitespace-nowrap ${
                         header.id === "checkbox" ? "w-10" : ""
                       } ${
                         centerAlignedColumns.has(header.id)
