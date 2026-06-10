@@ -1,6 +1,6 @@
 export function OneviewBrand() {
   return (
-    <header className="brand">
+    <header className="brand w-[116px]">
       <img className="oneview-logo" src="/Logo.png" alt="Oneview" />
     </header>
   );

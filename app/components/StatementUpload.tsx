@@ -64,7 +64,6 @@ export function StatementUpload() {
   const [hasStartedUploadFlow, setHasStartedUploadFlow] = useState(false);
 
   const hasCompletedUploads = uploadItems.some(item => item.status === "complete");
-  const hasAnyUploads = uploadItems.length > 0;
 
   const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
     skip: !getStoredAuthToken(),
@@ -108,7 +107,6 @@ export function StatementUpload() {
     setFirstName(displayName.split(/\s+/)[0]);
   }, [router, profile, profileError, portfolios, hasStartedUploadFlow]);
 
-  // Track page load
   useEffect(() => {
     trackPage({
       pageName: trackingEventsMap.documentsPage.PAGE,
@@ -127,7 +125,6 @@ export function StatementUpload() {
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files || []);
-
     if (files.length > 0) {
       void handleUploadFiles(files);
     }
@@ -145,9 +142,7 @@ export function StatementUpload() {
   function handleDrop(event: DragEvent<HTMLLabelElement>) {
     event.preventDefault();
     setIsDragging(false);
-
     const files = Array.from(event.dataTransfer.files);
-
     if (files.length > 0) {
       void handleUploadFiles(files);
     }
@@ -158,15 +153,12 @@ export function StatementUpload() {
     const hasSupportedExtension = SUPPORTED_EXTENSIONS.some((extension) =>
       lowerName.endsWith(extension),
     );
-
     if (!hasSupportedExtension) {
       return "Only CSV, XLSX, or PDF files are supported.";
     }
-
     if (file.size > MAX_UPLOAD_SIZE) {
       return "File size must be 10 MB or less.";
     }
-
     return "";
   }
 
@@ -221,7 +213,6 @@ export function StatementUpload() {
         const item = uploadQueueRef.current.shift()!;
         updateUploadItem(item.id, { status: "uploading", progress: 0 });
         startProgressAnimation(item.id);
-
 
         try {
           const response = await uploadBrokerStatement({
@@ -297,7 +288,6 @@ export function StatementUpload() {
                     });
                     return;
                   }
-
                   updateUploadItem(item.id, {
                     detail: progress?.label ?? "Extracting statement details.",
                   });
@@ -414,7 +404,6 @@ export function StatementUpload() {
     } finally {
       isProcessingQueueRef.current = false;
       setIsUploading(false);
-
       if (inputRef.current) {
         inputRef.current.value = "";
       }
@@ -438,7 +427,6 @@ export function StatementUpload() {
         })
       );
     }, 200);
-
     setTimeout(() => clearInterval(interval), 20000);
   }
 
@@ -459,7 +447,6 @@ export function StatementUpload() {
       pollingAbortControllerRef.current?.abort();
     }
 
-    // Delete the uploaded document if it exists
     if (item.documentId && item.status === "complete") {
       try {
         await deleteDocument(item.documentId).unwrap();
@@ -504,12 +491,19 @@ export function StatementUpload() {
   const avatarColor = displayName ? getColorFromName(displayName) : CHART_COLORS[0];
 
   return (
-    <main className="statement-page">
-      <header className="statement-topbar">
+    <main
+      className="relative flex flex-col overflow-x-hidden overflow-y-auto"
+      style={{ height: "100vh", background: "url('/auth-Hero-bg.png') center/cover no-repeat fixed" }}
+    >
+      {/* Topbar */}
+      <header
+        className="statement-topbar fixed top-0 left-0 right-0 z-10 flex items-center justify-between px-[67px] py-[18px] max-[768px]:px-4 max-[768px]:py-3"
+        style={{ background: "rgba(246,243,238,0.85)", backdropFilter: "blur(10px)" }}
+      >
         <OneviewBrand />
-        <div className="statement-profile">
+        <div className="relative z-[100]">
           <button
-            className="statement-avatar-btn"
+            className="border-0 bg-transparent p-0 cursor-pointer"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             aria-label="Profile menu"
           >
@@ -534,10 +528,11 @@ export function StatementUpload() {
           </button>
           {showProfileMenu && (
             <>
-              <div className="profile-menu-backdrop" onClick={() => setShowProfileMenu(false)} />
-              <div className="profile-menu-dropdown">
+              <div className="fixed inset-0 z-50" onClick={() => setShowProfileMenu(false)} />
+              <div className="absolute top-[calc(100%+8px)] right-0 z-[1000] min-w-[140px] rounded-xl border border-black/[0.08] bg-white p-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.12)]">
                 <button
-                  className="profile-menu-item"
+                  className="flex w-full items-center gap-[10px] rounded-lg border-none bg-transparent px-[14px] py-3 font-satoshi text-sm font-medium text-[var(--foreground)] cursor-pointer transition-colors hover:bg-black/[0.05]"
+                  style={{ fontFeatureSettings: "'ss03' on" }}
                   onClick={() => {
                     clearAuthToken();
                     router.push("/");
@@ -552,27 +547,39 @@ export function StatementUpload() {
         </div>
       </header>
 
-      <section className="statement-content" aria-labelledby="statement-title">
-        <div className="statement-grid">
-          {/* Left Column */}
-          <div className="statement-left">
-            <div className="statement-title-wrapper">
-              <p className="statement-welcome">Welcome {firstName}!</p>
-              <h1 id="statement-title" className="statement-title-desktop">
+      {/* Content */}
+      <section
+        className="relative z-[1] flex flex-1 flex-col items-center justify-center w-full px-5 py-2 mt-20 max-[1024px]:mt-[124px] max-[768px]:mt-[112px] max-[768px]:px-[14px] max-[768px]:pb-6 lg:px-[80px]"
+        aria-labelledby="statement-title"
+      >
+        {/* Two-column grid */}
+        <div className="flex w-full max-w-[1400px] flex-col gap-8 lg:grid lg:gap-[80px] lg:[grid-template-columns:1fr_1fr]">
+
+          {/* Left Column — desktop sticky */}
+          <div className="hidden lg:flex lg:sticky lg:top-[80px] lg:flex-col lg:justify-center lg:pb-10" style={{ height: "calc(100vh - 80px)" }}>
+            <div className="flex flex-col gap-2">
+              <p className="m-0 font-normal leading-[120%] tracking-[-0.02em] text-black text-[20px]" style={{ fontFamily: "var(--font-butler-roman-display), ButlerPro, Georgia, 'Times New Roman', serif" }}>
+                Welcome {firstName}!
+              </p>
+              <h1
+                id="statement-title"
+                className="m-0 text-left font-normal leading-[120%] tracking-[-0.03em] text-black text-[52px]"
+                style={{ fontFamily: "var(--font-butler-roman-display), ButlerPro, Georgia, 'Times New Roman', serif" }}
+              >
                 Add your account statements
                 <br />
                 to create your unified view
               </h1>
             </div>
 
-            <div className="statement-brokers">              
-              <div className="broker-icons">
-                <img src="/broker-icons/groww.png" alt="Groww" className="broker-icon" />
-                <img src="/broker-icons/fidelity.png" alt="Fidelity" className="broker-icon" />
-                <img src="/broker-icons/zerodha.png" alt="Zerodha" className="broker-icon" />
-                <img src="/broker-icons/vested.png" alt="Vested" className="broker-icon" />
-                <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="broker-icon" />
-                <img src="/broker-icons/ibkr.png" alt="IBKR" className="broker-icon" />
+            <div className="flex items-center gap-3 flex-nowrap">
+              <div className="flex items-center">
+                <img src="/broker-icons/groww.png" alt="Groww" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]" />
+                <img src="/broker-icons/fidelity.png" alt="Fidelity" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/zerodha.png" alt="Zerodha" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/vested.png" alt="Vested" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/ibkr.png" alt="IBKR" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
               </div>
               <button
                 type="button"
@@ -584,15 +591,75 @@ export function StatementUpload() {
                   });
                   setIsModalOpen(true);
                 }}
-                className="download-instruction"
+                className="border-0 bg-transparent p-0 text-[#7F4E0B] font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.56px] underline cursor-pointer transition-opacity hover:opacity-80 whitespace-nowrap"
+                style={{ fontFeatureSettings: "'ss03' on" }}
               >
                 See download instruction
               </button>
             </div>
 
-            <div className="statement-cta-group">
+            <div className="mt-10 flex flex-col items-start gap-3 w-full">
               <button
-                className="statement-sample-btn"
+                className="min-h-[64px] rounded-[38px] bg-black/[0.04] px-5 font-satoshi text-base font-bold leading-6 tracking-[-0.02em] text-[#1a1a1a] border-none cursor-pointer transition-all hover:bg-black/10 hover:-translate-y-px whitespace-nowrap"
+                style={{ fontFeatureSettings: "'ss03' on" }}
+                type="button"
+                onClick={() => {
+                  trackClick({
+                    buttonName: trackingEventsMap.documentsPage.CLICK_CHECK_SAMPLE,
+                    pageName: trackingEventsMap.documentsPage.PAGE,
+                  });
+                  setIsSampleModalOpen(true);
+                }}
+              >
+                Check sample
+              </button>
+            </div>
+          </div>
+
+          {/* Left Column — mobile */}
+          <div className="lg:hidden flex flex-col items-center text-center gap-2 w-full">
+            <p className="m-0 font-normal leading-[120%] tracking-[-0.02em] text-black text-[20px]" style={{ fontFamily: "var(--font-butler-roman-display), ButlerPro, Georgia, 'Times New Roman', serif" }}>
+              Welcome {firstName}!
+            </p>
+            <h1
+              className="m-0 text-center font-normal leading-[1.15] tracking-[-0.5px] text-black text-[2.125rem]"
+              style={{ fontFamily: "var(--font-butler-roman), ButlerPro, Georgia, 'Times New Roman', serif" }}
+            >
+              Add your account statements
+              <br />
+              to create your unified view
+            </h1>
+
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <div className="flex items-center">
+                <img src="/broker-icons/groww.png" alt="Groww" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]" />
+                <img src="/broker-icons/fidelity.png" alt="Fidelity" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/zerodha.png" alt="Zerodha" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/vested.png" alt="Vested" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/ibkr.png" alt="IBKR" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  trackClick({
+                    buttonName: trackingEventsMap.documentsPage.CLICK_DOWNLOAD_INSTRUCTIONS,
+                    pageName: trackingEventsMap.documentsPage.PAGE,
+                  });
+                  setIsModalOpen(true);
+                }}
+                className="border-0 bg-transparent p-0 text-[#7F4E0B] font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.56px] underline cursor-pointer transition-opacity hover:opacity-80"
+                style={{ fontFeatureSettings: "'ss03' on" }}
+              >
+                See download instruction
+              </button>
+            </div>
+
+            <div className="mt-3 w-full">
+              <button
+                className="w-full min-h-[54px] rounded-[38px] bg-black/[0.04] px-[18px] py-[14px] font-satoshi text-base font-bold leading-6 tracking-[-0.02em] text-[#1a1a1a] border-none cursor-pointer transition-all hover:bg-black/10 hover:-translate-y-px"
+                style={{ fontFeatureSettings: "'ss03' on" }}
                 type="button"
                 onClick={() => {
                   trackClick({
@@ -608,8 +675,13 @@ export function StatementUpload() {
           </div>
 
           {/* Right Column */}
-          <div className="statement-right">
-            <p className="statement-security-top">
+          <div className="flex flex-col gap-4 w-full lg:min-h-[calc(100vh-80px)] lg:justify-center lg:pt-[80px] lg:pb-[80px]">
+
+            {/* Security badge */}
+            <p
+              className="flex items-center justify-center self-center gap-2 m-0 font-satoshi text-[0.875rem] font-medium leading-[150%] tracking-[-0.28px] text-black/70"
+              style={{ fontFeatureSettings: "'ss03' on" }}
+            >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M8 1.33334L2.66667 3.33334V7.33334C2.66667 10.6667 5.33333 13.6667 8 14.6667C10.6667 13.6667 13.3333 10.6667 13.3333 7.33334V3.33334L8 1.33334Z" stroke="#4CAF50" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M6 8L7.33333 9.33333L10 6.66667" stroke="#4CAF50" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
@@ -617,8 +689,9 @@ export function StatementUpload() {
               Your data stays encrypted • 100% Safe and Secure
             </p>
 
+            {/* Dropzone */}
             <label
-              className={`statement-dropzone${isDragging ? " is-dragging" : ""}`}
+              className={`statement-dropzone${isDragging ? " is-dragging" : ""} w-full`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
@@ -641,10 +714,16 @@ export function StatementUpload() {
               <span className="font-satoshi text-[14px] font-normal leading-[150%] tracking-[-0.02em] text-center" style={{ fontFeatureSettings: "'ss03' on" }}>CSV, XLSX, PDF (Max 10MB)</span>
             </label>
 
+            {/* File list */}
             {uploadItems.length > 0 && (
               <div className="flex flex-col gap-[10px]">
                 {uploadItems.map((item) => (
-                  <div key={item.id} className="w-full flex flex-row items-center gap-4 px-4 py-3 rounded-3xl border border-black/10" style={{ background: '#FFFFFF24', backdropFilter: 'blur(44px)', WebkitBackdropFilter: 'blur(44px)' }} aria-live="polite">
+                  <div
+                    key={item.id}
+                    className="w-full flex flex-row items-center gap-4 px-4 py-3 rounded-3xl border border-black/10"
+                    style={{ background: '#FFFFFF24', backdropFilter: 'blur(44px)', WebkitBackdropFilter: 'blur(44px)' }}
+                    aria-live="polite"
+                  >
                     <div
                       className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "review" ? " is-review" : ""}${item.status === "error" ? " is-error" : ""}`}
                       style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
@@ -692,9 +771,11 @@ export function StatementUpload() {
               </div>
             )}
 
-            <div className="statement-upload-actions">
+            {/* Submit */}
+            <div className="flex gap-4 items-center flex-wrap lg:flex-col lg:items-start lg:gap-3 lg:w-full">
               <button
-                className="statement-submit"
+                className="flex items-center justify-center gap-[15px] w-full border-0 rounded-full bg-black text-white font-satoshi text-base font-bold leading-6 px-5 min-h-[64px] cursor-pointer disabled:opacity-30 max-[768px]:min-h-[54px] max-[768px]:py-[14px] max-[768px]:px-[18px]"
+                style={{ fontFeatureSettings: "'ss03' on" }}
                 type="button"
                 onClick={hasCompletedUploads ? () => {
                   trackClick({
@@ -711,8 +792,16 @@ export function StatementUpload() {
               </button>
             </div>
 
-            {error ? <p className="statement-error">{error}</p> : null}
-            {message ? <p className="statement-success">{message}</p> : null}
+            {error ? (
+              <p className="mt-[10px] mb-[10px] font-satoshi text-[0.875rem] font-extrabold text-[#a40000]" style={{ fontFeatureSettings: "'ss03' on" }}>
+                {error}
+              </p>
+            ) : null}
+            {message ? (
+              <p className="mt-[10px] mb-[10px] font-satoshi text-[0.875rem] font-extrabold text-[#0a6b3f]" style={{ fontFeatureSettings: "'ss03' on" }}>
+                {message}
+              </p>
+            ) : null}
           </div>
         </div>
       </section>
@@ -754,7 +843,7 @@ function UploadIcon() {
 
 function ArrowRightIcon() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   );
@@ -772,6 +861,5 @@ function getUploadCompleteDetail(positionsCount: number | undefined, size: numbe
   if (typeof positionsCount !== "number") {
     return formatFileSize(size);
   }
-
   return `${positionsCount} holding${positionsCount === 1 ? "" : "s"} • ${formatFileSize(size)}`;
 }
