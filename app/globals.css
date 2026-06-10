@@ -670,12 +670,12 @@ button:disabled {
   margin: 0 0 20px;
   color: #000;
   text-align: center;
-  font-family: var(--font-butler), "ButlerPro", Georgia, "Times New Roman", serif;
+  font-family: var(--font-butler-roman-display), "ButlerPro", Georgia, "Times New Roman", serif;
   font-size: 2.25rem;
   font-style: normal;
-  font-weight: 500;
-  line-height: 2.9arem;
-  letter-spacing: -1.28px;
+  font-weight: 400;
+  line-height: 120%;
+  letter-spacing: 4%;
 }
 
 .statement-content > p {
@@ -802,10 +802,10 @@ button:disabled {
   color: #000;
   font-family: var(--font-satoshi);
   font-feature-settings: 'ss03' on;
-  font-size: 1.25rem;
+  font-size: 24px;
   font-style: normal;
   font-weight: 500;
-  line-height: 150%;
+  line-height: 130%;
   letter-spacing: -0.02em;
   text-align: center;
   margin-bottom: -8px;
@@ -823,8 +823,8 @@ button:disabled {
   letter-spacing: -0.02em;
 }
 
-.select-files-text {
-  color: #7F4E0B;
+.statement-dropzone strong .select-files-text {
+  color: #7F4E0B !important;
   font-family: inherit;
   font-size: inherit;
   font-style: inherit;
@@ -1152,13 +1152,13 @@ button:disabled {
   color: #1a1a1a;
   border: none;
   border-radius: 38px;
-  font-size: 1.0625rem;
+  font-size: 16px;
   font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: -0.02em;
   cursor: pointer;
-  font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
   transition: all 0.2s;
   white-space: nowrap;
   min-height: 64px;
@@ -2636,16 +2636,17 @@ button:disabled {
 
   .statement-dropzone strong {
     margin-top: 10px;
-    font-size: 1.125rem;
-    line-height: 1.5625rem;
+    font-size: 24px;
+    line-height: 130%;
+    letter-spacing: -0.02em;
     max-width: 280px;
   }
 
   .statement-dropzone span:last-child {
     width: auto;
     max-width: 260px;
-    font-size: 0.9375rem;
-    line-height: 1.375rem;
+    font-size: 14px;
+    line-height: 150%;
   }
 
   .statement-file-loading {
@@ -2753,24 +2754,24 @@ button:disabled {
 .statement-welcome {
   margin: 0;
   color: #000;
-  font-family: var(--font-butler), "ButlerPro", Georgia, "Times New Roman", serif;
+  font-family: var(--font-butler-roman-display), "ButlerPro", Georgia, "Times New Roman", serif;
   font-size: 20px;
   font-style: normal;
   font-weight: 400;
   line-height: 120%;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.02em;
 }
 
 .statement-title-desktop {
   margin: 0;
   text-align: center;
   color: #000;
-  font-family: var(--font-butler), "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 64px;
+  font-family: var(--font-butler-roman), "ButlerPro", Georgia, "Times New Roman", serif;
+  font-size: 52px;
   font-style: normal;
   font-weight: 400;
-  line-height: 110%;
-  letter-spacing: -2px;
+  line-height: 120%;
+  letter-spacing: -0.03em;
 }
 
 .statement-security-top {
@@ -2816,6 +2817,26 @@ button:disabled {
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+.statement-file-loader.is-queued {
+  background: transparent;
+}
+
+.statement-file-loader.is-queued::before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  margin-left: -10px;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.12);
+  border-top-color: rgba(0, 0, 0, 0.4);
+  animation: rotate 1.4s linear infinite;
 }
 
 .statement-file-loader.is-uploading::before {
@@ -2897,7 +2918,7 @@ button:disabled {
 /* Desktop layout */
 @media (min-width: 1024px) {
   .statement-content {
-    padding: 40px 80px;
+    padding: 0px 80px;
     text-align: left;
   }
 
@@ -2925,6 +2946,10 @@ button:disabled {
   .statement-right {
     flex: 0 0 55%;
     max-width: 640px;
+    min-height: calc(100vh - 80px);
+    justify-content: center;
+    padding-top: 80px;
+    padding-bottom: 80px;
   }
 
   .statement-welcome {
@@ -2933,8 +2958,8 @@ button:disabled {
 
   .statement-title-desktop {
     text-align: left !important;
-    font-size: 76px;
-    letter-spacing: -2.5px;
+    font-size: 52px;
+    letter-spacing: -0.03em;
   }
 
   .statement-brokers {

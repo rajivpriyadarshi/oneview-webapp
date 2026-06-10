@@ -28,6 +28,23 @@ const satoshi = localFont({
   display: "swap",
 });
 
+const butlerProRoman = localFont({
+  src: [
+    { path: "./fonts/ButlerPro-Roman.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/ButlerPro-Roman.ttf", weight: "400", style: "normal" },
+  ],
+  variable: "--font-butler-roman",
+  display: "swap",
+});
+
+const butlerProRomanDisplay = localFont({
+  src: [
+    { path: "./fonts/ButlerPro-Roman-Ds.woff2", weight: "400", style: "normal" },
+  ],
+  variable: "--font-butler-roman-display",
+  display: "swap",
+});
+
 const butlerProMedium = localFont({
   src: [{ path: "./fonts/ButlerPro-Medium.woff2", weight: "500", style: "normal" }],
   variable: "--font-butler-medium",
@@ -53,7 +70,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${butlerPro.variable} ${butlerProMedium.variable} ${butlerProSemiBold.variable} ${satoshi.variable}`}
+      className={`${butlerPro.variable} ${butlerProRoman.variable} ${butlerProRomanDisplay.variable} ${butlerProMedium.variable} ${butlerProSemiBold.variable} ${satoshi.variable}`}
     >
       <body>
         <StoreProvider>
