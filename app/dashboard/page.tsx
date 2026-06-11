@@ -229,7 +229,10 @@ export default function DashboardPage() {
                 currency={currency}
                 onCurrencyChange={handleCurrencyChange}
               />
-              {brokerJobs?.some(j => j.status === "needs_review") && (
+              {brokerJobs?.some(j => j.status === "needs_review") && (() => {
+                const pendingCount = brokerJobs.filter(j => j.status === "needs_review").length;
+                const resolveBy = new Date(Date.now() + 5 * 60 * 60 * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                return (
                 <div className="mb-4 w-full flex items-center justify-between gap-4 px-5 py-4 rounded-2xl" style={{ background: "#DED7D1" }}>
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5" style={{ background: "#35230C" }}>
@@ -239,10 +242,10 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <span className="font-satoshi text-[16px] font-medium leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
-                        We encountered a few statements that we couldn&apos;t process with full accuracy. Our team is reviewing them.
+                        We couldn&apos;t process {pendingCount} of your statement{pendingCount !== 1 ? "s" : ""} with full accuracy. Our team is reviewing them.
                       </span>
                       <span className="font-satoshi text-[12px] font-normal leading-[130%] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
-                        This may take 3-4 hours. We&apos;ll notify you as soon as your dashboard is ready.
+                        We will resolve this by {resolveBy}{" "}today. We&apos;ll notify you as soon as this is resolved.
                       </span>
                     </div>
                   </div>
@@ -255,7 +258,8 @@ export default function DashboardPage() {
                     See details
                   </button>
                 </div>
-              )}
+                );
+              })()}
               <PortfolioSummary
                 portfolioView={portfolioView ?? null}
                 loading={loading}
