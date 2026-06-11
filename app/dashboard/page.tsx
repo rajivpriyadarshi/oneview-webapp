@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import type { BrokerStatementJob } from "../lib/documentsApi";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import DashboardHeader from "../components/DashboardHeader";
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
   const [currency, setCurrency] = useState("INR");
+  const [isPendingDocsModalOpen, setIsPendingDocsModalOpen] = useState(false);
   const sectionInViewRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -244,13 +246,14 @@ export default function DashboardPage() {
                       </span>
                     </div>
                   </div>
-                  <Link
-                    href="/vault"
+                  <button
+                    type="button"
                     className="flex-shrink-0 font-satoshi text-[14px] font-semibold leading-[150%] tracking-[-0.28px] text-black border border-black/15 rounded-full px-5 py-2.5 bg-white hover:bg-black/[0.04] transition-colors cursor-pointer whitespace-nowrap"
                     style={{ fontFeatureSettings: "'ss03' on" }}
+                    onClick={() => setIsPendingDocsModalOpen(true)}
                   >
                     See details
-                  </Link>
+                  </button>
                 </div>
               )}
               <PortfolioSummary
@@ -299,6 +302,12 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+      {isPendingDocsModalOpen && (
+        <PendingDocumentsModal
+          jobs={(brokerJobs ?? []).filter((j) => j.status === "needs_review")}
+          onClose={() => setIsPendingDocsModalOpen(false)}
+        />
+      )}
     </ProtectedRoute>
   );
 }
@@ -308,5 +317,124 @@ function PlusIcon() {
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 5V19M5 12H19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const day = date.getDate();
+  const year = date.getFullYear();
+  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return `${month} ${day}, ${year} at ${time}`;
+}
+
+function getFileType(name: string) {
+  const ext = name.split(".").pop()?.toLowerCase() || "";
+  if (["xls", "xlsx"].includes(ext)) return "xls";
+  if (ext === "pdf") return "pdf";
+  if (ext === "csv") return "csv";
+  return "csv";
+}
+
+function FileIcon({ type }: { type: string }) {
+  const colors: Record<string, { bg: string; text: string; docBg: string; docFold: string }> = {
+    pdf: { bg: "#e31b2f", text: "white", docBg: "#F5E6E8", docFold: "#E8CDD1" },
+    xls: { bg: "#217346", text: "white", docBg: "#E6F2EC", docFold: "#C9E4D5" },
+    csv: { bg: "#22a768", text: "white", docBg: "#E8F5EE", docFold: "#C9E8D7" },
+    file: { bg: "#6b7280", text: "white", docBg: "#E5E7EB", docFold: "#D1D5DB" },
+  };
+  const { bg, text, docBg, docFold } = colors[type] ?? colors.file;
+  return (
+    <div className="relative flex-shrink-0">
+      <svg width="28" height="34" viewBox="0 0 48 56" fill="none">
+        <path d="M4 4C4 1.79086 5.79086 0 8 0H30L44 14V52C44 54.2091 42.2091 56 40 56H8C5.79086 56 4 54.2091 4 52V4Z" fill={docBg} />
+        <path d="M30 0L44 14H34C31.7909 14 30 12.2091 30 10V0Z" fill={docFold} />
+        <rect x="8" y="36" width="28" height="14" rx="2" fill={bg} />
+      </svg>
+      <span className="absolute bottom-[5px] left-1/2 -translate-x-1/2 text-[5px] font-bold uppercase" style={{ color: text }}>
+        {type === "xlsx" ? "xls" : type}
+      </span>
+    </div>
+  );
+}
+
+function PendingDocumentsModal({ jobs, onClose }: { jobs: BrokerStatementJob[]; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="relative w-full max-w-[560px] mx-4 rounded-[32px] bg-white shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pending-docs-title"
+      >
+        <div className="flex items-center justify-between px-8 pt-8 pb-6 border-b border-black/10">
+          <div>
+            <h2
+              id="pending-docs-title"
+              className="m-0 font-satoshi text-[18px] font-bold leading-[130%] tracking-[-0.02em] text-black"
+              style={{ fontFeatureSettings: "'ss03' on" }}
+            >
+              Statements under review
+            </h2>
+            <p
+              className="m-0 mt-1 font-satoshi text-[13px] font-normal leading-[150%] tracking-[-0.02em] text-black/50"
+              style={{ fontFeatureSettings: "'ss03' on" }}
+            >
+              {jobs.length} statement{jobs.length !== 1 ? "s" : ""} pending manual review
+            </p>
+          </div>
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-black/[0.05] text-black/50 transition hover:bg-black/10"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="max-h-[400px] overflow-y-auto px-8 py-6 space-y-3">
+          {jobs.length === 0 ? (
+            <p className="text-center font-satoshi text-[14px] text-black/50 py-8" style={{ fontFeatureSettings: "'ss03' on" }}>
+              No pending statements
+            </p>
+          ) : (
+            jobs.map((job) => (
+              <div key={job.job_id} className="flex items-center gap-4 rounded-[20px] bg-[#f6f6f6] px-4 py-4">
+                <FileIcon type={getFileType(job.original_filename)} />
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="m-0 font-satoshi text-[14px] font-medium leading-[130%] tracking-[-0.02em] text-black truncate"
+                    style={{ fontFeatureSettings: "'ss03' on" }}
+                    title={job.original_filename}
+                  >
+                    {job.original_filename}
+                  </p>
+                  <p
+                    className="m-0 mt-0.5 font-satoshi text-[12px] font-normal leading-[150%] text-black/40"
+                    style={{ fontFeatureSettings: "'ss03' on" }}
+                  >
+                    Uploaded {formatDate(job.created_at)}
+                  </p>
+                </div>
+                <span
+                  className="flex-shrink-0 rounded-full px-3 py-1 font-satoshi text-[12px] font-semibold"
+                  style={{ background: "#DED7D1", color: "#5C3D1A", fontFeatureSettings: "'ss03' on" }}
+                >
+                  Under review
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
