@@ -720,8 +720,8 @@ export function StatementUpload() {
                 {uploadItems.map((item) => (
                   <div
                     key={item.id}
-                    className="w-full flex flex-row items-center gap-4 px-4 py-3 rounded-3xl border border-black/10"
-                    style={{ background: '#FFFFFF24', backdropFilter: 'blur(44px)', WebkitBackdropFilter: 'blur(44px)' }}
+                    className="w-full flex flex-row items-center gap-4 px-4 py-[20px] rounded-3xl border border-black/10"
+                    style={{ background: 'rgba(255, 255, 255, 0.34)', backdropFilter: 'blur(44px)', WebkitBackdropFilter: 'blur(44px)' }}
                     aria-live="polite"
                   >
                     <div
