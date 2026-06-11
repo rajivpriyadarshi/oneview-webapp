@@ -234,8 +234,8 @@ export default function DashboardPage() {
                 const resolveBy = new Date(Date.now() + 5 * 60 * 60 * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
                 return (
                 <div className="mb-4 w-full flex items-center justify-between gap-4 px-5 py-4 rounded-2xl" style={{ background: "#DED7D1" }}>
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center mt-0.5" style={{ background: "#35230C" }}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#35230C" }}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
@@ -251,7 +251,7 @@ export default function DashboardPage() {
                   </div>
                   <button
                     type="button"
-                    className="flex-shrink-0 font-satoshi text-[14px] font-semibold leading-[150%] tracking-[-0.28px] text-black border border-black/15 rounded-full px-5 py-2.5 bg-white hover:bg-black/[0.04] transition-colors cursor-pointer whitespace-nowrap"
+                    className="flex-shrink-0 font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.28px] text-black border border-black/15 rounded-full px-5 py-2.5 bg-white hover:bg-black/[0.04] transition-colors cursor-pointer whitespace-nowrap"
                     style={{ fontFeatureSettings: "'ss03' on" }}
                     onClick={() => setIsPendingDocsModalOpen(true)}
                   >
