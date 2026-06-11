@@ -3,11 +3,13 @@
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import DocumentsTable, { type VaultDocument } from "./DocumentsTable";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
+import { PasswordPromptModal } from "./PasswordPromptModal";
 import {
   api,
   useListDocumentsQuery,
   useDeleteDocumentMutation,
   useUploadBrokerStatementMutation,
+  useRetryWithPasswordMutation,
   useLazyGetBrokerStatementJobStatusQuery,
 } from "../store/api";
 import { useAppDispatch } from "../store/hooks";
@@ -118,7 +120,13 @@ export function DocumentsVault() {
   const { data: rawDocuments = [], isLoading: loading } = useListDocumentsQuery();
   const [deleteDocumentMutation] = useDeleteDocumentMutation();
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
+  const [retryWithPassword] = useRetryWithPasswordMutation();
   const [getBrokerStatementJobStatus] = useLazyGetBrokerStatementJobStatusQuery();
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [isRetryingPassword, setIsRetryingPassword] = useState(false);
+  const [pendingPasswordDocId, setPendingPasswordDocId] = useState<string | number | null>(null);
+  const [pendingPasswordItemId, setPendingPasswordItemId] = useState<string | null>(null);
 
   const documents = rawDocuments.map(mapDocToTableRow);
   const docCount = rawDocuments.length;
@@ -245,18 +253,29 @@ export function DocumentsVault() {
               error: `This file was already uploaded on ${uploadDate}.`,
             });
           } else if (response.status === "error") {
-            trackAPI({
-              pageName: trackingEventsMap.documentsVaultPage.PAGE,
-              params: {
-                event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
-                file_name: file.name,
-                error: response.error,
-              },
-            });
-            updateUploadItem(item.id, {
-              status: "error",
-              error: response.error ?? "Unable to parse this statement.",
-            });
+            if (response.error_code === "password_required" || response.error_code === "password_incorrect") {
+              setPendingPasswordDocId(response.document_id ?? null);
+              setPendingPasswordItemId(item.id);
+              setPasswordError(response.error_code === "password_incorrect" ? (response.error ?? "The provided password is incorrect.") : "");
+              setShowPasswordPrompt(true);
+              updateUploadItem(item.id, {
+                status: "error",
+                error: "Password required",
+              });
+            } else {
+              trackAPI({
+                pageName: trackingEventsMap.documentsVaultPage.PAGE,
+                params: {
+                  event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
+                  file_name: file.name,
+                  error: response.error,
+                },
+              });
+              updateUploadItem(item.id, {
+                status: "error",
+                error: response.error ?? "Unable to parse this statement.",
+              });
+            }
           } else if (response.status === "processing") {
             updateUploadItem(item.id, {
               status: "processing",
@@ -340,19 +359,39 @@ export function DocumentsVault() {
             updateUploadItem(item.id, { status: "complete", detail, error: undefined });
           }
         } catch (uploadError) {
-          trackAPI({
-            pageName: trackingEventsMap.documentsVaultPage.PAGE,
-            params: {
-              event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
-              file_name: file.name,
-              error: getRequestErrorMessage(uploadError, "Upload failed"),
-            },
-          });
-          updateUploadItem(item.id, {
-            status: "error",
-            detail: undefined,
-            error: getRequestErrorMessage(uploadError, "Upload failed."),
-          });
+          // Handle password-protected PDF errors (400 responses from RTK Query)
+          const errorData = typeof uploadError === "object" && uploadError !== null && "data" in uploadError
+            ? (uploadError as { data: unknown }).data
+            : null;
+
+          if (
+            errorData &&
+            typeof errorData === "object" &&
+            "error_code" in errorData &&
+            ((errorData as { error_code: string }).error_code === "password_required" ||
+              (errorData as { error_code: string }).error_code === "password_incorrect")
+          ) {
+            const data = errorData as { document_id: string | number; error?: string; error_code: string };
+            setPendingPasswordDocId(data.document_id);
+            setPendingPasswordItemId(item.id);
+            setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
+            setShowPasswordPrompt(true);
+            updateUploadItem(item.id, { status: "error", error: "Password required" });
+          } else {
+            trackAPI({
+              pageName: trackingEventsMap.documentsVaultPage.PAGE,
+              params: {
+                event_name: trackingEventsMap.documentsVaultPage.API_UPLOAD_FILE_FAILURE,
+                file_name: file.name,
+                error: getRequestErrorMessage(uploadError, "Upload failed"),
+              },
+            });
+            updateUploadItem(item.id, {
+              status: "error",
+              detail: undefined,
+              error: getRequestErrorMessage(uploadError, "Upload failed."),
+            });
+          }
         }
       }
 
@@ -408,6 +447,56 @@ export function DocumentsVault() {
 
     setUploadItems([]);
     setUploadMessage("");
+  }
+
+  async function handlePasswordSubmit(password: string) {
+    if (!pendingPasswordDocId) return;
+
+    setIsRetryingPassword(true);
+    setPasswordError("");
+
+    try {
+      const response = await retryWithPassword({
+        documentId: pendingPasswordDocId,
+        password,
+      }).unwrap();
+
+      if (response.status === "error") {
+        if (response.error_code === "password_incorrect") {
+          setPasswordError(response.error ?? "The provided password is incorrect.");
+          return;
+        }
+        setShowPasswordPrompt(false);
+        if (pendingPasswordItemId) {
+          updateUploadItem(pendingPasswordItemId, {
+            status: "error",
+            error: response.error ?? "Unable to parse this statement.",
+          });
+        }
+        return;
+      }
+
+      setShowPasswordPrompt(false);
+      setPendingPasswordDocId(null);
+      setPasswordError("");
+      if (pendingPasswordItemId) {
+        updateUploadItem(pendingPasswordItemId, { status: "complete", error: undefined });
+      }
+      setUploadMessage("File unlocked and processed successfully.");
+    } catch (err) {
+      setPasswordError(
+        err instanceof Error ? err.message : "Failed to unlock document.",
+      );
+    } finally {
+      setIsRetryingPassword(false);
+    }
+  }
+
+  function handlePasswordPromptClose() {
+    setShowPasswordPrompt(false);
+    setPendingPasswordDocId(null);
+    setPendingPasswordItemId(null);
+    setPasswordError("");
   }
 
   async function confirmDeleteDocuments() {
@@ -596,6 +685,14 @@ export function DocumentsVault() {
       <DownloadInstructionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      />
+
+      <PasswordPromptModal
+        isOpen={showPasswordPrompt}
+        isLoading={isRetryingPassword}
+        error={passwordError}
+        onSubmit={handlePasswordSubmit}
+        onClose={handlePasswordPromptClose}
       />
 
       {documentsPendingDelete.length > 0 && (

@@ -931,6 +931,96 @@ button:disabled {
   margin-top: 100px;
 }
 
+/* Password prompt modal (shared) */
+.docs-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.docs-confirm-dialog {
+  width: min(440px, 100%);
+  padding: 28px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.docs-confirm-dialog h2 {
+  margin: 0 0 10px;
+  color: #050505;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.docs-confirm-dialog p {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.66);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.docs-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.docs-confirm-secondary,
+.docs-confirm-danger {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.docs-confirm-secondary {
+  background: #f1f1f1;
+  color: #1f1f1f;
+}
+
+.docs-confirm-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.docs-confirm-secondary:disabled,
+.docs-confirm-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.password-prompt-input {
+  width: 100%;
+  padding: 12px 16px;
+  margin: 16px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.password-prompt-input:focus {
+  border-color: #2F9FF8;
+}
+
+.password-prompt-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .statement-cta-group {
   display: flex;
   gap: 16px;

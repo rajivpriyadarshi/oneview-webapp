@@ -84,6 +84,7 @@ export type BrokerStatementErrorResponse = {
   job_id?: string;
   document_id?: string | number;
   error?: string;
+  error_code?: "password_required" | "password_incorrect";
 };
 
 export type BrokerStatementUploadResponse =
@@ -253,6 +254,7 @@ export function uploadBrokerStatement(input: {
   file: File;
   name?: string;
   description?: string;
+  password?: string;
   storeData?: boolean;
   portfolioName?: string;
   useLlmFallback?: boolean;
@@ -266,6 +268,10 @@ export function uploadBrokerStatement(input: {
 
   if (input.description) {
     formData.set("description", input.description);
+  }
+
+  if (input.password) {
+    formData.set("password", input.password);
   }
 
   if (typeof input.storeData === "boolean") {
@@ -314,4 +320,21 @@ export type BrokerStatementJob = {
 
 export function listBrokerStatementJobs() {
   return apiRequest<BrokerStatementJob[]>("/oneview/broker-statements/jobs/");
+}
+
+export function retryWithPassword(input: {
+  documentId: string | number;
+  password: string;
+}) {
+  const formData = new FormData();
+  formData.set("document_id", String(input.documentId));
+  formData.set("password", input.password);
+
+  return apiRequest<BrokerStatementUploadResponse>(
+    "/oneview/broker-statements/retry-with-password/",
+    {
+      method: "POST",
+      body: formData,
+    },
+  );
 }
