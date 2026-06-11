@@ -613,7 +613,7 @@ button:disabled {
 .statement-dropzone {
   position: relative;
   width: min(100%, 610px);
-  min-height: 319px;
+  min-height: 250px;
   display: flex;
   flex-direction: column;
   align-items: center;
