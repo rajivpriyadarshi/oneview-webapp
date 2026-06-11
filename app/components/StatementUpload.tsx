@@ -16,7 +16,7 @@ import {
   useDeleteDocumentMutation,
 } from "../store/api";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { addTrayItems, patchTrayItem, removeTrayItem } from "../store/uploadTraySlice";
+import { addTrayItems, patchTrayItem, removeTrayItem, dismissTray } from "../store/uploadTraySlice";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
 import { pollBrokerStatementJobStatus } from "../lib/documentsApi";
 import { getRequestErrorMessage } from "../lib/apiClient";
@@ -651,6 +651,7 @@ export function StatementUpload() {
                   className="flex w-full items-center gap-[10px] rounded-lg border-none bg-transparent px-[14px] py-3 font-satoshi text-sm font-medium text-[var(--foreground)] cursor-pointer transition-colors hover:bg-black/[0.05]"
                   style={{ fontFeatureSettings: "'ss03' on" }}
                   onClick={() => {
+                    dispatch(dismissTray());
                     clearAuthToken();
                     router.push("/");
                   }}
