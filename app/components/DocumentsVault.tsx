@@ -144,7 +144,14 @@ export function DocumentsVault() {
   const [pendingPasswordDocId, setPendingPasswordDocId] = useState<string | number | null>(null);
   const [pendingPasswordItemId, setPendingPasswordItemId] = useState<string | null>(null);
 
-  const documents = rawDocuments.map(mapDocToTableRow);
+  const processingNames = new Set(
+    uploadItems
+      .filter((i) => i.status === "queued" || i.status === "uploading" || i.status === "processing")
+      .map((i) => i.name.toLowerCase()),
+  );
+  const documents = rawDocuments
+    .map(mapDocToTableRow)
+    .filter((d) => !processingNames.has(d.filename.toLowerCase()));
   const docCount = rawDocuments.length;
   const accountCount = new Set(documents.map((d) => d.account)).size;
 
@@ -683,6 +690,9 @@ export function DocumentsVault() {
         loading={loading}
         deleting={deleting}
         onRequestDelete={setDocumentsPendingDelete}
+        processingItems={uploadItems.filter(
+          (i) => i.status === "queued" || i.status === "uploading" || i.status === "processing",
+        )}
       />
 
       {uploadItems.length > 0 && (

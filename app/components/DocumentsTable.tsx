@@ -28,11 +28,19 @@ export type VaultDocument = {
   holdingsValue?: number;
 };
 
+export type ProcessingItem = {
+  id: string;
+  name: string;
+  status: string;
+  detail?: string;
+};
+
 type Props = {
   documents: VaultDocument[];
   loading?: boolean;
   deleting?: boolean;
   onRequestDelete?: (documents: VaultDocument[]) => void;
+  processingItems?: ProcessingItem[];
 };
 
 const columnHelper = createColumnHelper<VaultDocument>();
@@ -80,6 +88,7 @@ export default function DocumentsTable({
   loading = false,
   deleting = false,
   onRequestDelete,
+  processingItems = [],
 }: Props) {
   const { trackClick } = useAnalytics();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -445,6 +454,27 @@ export default function DocumentsTable({
                   </td>
                 </tr>
               )}
+              {!loading && processingItems.map((item) => (
+                <tr key={item.id} className="table w-full table-fixed">
+                  <td className="w-10 border-b border-black/10 px-4 py-[16px]" />
+                  <td className="border-b border-black/10 px-4 py-[16px]" style={{ width: "40%" }}>
+                    <div className="flex items-center gap-3">
+                      <ProcessingSpinner />
+                      <div className="flex flex-col min-w-0">
+                        <span className="block truncate font-satoshi text-[16px] font-medium tracking-[-0.64px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>{item.name}</span>
+                        <span className="block text-[13px] text-black/35 mt-0.5" style={{ fontFeatureSettings: "'ss03' on" }}>{item.detail ?? "Processing…"}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="border-b border-black/10 px-4 py-[16px]" style={{ width: "24%" }}>
+                    <span className="font-satoshi text-[14px] text-black/30" style={{ fontFeatureSettings: "'ss03' on" }}>—</span>
+                  </td>
+                  <td className="border-b border-black/10 px-4 py-[16px]" style={{ width: "16%" }}>
+                    <span className="font-satoshi text-[14px] text-black/30" style={{ fontFeatureSettings: "'ss03' on" }}>—</span>
+                  </td>
+                  <td className="border-b border-black/10 px-4 py-[16px] text-center" style={{ width: "16%" }} />
+                </tr>
+              ))}
               {!loading &&
                 (() => {
                   const hasMultipleGroups = groupedDocuments.size > 1;
@@ -525,6 +555,7 @@ export default function DocumentsTable({
           loading={loading}
           selectedRows={selectedRows}
           onToggleRow={toggleRow}
+          processingItems={processingItems}
         />
       ) : (
         <TimelineView
@@ -532,6 +563,7 @@ export default function DocumentsTable({
           loading={loading}
           selectedRows={selectedRows}
           onToggleRow={toggleRow}
+          processingItems={processingItems}
         />
       )}
     </section>
@@ -887,11 +919,13 @@ function FolderView({
   loading,
   selectedRows,
   onToggleRow,
+  processingItems = [],
 }: {
   groupedDocuments: Map<string, VaultDocument[]>;
   loading: boolean;
   selectedRows: Set<string>;
   onToggleRow: (id: string) => void;
+  processingItems?: ProcessingItem[];
 }) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
@@ -925,6 +959,17 @@ function FolderView({
 
   return (
     <div className="pb-4 space-y-6">
+      {processingItems.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 px-2">
+          {processingItems.map((item) => (
+            <div key={item.id} className="flex flex-col items-center gap-1 px-4 py-[32px] rounded-[28px] bg-[#fafafa] border border-black/5 opacity-60">
+              <ProcessingSpinner size={48} />
+              <p className="text-xs text-center text-[#1a1a1a] font-medium truncate w-full max-w-full px-1 mt-2">{item.name}</p>
+              <p className="text-[12px] text-black/50 truncate w-full max-w-full text-center px-1">{item.detail ?? "Processing…"}</p>
+            </div>
+          ))}
+        </div>
+      )}
       {Array.from(groupedDocuments.entries()).map(([groupName, docs]) => {
         const brokerIcon = BROKER_ICONS[groupName];
         const isCollapsed = collapsedGroups.has(groupName);
@@ -1077,11 +1122,13 @@ function TimelineView({
   loading,
   selectedRows,
   onToggleRow,
+  processingItems = [],
 }: {
   documents: VaultDocument[];
   loading: boolean;
   selectedRows: Set<string>;
   onToggleRow: (id: string) => void;
+  processingItems?: ProcessingItem[];
 }) {
   if (loading) {
     return (
@@ -1091,7 +1138,7 @@ function TimelineView({
     );
   }
 
-  if (documents.length === 0) {
+  if (documents.length === 0 && processingItems.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
         <span className="text-black/50">No documents found</span>
@@ -1123,6 +1170,30 @@ function TimelineView({
   return (
     <div className="pb-4 px-4">
       <div className="relative">
+        {processingItems.length > 0 && (
+          <div className="relative mb-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-10 h-10 rounded-full bg-white border-2 border-black/10 flex items-center justify-center z-10">
+                <ProcessingSpinner size={18} />
+              </div>
+              <span className="font-semibold text-sm text-black/50">Processing</span>
+            </div>
+            <div className="ml-14 space-y-3">
+              {processingItems.map((item) => (
+                <div key={item.id} className="flex items-center gap-4 p-4 rounded-[28px] bg-[#f6f6f6] opacity-60">
+                  <div className="flex-shrink-0">
+                    <ProcessingSpinner size={28} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-[#1a1a1a] truncate">{item.name}</p>
+                    <p className="text-xs text-black/50 -mt-0.5">{item.detail ?? "Processing…"}</p>
+                  </div>
+                  <span className="text-xs text-black/30 whitespace-nowrap flex-shrink-0">Uploading</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {Object.entries(groupedByMonth).map(([monthKey, docs], idx, arr) => (
           <div key={monthKey} className="relative mb-8 last:mb-0">
             {idx < arr.length - 1 && (
@@ -1353,6 +1424,15 @@ function FileIconLarge({ type }: { type: string }) {
         {type === "xlsx" ? "xls" : type}
       </span>
     </div>
+  );
+}
+
+function ProcessingSpinner({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1.2s linear infinite", flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="9" stroke="rgba(0,0,0,0.12)" strokeWidth="2.5" />
+      <path d="M12 3C16.9706 3 21 7.02944 21 12" stroke="#7F4E0B" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
   );
 }
 
