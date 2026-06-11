@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import type { BrokerStatementJob } from "../lib/documentsApi";
@@ -115,9 +116,16 @@ export default function DashboardPage() {
       });
   }, []);
 
-  const { data: portfolios = [] } = useListPortfoliosQuery();
+  const { data: portfolios = [], isSuccess: portfoliosLoaded } = useListPortfoliosQuery();
   const { data: brokerJobs } = useListBrokerStatementJobsQuery();
   console.log("[Dashboard] Portfolios data:", portfolios);
+
+  const router = useRouter();
+  useEffect(() => {
+    if (portfoliosLoaded && portfolios.length === 0) {
+      router.replace("/onboarding/documents");
+    }
+  }, [portfoliosLoaded, portfolios.length, router]);
 
   const activePortfolioId = selectedPortfolioId ?? portfolios[0]?.id ?? null;
   const selectedPortfolio = portfolios.find((p) => p.id === activePortfolioId) ?? null;
