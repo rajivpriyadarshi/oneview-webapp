@@ -563,7 +563,7 @@ export function StatementUpload() {
               </p>
               <h1
                 id="statement-title"
-                className="m-0 text-left font-normal leading-[120%] tracking-[-0.03em] text-black text-[52px]"
+                className="m-0 mb-[16px] text-left font-normal leading-[120%] tracking-[-0.03em] text-black text-[48px]"
                 style={{ fontFamily: "var(--font-butler-roman-display), ButlerPro, Georgia, 'Times New Roman', serif" }}
               >
                 Add your account statements
@@ -600,7 +600,7 @@ export function StatementUpload() {
 
             <div className="mt-10 flex flex-col items-start gap-3 w-full">
               <button
-                className="min-h-[64px] rounded-[38px] bg-black/[0.04] px-5 font-satoshi text-base font-bold leading-6 tracking-[-0.02em] text-[#1a1a1a] border-none cursor-pointer transition-all hover:bg-black/10 hover:-translate-y-px whitespace-nowrap"
+                className="min-h-[64px] rounded-[38px] bg-black/[0.04] px-[32px] font-satoshi text-[16px] font-bold leading-6 tracking-[-0.02em] text-[#1a1a1a] border-none cursor-pointer transition-all hover:bg-black/10 hover:-translate-y-px whitespace-nowrap"
                 style={{ fontFeatureSettings: "'ss03' on" }}
                 type="button"
                 onClick={() => {
