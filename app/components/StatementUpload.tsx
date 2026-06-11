@@ -492,8 +492,8 @@ export function StatementUpload() {
 
   return (
     <main
-      className="relative flex flex-col overflow-hidden"
-      style={{ height: "100vh", background: "url('/auth-Hero-bg.png') center/cover no-repeat fixed" }}
+      className="relative flex flex-col overflow-y-auto lg:overflow-hidden"
+      style={{ minHeight: "100vh", height: "100vh", background: "url('/auth-Hero-bg.png') center/cover no-repeat fixed" }}
     >
       {/* Topbar */}
       <header
