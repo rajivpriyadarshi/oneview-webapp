@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { clearAuthToken } from "../lib/session";
+import { useAppDispatch } from "../store/hooks";
+import { dismissTray } from "../store/uploadTraySlice";
 
 interface HeaderProps {
   title?: string;
@@ -19,9 +21,11 @@ export default function Header({
   showUploadBtn = false,
 }: HeaderProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleLogout = () => {
+    dispatch(dismissTray());
     clearAuthToken();
     router.push("/");
   };

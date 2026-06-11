@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearAuthToken } from "../lib/session";
 import { getUserProfile, updateUserProfile, type UserProfile } from "../lib/profileApi";
+import { useAppDispatch } from "../store/hooks";
+import { dismissTray } from "../store/uploadTraySlice";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import EditProfileModal from "../components/EditProfileModal";
@@ -20,6 +22,7 @@ const CHART_COLORS = [
 
 export default function ProfilePage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const { trackPage, trackClick, trackAPI } = useAnalytics();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,6 +39,7 @@ export default function ProfilePage() {
       })
       .catch((error) => {
         console.error("Failed to fetch profile:", error);
+        dispatch(dismissTray());
         clearAuthToken();
         router.push("/");
       });
@@ -168,6 +172,7 @@ export default function ProfilePage() {
 
     // Clear cached profile data
     localStorage.removeItem('userProfile');
+    dispatch(dismissTray());
     clearAuthToken();
     router.push("/");
   };
