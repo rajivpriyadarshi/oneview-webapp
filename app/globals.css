@@ -80,6 +80,7 @@ button:disabled {
 
 .auth-shell-card {
   grid-template-rows: auto auto 1fr;
+  animation: fadeInUp 0.7s ease-out both;
 }
 
 .otp-shell {
@@ -89,6 +90,7 @@ button:disabled {
   align-items: center;
 }
 
+
 .brand {
   display: flex;
   align-items: center;
@@ -96,6 +98,7 @@ button:disabled {
 
 .auth-shell-card .brand {
   margin-bottom: 44px;
+  animation: fadeInDown 0.6s ease-out both;
 }
 
 .otp-shell .brand {
@@ -117,7 +120,7 @@ button:disabled {
 }
 
 .login-card {
-  width: min(100%, 530px);
+  width: min(100%, 480px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -128,11 +131,11 @@ button:disabled {
 }
 
 .login-card h1 {
-  margin: 0 0 67px;
+  margin: 0 0 16px;
   color: #17342f;
   font-family: var(--font-butler), Georgia, serif;
-  font-size: 2.625rem;
-  font-weight: 500;
+  font-size: 36px;
+  font-weight: 400;
 }
 
 
@@ -140,16 +143,16 @@ button:disabled {
 .otp-panel h1 {
   margin: 0;
   color: #092423;
-  font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 2rem;
+  font-family: var(--font-butler), Georgia, "Times New Roman", serif;
+  font-size: 36px;
   font-style: normal;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 3.5rem;
   letter-spacing: -1.28px;
 }
 
 .account-card h1 {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .google-button {
@@ -172,9 +175,9 @@ button:disabled {
   text-overflow: ellipsis;
   font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
-  font-size: 1rem;
+  font-size: 16px;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.5rem;
   letter-spacing: var(--Kerning-None, 0);
   white-space: nowrap;
@@ -266,7 +269,7 @@ button:disabled {
 .continue-button {
   width: min(100%, 459px);
   display: flex;
-  height: 56px;
+  height: 64px;
   padding: 16px 24px;
   justify-content: center;
   align-items: center;
@@ -280,18 +283,25 @@ button:disabled {
   text-overflow: ellipsis;
   font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
-  font-size: 1rem;
+  font-size: 16px;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1.5rem;
   letter-spacing: var(--Kerning-None, 0);
   margin-top: 32px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.continue-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .terms {
   max-width: 430px;
   margin: 32px 0 0;
-  color: black;
+  color: #0000008c;
   font-size: 0.75rem;
   font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
@@ -325,15 +335,28 @@ button:disabled {
 }
 
 .otp-panel h1 {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  font-size: 42px;
+  font-weight: 400;
 }
 
 .otp-copy {
   max-width: 430px;
   margin: 0 0 30px;
   color: #5e5e5e;
-  font-size: 1.125rem;
+  font-size: 16px;
   line-height: 1.45;
+  text-align: center;
+}
+
+.otp-change-email {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--link-brown);
+  font-weight: 700;
+  font-size: inherit;
+  cursor: pointer;
 }
 
 .sent-line {
@@ -381,8 +404,9 @@ button:disabled {
   box-shadow: 0 0 0 2px rgba(18, 50, 45, 0.32);
 }
 
-.otp-button {
-  margin-bottom: 49px;
+.continue-button.otp-button {
+  margin-top: 12px;
+  margin-bottom: 24px;
 }
 
 .otp-error {
@@ -395,8 +419,8 @@ button:disabled {
   padding: 0;
   background: transparent;
   color: #5b5b5b;
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .zinc-brand {
@@ -2580,4 +2604,26 @@ button:disabled {
 @keyframes slot-roll-10 {
   0% { transform: translateY(0); }
   100% { transform: translateY(-9em); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
