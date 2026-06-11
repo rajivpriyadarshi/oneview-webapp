@@ -12,7 +12,8 @@ import {
   useRetryWithPasswordMutation,
   useLazyGetBrokerStatementJobStatusQuery,
 } from "../store/api";
-import { useAppDispatch } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { addTrayItems, patchTrayItem, dismissTray } from "../store/uploadTraySlice";
 import type { DocumentRecord } from "../lib/documentsApi";
 import { pollBrokerStatementJobStatus } from "../lib/documentsApi";
 import { getRequestErrorMessage } from "../lib/apiClient";
@@ -111,11 +112,26 @@ export function DocumentsVault() {
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
+  const trayItems = useAppSelector((s) => s.uploadTray.items);
+  const uploadItems: UploadItem[] = trayItems.map((i) => ({
+    id: i.id,
+    name: i.name,
+    size: formatFileSize(i.size),
+    status: (i.status === "uploading" ? "processing" : i.status) as UploadStatus,
+    detail: i.detail,
+    error: i.error,
+  }));
   const [uploadMessage, setUploadMessage] = useState("");
   const [documentsPendingDelete, setDocumentsPendingDelete] = useState<VaultDocument[]>([]);
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingAbortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      pollingAbortControllerRef.current?.abort();
+    };
+  }, []);
 
   const { data: rawDocuments = [], isLoading: loading } = useListDocumentsQuery();
   const [deleteDocumentMutation] = useDeleteDocumentMutation();
@@ -194,13 +210,20 @@ export function DocumentsVault() {
           name: file.name,
           size: formatFileSize(file.size),
           status: validationError ? "error" as const : "queued" as const,
-          error: validationError,
+          error: validationError || undefined,
         },
       };
     });
     const validUploads = preparedItems.filter(({ item }) => item.status !== "error");
 
-    setUploadItems(preparedItems.map(({ item }) => item));
+    dispatch(addTrayItems(preparedItems.map(({ file, item }) => ({
+      id: item.id,
+      name: item.name,
+      size: file.size,
+      status: item.status,
+      progress: 0,
+      error: item.error,
+    }))));
 
     if (validUploads.length === 0) {
       setError("No supported files selected.");
@@ -282,16 +305,23 @@ export function DocumentsVault() {
               detail: response.message ?? "Extracting statement details.",
             });
 
-            const jobResult = await pollBrokerStatementJobStatus({
-              jobId: response.job_id,
-              getStatus: (jobId) => getBrokerStatementJobStatus(jobId, false).unwrap(),
-              onProgress: (progress) => {
-                const label = progress?.label?.replace(/^OCR/i, "Scanning") ?? "Extracting statement details.";
-                updateUploadItem(item.id, {
-                  detail: label,
-                });
-              },
-            });
+            const abortController = new AbortController();
+            pollingAbortControllerRef.current = abortController;
+
+            let jobResult;
+            try {
+              jobResult = await pollBrokerStatementJobStatus({
+                jobId: response.job_id,
+                signal: abortController.signal,
+                getStatus: (jobId) => getBrokerStatementJobStatus(jobId, false).unwrap(),
+                onProgress: (progress) => {
+                  const label = progress?.label?.replace(/^OCR/i, "Scanning") ?? "Extracting statement details.";
+                  updateUploadItem(item.id, { detail: label });
+                },
+              });
+            } finally {
+              pollingAbortControllerRef.current = null;
+            }
 
             if (jobResult.status === "error") {
               trackAPI({
@@ -359,6 +389,9 @@ export function DocumentsVault() {
             updateUploadItem(item.id, { status: "complete", detail, error: undefined });
           }
         } catch (uploadError) {
+          if (uploadError instanceof Error && uploadError.name === "AbortError") {
+            break;
+          }
           // Handle password-protected PDF errors (400 responses from RTK Query)
           const errorData = typeof uploadError === "object" && uploadError !== null && "data" in uploadError
             ? (uploadError as { data: unknown }).data
@@ -408,9 +441,13 @@ export function DocumentsVault() {
   }
 
   function updateUploadItem(id: string, patch: Partial<UploadItem>) {
-    setUploadItems((items) =>
-      items.map((item) => item.id === id ? { ...item, ...patch } : item),
-    );
+    const trayStatus = patch.status === "processing" ? "uploading" : patch.status;
+    dispatch(patchTrayItem({
+      id,
+      ...(trayStatus !== undefined ? { status: trayStatus } : {}),
+      ...(patch.detail !== undefined ? { detail: patch.detail } : {}),
+      ...(patch.error !== undefined ? { error: patch.error } : {}),
+    }));
   }
 
   function validateFile(file: File) {
@@ -445,7 +482,7 @@ export function DocumentsVault() {
       },
     });
 
-    setUploadItems([]);
+    dispatch(dismissTray());
     setUploadMessage("");
   }
 

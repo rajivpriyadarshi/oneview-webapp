@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { Suspense } from "react";
 import StoreProvider from "./store/StoreProvider";
 import Analytics from "./analytics";
+import { UploadTray } from "./components/UploadTray";
 import "./globals.css";
 
 const butlerPro = localFont({
@@ -82,7 +83,9 @@ export default function RootLayout({
               {children}
             </Analytics>
           </Suspense>
-
+          <Suspense fallback={null}>
+            <UploadTray />
+          </Suspense>
         </StoreProvider>
       </body>
     </html>
