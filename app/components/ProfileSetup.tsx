@@ -136,11 +136,13 @@ export function ProfileSetup() {
   return (
     <main className="login-page">
       <section className="auth-shell profile-shell" aria-labelledby="profile-title">
-        <OneviewBrand />
+        <div style={{ animation: "fadeInDown 0.6s ease-out both" }}>
+          <OneviewBrand />
+        </div>
         <form className="profile-form" onSubmit={handleSubmit}>
-          <h1 id="profile-title">What should we call you?</h1>
+          <h1 id="profile-title" style={{ animation: "fadeInUp 0.6s ease-out 0.15s both" }}>What should we call you?</h1>
 
-          <div className="profile-name-field">
+          <div className="profile-name-field" style={{ animation: "fadeInUp 0.6s ease-out 0.35s both" }}>
             <input
               type="text"
               name="name"
@@ -158,13 +160,16 @@ export function ProfileSetup() {
             className="profile-continue-button"
             type="submit"
             disabled={isSubmitting || !isNameValid(displayName)}
+            style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}
           >
             {isSubmitting ? "Saving..." : "Proceed"}
           </button>
 
           {error ? <p className="form-error profile-error">{error}</p> : null}
         </form>
-        <ZincBrand />
+        <div style={{ animation: "fadeInUp 0.6s ease-out 0.75s both" }}>
+          <ZincBrand />
+        </div>
       </section>
     </main>
   );

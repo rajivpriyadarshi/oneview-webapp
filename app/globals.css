@@ -465,11 +465,11 @@ button:disabled {
 }
 
 .profile-form h1 {
-  margin: 0 0 60px;
+  margin: 0 0 16px;
   color: #050505;
-  font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 2.25rem;
-  font-weight: 500;
+  font-family: var(--font-butler), Georgia, "Times New Roman", serif;
+  font-size: 36px;
+  font-weight: 400;
   line-height: 3rem;
   letter-spacing: -1.2px;
 }
@@ -477,13 +477,17 @@ button:disabled {
 .profile-name-field {
   position: relative;
   width: 100%;
+  max-width: 420px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  padding: 12px 10px;
   margin: 0 auto 40px;
-  background: transparent;
-  border: 0;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
 }
 
 .profile-name-field input {
@@ -496,12 +500,13 @@ button:disabled {
   background: transparent;
   color: #050505;
   text-align: center;
-  font-family: "ButlerPro", Georgia, "Times New Roman", serif;
-  font-size: 3rem;
+  font-family: "Satoshi", sans-serif;
+  font-feature-settings: 'ss03' on;
+  font-size: 24px;
   font-style: normal;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 3.75rem;
-  letter-spacing: -1.5px;
+  letter-spacing: -0.02em;
   font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
@@ -514,17 +519,21 @@ button:disabled {
 }
 
 .profile-continue-button {
-  width: min(100%, 610px);
-  min-height: 62px;
+  width: min(100%, 420px);
+  min-height: 64px;
   border: 0;
   border-radius: 999px;
   background: #000;
   color: #fff;
-  font-size: 1.125rem;
-  font-weight: 800;
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
+  font-size: 16px;
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
 }
 
 .profile-error {
