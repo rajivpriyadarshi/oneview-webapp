@@ -23,8 +23,10 @@ type Props = {
 const columnHelper = createColumnHelper<PortfolioViewPosition>();
 const FALLBACK_ICON_COLORS = [
   "#7F4E0B", "#CE8016", "#A29076", "#444341", "#CAC0B2",
-  "#FE5D26", "#FFC75F", "#9EDE73", "#59886B", "#184D47",
-  "#D2DB20", "#76FDB0",
+  "#59886B", "#B5603A", "#7D8840", "#A87C70", "#486878",
+  "#508040", "#7A8898", "#C8A020", "#6B4060", "#4868A0",
+  "#4A7050", "#508878", "#8878A0", "#785090", "#384870",
+  "#8A5A48", "#904868", "#A0888C", "#6A7858",
 ];
 
 function getCurrencySymbol(currency?: string): string {
