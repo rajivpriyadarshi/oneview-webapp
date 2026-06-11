@@ -15,7 +15,8 @@ import {
   useGetProfileQuery,
   useDeleteDocumentMutation,
 } from "../store/api";
-import { useAppDispatch } from "../store/hooks";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { addTrayItems, patchTrayItem, removeTrayItem } from "../store/uploadTraySlice";
 import { clearAuthToken, getStoredAuthToken } from "../lib/session";
 import { pollBrokerStatementJobStatus } from "../lib/documentsApi";
 import { getRequestErrorMessage } from "../lib/apiClient";
@@ -35,7 +36,6 @@ type UploadStatus = "queued" | "uploading" | "complete" | "error" | "review";
 
 type UploadItem = {
   id: string;
-  file: File;
   name: string;
   size: number;
   status: UploadStatus;
@@ -51,10 +51,11 @@ export function StatementUpload() {
   const { trackPage, trackClick, trackAPI } = useAnalytics();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const pollingAbortControllerRef = useRef<AbortController | null>(null);
-  const uploadQueueRef = useRef<UploadItem[]>([]);
+  const uploadQueueRef = useRef<{ item: UploadItem; file: File }[]>([]);
+  const filesRef = useRef<Map<string, File>>(new Map());
   const isProcessingQueueRef = useRef(false);
   const [firstName, setFirstName] = useState("there");
-  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
+  const uploadItems = useAppSelector((s) => s.uploadTray.items);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState("");
@@ -64,7 +65,7 @@ export function StatementUpload() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [hasStartedUploadFlow, setHasStartedUploadFlow] = useState(false);
 
-  const hasCompletedUploads = uploadItems.some(item => item.status === "complete");
+  const hasCompletedUploads = uploadItems.some((item) => item.status === "complete");
 
   const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
     skip: !getStoredAuthToken(),
@@ -174,7 +175,7 @@ export function StatementUpload() {
     setMessage("");
     setHasStartedUploadFlow(true);
 
-    const preparedItems: UploadItem[] = files.map((file, index) => {
+    const preparedItems: (UploadItem & { file: File })[] = files.map((file, index) => {
       const validationError = validateFile(file);
 
       trackClick({
@@ -192,21 +193,27 @@ export function StatementUpload() {
         file,
         name: file.name,
         size: file.size,
-        status: validationError ? "error" : "queued",
+        status: (validationError ? "error" : "queued") as UploadStatus,
         progress: 0,
-        error: validationError,
+        error: validationError || undefined,
       };
     });
 
+    for (const item of preparedItems) {
+      filesRef.current.set(item.id, item.file);
+    }
+
+    const trayItems = preparedItems.map(({ file: _file, ...rest }) => rest);
+    dispatch(addTrayItems(trayItems));
+
     const validUploads = preparedItems.filter(item => item.status !== "error");
-    setUploadItems(prev => [...prev, ...preparedItems]);
 
     if (validUploads.length === 0) {
       setError("No supported files selected.");
       return;
     }
 
-    uploadQueueRef.current.push(...validUploads);
+    uploadQueueRef.current.push(...validUploads.map(({ file, ...item }) => ({ item, file })));
 
     if (isProcessingQueueRef.current) return;
 
@@ -217,14 +224,15 @@ export function StatementUpload() {
       let successCount = 0;
 
       while (uploadQueueRef.current.length > 0) {
-        const item = uploadQueueRef.current.shift()!;
-        updateUploadItem(item.id, { status: "uploading", progress: 0 });
+        const entry = uploadQueueRef.current.shift()!;
+        const { item, file } = entry;
+        dispatch(patchTrayItem({ id: item.id, status: "uploading", progress: 0 }));
         startProgressAnimation(item.id);
 
         try {
           const response = await uploadBrokerStatement({
-            file: item.file,
-            name: item.file.name,
+            file,
+            name: file.name,
             storeData: true,
             portfolioName: "Main Portfolio",
             useLlmFallback: true,
@@ -241,47 +249,51 @@ export function StatementUpload() {
               params: {
                 event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
                 error: "duplicate",
-                file_name: item.file.name,
+                file_name: file.name,
                 existing_document_id: response.existing_document_id,
               },
             });
-            updateUploadItem(item.id, {
+            dispatch(patchTrayItem({
+              id: item.id,
               status: "error",
               progress: 0,
               error: `This file was already uploaded on ${uploadDate}.`,
-            });
+            }));
           } else if (response.status === "error") {
             if (response.error_code === "password_required" || response.error_code === "password_incorrect") {
               setPendingPasswordDocId(response.document_id ?? null);
               setPendingPasswordItemId(item.id);
               setPasswordError(response.error_code === "password_incorrect" ? (response.error ?? "The provided password is incorrect.") : "");
               setShowPasswordPrompt(true);
-              updateUploadItem(item.id, {
+              dispatch(patchTrayItem({
+                id: item.id,
                 status: "error",
                 progress: 0,
                 error: "Password required",
-              });
+              }));
             } else {
               trackAPI({
                 pageName: trackingEventsMap.documentsPage.PAGE,
                 params: {
                   event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
-                  file_name: item.file.name,
+                  file_name: file.name,
                   error: response.error,
                 },
               });
-              updateUploadItem(item.id, {
+              dispatch(patchTrayItem({
+                id: item.id,
                 status: "error",
                 progress: 0,
                 error: response.error ?? "Unable to parse this statement.",
-              });
+              }));
             }
           } else if (response.status === "processing") {
-            updateUploadItem(item.id, {
+            dispatch(patchTrayItem({
+              id: item.id,
               status: "uploading",
               progress: 90,
               detail: response.message ?? "Extracting statement details.",
-            });
+            }));
 
             const abortController = new AbortController();
             pollingAbortControllerRef.current = abortController;
@@ -301,15 +313,17 @@ export function StatementUpload() {
                       95,
                       Math.max(10, Math.round((progress.current / progress.total) * 95)),
                     );
-                    updateUploadItem(item.id, {
+                    dispatch(patchTrayItem({
+                      id: item.id,
                       progress: pct,
                       detail: progress.label ?? "Extracting statement details.",
-                    });
+                    }));
                     return;
                   }
-                  updateUploadItem(item.id, {
+                  dispatch(patchTrayItem({
+                    id: item.id,
                     detail: progress?.label ?? "Extracting statement details.",
-                  });
+                  }));
                 },
               });
 
@@ -319,33 +333,35 @@ export function StatementUpload() {
                   params: {
                     event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
                     error: jobResult.error,
-                    file_name: item.file.name,
+                    file_name: file.name,
                     job_id: response.job_id,
                   },
                 });
-                updateUploadItem(item.id, {
+                dispatch(patchTrayItem({
+                  id: item.id,
                   status: "error",
                   progress: 0,
                   detail: undefined,
                   error: jobResult.error ?? "Unable to process this statement.",
-                });
+                }));
               } else if (jobResult.status === "needs_review") {
                 trackAPI({
                   pageName: trackingEventsMap.documentsPage.PAGE,
                   params: {
                     event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
                     error: jobResult.message,
-                    file_name: item.file.name,
+                    file_name: file.name,
                     job_id: response.job_id,
                     status: "needs_review",
                   },
                 });
-                updateUploadItem(item.id, {
+                dispatch(patchTrayItem({
+                  id: item.id,
                   status: "review",
                   progress: 0,
                   detail: undefined,
                   error: jobResult.message ?? "Extraction complete but requires human review.",
-                });
+                }));
               } else {
                 successCount += 1;
                 dispatch(
@@ -362,7 +378,7 @@ export function StatementUpload() {
                     event_name: trackingEventsMap.documentsPage.API_UPLOAD_SUCCESS,
                     document_id: jobResult.document_id,
                     positions_count: jobResult.positions_count,
-                    file_name: item.file.name,
+                    file_name: file.name,
                     job_id: response.job_id,
                   },
                 });
@@ -371,12 +387,13 @@ export function StatementUpload() {
                     `Updated ${jobResult.storage.positions_updated} existing positions for this statement date.`,
                   );
                 }
-                updateUploadItem(item.id, {
+                dispatch(patchTrayItem({
+                  id: item.id,
                   status: "complete",
                   progress: 100,
                   detail: getUploadCompleteDetail(jobResult.positions_count, item.size),
                   documentId: String(jobResult.document_id),
-                });
+                }));
               }
             } finally {
               pollingAbortControllerRef.current = null;
@@ -387,17 +404,18 @@ export function StatementUpload() {
               pageName: trackingEventsMap.documentsPage.PAGE,
               params: {
                 event_name: trackingEventsMap.documentsPage.API_UPLOAD_SUCCESS,
-                file_name: item.file.name,
+                file_name: file.name,
                 document_id: response.document_id,
                 positions_count: response.positions_count,
               },
             });
-            updateUploadItem(item.id, {
+            dispatch(patchTrayItem({
+              id: item.id,
               status: "complete",
               progress: 100,
               detail: getUploadCompleteDetail(response.positions_count, item.size),
               documentId: String(response.document_id),
-            });
+            }));
           }
         } catch (uploadError) {
           // Handle password-protected PDF errors (400 responses from RTK Query)
@@ -417,22 +435,23 @@ export function StatementUpload() {
             setPendingPasswordItemId(item.id);
             setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
             setShowPasswordPrompt(true);
-            updateUploadItem(item.id, { status: "error", progress: 0, error: "Password required" });
+            dispatch(patchTrayItem({ id: item.id, status: "error", progress: 0, error: "Password required" }));
           } else {
             trackAPI({
               pageName: trackingEventsMap.documentsPage.PAGE,
               params: {
                 event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
-                file_name: item.file.name,
+                file_name: file.name,
                 error: getRequestErrorMessage(uploadError, "Upload failed"),
               },
             });
-            updateUploadItem(item.id, {
+            dispatch(patchTrayItem({
+              id: item.id,
               status: "error",
               progress: 0,
               detail: undefined,
               error: getRequestErrorMessage(uploadError, "Upload failed."),
-            });
+            }));
           }
         }
       }
@@ -450,22 +469,16 @@ export function StatementUpload() {
     }
   }
 
-  function updateUploadItem(id: string, patch: Partial<UploadItem>) {
-    setUploadItems(items =>
-      items.map(item => item.id === id ? { ...item, ...patch } : item)
-    );
-  }
-
   function startProgressAnimation(itemId: string) {
     const interval = setInterval(() => {
-      setUploadItems(items =>
-        items.map(item => {
-          if (item.id === itemId && item.status === "uploading" && item.progress < 90) {
-            return { ...item, progress: Math.min(item.progress + 5, 90) };
-          }
-          return item;
-        })
-      );
+      dispatch((dispatchFn, getState) => {
+        const item = (getState() as { uploadTray: { items: UploadItem[] } }).uploadTray.items.find(
+          (i) => i.id === itemId,
+        );
+        if (item && item.status === "uploading" && item.progress < 90) {
+          dispatchFn(patchTrayItem({ id: itemId, progress: Math.min(item.progress + 5, 90) }));
+        }
+      });
     }, 200);
     setTimeout(() => clearInterval(interval), 20000);
   }
@@ -510,7 +523,8 @@ export function StatementUpload() {
       }
     }
 
-    setUploadItems(items => items.filter(i => i.id !== itemId));
+    filesRef.current.delete(itemId);
+    dispatch(removeTrayItem(itemId));
   }
 
   async function handlePasswordSubmit(password: string) {
@@ -542,7 +556,8 @@ export function StatementUpload() {
       if (pendingPasswordItemId) {
         const posCount = "positions_count" in response ? response.positions_count : undefined;
         const docId = "document_id" in response ? String(response.document_id) : undefined;
-        updateUploadItem(pendingPasswordItemId, {
+        dispatch(patchTrayItem({
+          id: pendingPasswordItemId,
           status: "complete",
           progress: 100,
           error: undefined,
@@ -550,7 +565,7 @@ export function StatementUpload() {
             ? `${posCount} holding${posCount === 1 ? "" : "s"}`
             : undefined,
           documentId: docId,
-        });
+        }));
         setPendingPasswordItemId(null);
       }
       dispatch(

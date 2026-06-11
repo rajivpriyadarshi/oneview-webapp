@@ -1,21 +1,36 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { MeridianLogo } from "../../components/MeridianLogo";
+import { useListBrokerStatementJobsQuery } from "../../store/api";
 import "./processing.css";
 
 export default function ProcessingPage() {
   const router = useRouter();
+  const startedAtRef = useRef(Date.now());
+  const MIN_DISPLAY_MS = 2000;
+
+  const { data: jobs } = useListBrokerStatementJobsQuery(undefined, {
+    pollingInterval: 5000,
+  });
 
   useEffect(() => {
-    // Simulate processing and redirect to dashboard after a delay
-    const timer = setTimeout(() => {
-      router.replace("/dashboard");
-    }, 5000); // 5 seconds
+    if (!jobs) return;
 
-    return () => clearTimeout(timer);
-  }, [router]);
+    const hasActiveJobs = jobs.some(
+      (job) => job.status === "queued" || job.status === "running",
+    );
+
+    if (!hasActiveJobs) {
+      const elapsed = Date.now() - startedAtRef.current;
+      const delay = Math.max(0, MIN_DISPLAY_MS - elapsed);
+      const timer = setTimeout(() => {
+        router.replace("/dashboard");
+      }, delay);
+      return () => clearTimeout(timer);
+    }
+  }, [jobs, router]);
 
   return (
     <main className="processing-page">
