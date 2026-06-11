@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import PortfolioChart from "./PortfolioChart";
 import { type PortfolioViewResponse, type Account, type ValuationSeriesPoint } from "../lib/portfolioDataApi";
 import { type Portfolio } from "../lib/portfoliosApi";
@@ -127,7 +127,7 @@ export default function PortfolioSummary({
 function formatLakhs(value: number, currency = "INR") {
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
-  if (currency === "USD") {
+  if (currency !== "INR") {
     if (abs >= 1000000) return `${sign}${(abs / 1000000).toFixed(2)}M`;
     if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)}K`;
     return value.toFixed(2);
@@ -160,10 +160,22 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
   const [isAnimating, setIsAnimating] = useState(false);
   const isFirstRender = useRef(true);
   const lastStableText = useRef(text === "..." ? "" : text);
+  const containerRef = useRef<HTMLHeadingElement>(null);
+  const [lockedWidth, setLockedWidth] = useState<number | null>(null);
 
   useEffect(() => {
     if (text !== "...") {
       lastStableText.current = text;
+    }
+  }, [text]);
+
+  // Before the text actually changes in DOM, snapshot the current rendered width
+  useLayoutEffect(() => {
+    if (isFirstRender.current) return;
+    if (text !== currentText && text !== "...") {
+      if (containerRef.current) {
+        setLockedWidth(containerRef.current.offsetWidth);
+      }
     }
   }, [text]);
 
@@ -178,6 +190,8 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
       setPrevText(currentText);
       setCurrentText(text);
       setIsAnimating(true);
+      // Release locked width after a frame so the transition runs from old → new
+      requestAnimationFrame(() => setLockedWidth(null));
       const timeout = setTimeout(() => setIsAnimating(false), 600);
       return () => clearTimeout(timeout);
     }
@@ -186,10 +200,14 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
     }
   }, [text]);
 
+  const widthStyle = lockedWidth != null
+    ? { width: lockedWidth, transition: "width 0.5s cubic-bezier(0.23, 1, 0.32, 1)" }
+    : { transition: "width 0.5s cubic-bezier(0.23, 1, 0.32, 1)" };
+
   if (text === "..." || isLoading) {
     const placeholder = lastStableText.current || "₹00.0L";
     return (
-      <h2 className={className} style={{ display: "flex", alignItems: "baseline" }}>
+      <h2 ref={containerRef} className={className} style={{ display: "flex", alignItems: "baseline", overflow: "hidden", ...widthStyle }}>
         {placeholder.split("").map((char, i) => {
           if (DIGITS.includes(char)) {
             return (
@@ -216,7 +234,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
               </span>
             );
           }
-          if (char === "L" || char === "K" || char === "M") {
+          if (char === "L" || char === "K" || char === "M" || char === "C" || char === "r") {
             return (
               <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
                 <span
@@ -227,9 +245,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
                     animationDelay: `${i * 0.1}s`,
                   }}
                 >
-                  <span style={{ height: "1em", lineHeight: 1 }}>L</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>K</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>M</span>
+                  <span style={{ height: "1em", lineHeight: 1 }}>{char}</span>
                 </span>
               </span>
             );
@@ -241,7 +257,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
   }
 
   return (
-    <h2 className={className} style={{ display: "flex", alignItems: "baseline" }}>
+    <h2 ref={containerRef} className={className} style={{ display: "flex", alignItems: "baseline", overflow: "hidden", ...widthStyle }}>
       {currentText.split("").map((char, i) => {
         const prevChar = prevText[i] || "";
         const isDigit = DIGITS.includes(char) && DIGITS.includes(prevChar);
