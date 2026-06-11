@@ -257,7 +257,6 @@ export default function ProfilePage() {
                 </button>
               </div>
 
-              <h2 className="profile-section-label">Email preferences</h2>
 
               <div className="profile-section">
                 <div className="profile-menu-item">
@@ -306,7 +305,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <h2 className="profile-section-label profile-section-label-other">Other</h2>
 
               <div className="profile-section">
                 <div className="profile-menu-item">
