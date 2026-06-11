@@ -188,16 +188,18 @@ export const api = createApi({
         file: File;
         name?: string;
         description?: string;
+        password?: string;
         storeData?: boolean;
         portfolioName?: string;
         useLlmFallback?: boolean;
       }
     >({
-      query: ({ file, name, description, storeData, portfolioName, useLlmFallback }) => {
+      query: ({ file, name, description, password, storeData, portfolioName, useLlmFallback }) => {
         const formData = new FormData();
         formData.set("file", file);
         if (name) formData.set("name", name);
         if (description) formData.set("description", description);
+        if (password) formData.set("password", password);
         if (typeof storeData === "boolean") formData.set("store_data", String(storeData));
         if (portfolioName) formData.set("portfolio_name", portfolioName);
         if (typeof useLlmFallback === "boolean") formData.set("use_llm_fallback", String(useLlmFallback));
@@ -207,6 +209,18 @@ export const api = createApi({
           body: formData,
           validateStatus: isBrokerStatementUploadStatusValid,
         };
+      },
+      invalidatesTags: ["Documents", "Portfolios", "PortfolioView", "Sankey"],
+    }),
+    retryWithPassword: builder.mutation<
+      BrokerStatementUploadResponse,
+      { documentId: string | number; password: string }
+    >({
+      query: ({ documentId, password }) => {
+        const formData = new FormData();
+        formData.set("document_id", String(documentId));
+        formData.set("password", password);
+        return { url: "/oneview/broker-statements/retry-with-password/", method: "POST", body: formData };
       },
       invalidatesTags: ["Documents", "Portfolios", "PortfolioView", "Sankey"],
     }),
@@ -251,6 +265,7 @@ export const {
   useUpdateDocumentMutation,
   useDeleteDocumentMutation,
   useUploadBrokerStatementMutation,
+  useRetryWithPasswordMutation,
   useLazyGetBrokerStatementJobStatusQuery,
   useListBrokerStatementJobsQuery,
   useListCurrenciesQuery,

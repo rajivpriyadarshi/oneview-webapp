@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { OneviewBrand } from "./BrandMarks";
 import { DownloadInstructionModal } from "./DownloadInstructionModal";
 import { OneviewInfoModal } from "./OneviewInfoModal";
+import { PasswordPromptModal } from "./PasswordPromptModal";
 import {
   api,
   useUploadBrokerStatementMutation,
+  useRetryWithPasswordMutation,
   useLazyGetBrokerStatementJobStatusQuery,
   useListPortfoliosQuery,
   useGetProfileQuery,
@@ -72,8 +74,13 @@ export function StatementUpload() {
   });
 
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
+  const [retryWithPassword] = useRetryWithPasswordMutation();
   const [getBrokerStatementJobStatus] = useLazyGetBrokerStatementJobStatusQuery();
   const [deleteDocument] = useDeleteDocumentMutation();
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [isRetryingPassword, setIsRetryingPassword] = useState(false);
+  const [pendingPasswordDocId, setPendingPasswordDocId] = useState<string | number | null>(null);
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -243,19 +250,30 @@ export function StatementUpload() {
               error: `This file was already uploaded on ${uploadDate}.`,
             });
           } else if (response.status === "error") {
-            trackAPI({
-              pageName: trackingEventsMap.documentsPage.PAGE,
-              params: {
-                event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
-                file_name: item.file.name,
-                error: response.error,
-              },
-            });
-            updateUploadItem(item.id, {
-              status: "error",
-              progress: 0,
-              error: response.error ?? "Unable to parse this statement.",
-            });
+            if (response.error_code === "password_required" || response.error_code === "password_incorrect") {
+              setPendingPasswordDocId(response.document_id ?? null);
+              setPasswordError(response.error_code === "password_incorrect" ? (response.error ?? "The provided password is incorrect.") : "");
+              setShowPasswordPrompt(true);
+              updateUploadItem(item.id, {
+                status: "error",
+                progress: 0,
+                error: "Password required",
+              });
+            } else {
+              trackAPI({
+                pageName: trackingEventsMap.documentsPage.PAGE,
+                params: {
+                  event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+                  file_name: item.file.name,
+                  error: response.error,
+                },
+              });
+              updateUploadItem(item.id, {
+                status: "error",
+                progress: 0,
+                error: response.error ?? "Unable to parse this statement.",
+              });
+            }
           } else if (response.status === "processing") {
             updateUploadItem(item.id, {
               status: "uploading",
@@ -380,20 +398,39 @@ export function StatementUpload() {
             });
           }
         } catch (uploadError) {
-          trackAPI({
-            pageName: trackingEventsMap.documentsPage.PAGE,
-            params: {
-              event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
-              file_name: item.file.name,
-              error: getRequestErrorMessage(uploadError, "Upload failed"),
-            },
-          });
-          updateUploadItem(item.id, {
-            status: "error",
-            progress: 0,
-            detail: undefined,
-            error: getRequestErrorMessage(uploadError, "Upload failed."),
-          });
+          // Handle password-protected PDF errors (400 responses from RTK Query)
+          const errorData = typeof uploadError === "object" && uploadError !== null && "data" in uploadError
+            ? (uploadError as { data: unknown }).data
+            : null;
+
+          if (
+            errorData &&
+            typeof errorData === "object" &&
+            "error_code" in errorData &&
+            ((errorData as { error_code: string }).error_code === "password_required" ||
+              (errorData as { error_code: string }).error_code === "password_incorrect")
+          ) {
+            const data = errorData as { document_id: string | number; error?: string; error_code: string };
+            setPendingPasswordDocId(data.document_id);
+            setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
+            setShowPasswordPrompt(true);
+            updateUploadItem(item.id, { status: "error", progress: 0, error: "Password required" });
+          } else {
+            trackAPI({
+              pageName: trackingEventsMap.documentsPage.PAGE,
+              params: {
+                event_name: trackingEventsMap.documentsPage.API_UPLOAD_FAILURE,
+                file_name: item.file.name,
+                error: getRequestErrorMessage(uploadError, "Upload failed"),
+              },
+            });
+            updateUploadItem(item.id, {
+              status: "error",
+              progress: 0,
+              detail: undefined,
+              error: getRequestErrorMessage(uploadError, "Upload failed."),
+            });
+          }
         }
       }
 
@@ -470,6 +507,47 @@ export function StatementUpload() {
     }
 
     setUploadItems(items => items.filter(i => i.id !== itemId));
+  }
+
+  async function handlePasswordSubmit(password: string) {
+    if (!pendingPasswordDocId) return;
+
+    setIsRetryingPassword(true);
+    setPasswordError("");
+
+    try {
+      const response = await retryWithPassword({
+        documentId: pendingPasswordDocId,
+        password,
+      }).unwrap();
+
+      if (response.status === "error") {
+        if (response.error_code === "password_incorrect") {
+          setPasswordError(response.error ?? "The provided password is incorrect.");
+          return;
+        }
+        setShowPasswordPrompt(false);
+        setError(response.error ?? "Unable to parse this statement.");
+        return;
+      }
+
+      setShowPasswordPrompt(false);
+      setPendingPasswordDocId(null);
+      setPasswordError("");
+      setMessage("File unlocked and processed successfully.");
+    } catch (err) {
+      setPasswordError(
+        err instanceof Error ? err.message : "Failed to unlock document.",
+      );
+    } finally {
+      setIsRetryingPassword(false);
+    }
+  }
+
+  function handlePasswordPromptClose() {
+    setShowPasswordPrompt(false);
+    setPendingPasswordDocId(null);
+    setPasswordError("");
   }
 
   const getInitials = (name: string) => {
@@ -842,6 +920,14 @@ export function StatementUpload() {
       <OneviewInfoModal
         isOpen={isSampleModalOpen}
         onClose={() => setIsSampleModalOpen(false)}
+      />
+
+      <PasswordPromptModal
+        isOpen={showPasswordPrompt}
+        isLoading={isRetryingPassword}
+        error={passwordError}
+        onSubmit={handlePasswordSubmit}
+        onClose={handlePasswordPromptClose}
       />
     </main>
   );

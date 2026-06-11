@@ -759,6 +759,27 @@ svg.docs-dropzone-border {
   opacity: 0.5;
 }
 
+.password-prompt-input {
+  width: 100%;
+  padding: 12px 16px;
+  margin: 16px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.password-prompt-input:focus {
+  border-color: #2F9FF8;
+}
+
+.password-prompt-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @keyframes docs-upload-spin {
   to {
     transform: rotate(360deg);
