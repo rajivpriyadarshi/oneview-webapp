@@ -28,20 +28,44 @@
   color: #092423;
   font-family: "ButlerPro", Georgia, serif;
   font-size: 2.5rem;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.2;
   text-align: center;
 }
 
 .profile-email {
-  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: -4px 0 0;
   color: rgba(0, 0, 0, 0.6);
   font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
-  font-size: 1.125rem;
+  font-size: 18px;
   font-weight: 400;
   line-height: 1.4;
   text-align: center;
+}
+
+.profile-email-edit {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.4);
+  transition: color 0.15s;
+}
+
+.profile-email-edit:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.profile-email-edit svg {
+  width: 16px;
+  height: 16px;
 }
 
 .profile-edit-btn {
@@ -56,7 +80,7 @@
   color: #7F4E0B;
   font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
-  font-size: 0.875rem;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.4;
   cursor: pointer;
