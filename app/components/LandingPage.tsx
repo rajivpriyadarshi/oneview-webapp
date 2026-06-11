@@ -46,55 +46,33 @@ export function LandingPage() {
       </div>
 
       {/* Header */}
-      <header className="flex justify-between items-center px-8 lg:px-16 py-6 relative z-10">
+      <header className="flex justify-between items-center px-8 lg:px-16 py-6 relative z-10 animate-[fadeInDown_0.6s_ease-out_both]">
         <div className="flex items-center gap-3">
-          <img src="/Logo.png" alt="Meridian" className="h-10 w-auto block" />
+          <img src="/Logo.png" alt="Meridian" className="h-6 w-auto block" />
         </div>
 
         <div className="flex items-center gap-4">
-          <Link
-            href="/auth"
-            className="bg-black text-white px-[24px] py-[16px] rounded-full font-medium hover:bg-gray-800 transition-colors flex items-center gap-2"
-            onClick={() =>
-              trackClick({
-                buttonName: trackingEventsMap.landingPage.CLICK_TRY_MERIDIAN,
-                pageName: trackingEventsMap.landingPage.PAGE,
-              })
-            }
-          >
-            See your unified view
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M5 12H19M12 19L19 12L12 5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </Link>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="flex-1 flex items-start pt-12 px-8 lg:px-16 relative z-10">
-        <div className="w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-start">
+        <div className="w-full max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Column - Text Content */}
-          <div className="pt-8">
-            <h1 className="mb-4 font-butler-medium text-[72px] font-medium leading-[86.4px] tracking-[-0.04em]">
-              <div className="text-black">
-                Get a unified view
-              </div>
-              <div className="text-black">
-                of your holdings in
-              </div>
-              <div className="text-[#7F4E0B]">
-                US and India
-              </div>
+          <div className="text-center lg:text-left flex flex-col items-center lg:items-start">
+            <h1 className="mb-1 font-serif text-[42px] lg:text-[56px] font-normal leading-[120%] tracking-[-0.04em] animate-[fadeInUp_0.7s_ease-out_0.2s_both]">
+              <span className="text-black">Get a unified view of your holdings in </span>
+              <span className="text-[#7F4E0B]">US and India</span>
             </h1>
 
-            <p className="mb-8 max-w-md text-[18px] font-normal leading-[27px] text-black/70">
+            <p className="mb-[24px] max-w-md text-[16px] lg:text-[18px] font-normal leading-[135%] lg:leading-[27px] text-black/70 animate-[fadeInUp_0.7s_ease-out_0.5s_both]">
               Meridian lets you create a unified view of all your investments across
               different regions
             </p>
 
             <Link
               href="/auth"
-              className="mb-6 inline-flex items-center gap-2 rounded-full bg-black px-[24px] py-[16px] text-[16px] font-semibold leading-6 text-white transition-colors hover:bg-gray-800"
+              className="mb-6 inline-flex items-center gap-2 rounded-full bg-black px-[32px] py-[16px] text-[16px] font-semibold leading-6 text-white transition-colors hover:bg-gray-800 animate-[fadeInUp_0.7s_ease-out_0.8s_both]"
               onClick={() =>
                 trackClick({
                   buttonName: trackingEventsMap.landingPage.CLICK_SEE_ONEVIEW,
@@ -108,13 +86,17 @@ export function LandingPage() {
               </svg>
             </Link>
 
-            <p className="text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-black/70">
+            <p className="flex items-center justify-center lg:justify-start gap-1.5 text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-black/70 animate-[fadeInUp_0.7s_ease-out_1.0s_both]">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L3 7V12C3 17.52 6.84 22.74 12 24C17.16 22.74 21 17.52 21 12V7L12 2Z" fill="#128044"/>
+                <path d="M10 15.17L7.41 12.59L6 14L10 18L18 10L16.59 8.59L10 15.17Z" fill="white"/>
+              </svg>
               Your data stays encrypted • 100% Safe and Secure
             </p>
           </div>
 
           {/* Right Column - Video */}
-          <div className="relative lg:pl-8">
+          <div className="relative lg:pl-8 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
             <div className="relative rounded-[60px] bg-gradient-to-b from-white/5 via-[#FFFCF5] to-white/5 p-4 shadow-2xl bg-blend-overlay">
               <div className="rounded-[60px] p-1 overflow-hidden bg-[#FFFCF5]">
                 <video
@@ -139,7 +121,7 @@ export function LandingPage() {
             <p className="text-[13.23px] leading-[19.84px] tracking-[0px] text-black/55">Copyright 2026. Meridian by Zinc</p>
 
             <div className="flex justify-center">
-              <Image src="/zinc-full.png" alt="Zinc" width={111} height={32} className="h-8 w-auto" />
+              <Image src="/zinc-full.png" alt="Zinc" width={80} height={22} className="h-5 w-auto" />
             </div>
 
             <div className="flex items-center justify-center gap-5 text-[13.23px] leading-[19.84px] tracking-[0px] text-black/60 md:justify-end">

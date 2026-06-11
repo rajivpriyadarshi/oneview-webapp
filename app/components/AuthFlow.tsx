@@ -328,29 +328,30 @@ export function AuthFlow() {
   return (
     <>
       <GoogleIdentityScript onLoad={() => setIsGoogleLoaded(true)} />
+      <div ref={hiddenGoogleButtonRef} style={{ display: 'none', position: 'absolute' }} />
       <main className="login-page">
         {step === "login" ? (
           <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
             <OneviewBrand />
             <form className="login-card account-card" onSubmit={handleEmailSubmit}>
-              <h1 id="login-title">Get started</h1>
+              <h1 id="login-title" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both", fontSize: "36px", fontWeight: 400 }}>Get started</h1>
 
               <button
                 className="google-button"
                 type="button"
                 onClick={handleGoogleSubmit}
                 disabled={isSubmitting || !isGoogleLoaded}
+                style={{ animation: "fadeInUp 0.6s ease-out 0.25s both" }}
               >
                 <GoogleIcon />
                 <span>Continue with Google</span>
               </button>
 
-              {/* Hidden Google button that gets programmatically clicked */}
-              <div ref={hiddenGoogleButtonRef} style={{ display: 'none' }} />
+              {/* Hidden Google button rendered outside conditional */}
 
-              <div className="or-divider">OR</div>
+              <div className="or-divider" style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}>OR</div>
 
-            <label className={`field account-field ${email ? 'has-value' : ''}`}>
+            <label className={`field account-field ${email ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}>
               <span>Email address</span>
               <input
                 type="email"
@@ -365,13 +366,13 @@ export function AuthFlow() {
               />
             </label>
 
-            <button className="continue-button" type="submit" disabled={isSubmitting}>
+            <button className="continue-button" type="submit" disabled={isSubmitting} style={{ animation: "fadeInUp 0.6s ease-out 0.7s both" }}>
               Continue with Email
             </button>
 
             {error ? <p className="form-error">{error}</p> : null}
 
-            <p className="terms">
+            <p className="terms" style={{ animation: "fadeInUp 0.6s ease-out 0.85s both" }}>
               By continuing, you agree to Zinc&apos;s {" "}
               <a
                 href="/terms"
@@ -407,18 +408,15 @@ export function AuthFlow() {
         <section className="auth-shell otp-shell" aria-labelledby="otp-title">
           <OneviewBrand />
           <form className="otp-panel" onSubmit={handleOtpSubmit}>
-            <h1 id="otp-title">Verify with OTP</h1>
-            <p className="otp-copy">
-              Please confirm your email by entering the OTP sent to your email address
-            </p>
-            <p className="sent-line">
-              <span>Sent to: {email}</span>
-              <button type="button" onClick={handleDifferentEmail}>
+            <h1 id="otp-title" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both" }}>Verify with OTP</h1>
+            <p className="otp-copy" style={{ animation: "fadeInUp 0.6s ease-out 0.25s both" }}>
+              We&apos;ve sent an OTP to {email}.{" "}
+              <button type="button" onClick={handleDifferentEmail} className="otp-change-email">
                 Use a different email
               </button>
             </p>
 
-            <div className="otp-inputs" aria-label="One-time password">
+            <div className="otp-inputs" aria-label="One-time password" style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}>
               {otp.map((digit, index) => (
                 <input
                   key={index}
@@ -438,13 +436,21 @@ export function AuthFlow() {
               ))}
             </div>
 
-            <button
-              className="continue-button otp-button"
-              type="submit"
-              disabled={isSubmitting || otp.join("").length !== 6}
-            >
-              Verify OTP
-            </button>
+            <div style={{ animation: "fadeInUp 0.6s ease-out 0.55s both", width: "min(100%, 459px)" }}>
+              <button
+                className="continue-button otp-button"
+                type="submit"
+                disabled={isSubmitting || otp.join("").length !== 6}
+                style={{
+                  width: "100%",
+                  opacity: (isSubmitting || otp.join("").length !== 6) ? 0.4 : 1,
+                  cursor: (isSubmitting || otp.join("").length !== 6) ? "not-allowed" : "pointer",
+                  transition: "opacity 0.2s ease",
+                }}
+              >
+                Verify OTP
+              </button>
+            </div>
 
             {error ? <p className="form-error otp-error">{error}</p> : null}
 
@@ -453,6 +459,7 @@ export function AuthFlow() {
               className="retry-button"
               onClick={handleResendOtp}
               disabled={isSubmitting || resendCooldown > 0}
+              style={{ animation: "fadeInUp 0.6s ease-out 0.7s both" }}
             >
               {resendCooldown > 0
                 ? `Didn't receive it? Retry in ${resendCooldown} sec`
