@@ -133,7 +133,24 @@ export function DocumentsVault() {
     };
   }, []);
 
-  const { data: rawDocuments = [], isLoading: loading } = useListDocumentsQuery();
+  const activeTrayItems = uploadItems.filter(
+    (i) => i.status === "queued" || i.status === "uploading" || i.status === "processing",
+  );
+  const activeTrayNames = new Set(activeTrayItems.map((i) => i.name.toLowerCase()));
+
+  const [hasApiProcessing, setHasApiProcessing] = useState(false);
+
+  const { data: rawDocuments = [], isLoading: loading } = useListDocumentsQuery(undefined, {
+    pollingInterval: activeTrayItems.length > 0 || hasApiProcessing ? 5000 : 0,
+  });
+
+  useEffect(() => {
+    setHasApiProcessing(
+      rawDocuments.some(
+        (d: DocumentRecord) => d.processing_status && d.processing_status !== "processed",
+      ),
+    );
+  }, [rawDocuments]);
   const [deleteDocumentMutation] = useDeleteDocumentMutation();
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
   const [retryWithPassword] = useRetryWithPasswordMutation();
@@ -144,7 +161,26 @@ export function DocumentsVault() {
   const [pendingPasswordDocId, setPendingPasswordDocId] = useState<string | number | null>(null);
   const [pendingPasswordItemId, setPendingPasswordItemId] = useState<string | null>(null);
 
-  const documents = rawDocuments.map(mapDocToTableRow);
+  // Documents from API that are still processing (e.g. after a page reload)
+  const apiProcessingDocs = rawDocuments.filter(
+    (d: DocumentRecord) => d.processing_status && d.processing_status !== "processed",
+  );
+  const apiProcessingNames = new Set(
+    apiProcessingDocs.map((d: DocumentRecord) => (d.display_name || d.name).toLowerCase()),
+  );
+
+  const documents = rawDocuments
+    .map(mapDocToTableRow)
+    .filter((d) => !activeTrayNames.has(d.filename.toLowerCase()) && !apiProcessingNames.has(d.filename.toLowerCase()));
+
+  // Merge tray items + API-level processing docs into one list for the ghost rows
+  const processingItems = [
+    ...activeTrayItems.map((i) => ({ id: i.id, name: i.name, status: i.status, detail: i.detail })),
+    ...apiProcessingDocs
+      .filter((d: DocumentRecord) => !activeTrayNames.has((d.display_name || d.name).toLowerCase()))
+      .map((d: DocumentRecord) => ({ id: String(d.id), name: d.display_name || d.name, status: "processing", detail: "Processing document." })),
+  ];
+
   const docCount = rawDocuments.length;
   const accountCount = new Set(documents.map((d) => d.account)).size;
 
@@ -683,6 +719,7 @@ export function DocumentsVault() {
         loading={loading}
         deleting={deleting}
         onRequestDelete={setDocumentsPendingDelete}
+        processingItems={processingItems}
       />
 
       {uploadItems.length > 0 && (
