@@ -232,9 +232,9 @@ export default function ProfilePage() {
                     dominantBaseline="central"
                     style={{
                       fill: "#FFF",
-                      fontFamily: "Inter",
-                      fontSize: "46px",
-                      fontWeight: 600,
+                      fontFamily: "Satoshi",
+                      fontSize: "42px",
+                      fontWeight: 400,
                       letterSpacing: "-1.84px",
                     }}
                   >
@@ -243,21 +243,25 @@ export default function ProfilePage() {
                 </svg>
 
                 <h1 className="profile-name">{profile.display_name}</h1>
-                <p className="profile-email">{profile.email}</p>
-
-                <button className="profile-edit-btn" onClick={() => {
-                  trackClick({
-                    buttonName: trackingEventsMap.profilePage.CLICK_EDIT_PROFILE,
-                    pageName: trackingEventsMap.profilePage.PAGE,
-                  });
-                  setShowEditModal(true);
-                }}>
-                  <EditIcon />
-                  Edit profile
-                </button>
+                <p className="profile-email">
+                  {profile.email}
+                  <button
+                    type="button"
+                    className="profile-email-edit"
+                    onClick={() => {
+                      trackClick({
+                        buttonName: trackingEventsMap.profilePage.CLICK_EDIT_PROFILE,
+                        pageName: trackingEventsMap.profilePage.PAGE,
+                      });
+                      setShowEditModal(true);
+                    }}
+                    aria-label="Edit profile"
+                  >
+                    <EditIcon />
+                  </button>
+                </p>
               </div>
 
-              <h2 className="profile-section-label">Email preferences</h2>
 
               <div className="profile-section">
                 <div className="profile-menu-item">
@@ -306,7 +310,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <h2 className="profile-section-label profile-section-label-other">Other</h2>
 
               <div className="profile-section">
                 <div className="profile-menu-item">

@@ -66,7 +66,7 @@ export default function PortfolioSummary({
       <div className="mb-[-10px]">
         <div className="group relative inline-flex items-center">
           <span
-            className="pointer-events-none invisible absolute whitespace-nowrap pl-5 pr-10 font-satoshi text-[14px] font-bold leading-6 tracking-[-0.04em]"
+            className="pointer-events-none invisible absolute whitespace-nowrap pl-5 pr-10 font-satoshi text-[16px] font-bold leading-6 tracking-[-0.02em]"
             style={{ fontFeatureSettings: "'ss03' on" }}
             aria-hidden="true"
             ref={(el) => {
@@ -79,7 +79,7 @@ export default function PortfolioSummary({
             {selectedAccountId === "all" ? "All accounts" : (accounts.find(a => a.id === selectedAccountId)?.name || "")}
           </span>
           <select
-            className="h-[48px] cursor-pointer appearance-none whitespace-nowrap rounded-full border border-black/10 bg-[#ffffff] pl-5 pr-10 font-satoshi text-[14px] font-bold leading-6 tracking-[-0.04em] text-black outline-none backdrop-blur-[20px] transition hover:bg-black/[0.02]"
+            className="h-[48px] cursor-pointer appearance-none whitespace-nowrap rounded-full border border-black/10 bg-[#ffffff] pl-5 pr-10 font-satoshi text-[16px] font-bold leading-6 tracking-[-0.02em] text-black outline-none backdrop-blur-[20px] transition hover:bg-black/[0.02]"
             style={{ fontFeatureSettings: "'ss03' on" }}
             value={selectedAccountId}
             onChange={(e) => {
