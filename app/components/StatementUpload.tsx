@@ -574,12 +574,12 @@ export function StatementUpload() {
 
             <div className="flex items-center gap-3 flex-nowrap">
               <div className="flex items-center">
-                <img src="/broker-icons/groww.png" alt="Groww" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]" />
-                <img src="/broker-icons/fidelity.png" alt="Fidelity" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
-                <img src="/broker-icons/zerodha.png" alt="Zerodha" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
-                <img src="/broker-icons/vested.png" alt="Vested" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
-                <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
-                <img src="/broker-icons/ibkr.png" alt="IBKR" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/groww.png" alt="Groww" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]" />
+                <img src="/broker-icons/fidelity.png" alt="Fidelity" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/zerodha.png" alt="Zerodha" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/vested.png" alt="Vested" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/ibkr.png" alt="IBKR" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
               </div>
               <button
                 type="button"
@@ -591,7 +591,7 @@ export function StatementUpload() {
                   });
                   setIsModalOpen(true);
                 }}
-                className="border-0 bg-transparent p-0 text-[#7F4E0B] font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.56px] underline cursor-pointer transition-opacity hover:opacity-80 whitespace-nowrap"
+                className="border-0 bg-transparent p-0 text-[#7F4E0B] font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.56px] underline cursor-pointer transition-opacity hover:opacity-80 whitespace-nowrap"
                 style={{ fontFeatureSettings: "'ss03' on" }}
               >
                 See download instruction
@@ -632,12 +632,12 @@ export function StatementUpload() {
 
             <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
               <div className="flex items-center">
-                <img src="/broker-icons/groww.png" alt="Groww" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]" />
-                <img src="/broker-icons/fidelity.png" alt="Fidelity" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
-                <img src="/broker-icons/zerodha.png" alt="Zerodha" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
-                <img src="/broker-icons/vested.png" alt="Vested" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
-                <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
-                <img src="/broker-icons/ibkr.png" alt="IBKR" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/groww.png" alt="Groww" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]" />
+                <img src="/broker-icons/fidelity.png" alt="Fidelity" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/zerodha.png" alt="Zerodha" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/vested.png" alt="Vested" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/shwab.png" alt="Charles Schwab" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
+                <img src="/broker-icons/ibkr.png" alt="IBKR" className="w-7 h-7 rounded-full object-cover shrink-0 border-2 border-white shadow-[0_1px_3px_rgba(0,0,0,0.12)] -ml-2" />
               </div>
               <button
                 type="button"
@@ -649,7 +649,7 @@ export function StatementUpload() {
                   });
                   setIsModalOpen(true);
                 }}
-                className="border-0 bg-transparent p-0 text-[#7F4E0B] font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.56px] underline cursor-pointer transition-opacity hover:opacity-80"
+                className="border-0 bg-transparent p-0 text-[#7F4E0B] font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.56px] underline cursor-pointer transition-opacity hover:opacity-80"
                 style={{ fontFeatureSettings: "'ss03' on" }}
               >
                 See download instruction
@@ -679,7 +679,7 @@ export function StatementUpload() {
 
             {/* Security badge */}
             <p
-              className="flex items-center justify-center self-center gap-2 m-0 font-satoshi text-[0.875rem] font-medium leading-[150%] tracking-[-0.28px] text-black/70"
+              className="flex items-center justify-center self-center gap-2 m-0 font-satoshi text-[16px] font-medium leading-[150%] tracking-[-0.28px] text-black/70"
               style={{ fontFeatureSettings: "'ss03' on" }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
