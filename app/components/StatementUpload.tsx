@@ -81,6 +81,7 @@ export function StatementUpload() {
   const [passwordError, setPasswordError] = useState("");
   const [isRetryingPassword, setIsRetryingPassword] = useState(false);
   const [pendingPasswordDocId, setPendingPasswordDocId] = useState<string | number | null>(null);
+  const [pendingPasswordItemId, setPendingPasswordItemId] = useState<string | null>(null);
 
   useEffect(() => {
     const token = getStoredAuthToken();
@@ -252,6 +253,7 @@ export function StatementUpload() {
           } else if (response.status === "error") {
             if (response.error_code === "password_required" || response.error_code === "password_incorrect") {
               setPendingPasswordDocId(response.document_id ?? null);
+              setPendingPasswordItemId(item.id);
               setPasswordError(response.error_code === "password_incorrect" ? (response.error ?? "The provided password is incorrect.") : "");
               setShowPasswordPrompt(true);
               updateUploadItem(item.id, {
@@ -412,6 +414,7 @@ export function StatementUpload() {
           ) {
             const data = errorData as { document_id: string | number; error?: string; error_code: string };
             setPendingPasswordDocId(data.document_id);
+            setPendingPasswordItemId(item.id);
             setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
             setShowPasswordPrompt(true);
             updateUploadItem(item.id, { status: "error", progress: 0, error: "Password required" });
@@ -535,6 +538,23 @@ export function StatementUpload() {
       setPendingPasswordDocId(null);
       setPasswordError("");
       setMessage("File unlocked and processed successfully.");
+      if (pendingPasswordItemId) {
+        const posCount = "positions_count" in response ? response.positions_count : undefined;
+        const docId = "document_id" in response ? String(response.document_id) : undefined;
+        updateUploadItem(pendingPasswordItemId, {
+          status: "complete",
+          progress: 100,
+          error: undefined,
+          detail: typeof posCount === "number"
+            ? `${posCount} holding${posCount === 1 ? "" : "s"}`
+            : undefined,
+          documentId: docId,
+        });
+        setPendingPasswordItemId(null);
+      }
+      dispatch(
+        api.util.invalidateTags(["Documents", "Portfolios", "PortfolioView", "Sankey"]),
+      );
     } catch (err) {
       setPasswordError(
         err instanceof Error ? err.message : "Failed to unlock document.",
@@ -547,6 +567,7 @@ export function StatementUpload() {
   function handlePasswordPromptClose() {
     setShowPasswordPrompt(false);
     setPendingPasswordDocId(null);
+    setPendingPasswordItemId(null);
     setPasswordError("");
   }
 
@@ -568,6 +589,7 @@ export function StatementUpload() {
   const avatarColor = displayName ? getColorFromName(displayName) : CHART_COLORS[0];
 
   return (
+    <>
     <main
       className="relative flex flex-col overflow-x-hidden overflow-y-auto"
       style={{ height: "100vh", background: "url('/auth-Hero-bg.png') center/cover no-repeat fixed" }}
@@ -912,6 +934,8 @@ export function StatementUpload() {
         </div>
       </section>
 
+    </main>
+
       <DownloadInstructionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -929,7 +953,7 @@ export function StatementUpload() {
         onSubmit={handlePasswordSubmit}
         onClose={handlePasswordPromptClose}
       />
-    </main>
+    </>
   );
 }
 
