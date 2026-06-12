@@ -27,7 +27,7 @@ export default function PortfolioChart({ series, currency, loading }: Props) {
   const labels = series.map((p) => p.date);
   const dataPoints = series.map((p) => p.market_value);
 
-  const hasData = dataPoints.length > 0;
+  const hasData = dataPoints.length > 1;
   const maxVal = hasData ? Math.max(...dataPoints) : 60;
   const minVal = hasData ? Math.min(...dataPoints) : 0;
   const padding = (maxVal - minVal) * 0.15 || maxVal * 0.1;

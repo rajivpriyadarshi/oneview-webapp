@@ -698,10 +698,11 @@ svg.docs-dropzone-border {
 .docs-confirm-dialog h2 {
   margin: 0 0 10px;
   color: #050505;
-  font-family: "ButlerPro", Georgia, serif;
-  font-size: 1.75rem;
-  font-weight: 500;
-  line-height: 34px;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 28px;
 }
 
 .docs-confirm-dialog p {
@@ -716,59 +717,66 @@ svg.docs-dropzone-border {
 .docs-confirm-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 28px;
+  gap: 10px;
+  margin-top: 24px;
 }
 
 .docs-confirm-secondary,
 .docs-confirm-danger {
-  min-height: 44px;
-  padding: 0 20px;
+  min-height: 48px;
+  padding: 0 22px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 12px;
   font-family: "Satoshi", Arial, Helvetica, sans-serif;
   font-feature-settings: 'ss03' on;
-  font-size: 0.875rem;
-  font-weight: 800;
+  font-size: 0.9375rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .docs-confirm-secondary {
-  background: #f1f1f1;
+  background: #ebebeb;
   color: #1f1f1f;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .docs-confirm-secondary:hover:not(:disabled) {
-  background: #e5e5e5;
+  background: #e0e0e0;
 }
 
 .docs-confirm-danger {
-  background: #dc2626;
+  background: #2F9FF8;
   color: #fff;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .docs-confirm-danger:hover:not(:disabled) {
-  background: #b91c1c;
+  background: #1a8de8;
 }
 
-.docs-confirm-secondary:disabled,
-.docs-confirm-danger:disabled {
+.docs-confirm-secondary:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
+.docs-confirm-danger:disabled {
+  cursor: not-allowed;
+  background: #c8d8e8;
+  color: #fff;
+}
+
 .password-prompt-input {
   width: 100%;
-  padding: 12px 16px;
-  margin: 16px 0;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
+  padding: 14px 16px;
+  margin: 20px 0 0;
+  border: 1.5px solid #2F9FF8;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  font-family: "Satoshi", Arial, Helvetica, sans-serif;
+  font-feature-settings: 'ss03' on;
   outline: none;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 
 .password-prompt-input:focus {

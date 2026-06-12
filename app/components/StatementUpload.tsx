@@ -67,7 +67,7 @@ export function StatementUpload() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [hasStartedUploadFlow, setHasStartedUploadFlow] = useState(false);
 
-  const hasCompletedUploads = uploadItems.some((item) => item.status === "complete");
+  const hasCompletedUploads = uploadItems.some((item) => item.status === "complete" || item.status === "review");
 
   const { data: profile, isError: profileError } = useGetProfileQuery(undefined, {
     skip: !getStoredAuthToken(),
@@ -362,7 +362,7 @@ export function StatementUpload() {
                   status: "review",
                   progress: 0,
                   detail: undefined,
-                  error: jobResult.message ?? "Extraction complete but requires human review.",
+                  error: "Needs manual review to extract information",
                 }));
               } else {
                 successCount += 1;

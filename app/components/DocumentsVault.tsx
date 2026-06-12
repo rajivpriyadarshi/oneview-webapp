@@ -388,7 +388,7 @@ export function DocumentsVault() {
               updateUploadItem(item.id, {
                 status: "review",
                 detail: undefined,
-                error: jobResult.message ?? "Extraction complete but requires human review.",
+                error: jobResult.message ?? "Needs manual review to extract information.",
               });
             } else {
               successCount += 1;

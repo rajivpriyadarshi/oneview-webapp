@@ -22,9 +22,12 @@ import {
   useGetValuationsViewQuery,
   useListBrokerStatementJobsQuery,
 } from "../store/api";
+import { useAppDispatch } from "../store/hooks";
+import { dismissTray } from "../store/uploadTraySlice";
 
 export default function DashboardPage() {
   console.log("[Dashboard] Component mounting");
+  const dispatch = useAppDispatch();
   const { trackPage, trackClick, trackSectionScroll } = useAnalytics();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
@@ -122,10 +125,11 @@ export default function DashboardPage() {
 
   const router = useRouter();
   useEffect(() => {
-    if (portfoliosLoaded && portfolios.length === 0) {
+    const hasReviewJobs = brokerJobs?.some(j => j.status === "needs_review");
+    if (portfoliosLoaded && portfolios.length === 0 && !hasReviewJobs) {
       router.replace("/onboarding/documents");
     }
-  }, [portfoliosLoaded, portfolios.length, router]);
+  }, [portfoliosLoaded, portfolios.length, brokerJobs, router]);
 
   const activePortfolioId = selectedPortfolioId ?? portfolios[0]?.id ?? null;
   const selectedPortfolio = portfolios.find((p) => p.id === activePortfolioId) ?? null;
@@ -166,7 +170,14 @@ export default function DashboardPage() {
   const valuationSeries = valuationsFetching ? [] : (valuationsData?.price_series ?? []);
   const loading = viewLoading || !portfolioView;
   const isPortfolioEmpty = !loading && (portfolioView?.positions?.length ?? 0) === 0;
+  const allUnderReview = !!brokerJobs?.length &&
+    brokerJobs.some(j => j.status === "needs_review") &&
+    !brokerJobs.some(j => j.status === "completed");
   console.log("[Dashboard] Loading:", loading, "Empty:", isPortfolioEmpty);
+
+  useEffect(() => {
+    if (allUnderReview) dispatch(dismissTray());
+  }, [allUnderReview, dispatch]);
 
   const handleAccountChange = (accountId: number | "all") => {
     const selectedAccountName =
@@ -229,6 +240,26 @@ export default function DashboardPage() {
               </div>
               <p className="m-0 text-sm text-black/50">Loading your portfolio</p>
             </div>
+          ) : allUnderReview ? (
+            <div className="flex min-h-[calc(100vh-120px)] flex-col items-center justify-center gap-0 text-center">
+              <div className="mb-[32px]">
+                <Image src="/nothing.png" alt="" width={120} height={120} aria-hidden="true" />
+              </div>
+              <h2 className="m-0 max-w-[500px] font-['ButlerPro'] text-[40px] font-normal leading-[110%] tracking-[-0.03em] text-black">
+                We couldn&apos;t process your statements with full accuracy. Our team is reviewing them.
+              </h2>
+              <p className="mt-[16px] font-satoshi text-[15px] font-normal leading-[150%] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
+                This may take 3-4 hours. We&apos;ll notify you as soon as your dashboard is ready
+              </p>
+              <Link
+                href="/documents-vault"
+                className="mt-[32px] inline-flex cursor-pointer items-center gap-[10px] rounded-full border border-black/10 bg-white px-[24px] py-[14px] font-satoshi text-[15px] font-semibold leading-[24px] tracking-[-0.02em] text-black transition hover:bg-black/5"
+                style={{ fontFeatureSettings: "'ss03' on" }}
+              >
+                <PlusIcon />
+                Add more statements
+              </Link>
+            </div>
           ) : (
             <>
               <DashboardHeader
@@ -239,7 +270,6 @@ export default function DashboardPage() {
               />
               {brokerJobs?.some(j => j.status === "needs_review") && (() => {
                 const pendingCount = brokerJobs.filter(j => j.status === "needs_review").length;
-                const resolveBy = new Date(Date.now() + 5 * 60 * 60 * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
                 return (
                 <div className="mb-4 w-full flex items-center justify-between gap-4 px-5 py-4 rounded-2xl" style={{ background: "#DED7D1" }}>
                   <div className="flex items-center gap-3">
@@ -253,7 +283,7 @@ export default function DashboardPage() {
                         We couldn&apos;t process {pendingCount} of your statement{pendingCount !== 1 ? "s" : ""} with full accuracy. Our team is reviewing them.
                       </span>
                       <span className="font-satoshi text-[12px] font-normal leading-[130%] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
-                        We will resolve this by {resolveBy}{" "}today. We&apos;ll notify you as soon as this is resolved.
+                        This may take 3-4 hours. We&apos;ll notify you as soon as this is resolved.
                       </span>
                     </div>
                   </div>

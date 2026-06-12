@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { dismissTray, removeTrayItem } from "../store/uploadTraySlice";
 
-const HIDE_TRAY_PATHS = ["/documents-vault", "/onboarding/documents"];
+const HIDE_TRAY_PATHS = ["/documents-vault", "/onboarding/documents", "/onboarding/processing"];
 
 export function UploadTray() {
   const dispatch = useAppDispatch();
