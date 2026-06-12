@@ -215,7 +215,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
                       width: header.getSize(),
                     }}
                   >
-                    <div className={`flex items-center ${header.id === "security" ? "justify-start" : "justify-end"}`}>
+                    <div className={`flex items-center whitespace-nowrap ${header.id === "security" ? "justify-start" : "justify-end"}`}>
                       {flexRender(header.column.columnDef.header, header.getContext())}
                       <SortIndicator direction={header.column.getIsSorted()} />
                     </div>
