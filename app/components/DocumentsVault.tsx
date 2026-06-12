@@ -102,6 +102,7 @@ function mapDocToTableRow(doc: DocumentRecord): VaultDocument {
     account: brokerName,
     holdingsCount: doc.positions_count,
     holdingsValue: doc.holdings_value,
+    currency: doc.currency,
   };
 }
 

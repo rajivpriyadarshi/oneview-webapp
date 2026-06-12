@@ -58,15 +58,16 @@ export default function PortfolioExposure({ portfolioView }: Props) {
       }));
   }, [assetPalette, portfolioView]);
 
-  const brokerData = useMemo(() => {
-    if (!portfolioView?.accounts) return [];
-    const total = portfolioView.accounts.reduce((sum, a) => sum + a.market_value, 0);
-    return [...portfolioView.accounts]
-      .sort((a, b) => b.market_value - a.market_value)
-      .map((acc, i) => ({
-        label: capitalize(acc.institution_name || acc.account_name),
-        value: acc.market_value,
-        percentage: total > 0 ? (acc.market_value / total) * 100 : 0,
+  const currencyData = useMemo(() => {
+    if (!portfolioView?.currency_allocation) return [];
+    const entries = Object.entries(portfolioView.currency_allocation);
+    const total = entries.reduce((sum, [, v]) => sum + v.market_value, 0);
+    return entries
+      .sort((a, b) => b[1].market_value - a[1].market_value)
+      .map(([label, data], i) => ({
+        label: label.toUpperCase(),
+        value: data.market_value,
+        percentage: data.weight_pct ?? (total > 0 ? (data.market_value / total) * 100 : 0),
         color: getChartColor(i, brokerPalette),
       }));
   }, [brokerPalette, portfolioView]);
@@ -105,10 +106,10 @@ export default function PortfolioExposure({ portfolioView }: Props) {
 
         <div className={`relative pt-[32px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-transparent ${hasSectorData ? "md:border-r md:border-black/15" : ""}`}>
           <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
-            By <strong>Broker</strong>
+            By <strong>Currency</strong>
           </p>
           <div className="w-full">
-            <SectorDonutChart segments={brokerData} />
+            <SectorDonutChart segments={currencyData} />
           </div>
         </div>
 

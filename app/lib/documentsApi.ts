@@ -12,6 +12,7 @@ export type DocumentRecord = {
   broker?: string;
   document_type?: string;
   processing_status?: string;
+  currency?: string;
   uploaded_by?: number;
   uploaded_by_username?: string;
   accounts?: { id: number; name: string; institution_name: string; account_type: string }[];
