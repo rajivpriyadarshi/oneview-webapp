@@ -26,6 +26,7 @@ export type VaultDocument = {
   account?: string;
   holdingsCount?: number;
   holdingsValue?: number;
+  currency?: string;
 };
 
 export type ProcessingItem = {
@@ -48,7 +49,13 @@ const columnHelper = createColumnHelper<VaultDocument>();
 const GROUP_OPTIONS = ["Account", "Type", "Status"] as const;
 type GroupOption = (typeof GROUP_OPTIONS)[number];
 
-function formatHoldingsValue(value: number): string {
+function formatHoldingsValue(value: number, currency = "₹"): string {
+  const sym = currency || "₹";
+  if (sym === "$" || sym === "USD") {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+    return `$${value.toFixed(2)}`;
+  }
   if (value >= 10000000) return `₹${(value / 10000000).toFixed(2)} Cr`;
   if (value >= 100000) return `₹${(value / 100000).toFixed(2)} L`;
   return `₹${value.toLocaleString("en-IN")}`;
@@ -235,7 +242,7 @@ export default function DocumentsTable({
                   >
                     {doc.holdingsCount && `${doc.holdingsCount} holdings`}
                     {doc.holdingsCount && doc.holdingsValue && " · "}
-                    {doc.holdingsValue && formatHoldingsValue(doc.holdingsValue)}
+                    {doc.holdingsValue && formatHoldingsValue(doc.holdingsValue, doc.currency)}
                   </span>
                 )}
               </div>
@@ -1268,7 +1275,7 @@ function TimelineView({
                       {doc.account || "Unknown"}
                       {doc.holdingsCount && ` · ${doc.holdingsCount} holdings`}
                       {doc.holdingsValue &&
-                        ` · ${formatHoldingsValue(doc.holdingsValue)}`}
+                        ` · ${formatHoldingsValue(doc.holdingsValue, doc.currency)}`}
                     </p>
                     <p className="text-xs text-black/40 mt-1 sm:hidden">
                       {new Date(doc.uploadedOnRaw).toLocaleDateString("en-US", {
