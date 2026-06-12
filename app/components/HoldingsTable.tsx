@@ -131,7 +131,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
         size: 160,
         cell: (info) => {
           const val = info.getValue();
-          return val === 0 ? "N/A" : formatCurrencyAmount(val, info.row.original.currency);
+          return val === null || val === 0 ? "N/A" : formatCurrencyAmount(val, info.row.original.currency);
         },
       }),
       columnHelper.accessor("gain_amount", {
