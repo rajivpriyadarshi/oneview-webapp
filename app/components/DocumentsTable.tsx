@@ -440,7 +440,7 @@ export default function DocumentsTable({
                   </td>
                 </tr>
               )}
-              {!loading && documents.length === 0 && (
+              {!loading && documents.length === 0 && processingItems.length === 0 && (
                 <tr className="table w-full table-fixed">
                   <td
                     colSpan={5}
@@ -949,7 +949,7 @@ function FolderView({
     );
   }
 
-  if (groupedDocuments.size === 0) {
+  if (groupedDocuments.size === 0 && processingItems.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
         <span className="text-black/50">No documents found</span>
@@ -1167,33 +1167,16 @@ function TimelineView({
     {} as Record<string, VaultDocument[]>
   );
 
+  const currentMonthKey = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+  // Ensure current month group exists if there are processing items but no docs yet
+  if (processingItems.length > 0 && !groupedByMonth[currentMonthKey]) {
+    groupedByMonth[currentMonthKey] = [];
+  }
+
   return (
     <div className="pb-4 px-4">
       <div className="relative">
-        {processingItems.length > 0 && (
-          <div className="relative mb-8">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="w-10 h-10 rounded-full bg-white border-2 border-black/10 flex items-center justify-center z-10">
-                <ProcessingSpinner size={18} />
-              </div>
-              <span className="font-semibold text-sm text-black/50">Processing</span>
-            </div>
-            <div className="ml-14 space-y-3">
-              {processingItems.map((item) => (
-                <div key={item.id} className="flex items-center gap-4 p-4 rounded-[28px] bg-[#f6f6f6] opacity-60">
-                  <div className="flex-shrink-0">
-                    <ProcessingSpinner size={28} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-[#1a1a1a] truncate">{item.name}</p>
-                    <p className="text-xs text-black/50 -mt-0.5">{item.detail ?? "Processing…"}</p>
-                  </div>
-                  <span className="text-xs text-black/30 whitespace-nowrap flex-shrink-0">Uploading</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         {Object.entries(groupedByMonth).map(([monthKey, docs], idx, arr) => (
           <div key={monthKey} className="relative mb-8 last:mb-0">
             {idx < arr.length - 1 && (
@@ -1232,6 +1215,18 @@ function TimelineView({
             </div>
 
             <div className="ml-14 space-y-3">
+              {monthKey === currentMonthKey && processingItems.map((item) => (
+                <div key={item.id} className="flex items-center gap-4 p-4 rounded-[28px] bg-[#f6f6f6] opacity-60">
+                  <div className="flex-shrink-0">
+                    <ProcessingSpinner size={28} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-[#1a1a1a] truncate">{item.name}</p>
+                    <p className="text-xs text-black/50 -mt-0.5">{item.detail ?? "Processing…"}</p>
+                  </div>
+                  <span className="text-xs text-black/30 whitespace-nowrap flex-shrink-0">Uploading</span>
+                </div>
+              ))}
               {docs.map((doc) => (
                 <div
                   key={doc.id}
