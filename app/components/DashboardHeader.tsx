@@ -3,24 +3,34 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getProfile } from "../lib/realAuthApi";
-import { useListCurrenciesQuery } from "../store/api";
+
+type CurrencyOption = { currency_code: string; name: string | null; symbol: string | null; decimals: number };
 
 type Props = {
   updatedAt?: string;
   asOfDate?: string;
   currency?: string;
+  apiCurrencies?: CurrencyOption[];
   onCurrencyChange?: (currency: string) => void;
 };
 
-export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR", onCurrencyChange }: Props) {
+export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrencies = [], onCurrencyChange }: Props) {
   const [userName, setUserName] = useState("");
   const subtitle = 'See the unified view of all your investments';
-  const { data: currencies } = useListCurrenciesQuery();
-  const currencyList = currencies && currencies.length > 0
-    ? currencies.map(c => c.currency_code)
-    : ["INR", "USD"];
 
-  useEffect(() => {
+  const ORDER = ["USD", "INR"];
+  const currencyList = apiCurrencies.length > 0
+    ? [...apiCurrencies.map((c) => c.currency_code)].sort((a, b) => {
+        const ai = ORDER.indexOf(a);
+        const bi = ORDER.indexOf(b);
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return a.localeCompare(b);
+      })
+    : [currency];
+
+useEffect(() => {
     getProfile()
       .then((profile) => {
         const name = profile.display_name?.trim().split(/\s+/)[0] || "";
@@ -43,7 +53,7 @@ export default function DashboardHeader({ updatedAt, asOfDate, currency = "INR",
             Price as of {asOfDate}
           </span>
         )}
-        {onCurrencyChange && (
+        {onCurrencyChange && currencyList.length > 1 && (
           <div
             style={{
               display: "inline-flex",

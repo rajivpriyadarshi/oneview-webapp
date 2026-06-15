@@ -21,6 +21,7 @@ import {
   useGetPortfolioViewQuery,
   useGetValuationsViewQuery,
   useListBrokerStatementJobsQuery,
+  useListCurrenciesQuery,
 } from "../store/api";
 import { useAppDispatch } from "../store/hooks";
 import { dismissTray } from "../store/uploadTraySlice";
@@ -32,6 +33,11 @@ export default function DashboardPage() {
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
   const [currency, setCurrency] = useState("INR");
+  const { data: apiCurrencies = [] } = useListCurrenciesQuery();
+  const currencySymbol = useMemo(() => {
+    const match = apiCurrencies.find((c) => c.currency_code === currency);
+    return match?.symbol ?? currency;
+  }, [apiCurrencies, currency]);
   const [isPendingDocsModalOpen, setIsPendingDocsModalOpen] = useState(false);
   const sectionInViewRef = useRef<Record<string, boolean>>({});
 
@@ -145,16 +151,6 @@ export default function DashboardPage() {
     [selectedAccountId],
   );
 
-  const { fromDate, toDate } = useMemo(() => {
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-    return {
-      fromDate: thirtyDaysAgo.toISOString().split("T")[0],
-      toDate: today.toISOString().split("T")[0],
-    };
-  }, []);
-
   const { data: portfolioView, isLoading: viewLoading, isFetching: viewFetching } = useGetPortfolioViewQuery(
     { accountIds, currency },
     { skip: !activePortfolioId },
@@ -162,7 +158,7 @@ export default function DashboardPage() {
   console.log("[Dashboard] Portfolio view:", portfolioView, "Loading:", viewLoading);
 
   const { data: valuationsData, isFetching: valuationsFetching } = useGetValuationsViewQuery(
-    { accountIds, currency, fromDate, toDate },
+    { accountIds, currency },
     { skip: !activePortfolioId },
   );
   console.log("[Dashboard] Valuations data:", valuationsData);
@@ -266,6 +262,7 @@ export default function DashboardPage() {
                 updatedAt={selectedPortfolio?.updated_at}
                 asOfDate={portfolioView?.as_of_date ? new Date(portfolioView.as_of_date + "T00:00:00").toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : undefined}
                 currency={currency}
+                apiCurrencies={apiCurrencies}
                 onCurrencyChange={handleCurrencyChange}
               />
               {brokerJobs?.some(j => j.status === "needs_review") && (() => {
@@ -310,6 +307,7 @@ export default function DashboardPage() {
                 selectedPortfolio={selectedPortfolio}
                 onPortfolioChange={handlePortfolioChange}
                 currency={currency}
+                currencySymbol={currencySymbol}
                 onCurrencyChange={handleCurrencyChange}
                 valuationSeries={valuationSeries}
               />

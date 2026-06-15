@@ -71,14 +71,12 @@ export async function getAccountsByPortfolioId(portfolioId: number) {
   return Array.isArray(response) ? response : response.results;
 }
 
-export async function getPortfolioView(accountIds?: number[], currency = "INR", date?: string) {
-  const today = date || new Date().toISOString().split("T")[0];
+export async function getPortfolioView(accountIds?: number[], currency = "INR") {
   return apiRequest<PortfolioViewResponse>("/portfolio-view/", {
     method: "POST",
     body: {
       account_ids: accountIds || [],
       currency,
-      date: today,
     },
   });
 }
@@ -110,14 +108,12 @@ export type ValuationsViewResponse = {
   }[];
 };
 
-export async function getValuationsView(accountIds?: number[], currency = "INR", fromDate?: string, toDate?: string) {
+export async function getValuationsView(accountIds?: number[], currency = "INR") {
   return apiRequest<ValuationsViewResponse>("/valuations-view/", {
     method: "POST",
     body: {
       account_ids: accountIds || [],
       currency,
-      ...(fromDate && { from_date: fromDate }),
-      ...(toDate && { to_date: toDate }),
     },
   });
 }

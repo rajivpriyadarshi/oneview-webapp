@@ -94,15 +94,14 @@ export const api = createApi({
     // Portfolio View
     getPortfolioView: builder.query<
       PortfolioViewResponse,
-      { accountIds?: number[]; currency?: string; date?: string }
+      { accountIds?: number[]; currency?: string }
     >({
-      query: ({ accountIds = [], currency = "INR", date }) => ({
+      query: ({ accountIds = [], currency = "INR" }) => ({
         url: "/portfolio-view/",
         method: "POST",
         body: {
           account_ids: accountIds,
           currency,
-          date: date || new Date().toISOString().split("T")[0],
         },
       }),
       providesTags: ["PortfolioView"],
@@ -126,16 +125,14 @@ export const api = createApi({
     // Valuations
     getValuationsView: builder.query<
       ValuationsViewResponse,
-      { accountIds?: number[]; currency?: string; fromDate?: string; toDate?: string }
+      { accountIds?: number[]; currency?: string }
     >({
-      query: ({ accountIds = [], currency = "INR", fromDate, toDate }) => ({
+      query: ({ accountIds = [], currency = "INR" }) => ({
         url: "/valuations-view/",
         method: "POST",
         body: {
           account_ids: accountIds,
           currency,
-          ...(fromDate && { from_date: fromDate }),
-          ...(toDate && { to_date: toDate }),
         },
       }),
     }),
@@ -240,7 +237,7 @@ export const api = createApi({
       providesTags: ["Documents"],
     }),
     listCurrencies: builder.query<{ currency_code: string; name: string | null; symbol: string | null; decimals: number }[], void>({
-      query: () => ({ url: "/wealth/currencies/" }),
+      query: () => ({ url: "/currencies/" }),
       transformResponse: (response: { currencies: { currency_code: string; name: string | null; symbol: string | null; decimals: number }[] }) => response.currencies,
     }),
   }),

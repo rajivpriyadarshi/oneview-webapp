@@ -17,12 +17,13 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Filler, 
 type Props = {
   series: ValuationSeriesPoint[];
   currency: string;
+  currencySymbol?: string;
   loading: boolean;
 };
 
-export default function PortfolioChart({ series, currency, loading }: Props) {
+export default function PortfolioChart({ series, currency, currencySymbol, loading }: Props) {
   void loading;
-  const currSymbol = currency === "USD" ? "$" : "₹";
+  const currSymbol = currencySymbol ?? (currency === "USD" ? "$" : "₹");
 
   const labels = series.map((p) => p.date);
   const dataPoints = series.map((p) => p.market_value);

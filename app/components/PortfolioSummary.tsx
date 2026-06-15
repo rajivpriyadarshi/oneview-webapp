@@ -17,6 +17,7 @@ type Props = {
   selectedPortfolio: Portfolio | null;
   onPortfolioChange: (portfolioId: number) => void;
   currency: string;
+  currencySymbol?: string;
   onCurrencyChange: (currency: string) => void;
   valuationSeries: ValuationSeriesPoint[];
 };
@@ -30,6 +31,7 @@ export default function PortfolioSummary({
   selectedAccountId,
   onAccountChange,
   currency,
+  currencySymbol,
   onCurrencyChange,
   valuationSeries,
 }: Props) {
@@ -52,7 +54,7 @@ export default function PortfolioSummary({
   }, [valuesRefetching, loading, currencyChanging]);
 
   const summary = portfolioView?.summary;
-  const currSymbol = currency === "USD" ? "$" : "₹";
+  const currSymbol = currencySymbol ?? getCurrencySymbol(currency);
   const marketValue = summary ? formatLakhs(summary.total_market_value, currency) : "—";
   const gainAmount = summary ? formatLakhs(Math.abs(summary.total_gain_amount), currency) : "—";
   const gainPct = summary?.total_gain_pct != null ? `${summary.total_gain_pct.toFixed(2)}%` : "";
@@ -117,11 +119,22 @@ export default function PortfolioSummary({
         </div>
 
         <div className="flex-1 min-w-0 max-w-[55%] max-[900px]:max-w-full">
-          <PortfolioChart series={valuationSeries} currency={currency} loading={chartLoading} />
+          <PortfolioChart series={valuationSeries} currency={currency} currencySymbol={currSymbol} loading={chartLoading} />
         </div>
       </div>
     </section>
   );
+}
+
+function getCurrencySymbol(currency?: string): string {
+  switch (currency?.toUpperCase()) {
+    case "USD": return "$";
+    case "EUR": return "€";
+    case "GBP": return "£";
+    case "JPY": return "¥";
+    case "INR":
+    default: return "₹";
+  }
 }
 
 function formatLakhs(value: number, currency = "INR") {
