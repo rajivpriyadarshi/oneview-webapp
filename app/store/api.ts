@@ -220,7 +220,12 @@ export const api = createApi({
         const formData = new FormData();
         formData.set("document_id", String(documentId));
         formData.set("password", password);
-        return { url: "/oneview/broker-statements/retry-with-password/", method: "POST", body: formData };
+        return {
+          url: "/oneview/broker-statements/retry-with-password/",
+          method: "POST",
+          body: formData,
+          validateStatus: isBrokerStatementUploadStatusValid,
+        };
       },
       invalidatesTags: ["Documents", "Portfolios", "PortfolioView", "Sankey"],
     }),

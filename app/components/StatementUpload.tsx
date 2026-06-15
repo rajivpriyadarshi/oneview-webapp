@@ -574,9 +574,22 @@ export function StatementUpload() {
         api.util.invalidateTags(["Documents", "Portfolios", "PortfolioView", "Sankey"]),
       );
     } catch (err) {
-      setPasswordError(
-        err instanceof Error ? err.message : "Failed to unlock document.",
-      );
+      const errorData = typeof err === "object" && err !== null && "data" in err
+        ? (err as { data: unknown }).data
+        : null;
+
+      if (
+        errorData &&
+        typeof errorData === "object" &&
+        "error_code" in errorData &&
+        (errorData as { error_code: string }).error_code === "password_incorrect"
+      ) {
+        setPasswordError((errorData as { error?: string }).error ?? "The provided password is incorrect.");
+      } else {
+        setPasswordError(
+          err instanceof Error ? err.message : "Failed to unlock document.",
+        );
+      }
     } finally {
       setIsRetryingPassword(false);
     }

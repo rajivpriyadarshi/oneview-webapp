@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type PasswordPromptModalProps = {
   isOpen: boolean;
@@ -18,6 +18,12 @@ export function PasswordPromptModal({
   onClose,
 }: PasswordPromptModalProps) {
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (error) {
+      setPassword("");
+    }
+  }, [error]);
 
   if (!isOpen) return null;
 
