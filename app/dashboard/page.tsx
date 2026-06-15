@@ -34,9 +34,10 @@ export default function DashboardPage() {
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
   const [currency, setCurrency] = useState("USD");
   const { data: apiCurrencies = [] } = useListCurrenciesQuery();
+  const CURRENCY_SYMBOL_FALLBACKS: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", JPY: "¥", INR: "₹" };
   const currencySymbol = useMemo(() => {
     const match = apiCurrencies.find((c) => c.currency_code === currency);
-    return match?.symbol ?? currency;
+    return match?.symbol ?? CURRENCY_SYMBOL_FALLBACKS[currency] ?? currency;
   }, [apiCurrencies, currency]);
   const [isPendingDocsModalOpen, setIsPendingDocsModalOpen] = useState(false);
   const sectionInViewRef = useRef<Record<string, boolean>>({});
