@@ -307,6 +307,7 @@ export function StatementUpload() {
                 signal: abortController.signal,
                 getStatus: (jobId) => getBrokerStatementJobStatus(jobId, false).unwrap(),
                 onProgress: (progress) => {
+                  const label = progress?.label?.replace(/^OCR/i, "Scanning") ?? "Extracting statement details.";
                   if (
                     typeof progress?.current === "number" &&
                     typeof progress.total === "number" &&
@@ -319,13 +320,13 @@ export function StatementUpload() {
                     dispatch(patchTrayItem({
                       id: item.id,
                       progress: pct,
-                      detail: progress.label ?? "Extracting statement details.",
+                      detail: label,
                     }));
                     return;
                   }
                   dispatch(patchTrayItem({
                     id: item.id,
-                    detail: progress?.label ?? "Extracting statement details.",
+                    detail: label,
                   }));
                 },
               });
