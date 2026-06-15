@@ -19,16 +19,17 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
   const subtitle = 'See the unified view of all your investments';
 
   const ORDER = ["USD", "INR"];
-  const currencyList = apiCurrencies.length > 0
-    ? [...apiCurrencies.map((c) => c.currency_code)].sort((a, b) => {
-        const ai = ORDER.indexOf(a);
-        const bi = ORDER.indexOf(b);
-        if (ai !== -1 && bi !== -1) return ai - bi;
-        if (ai !== -1) return -1;
-        if (bi !== -1) return 1;
-        return a.localeCompare(b);
-      })
-    : [currency];
+  const currencyList = (() => {
+    const codes = ["USD", ...apiCurrencies.map((c) => c.currency_code).filter((c) => c !== "USD")];
+    return codes.sort((a, b) => {
+      const ai = ORDER.indexOf(a);
+      const bi = ORDER.indexOf(b);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  })();
 
 useEffect(() => {
     getProfile()

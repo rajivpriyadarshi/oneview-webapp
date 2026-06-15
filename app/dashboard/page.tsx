@@ -32,7 +32,7 @@ export default function DashboardPage() {
   const { trackPage, trackClick, trackSectionScroll } = useAnalytics();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
-  const [currency, setCurrency] = useState("INR");
+  const [currency, setCurrency] = useState("USD");
   const { data: apiCurrencies = [] } = useListCurrenciesQuery();
   const currencySymbol = useMemo(() => {
     const match = apiCurrencies.find((c) => c.currency_code === currency);
