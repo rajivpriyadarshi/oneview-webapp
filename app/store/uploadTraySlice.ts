@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-export type TrayItemStatus = "queued" | "uploading" | "complete" | "error" | "review";
+export type TrayItemStatus = "queued" | "uploading" | "complete" | "error" | "review" | "password";
 
 export type TrayItem = {
   id: string;

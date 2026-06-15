@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type PasswordPromptModalProps = {
   isOpen: boolean;
@@ -19,6 +19,12 @@ export function PasswordPromptModal({
 }: PasswordPromptModalProps) {
   const [password, setPassword] = useState("");
 
+  useEffect(() => {
+    if (error) {
+      setPassword("");
+    }
+  }, [error]);
+
   if (!isOpen) return null;
 
   function handleSubmit(e: FormEvent) {
@@ -29,7 +35,7 @@ export function PasswordPromptModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center bg-black/40 p-6" role="presentation">
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-black/40 p-6" role="presentation" onClick={(e) => e.stopPropagation()}>
       <div
         className="w-full max-w-[440px] rounded-[20px] bg-white p-7 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
         role="dialog"

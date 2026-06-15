@@ -34,7 +34,7 @@ const CHART_COLORS = [
   "#8A5A48", "#904868", "#A0888C", "#6A7858",
 ];
 
-type UploadStatus = "queued" | "uploading" | "complete" | "error" | "review";
+type UploadStatus = "queued" | "uploading" | "complete" | "error" | "review" | "password";
 
 type UploadItem = {
   id: string;
@@ -269,9 +269,10 @@ export function StatementUpload() {
               setShowPasswordPrompt(true);
               dispatch(patchTrayItem({
                 id: item.id,
-                status: "error",
+                status: "password",
                 progress: 0,
                 error: "Password required",
+                documentId: response.document_id ? String(response.document_id) : undefined,
               }));
             } else {
               trackAPI({
@@ -437,7 +438,7 @@ export function StatementUpload() {
             setPendingPasswordItemId(item.id);
             setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
             setShowPasswordPrompt(true);
-            dispatch(patchTrayItem({ id: item.id, status: "error", progress: 0, error: "Password required" }));
+            dispatch(patchTrayItem({ id: item.id, status: "password", progress: 0, error: "Password required", documentId: String(data.document_id) }));
           } else {
             trackAPI({
               pageName: trackingEventsMap.documentsPage.PAGE,
@@ -574,9 +575,22 @@ export function StatementUpload() {
         api.util.invalidateTags(["Documents", "Portfolios", "PortfolioView", "Sankey"]),
       );
     } catch (err) {
-      setPasswordError(
-        err instanceof Error ? err.message : "Failed to unlock document.",
-      );
+      const errorData = typeof err === "object" && err !== null && "data" in err
+        ? (err as { data: unknown }).data
+        : null;
+
+      if (
+        errorData &&
+        typeof errorData === "object" &&
+        "error_code" in errorData &&
+        (errorData as { error_code: string }).error_code === "password_incorrect"
+      ) {
+        setPasswordError((errorData as { error?: string }).error ?? "The provided password is incorrect.");
+      } else {
+        setPasswordError(
+          err instanceof Error ? err.message : "Failed to unlock document.",
+        );
+      }
     } finally {
       setIsRetryingPassword(false);
     }
@@ -587,6 +601,13 @@ export function StatementUpload() {
     setPendingPasswordDocId(null);
     setPendingPasswordItemId(null);
     setPasswordError("");
+  }
+
+  function handleRetryPassword(itemId: string, documentId: string) {
+    setPendingPasswordDocId(documentId);
+    setPendingPasswordItemId(itemId);
+    setPasswordError("");
+    setShowPasswordPrompt(true);
   }
 
   const getInitials = (name: string) => {
@@ -843,7 +864,7 @@ export function StatementUpload() {
                     aria-live="polite"
                   >
                     <div
-                      className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "review" ? " is-review" : ""}${item.status === "error" ? " is-error" : ""}`}
+                      className={`statement-file-loader${item.status === "queued" ? " is-queued" : ""}${item.status === "uploading" ? " is-uploading" : ""}${item.status === "complete" ? " is-uploaded" : ""}${item.status === "review" ? " is-review" : ""}${item.status === "error" || item.status === "password" ? " is-error" : ""}`}
                       style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
                     >
                       {item.status === "complete" ? (
@@ -853,6 +874,11 @@ export function StatementUpload() {
                       ) : item.status === "review" ? (
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M12 2V6M12 18V22M6 12H2M22 12H18M19.0784 19.0784L16.25 16.25M19.0784 4.99994L16.25 7.82837M4.92157 19.0784L7.75 16.25M4.92157 4.99994L7.75 7.82837" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : item.status === "password" ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <rect x="3" y="11" width="18" height="11" rx="2" stroke="white" strokeWidth="2"/>
+                          <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                         </svg>
                       ) : item.status === "error" ? (
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 16 16" fill="none">
@@ -867,15 +893,25 @@ export function StatementUpload() {
                       <span className="font-satoshi text-[13px] font-medium leading-[150%] tracking-[-0.26px] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
                         {item.status === "complete"
                           ? item.detail ?? formatFileSize(item.size)
-                          : item.status === "error" || item.status === "review"
+                          : item.status === "error" || item.status === "review" || item.status === "password"
                             ? item.error
                             : item.detail ?? formatFileSize(item.size)
                         }
                       </span>
                     </div>
+                    {item.status === "password" && item.documentId && (
+                      <button
+                        type="button"
+                        className="flex-shrink-0 flex items-center justify-center h-8 rounded-full bg-black px-4 font-satoshi text-[13px] font-bold text-white cursor-pointer border-0 transition-colors hover:bg-black/85"
+                        style={{ fontFeatureSettings: "'ss03' on" }}
+                        onClick={() => handleRetryPassword(item.id, item.documentId!)}
+                      >
+                        Unlock
+                      </button>
+                    )}
                     <button
                       type="button"
-                      className="ml-auto flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-black/[0.04] hover:bg-black/[0.08] transition-colors cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed border-0"
+                      className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-black/[0.04] hover:bg-black/[0.08] transition-colors cursor-pointer disabled:opacity-45 disabled:cursor-not-allowed border-0"
                       onClick={() => removeUploadItem(item.id)}
                       aria-label="Remove selected file"
                       disabled={isUploading && item.status === "uploading"}
