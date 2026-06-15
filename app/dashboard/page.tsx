@@ -172,7 +172,7 @@ export default function DashboardPage() {
   const isPortfolioEmpty = !loading && (portfolioView?.positions?.length ?? 0) === 0;
   const allUnderReview = !!brokerJobs?.length &&
     brokerJobs.some(j => j.status === "needs_review") &&
-    !brokerJobs.some(j => j.status === "completed");
+    accounts.length === 0;
   console.log("[Dashboard] Loading:", loading, "Empty:", isPortfolioEmpty);
 
   useEffect(() => {

@@ -16,14 +16,13 @@ export function UploadTray() {
     (item) => item.status === "complete" || item.status === "error" || item.status === "review",
   );
   const allSucceeded = items.length > 0 && items.every((item) => item.status === "complete");
+  const onUploadPage = HIDE_TRAY_PATHS.some((p) => pathname?.startsWith(p));
 
   useEffect(() => {
-    if (!allSucceeded) return;
+    if (!allSucceeded || onUploadPage) return;
     const timer = setTimeout(() => dispatch(dismissTray()), 3000);
     return () => clearTimeout(timer);
-  }, [allSucceeded, dispatch]);
-
-  const onUploadPage = HIDE_TRAY_PATHS.some((p) => pathname?.startsWith(p));
+  }, [allSucceeded, onUploadPage, dispatch]);
   if (onUploadPage || dismissed || items.length === 0) return null;
 
   return (
