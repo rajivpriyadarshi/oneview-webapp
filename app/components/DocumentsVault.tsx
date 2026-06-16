@@ -322,6 +322,7 @@ export function DocumentsVault() {
                 status: "error",
                 error: "Password required",
               });
+              break;
             } else {
               trackAPI({
                 pageName: trackingEventsMap.documentsVaultPage.PAGE,
@@ -447,6 +448,7 @@ export function DocumentsVault() {
             setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
             setShowPasswordPrompt(true);
             updateUploadItem(item.id, { status: "error", error: "Password required" });
+            break;
           } else {
             trackAPI({
               pageName: trackingEventsMap.documentsVaultPage.PAGE,
