@@ -207,7 +207,7 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
             const pos = getHoverLabelPosition(segmentsWithAngles[hoveredIndex].midAngle);
             const label = segments[hoveredIndex].label;
             const value = `${currSymbol}${formatValue(segments[hoveredIndex].value, currency)}`;
-            const pct = `${segments[hoveredIndex].percentage.toFixed(1)}%`;
+            const pct = `${formatPct(segments[hoveredIndex].percentage)}%`;
 
             // Estimate box width based on longest text (rough approximation: 7px per char for label, 6px for others)
             const labelWidth = label.length * 7;
@@ -279,7 +279,7 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
             <span className="text-[46px] font-satoshi text-[14px] font-bold leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>{seg.label}</span>
             <span className="text-[14px] leading-[150%] text-black/20">•</span>
             <span className="font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/60" style={{ fontFeatureSettings: "'ss03' on" }}>
-              {currSymbol}{formatValue(seg.value, currency)} ({seg.percentage.toFixed(1)}%)
+              {currSymbol}{formatValue(seg.value, currency)} ({formatPct(seg.percentage)}%)
             </span>
           </div>
         ))}
@@ -387,7 +387,7 @@ function SectorDonutChart({
           fill="#0f0f0f"
           letterSpacing="-1"
         >
-          {active.percentage.toFixed(1)}%
+          {formatPct(active.percentage)}%
         </text>
         {/* center label */}
         <text
@@ -433,7 +433,7 @@ function SectorDonutChart({
               >
                 <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />
                 <span className="max-w-[110px] truncate text-black/80">{seg.label}</span>
-                <span className="font-semibold text-black">{seg.percentage.toFixed(1)}%</span>
+                <span className="font-semibold text-black">{formatPct(seg.percentage)}%</span>
               </div>
             );
           })()}
@@ -464,7 +464,7 @@ function SectorDonutChart({
           >
             <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />
             <span className="max-w-[110px] truncate text-black/80">{seg.label}</span>
-            <span className="font-semibold text-black">{seg.percentage.toFixed(1)}%</span>
+            <span className="font-semibold text-black">{formatPct(seg.percentage)}%</span>
           </div>
           )})}
           {remainingCount > 0 && (
@@ -507,7 +507,7 @@ function SectorDonutChart({
                       >
                         <span className="h-2 w-2 rounded-full" style={{ background: seg.color }} />
                         <span className="flex-1 truncate text-xs text-black/80">{seg.label}</span>
-                        <span className="text-xs font-semibold text-black">{seg.percentage.toFixed(1)}%</span>
+                        <span className="text-xs font-semibold text-black">{formatPct(seg.percentage)}%</span>
                       </button>
                     )})}
                   </div>
@@ -520,6 +520,10 @@ function SectorDonutChart({
       </div>
     </div>
   );
+}
+
+function formatPct(value: number): string {
+  return value.toFixed(2);
 }
 
 function capitalize(str: string) {
