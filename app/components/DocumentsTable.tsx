@@ -51,14 +51,15 @@ type GroupOption = (typeof GROUP_OPTIONS)[number];
 
 function formatHoldingsValue(value: number, currency = "₹"): string {
   const sym = currency || "₹";
-  if (sym === "$" || sym === "USD") {
-    if (value >= 1000000) return `$${(value / 1000000).toFixed(2)}M`;
-    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
-    return `$${value.toFixed(2)}`;
+  const isInr = sym === "₹" || sym === "INR" || sym === "Rs";
+  if (isInr) {
+    if (value >= 10000000) return `${sym}${(value / 10000000).toFixed(2)} Cr`;
+    if (value >= 100000) return `${sym}${(value / 100000).toFixed(2)} L`;
+    return `${sym}${value.toLocaleString("en-IN")}`;
   }
-  if (value >= 10000000) return `₹${(value / 10000000).toFixed(2)} Cr`;
-  if (value >= 100000) return `₹${(value / 100000).toFixed(2)} L`;
-  return `₹${value.toLocaleString("en-IN")}`;
+  if (value >= 1000000) return `${sym}${(value / 1000000).toFixed(2)}M`;
+  if (value >= 1000) return `${sym}${(value / 1000).toFixed(0)}K`;
+  return `${sym}${value.toFixed(2)}`;
 }
 
 function getGroupKey(doc: VaultDocument, groupBy: GroupOption): string {
