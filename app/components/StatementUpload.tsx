@@ -440,6 +440,7 @@ export function StatementUpload() {
             setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
             setShowPasswordPrompt(true);
             dispatch(patchTrayItem({ id: item.id, status: "password", progress: 0, error: "Password required", documentId: String(data.document_id) }));
+            break;
           } else {
             trackAPI({
               pageName: trackingEventsMap.documentsPage.PAGE,
@@ -631,8 +632,8 @@ export function StatementUpload() {
   return (
     <>
     <main
-      className="relative flex flex-col overflow-y-auto lg:overflow-hidden"
-      style={{ minHeight: "100vh", height: "100vh", background: "url('/auth-Hero-bg.png') center/cover no-repeat fixed" }}
+      className="relative flex flex-col overflow-y-auto"
+      style={{ minHeight: "100vh", background: "url('/auth-Hero-bg.png') center/cover no-repeat fixed" }}
     >
       {/* Topbar */}
       <header
@@ -689,7 +690,7 @@ export function StatementUpload() {
 
       {/* Content */}
       <section
-        className="relative z-[1] flex flex-1 flex-col items-center w-full px-5 py-2 mt-20 max-[1024px]:mt-[124px] max-[768px]:mt-[112px] max-[768px]:px-[14px] max-[768px]:pb-6 lg:px-[80px] overflow-hidden"
+        className="relative z-[1] flex flex-1 flex-col items-center w-full px-5 py-2 mt-20 max-[1024px]:mt-[124px] max-[768px]:mt-[112px] max-[768px]:px-[14px] max-[768px]:pb-6 lg:px-[80px]"
         aria-labelledby="statement-title"
       >
         {/* Two-column grid */}
@@ -815,7 +816,7 @@ export function StatementUpload() {
           </div>
 
           {/* Right Column */}
-          <div className="flex flex-col gap-4 w-full lg:overflow-y-auto lg:max-h-[calc(100vh-120px)] lg:pt-[20px] lg:pb-[20px] lg:justify-center">
+          <div className="flex flex-col gap-4 w-full lg:pt-[80px] lg:pb-[80px]">
 
             {/* Security badge */}
             <p
