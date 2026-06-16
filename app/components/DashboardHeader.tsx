@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getProfile } from "../lib/realAuthApi";
 import { MeridianLogo } from "./MeridianLogo";
+
+const TOOLTIP_SEEN_KEY = "currency_toggle_tooltip_seen";
 
 type CurrencyOption = { currency_code: string; name: string | null; symbol: string | null; decimals: number };
 
@@ -18,6 +20,9 @@ type Props = {
 
 export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrencies = [], onCurrencyChange, onMenuOpen }: Props) {
   const [userName, setUserName] = useState("");
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const subtitle = 'See the unified view of all your investments';
 
   const ORDER = ["USD", "INR"];
@@ -33,7 +38,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
     });
   })();
 
-useEffect(() => {
+  useEffect(() => {
     getProfile()
       .then((profile) => {
         const name = profile.display_name?.trim().split(/\s+/)[0] || "";
@@ -42,67 +47,117 @@ useEffect(() => {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!onCurrencyChange) return;
+    const seen = localStorage.getItem(TOOLTIP_SEEN_KEY);
+    if (!seen) {
+      setShowTooltip(true);
+      autoTimer.current = setTimeout(() => {
+        setShowTooltip(false);
+        localStorage.setItem(TOOLTIP_SEEN_KEY, "1");
+      }, 2500);
+    }
+    return () => { if (autoTimer.current) clearTimeout(autoTimer.current); };
+  }, [onCurrencyChange]);
+
+  const selectStyle = {
+    fontFeatureSettings: "'ss03' on",
+    backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%232f2b2c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+    backgroundRepeat: "no-repeat" as const,
+    backgroundPosition: "right 12px center",
+  };
+
+  const tooltipVisible = showTooltip || hovered;
+
   const currencySelect = onCurrencyChange && currencyList.length > 1 && (
-    currencyList.length > 4 ? (
-      <select
-        value={currency}
-        onChange={(e) => onCurrencyChange(e.target.value)}
-        className="h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-4 pr-9 font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer transition hover:bg-black/[0.02]"
-        style={{
-          fontFeatureSettings: "'ss03' on",
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%232f2b2c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-          backgroundRepeat: "no-repeat",
-          backgroundPosition: "right 12px center",
-        }}
-      >
-        {currencyList.map((code) => (
-          <option key={code} value={code}>{code}</option>
-        ))}
-      </select>
-    ) : (
-      <div style={{ display: "inline-flex", alignItems: "center", borderRadius: "38px", background: "linear-gradient(90deg, #2F1E07 0%, #58442A 100%)", padding: "2px" }}>
-        {currencyList.map((code) => (
-          <button
-            key={code}
-            onClick={() => onCurrencyChange(code)}
-            style={{
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              borderRadius: "20px", padding: "8px 16px", fontSize: "16px", fontWeight: 400,
-              fontFamily: "var(--font-satoshi), sans-serif", lineHeight: 1.3, letterSpacing: "-0.56px",
-              whiteSpace: "nowrap", border: "none", cursor: "pointer", transition: "all 0.3s",
-              background: currency === code ? "#fff" : "transparent",
-              color: currency === code ? "#2f2b2c" : "rgba(255,255,255,0.6)",
-            }}
-          >
-            {code}
-          </button>
-        ))}
-      </div>
-    )
+    <div
+      className="relative"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {currencyList.length > 4 ? (
+        <select
+          value={currency}
+          onChange={(e) => onCurrencyChange(e.target.value)}
+          className="h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-4 pr-9 font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer transition hover:bg-black/[0.02]"
+          style={selectStyle}
+        >
+          {currencyList.map((code) => (
+            <option key={code} value={code}>{code}</option>
+          ))}
+        </select>
+      ) : (
+        <div style={{ display: "inline-flex", alignItems: "center", borderRadius: "38px", background: "linear-gradient(90deg, #2F1E07 0%, #58442A 100%)", padding: "2px" }}>
+          {currencyList.map((code) => (
+            <button
+              key={code}
+              onClick={() => onCurrencyChange(code)}
+              style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                borderRadius: "20px", padding: "8px 16px", fontSize: "16px", fontWeight: 400,
+                fontFamily: "var(--font-satoshi), sans-serif", lineHeight: 1.3, letterSpacing: "-0.56px",
+                whiteSpace: "nowrap", border: "none", cursor: "pointer", transition: "all 0.3s",
+                background: currency === code ? "#fff" : "transparent",
+                color: currency === code ? "#2f2b2c" : "rgba(255,255,255,0.6)",
+              }}
+            >
+              {code}
+            </button>
+          ))}
+        </div>
+      )}
+      {tooltipVisible && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 10px)",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#1a1a1a",
+            color: "#fff",
+            borderRadius: "10px",
+            padding: "8px 14px",
+            fontSize: "13px",
+            fontFamily: "var(--font-satoshi), sans-serif",
+            fontWeight: 500,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            zIndex: 100,
+            letterSpacing: "-0.02em",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+          }}
+        >
+          View your assets in your preferred currency
+          <div style={{
+            position: "absolute",
+            bottom: "100%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 0,
+            height: 0,
+            borderLeft: "6px solid transparent",
+            borderRight: "6px solid transparent",
+            borderBottom: "6px solid #1a1a1a",
+          }} />
+        </div>
+      )}
+    </div>
   );
 
   return (
     <header className="fixed top-0 left-0 right-0 z-[200] border-b border-black/10 bg-[#ffffff26] backdrop-blur-[30px] md:left-16">
       {/* Mobile navbar */}
       <div className="flex items-center justify-between px-4 py-3 md:hidden">
-        {/* Logo */}
         <Link href="/dashboard" aria-label="Go to Dashboard">
           <MeridianLogo width={44} height={44} />
         </Link>
-
-        {/* Right controls */}
         <div className="flex items-center gap-2">
           {onCurrencyChange && (
             <select
               value={currency}
               onChange={(e) => onCurrencyChange(e.target.value)}
               className="h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-4 pr-9 font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer"
-              style={{
-                fontFeatureSettings: "'ss03' on",
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%232f2b2c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 12px center",
-              }}
+              style={selectStyle}
             >
               {currencyList.map((code) => (
                 <option key={code} value={code}>{code}</option>
@@ -127,7 +182,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Desktop: full row with welcome text */}
+      {/* Desktop */}
       <div className="hidden md:flex md:items-center md:justify-between px-[60px] py-4">
         <div className="flex flex-col">
           <h1 className="m-0 font-['ButlerPro'] text-[24px] font-normal leading-[28.8px] tracking-[-0.04em] text-black">
@@ -164,11 +219,10 @@ function PlusIcon() {
   );
 }
 
-
 function HamburgerIcon({ color = "#7F4E0B" }: { color?: string }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3 12H21M3 6H21M3 18H21" stroke="#7F4E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M3 12H21M3 6H21M3 18H21" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
