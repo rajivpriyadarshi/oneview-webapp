@@ -161,18 +161,21 @@ function getCurrencySymbol(currency?: string): string {
   }
 }
 
+function floor2(n: number) { return Math.floor(n * 100) / 100; }
+
 function formatLakhs(value: number, currency = "INR") {
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
-  if (currency !== "INR") {
-    if (abs >= 1000000) return `${sign}${(abs / 1000000).toFixed(2)}M`;
-    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)}K`;
-    return value.toFixed(2);
+  if (currency.toUpperCase() !== "INR") {
+    if (abs >= 1_000_000_000) return `${sign}${floor2(abs / 1_000_000_000).toFixed(2)}B`;
+    if (abs >= 1_000_000) return `${sign}${floor2(abs / 1_000_000).toFixed(2)}M`;
+    if (abs >= 1_000) return `${sign}${floor2(abs / 1_000).toFixed(1)}K`;
+    return floor2(value).toFixed(2);
   }
-  if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
-  if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)}L`;
-  if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)}K`;
-  return value.toFixed(2);
+  if (abs >= 10_000_000) return `${sign}${floor2(abs / 10_000_000).toFixed(2)}Cr`;
+  if (abs >= 100_000) return `${sign}${floor2(abs / 100_000).toFixed(1)}L`;
+  if (abs >= 1_000) return `${sign}${floor2(abs / 1_000).toFixed(1)}K`;
+  return floor2(value).toFixed(2);
 }
 
 function truncateLabel(value: string, maxLength = 16) {
@@ -271,7 +274,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
               </span>
             );
           }
-          if (char === "L" || char === "K" || char === "M" || char === "C" || char === "r") {
+          if (char === "L" || char === "K" || char === "M" || char === "B" || char === "C" || char === "r") {
             return (
               <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
                 <span

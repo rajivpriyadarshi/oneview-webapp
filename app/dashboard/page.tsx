@@ -156,14 +156,22 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!activePortfolioId || apiCurrencies.length === 0) return;
-    const otherCurrencies = ["USD", ...apiCurrencies.map((c) => c.currency_code)].filter(
-      (c, i, arr) => arr.indexOf(c) === i && c !== currency,
+
+    const allCurrencies = ["USD", ...apiCurrencies.map((c) => c.currency_code)].filter(
+      (c, i, arr) => arr.indexOf(c) === i,
     );
-    for (const curr of otherCurrencies) {
-      dispatch(api.util.prefetch("getPortfolioView", { accountIds, currency: curr }, { force: false }));
-      dispatch(api.util.prefetch("getValuationsView", { accountIds, currency: curr }, { force: false }));
+
+    // All account combinations per currency
+    const accountCombinations: (number | "all")[] = ["all", ...accounts.map((a) => a.id)];
+
+    for (const curr of allCurrencies) {
+      for (const acc of accountCombinations) {
+        const ids = acc === "all" ? [] : [acc as number];
+        dispatch(api.util.prefetch("getPortfolioView", { accountIds: ids, currency: curr }, { force: false }));
+        dispatch(api.util.prefetch("getValuationsView", { accountIds: ids, currency: curr }, { force: false }));
+      }
     }
-  }, [activePortfolioId, apiCurrencies, accountIds]);
+  }, [activePortfolioId, apiCurrencies, accounts]);
 
   const { data: portfolioView, isLoading: viewLoading, isFetching: viewFetching } = useGetPortfolioViewQuery(
     { accountIds, currency },
@@ -349,8 +357,8 @@ export default function DashboardPage() {
                 </section>
               ) : (
                 <>
-                  <PortfolioExposure portfolioView={portfolioView ?? null} />
-                  <HoldingsTable positions={portfolioView?.positions || []} loading={loading} />
+                  <PortfolioExposure portfolioView={portfolioView ?? null} currency={currency} apiCurrencies={apiCurrencies} />
+                  <HoldingsTable positions={portfolioView?.positions || []} loading={loading} apiCurrencies={apiCurrencies} />
                 </>
               )}
             </>

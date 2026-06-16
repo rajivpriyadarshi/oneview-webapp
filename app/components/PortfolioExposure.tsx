@@ -5,8 +5,12 @@ import { type PortfolioViewResponse } from "../lib/portfolioDataApi";
 import useAnalytics from "../hooks/useAnalytics";
 import { trackingEventsMap } from "../constants";
 
+type CurrencyOption = { currency_code: string; symbol: string | null };
+
 type Props = {
   portfolioView: PortfolioViewResponse | null;
+  currency?: string;
+  apiCurrencies?: CurrencyOption[];
 };
 
 type ChartSegment = {
@@ -38,7 +42,13 @@ const ASSET_COLORS = CHART_COLORS;
 const BROKER_COLORS = CHART_COLORS.map((color) => shadeHex(color, -18));
 const SECTOR_COLORS = CHART_COLORS;
 
-export default function PortfolioExposure({ portfolioView }: Props) {
+const SYMBOL_FALLBACKS: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", JPY: "¥", INR: "₹" };
+
+export default function PortfolioExposure({ portfolioView, currency = "INR", apiCurrencies = [] }: Props) {
+  const currSymbol = (() => {
+    const match = apiCurrencies.find((c) => c.currency_code === currency.toUpperCase());
+    return match?.symbol ?? SYMBOL_FALLBACKS[currency.toUpperCase()] ?? currency;
+  })();
   const { trackClick } = useAnalytics();
   const assetPalette = ASSET_COLORS;
   const brokerPalette = useMemo(() => [...BROKER_COLORS.slice(4), ...BROKER_COLORS.slice(0, 4)], []);
@@ -142,10 +152,11 @@ export default function PortfolioExposure({ portfolioView }: Props) {
   );
 }
 
-function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; currency: string }) {
+function LabeledDonut({ segments, currency, currSymbol: propCurrSymbol }: { segments: ChartSegment[]; currency: string; currSymbol?: string }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const circumference = 2 * Math.PI * 80;
-  const currSymbol = currency === "USD" ? "$" : "₹";
+  const SYMBOL_FB: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", JPY: "¥", INR: "₹", AUD: "A$", CAD: "C$" };
+  const currSymbol = propCurrSymbol ?? SYMBOL_FB[currency.toUpperCase()] ?? currency;
   const cx = 150;
   const cy = 150;
   const donutR = 80;
@@ -206,7 +217,7 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
           {hoveredIndex !== null && (() => {
             const pos = getHoverLabelPosition(segmentsWithAngles[hoveredIndex].midAngle);
             const label = segments[hoveredIndex].label;
-            const value = `${currSymbol}${formatValue(segments[hoveredIndex].value, currency)}`;
+            const value = formatValue(segments[hoveredIndex].value, currency);
             const pct = `${formatPct(segments[hoveredIndex].percentage)}%`;
 
             // Estimate box width based on longest text (rough approximation: 7px per char for label, 6px for others)
@@ -279,7 +290,7 @@ function LabeledDonut({ segments, currency }: { segments: ChartSegment[]; curren
             <span className="text-[46px] font-satoshi text-[14px] font-bold leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>{seg.label}</span>
             <span className="text-[14px] leading-[150%] text-black/20">•</span>
             <span className="font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.02em] text-black/60" style={{ fontFeatureSettings: "'ss03' on" }}>
-              {currSymbol}{formatValue(seg.value, currency)} ({formatPct(seg.percentage)}%)
+              {formatValue(seg.value, currency)} ({formatPct(seg.percentage)}%)
             </span>
           </div>
         ))}
@@ -533,15 +544,17 @@ function capitalize(str: string) {
 function formatValue(num: number, currency = "INR") {
   const abs = Math.abs(num);
   const sign = num < 0 ? "-" : "";
-  if (currency === "USD") {
-    if (abs >= 1000000) return `${sign}${(abs / 1000000).toFixed(2)}M`;
-    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}K`;
-    return num.toFixed(2);
+  const f2 = (n: number) => Math.floor(n * 100) / 100;
+  if (currency.toUpperCase() !== "INR") {
+    if (abs >= 1_000_000_000) return `${sign}${f2(abs / 1_000_000_000).toFixed(2)}B`;
+    if (abs >= 1_000_000) return `${sign}${f2(abs / 1_000_000).toFixed(2)}M`;
+    if (abs >= 1_000) return `${sign}${f2(abs / 1_000).toFixed(0)}K`;
+    return f2(num).toFixed(2);
   }
-  if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)}Cr`;
-  if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(2)}L`;
-  if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(0)}K`;
-  return num.toFixed(2);
+  if (abs >= 10_000_000) return `${sign}${f2(abs / 10_000_000).toFixed(2)}Cr`;
+  if (abs >= 100_000) return `${sign}${f2(abs / 100_000).toFixed(2)}L`;
+  if (abs >= 1_000) return `${sign}${f2(abs / 1_000).toFixed(0)}K`;
+  return f2(num).toFixed(2);
 }
 
 function toRgba(hex: string, alpha: number) {

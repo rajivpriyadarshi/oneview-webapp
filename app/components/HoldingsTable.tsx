@@ -15,9 +15,12 @@ import { getStoredAuthToken } from "../lib/session";
 import useAnalytics from "../hooks/useAnalytics";
 import { trackingEventsMap } from "../constants";
 
+type CurrencyOption = { currency_code: string; symbol: string | null };
+
 type Props = {
   positions: PortfolioViewPosition[];
   loading: boolean;
+  apiCurrencies?: CurrencyOption[];
 };
 
 const columnHelper = createColumnHelper<PortfolioViewPosition>();
@@ -29,31 +32,32 @@ const FALLBACK_ICON_COLORS = [
   "#8A5A48", "#904868", "#A0888C", "#6A7858",
 ];
 
-function getCurrencySymbol(currency?: string): string {
-  switch (currency?.toUpperCase()) {
-    case "USD": return "$";
-    case "EUR": return "€";
-    case "GBP": return "£";
-    case "JPY": return "¥";
-    case "INR":
-    default: return "₹";
+const SYMBOL_FALLBACKS: Record<string, string> = { USD: "$", EUR: "€", GBP: "£", JPY: "¥", INR: "₹"};
+
+function getCurrencySymbol(currency?: string, apiCurrencies?: CurrencyOption[]): string {
+  if (currency && apiCurrencies?.length) {
+    const match = apiCurrencies.find((c) => c.currency_code === currency.toUpperCase());
+    if (match?.symbol) return match.symbol;
   }
+  return SYMBOL_FALLBACKS[currency?.toUpperCase() ?? ""] ?? currency ?? "₹";
 }
 
-function formatCurrencyAmount(value: number, currency?: string) {
-  const sym = getCurrencySymbol(currency);
+function formatCurrencyAmount(value: number, currency?: string, apiCurrencies?: CurrencyOption[]) {
+  const sym = getCurrencySymbol(currency, apiCurrencies);
   const abs = Math.abs(value);
   const sign = value < 0 ? "-" : "";
   const cur = currency?.toUpperCase();
-  if (cur === "USD") {
-    if (abs >= 1000000) return `${sign}${sym}${(abs / 1000000).toFixed(2)}M`;
-    if (abs >= 1000) return `${sign}${sym}${(abs / 1000).toFixed(1)}K`;
-    return `${sign}${sym}${abs.toFixed(2)}`;
+  const f2 = (n: number) => Math.floor(n * 100) / 100;
+  if (cur !== "INR") {
+    if (abs >= 1_000_000_000) return `${sign}${sym}${f2(abs / 1_000_000_000).toFixed(2)}B`;
+    if (abs >= 1_000_000) return `${sign}${sym}${f2(abs / 1_000_000).toFixed(2)}M`;
+    if (abs >= 1_000) return `${sign}${sym}${f2(abs / 1_000).toFixed(1)}K`;
+    return `${sign}${sym}${f2(abs).toFixed(2)}`;
   }
-  if (abs >= 10000000) return `${sign}${sym}${(abs / 10000000).toFixed(2)}Cr`;
-  if (abs >= 100000) return `${sign}${sym}${(abs / 100000).toFixed(1)}L`;
-  if (abs >= 1000) return `${sign}${sym}${(abs / 1000).toFixed(1)}K`;
-  return `${sign}${sym}${abs.toFixed(2)}`;
+  if (abs >= 10_000_000) return `${sign}${sym}${f2(abs / 10_000_000).toFixed(2)}Cr`;
+  if (abs >= 100_000) return `${sign}${sym}${f2(abs / 100_000).toFixed(1)}L`;
+  if (abs >= 1_000) return `${sign}${sym}${f2(abs / 1_000).toFixed(1)}K`;
+  return `${sign}${sym}${f2(abs).toFixed(2)}`;
 }
 
 function formatNumber(value: number) {
@@ -62,7 +66,7 @@ function formatNumber(value: number) {
   });
 }
 
-export default function HoldingsTable({ positions, loading }: Props) {
+export default function HoldingsTable({ positions, loading, apiCurrencies = [] }: Props) {
   const { trackClick } = useAnalytics();
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -112,7 +116,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
         cell: (info) => {
           const row = info.row.original;
           const price = row.quantity > 0 ? row.market_value / row.quantity : 0;
-          return price > 0 ? formatCurrencyAmount(price, row.currency) : "—";
+          return price > 0 ? formatCurrencyAmount(price, row.currency, apiCurrencies) : "—";
         },
       }),
       columnHelper.accessor("market_value", {
@@ -121,7 +125,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
         minSize: 135,
         size: 160,
         cell: (info) => {
-          return formatCurrencyAmount(info.getValue(), info.row.original.currency);
+          return formatCurrencyAmount(info.getValue(), info.row.original.currency, apiCurrencies);
         },
       }),
       columnHelper.accessor("cost_basis", {
@@ -131,7 +135,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
         size: 160,
         cell: (info) => {
           const val = info.getValue();
-          return val === null || val === 0 ? "N/A" : formatCurrencyAmount(val, info.row.original.currency);
+          return val === null || val === 0 ? "N/A" : formatCurrencyAmount(val, info.row.original.currency, apiCurrencies);
         },
       }),
       columnHelper.accessor("gain_amount", {
@@ -149,7 +153,7 @@ export default function HoldingsTable({ positions, loading }: Props) {
 
           return (
             <span className={`text-right font-medium ${isPositive ? "text-green-600" : "text-red-600"}`}>
-              {isPositive ? "+" : "-"}{formatCurrencyAmount(Math.abs(gainAmount), row.currency)} ({isPositive ? "+" : ""}{gainPct.toFixed(2)}%)
+              {isPositive ? "+" : "-"}{formatCurrencyAmount(Math.abs(gainAmount), row.currency, apiCurrencies)} ({isPositive ? "+" : ""}{gainPct.toFixed(2)}%)
             </span>
           );
         },

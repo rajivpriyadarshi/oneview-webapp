@@ -797,18 +797,32 @@ svg.docs-dropzone-border {
 /* Responsive */
 @media (max-width: 768px) {
   .docs-vault-header {
-    left: 0;
-    padding: 16px 24px;
+    position: static;
+    left: auto;
+    right: auto;
+    top: auto;
+    backdrop-filter: none;
+    background: transparent;
+    border-bottom: none;
+    padding: 24px 16px 8px;
     flex-direction: column;
-    gap: 16px;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .docs-vault-header-left {
+    align-items: center;
   }
 
   .docs-vault-header-right {
     width: 100%;
+    justify-content: center;
   }
 
   .docs-vault-brokers {
     flex-wrap: wrap;
+    justify-content: center;
     gap: 8px;
   }
 
@@ -826,6 +840,11 @@ svg.docs-dropzone-border {
   .docs-dropzone {
     min-height: 140px;
     padding: 28px 16px;
+    margin: 20px 16px 0;
+  }
+
+  .docs-vault-content {
+    padding: 0 16px;
   }
 
   .docs-upload-panel {

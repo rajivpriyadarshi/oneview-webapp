@@ -88,14 +88,16 @@ export default function PortfolioChart({ series, currency, currencySymbol, loadi
     const num = typeof value === "string" ? parseFloat(value) : value;
     const abs = Math.abs(num);
     const sign = num < 0 ? "-" : "";
-    if (currency === "USD") {
-      if (abs >= 1000000) return `${sign}${currSymbol}${(abs / 1000000).toFixed(2)}M`;
-      if (abs >= 1000) return `${sign}${currSymbol}${(abs / 1000).toFixed(1)}K`;
+    const f2 = (n: number) => Math.floor(n * 100) / 100;
+    if (currency.toUpperCase() !== "INR") {
+      if (abs >= 1_000_000_000) return `${sign}${currSymbol}${f2(abs / 1_000_000_000).toFixed(2)}B`;
+      if (abs >= 1_000_000) return `${sign}${currSymbol}${f2(abs / 1_000_000).toFixed(2)}M`;
+      if (abs >= 1_000) return `${sign}${currSymbol}${f2(abs / 1_000).toFixed(1)}K`;
       return `${sign}${currSymbol}${abs.toFixed(0)}`;
     }
-    if (abs >= 10000000) return `${sign}${currSymbol}${(abs / 10000000).toFixed(2)}Cr`;
-    if (abs >= 100000) return `${sign}${currSymbol}${(abs / 100000).toFixed(1)}L`;
-    if (abs >= 1000) return `${sign}${currSymbol}${(abs / 1000).toFixed(1)}K`;
+    if (abs >= 10_000_000) return `${sign}${currSymbol}${f2(abs / 10_000_000).toFixed(2)}Cr`;
+    if (abs >= 100_000) return `${sign}${currSymbol}${f2(abs / 100_000).toFixed(1)}L`;
+    if (abs >= 1_000) return `${sign}${currSymbol}${f2(abs / 1_000).toFixed(1)}K`;
     return `${sign}${currSymbol}${abs.toFixed(0)}`;
   };
 
