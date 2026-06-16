@@ -13,11 +13,21 @@ const CHART_COLORS = [
   "#A3A1FB", "#7A2783", "#F46396"
 ];
 
-export default function Sidebar() {
+type SidebarProps = { open?: boolean; onOpenChange?: (open: boolean) => void };
+
+export default function Sidebar({ open, onOpenChange }: SidebarProps = {}) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const closeSidebar = () => setIsOpen(false);
+
+  useEffect(() => {
+    if (typeof open === "boolean") setIsOpen(open);
+  }, [open]);
+
+  const closeSidebar = () => {
+    setIsOpen(false);
+    onOpenChange?.(false);
+  };
 
   useEffect(() => {
     // Load cached profile from localStorage
@@ -70,18 +80,6 @@ export default function Sidebar() {
 
   return (
     <>
-      <button
-        className="sidebar-toggle"
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        aria-label={isOpen ? "Close navigation" : "Open navigation"}
-        aria-expanded={isOpen}
-      >
-        <span />
-        <span />
-        <span />
-      </button>
-
       {isOpen ? (
         <button
           className="sidebar-backdrop"

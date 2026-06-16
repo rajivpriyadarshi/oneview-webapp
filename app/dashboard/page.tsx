@@ -22,6 +22,7 @@ import {
   useGetValuationsViewQuery,
   useListBrokerStatementJobsQuery,
   useListCurrenciesQuery,
+  api,
 } from "../store/api";
 import { useAppDispatch } from "../store/hooks";
 import { dismissTray } from "../store/uploadTraySlice";
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   console.log("[Dashboard] Component mounting");
   const dispatch = useAppDispatch();
   const { trackPage, trackClick, trackSectionScroll } = useAnalytics();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<number | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | "all">("all");
   const [currency, setCurrency] = useState("USD");
@@ -152,6 +154,17 @@ export default function DashboardPage() {
     [selectedAccountId],
   );
 
+  useEffect(() => {
+    if (!activePortfolioId || apiCurrencies.length === 0) return;
+    const otherCurrencies = ["USD", ...apiCurrencies.map((c) => c.currency_code)].filter(
+      (c, i, arr) => arr.indexOf(c) === i && c !== currency,
+    );
+    for (const curr of otherCurrencies) {
+      dispatch(api.util.prefetch("getPortfolioView", { accountIds, currency: curr }, { force: false }));
+      dispatch(api.util.prefetch("getValuationsView", { accountIds, currency: curr }, { force: false }));
+    }
+  }, [activePortfolioId, apiCurrencies, accountIds]);
+
   const { data: portfolioView, isLoading: viewLoading, isFetching: viewFetching } = useGetPortfolioViewQuery(
     { accountIds, currency },
     { skip: !activePortfolioId },
@@ -222,8 +235,8 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <div className="flex min-h-screen overflow-x-hidden bg-transparent">
-        <Sidebar />
-        <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[120px] md:ml-16 px-6 sm:px-[60px]">
+        <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
+        <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[120px] pb-[80px] md:pb-0 md:ml-16 px-6 sm:px-[60px]">
           {viewLoading && !portfolioView ? (
             <div className="flex h-[calc(100vh-160px)] flex-col items-center justify-center gap-4">
               <div className="relative mb-8 inline-flex items-center justify-center">
@@ -265,6 +278,7 @@ export default function DashboardPage() {
                 currency={currency}
                 apiCurrencies={apiCurrencies}
                 onCurrencyChange={handleCurrencyChange}
+                onMenuOpen={() => setSidebarOpen(true)}
               />
               {brokerJobs?.some(j => j.status === "needs_review") && (() => {
                 const pendingCount = brokerJobs.filter(j => j.status === "needs_review").length;

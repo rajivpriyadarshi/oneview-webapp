@@ -65,7 +65,7 @@ export default function PortfolioSummary({
       data-analytics-section="portfolio_summary"
       className="relative mb-[16px] py-[32px]"
     >
-      <div className="mb-[-10px]">
+      <div className="mb-[-10px] hidden md:block">
         <div className="group relative inline-flex items-center">
           <span
             className="pointer-events-none invisible absolute whitespace-nowrap pl-5 pr-10 font-satoshi text-[16px] font-bold leading-6 tracking-[-0.02em]"
@@ -101,7 +101,7 @@ export default function PortfolioSummary({
       </div>
 
       <div className="flex items-stretch justify-between gap-8 max-[900px]:flex-col max-[900px]:gap-6">
-        <div className="flex flex-col justify-center gap-0">
+        <div className="flex flex-col justify-center gap-0 max-[900px]:items-center max-[900px]:text-center">
           <p className="m-0 mb-[12px] font-satoshi text-[16px] font-normal leading-[21px] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
             Total assets
           </p>
@@ -120,6 +120,30 @@ export default function PortfolioSummary({
 
         <div className="flex-1 min-w-0 max-w-[55%] max-[900px]:max-w-full">
           <PortfolioChart series={valuationSeries} currency={currency} currencySymbol={currSymbol} loading={chartLoading} />
+        </div>
+      </div>
+      {/* Mobile fixed bottom accounts bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[100] px-4 pb-4 pt-2">
+        <div className="relative w-full rounded-2xl border border-black/10 bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+          <select
+            className="w-full appearance-none rounded-2xl bg-transparent pl-5 pr-12 py-4 font-satoshi text-[16px] font-semibold leading-6 tracking-[-0.02em] text-black outline-none cursor-pointer"
+            style={{ fontFeatureSettings: "'ss03' on" }}
+            value={selectedAccountId}
+            onChange={(e) => {
+              const val = e.target.value;
+              onAccountChange(val === "all" ? "all" : Number(val));
+            }}
+          >
+            <option value="all">All accounts</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </select>
+          <span className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2">
+            <svg width="14" height="9" viewBox="0 0 14 9" fill="none">
+              <path d="M1 1L7 7L13 1" stroke="#2f2b2c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </span>
         </div>
       </div>
     </section>
@@ -263,7 +287,7 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
               </span>
             );
           }
-          return <span key={i} style={{ marginRight: "-0.03em" }}>{char}</span>;
+          return <span key={i} style={{ marginRight: PUNCT.has(char) ? "0" : "-0.03em" }}>{char}</span>;
         })}
       </h2>
     );
@@ -289,9 +313,11 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
   );
 }
 
+const PUNCT = new Set([".", ",", " "]);
+
 function SlotChar({ char }: { char: string }) {
   return (
-    <span className="inline-block" style={{ marginRight: "-0.03em" }}>
+    <span className="inline-block" style={{ marginRight: PUNCT.has(char) ? "0" : "-0.03em" }}>
       {char === " " ? " " : char}
     </span>
   );

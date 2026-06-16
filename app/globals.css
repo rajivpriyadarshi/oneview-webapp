@@ -1975,22 +1975,7 @@ button:disabled {
   }
 
   .sidebar-toggle {
-    width: 44px;
-    height: 44px;
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    position: fixed;
-    top: 14px;
-    left: 14px;
-    z-index: 35;
-    border: 0;
-    border-radius: 12px;
-    background: #fff;
-    color: #050505;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    display: none;
   }
 
   .sidebar-toggle span {
@@ -2001,12 +1986,7 @@ button:disabled {
   }
 
   .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 25;
-    border: 0;
-    background: rgba(0, 0, 0, 0.28);
+    display: none;
   }
 
   .sidebar {
