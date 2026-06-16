@@ -43,21 +43,42 @@ useEffect(() => {
   }, []);
 
   const currencySelect = onCurrencyChange && currencyList.length > 1 && (
-    <select
-      value={currency}
-      onChange={(e) => onCurrencyChange(e.target.value)}
-      className="h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-4 pr-9 font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer transition hover:bg-black/[0.02]"
-      style={{
-        fontFeatureSettings: "'ss03' on",
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%232f2b2c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "right 12px center",
-      }}
-    >
-      {currencyList.map((code) => (
-        <option key={code} value={code}>{code}</option>
-      ))}
-    </select>
+    currencyList.length > 4 ? (
+      <select
+        value={currency}
+        onChange={(e) => onCurrencyChange(e.target.value)}
+        className="h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-4 pr-9 font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer transition hover:bg-black/[0.02]"
+        style={{
+          fontFeatureSettings: "'ss03' on",
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%232f2b2c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "right 12px center",
+        }}
+      >
+        {currencyList.map((code) => (
+          <option key={code} value={code}>{code}</option>
+        ))}
+      </select>
+    ) : (
+      <div style={{ display: "inline-flex", alignItems: "center", borderRadius: "38px", background: "linear-gradient(90deg, #2F1E07 0%, #58442A 100%)", padding: "2px" }}>
+        {currencyList.map((code) => (
+          <button
+            key={code}
+            onClick={() => onCurrencyChange(code)}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              borderRadius: "20px", padding: "8px 16px", fontSize: "16px", fontWeight: 400,
+              fontFamily: "var(--font-satoshi), sans-serif", lineHeight: 1.3, letterSpacing: "-0.56px",
+              whiteSpace: "nowrap", border: "none", cursor: "pointer", transition: "all 0.3s",
+              background: currency === code ? "#fff" : "transparent",
+              color: currency === code ? "#2f2b2c" : "rgba(255,255,255,0.6)",
+            }}
+          >
+            {code}
+          </button>
+        ))}
+      </div>
+    )
   );
 
   return (
