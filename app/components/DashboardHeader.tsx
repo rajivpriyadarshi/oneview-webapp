@@ -55,7 +55,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
       autoTimer.current = setTimeout(() => {
         setShowTooltip(false);
         localStorage.setItem(TOOLTIP_SEEN_KEY, "1");
-      }, 3500);
+      }, 2500);
     }
     return () => { if (autoTimer.current) clearTimeout(autoTimer.current); };
   }, [onCurrencyChange]);
