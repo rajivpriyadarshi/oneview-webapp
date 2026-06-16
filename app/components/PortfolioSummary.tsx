@@ -102,16 +102,16 @@ export default function PortfolioSummary({
 
       <div className="flex items-stretch justify-between gap-8 max-[900px]:flex-col max-[900px]:gap-6">
         <div className="flex flex-col justify-center gap-0 max-[900px]:items-center max-[900px]:text-center">
-          <p className="m-0 mb-[12px] font-satoshi text-[16px] font-normal leading-[21px] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
+          <p className="m-0 mb-[12px] font-satoshi text-[16px] max-[720px]:text-[15px] font-normal leading-[21px] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
             Total assets
           </p>
           <RollingText
             text={loading ? "..." : `${currSymbol}${marketValue}`}
             isLoading={currencyChanging || !!valuesRefetching}
-            className="m-0 font-['ButlerPro'] text-[140px] font-normal leading-[100%] tracking-[-0.04em] text-[#2F1E07] max-[720px]:text-[64px]"
+            className="m-0 font-['ButlerPro'] text-[140px] font-normal leading-[100%] tracking-[-0.04em] text-[#2F1E07] max-[720px]:text-[110px]"
           />
           <p
-            className={`m-0 mt-[-16px] font-satoshi text-[16px] font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#128044]" : "text-red-600"}`}
+            className={`m-0 mt-[-16px] max-[720px]:mt-[4px] font-satoshi text-[16px] max-[720px]:text-[14px] font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#128044]" : "text-red-600"}`}
             style={{ fontFeatureSettings: "'ss03' on" }}
           >
             {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${gainAmount} (${gainPct})`}

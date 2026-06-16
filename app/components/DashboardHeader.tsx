@@ -94,7 +94,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
               onClick={() => onCurrencyChange(code)}
               style={{
                 display: "inline-flex", alignItems: "center", justifyContent: "center",
-                borderRadius: "20px", padding: "8px 16px", fontSize: "16px", fontWeight: 400,
+                borderRadius: "20px", padding: "8px 16px", fontSize: "14px", fontWeight: 400,
                 fontFamily: "var(--font-satoshi), sans-serif", lineHeight: 1.3, letterSpacing: "-0.56px",
                 whiteSpace: "nowrap", border: "none", cursor: "pointer", transition: "all 0.3s",
                 background: currency === code ? "#fff" : "transparent",
@@ -148,9 +148,22 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
     <header className="fixed top-0 left-0 right-0 z-[200] border-b border-black/10 bg-[#ffffff26] backdrop-blur-[30px] md:left-16">
       {/* Mobile navbar */}
       <div className="flex items-center justify-between px-4 py-3 md:hidden">
-        <Link href="/dashboard" aria-label="Go to Dashboard">
-          <MeridianLogo width={44} height={44} />
-        </Link>
+        {/* Left: hamburger + logo */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex h-[42px] w-[42px] cursor-pointer items-center justify-center transition"
+            aria-label="Open menu"
+            onClick={onMenuOpen}
+          >
+            <HamburgerIcon color="#7F4E0B" />
+          </button>
+          <Link href="/dashboard" aria-label="Go to Dashboard">
+            <MeridianLogo width={44} height={44} />
+          </Link>
+        </div>
+
+        {/* Right: controls */}
         <div className="flex items-center gap-2">
           {onCurrencyChange && (
             <select
@@ -171,14 +184,6 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
           >
             <PlusIcon />
           </Link>
-          <button
-            type="button"
-            className="inline-flex h-[42px] w-[42px] cursor-pointer items-center justify-center transition"
-            aria-label="Open menu"
-            onClick={onMenuOpen}
-          >
-            <HamburgerIcon color="#7F4E0B" />
-          </button>
         </div>
       </div>
 

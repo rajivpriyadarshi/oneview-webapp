@@ -291,31 +291,28 @@ export default function DashboardPage() {
               {brokerJobs?.some(j => j.status === "needs_review") && (() => {
                 const pendingCount = brokerJobs.filter(j => j.status === "needs_review").length;
                 return (
-                <div className="mb-4 w-full flex items-center justify-between gap-4 px-5 py-4 rounded-2xl" style={{ background: "#DED7D1" }}>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#35230C" }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="font-satoshi text-[16px] font-medium leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
-                        We couldn&apos;t process {pendingCount} of your statement{pendingCount !== 1 ? "s" : ""} with full accuracy. Our team is reviewing them.
-                      </span>
-                      <span className="font-satoshi text-[12px] font-normal leading-[130%] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
-                        This may take 3-4 hours. We&apos;ll notify you as soon as this is resolved.
-                      </span>
-                    </div>
+                <button
+                  type="button"
+                  className="mb-4 w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-left cursor-pointer border-0 hover:brightness-95 transition-all"
+                  style={{ background: "#DED7D1" }}
+                  onClick={() => setIsPendingDocsModalOpen(true)}
+                >
+                  <div className="flex-shrink-0 w-11 h-11 rounded-full" style={{ background: "#35230C" }} />
+                  <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+                    <span className="font-satoshi text-[16px] max-[768px]:text-[14px] font-semibold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
+                      We couldn&apos;t process {pendingCount} of your statement{pendingCount !== 1 ? "s" : ""} with full accuracy. Our team is reviewing them.
+                    </span>
+                    <span className="font-satoshi text-[14px] max-[768px]:text-[12px] font-normal leading-[140%] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>
+                      This may take 3-4 hours. We&apos;ll notify you as soon as this is resolved.
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    className="flex-shrink-0 font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.28px] text-black border border-black/15 rounded-full px-5 py-2.5 bg-white hover:bg-black/[0.04] transition-colors cursor-pointer whitespace-nowrap"
-                    style={{ fontFeatureSettings: "'ss03' on" }}
-                    onClick={() => setIsPendingDocsModalOpen(true)}
-                  >
+                  <svg className="md:hidden flex-shrink-0" width="8" height="14" viewBox="0 0 8 14" fill="none">
+                    <path d="M1 1L7 7L1 13" stroke="#2f2b2c" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="hidden md:inline-flex flex-shrink-0 font-satoshi text-[14px] font-medium leading-[150%] tracking-[-0.28px] text-black border border-black/15 rounded-full px-[22px] py-[12px] bg-white hover:bg-black/[0.04] transition-colors whitespace-nowrap" style={{ fontFeatureSettings: "'ss03' on" }}>
                     See details
-                  </button>
-                </div>
+                  </span>
+                </button>
                 );
               })()}
               <PortfolioSummary
