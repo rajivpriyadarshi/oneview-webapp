@@ -816,7 +816,7 @@ export function StatementUpload() {
           </div>
 
           {/* Right Column */}
-          <div className="flex flex-col gap-4 w-full lg:pt-[80px] lg:pb-[80px]">
+          <div className="flex flex-col gap-4 w-full lg:min-h-[calc(100vh-80px)] lg:justify-center lg:py-[80px]">
 
             {/* Security badge */}
             <p
