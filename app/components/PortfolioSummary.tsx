@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import PortfolioChart from "./PortfolioChart";
-import { type PortfolioViewResponse, type Account, type ValuationSeriesPoint } from "../lib/portfolioDataApi";
+import { type PortfolioViewResponse, type Account, type ValuationSeriesPoint, type PortfolioViewPosition } from "../lib/portfolioDataApi";
 import { type Portfolio } from "../lib/portfoliosApi";
 
 type Props = {
@@ -20,6 +20,7 @@ type Props = {
   currencySymbol?: string;
   onCurrencyChange: (currency: string) => void;
   valuationSeries: ValuationSeriesPoint[];
+  onExcludedHoldingsClick?: (positions: PortfolioViewPosition[]) => void;
 };
 
 export default function PortfolioSummary({
@@ -34,9 +35,16 @@ export default function PortfolioSummary({
   currencySymbol,
   onCurrencyChange,
   valuationSeries,
+  onExcludedHoldingsClick,
 }: Props) {
   const [prevCurrency, setPrevCurrency] = useState(currency);
   const [currencyChanging, setCurrencyChanging] = useState(false);
+
+  const zeroCostPositions: PortfolioViewPosition[] = (portfolioView?.positions ?? []).filter(
+    (p) => p.cost_basis === 0 || p.cost_basis === null,
+  );
+  const excludedCount = zeroCostPositions.length;
+  const CUTOFF = 10;
 
   useEffect(() => {
     if (currency !== prevCurrency) {
@@ -111,10 +119,40 @@ export default function PortfolioSummary({
             className="m-0 font-['ButlerPro'] text-[140px] font-normal leading-[100%] tracking-[-0.04em] text-[#2F1E07] max-[720px]:text-[110px]"
           />
           <p
-            className={`m-0 mt-[-16px] max-[720px]:mt-[4px] font-satoshi text-[16px] max-[720px]:text-[14px] font-normal leading-[150%] tracking-[-0.02em] ${isPositive ? "text-[#128044]" : "text-red-600"}`}
+            className={`m-0 mt-[-16px] max-[720px]:mt-[4px] flex flex-wrap items-center gap-x-2 gap-y-0 font-satoshi text-[16px] max-[720px]:text-[14px] font-normal leading-[150%] tracking-[-0.02em]`}
             style={{ fontFeatureSettings: "'ss03' on" }}
           >
-            {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${gainAmount} (${gainPct})`}
+            <span className={isPositive ? "text-[#128044]" : "text-red-600"}>
+              {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${gainAmount} (${gainPct})`}
+            </span>
+            {!loading && excludedCount > 0 && summary && (
+              <>
+                <span className="text-black/20">•</span>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="flex-shrink-0" style={{ color: "#B91C1C" }}>
+                  <path d="M8 6V8.66667M8 11.3333H8.00667M6.86 2.57333L1.21333 12C1.09693 12.2018 1.03533 12.4303 1.03467 12.663C1.034 12.8957 1.09429 13.1246 1.20955 13.327C1.32482 13.5295 1.49095 13.6984 1.69133 13.8167C1.89171 13.9351 2.11939 13.998 2.35133 14H13.6487C13.8806 13.998 14.1083 13.9351 14.3087 13.8167C14.509 13.6984 14.6752 13.5295 14.7904 13.327C14.9057 13.1246 14.966 12.8957 14.9653 12.663C14.9647 12.4303 14.9031 12.2018 14.7867 12L9.14 2.57333C9.02117 2.37742 8.85383 2.21543 8.65402 2.10313C8.4542 1.99083 8.22888 1.93198 8 1.93198C7.77112 1.93198 7.5458 1.99083 7.34598 2.10313C7.14617 2.21543 6.97883 2.37742 6.86 2.57333Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <button
+                  type="button"
+                  onClick={() => onExcludedHoldingsClick?.(zeroCostPositions)}
+                  className="cursor-pointer bg-transparent border-0 p-0 font-satoshi text-[16px] max-[720px]:text-[14px] font-normal text-black/50 hover:text-black/80 transition-colors"
+                  style={{ fontFeatureSettings: "'ss03' on" }}
+                >
+                  {excludedCount > CUTOFF ? (
+                    <>
+                      <span className="underline underline-offset-2">Several holdings</span>
+                      {" were excluded from this analysis"}
+                    </>
+                  ) : (
+                    <>
+                      <span className="underline underline-offset-2">
+                        {excludedCount} of your holding{excludedCount !== 1 ? "s" : ""}
+                      </span>
+                      {excludedCount !== 1 ? " were" : " was"} excluded from this analysis
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </p>
         </div>
 

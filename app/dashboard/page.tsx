@@ -42,6 +42,7 @@ export default function DashboardPage() {
     return match?.symbol ?? CURRENCY_SYMBOL_FALLBACKS[currency] ?? currency;
   }, [apiCurrencies, currency]);
   const [isPendingDocsModalOpen, setIsPendingDocsModalOpen] = useState(false);
+  const [excludedHoldings, setExcludedHoldings] = useState<import("../lib/portfolioDataApi").PortfolioViewPosition[]>([]);
   const sectionInViewRef = useRef<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -330,6 +331,7 @@ export default function DashboardPage() {
                 currencySymbol={currencySymbol}
                 onCurrencyChange={handleCurrencyChange}
                 valuationSeries={valuationSeries}
+                onExcludedHoldingsClick={setExcludedHoldings}
               />
               {isPortfolioEmpty ? (
                 <section className="flex min-h-[calc(100vh-220px)] w-full items-center justify-center text-center">
@@ -366,6 +368,12 @@ export default function DashboardPage() {
         <PendingDocumentsModal
           jobs={(brokerJobs ?? []).filter((j) => j.status === "needs_review")}
           onClose={() => setIsPendingDocsModalOpen(false)}
+        />
+      )}
+      {excludedHoldings.length > 0 && (
+        <ExcludedHoldingsModal
+          positions={excludedHoldings}
+          onClose={() => setExcludedHoldings([])}
         />
       )}
     </ProtectedRoute>
@@ -493,6 +501,88 @@ function PendingDocumentsModal({ jobs, onClose }: { jobs: BrokerStatementJob[]; 
               </div>
             ))
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ExcludedHoldingsModal({
+  positions,
+  onClose,
+}: {
+  positions: import("../lib/portfolioDataApi").PortfolioViewPosition[];
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      role="presentation"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="relative w-full max-w-[560px] mx-4 rounded-[32px] bg-white shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="excluded-holdings-title"
+      >
+        <div className="flex items-center justify-between px-8 pt-8 pb-6 border-b border-black/10">
+          <div>
+            <h2
+              id="excluded-holdings-title"
+              className="m-0 font-satoshi text-[18px] font-bold leading-[130%] tracking-[-0.02em] text-black"
+              style={{ fontFeatureSettings: "'ss03' on" }}
+            >
+              Holdings excluded from analysis
+            </h2>
+            <p
+              className="m-0 mt-1 font-satoshi text-[13px] font-normal leading-[150%] tracking-[-0.02em] text-black/50"
+              style={{ fontFeatureSettings: "'ss03' on" }}
+            >
+              These holdings have no cost basis and are excluded from gain/loss calculations
+            </p>
+          </div>
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-black/[0.05] text-black/50 transition hover:bg-black/10"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="max-h-[400px] overflow-y-auto px-8 py-6 space-y-2">
+          {positions.map((p) => (
+            <div key={p.ticker || p.isin || p.name} className="flex items-center gap-4 rounded-[16px] bg-[#f6f6f6] px-4 py-3">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-black/[0.06]">
+                <span className="font-satoshi text-[11px] font-bold text-black/50">
+                  {(p.ticker || p.name || "?").slice(0, 2).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className="m-0 font-satoshi text-[14px] font-medium leading-[130%] tracking-[-0.02em] text-black truncate"
+                  style={{ fontFeatureSettings: "'ss03' on" }}
+                >
+                  {p.name || p.ticker || p.isin}
+                </p>
+                {p.ticker && p.ticker !== p.name && (
+                  <p className="m-0 mt-0.5 font-satoshi text-[12px] text-black/40" style={{ fontFeatureSettings: "'ss03' on" }}>
+                    {p.ticker} · {p.currency}
+                  </p>
+                )}
+              </div>
+              <span
+                className="flex-shrink-0 rounded-full px-3 py-1 font-satoshi text-[12px] font-semibold"
+                style={{ background: "#FEF3C7", color: "#92400E", fontFeatureSettings: "'ss03' on" }}
+              >
+                No cost basis
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
