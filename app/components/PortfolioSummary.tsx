@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import PortfolioChart from "./PortfolioChart";
 import { type PortfolioViewResponse, type Account, type ValuationSeriesPoint, type PortfolioViewPosition } from "../lib/portfolioDataApi";
 import { type Portfolio } from "../lib/portfoliosApi";
@@ -122,9 +122,11 @@ export default function PortfolioSummary({
             className={`m-0 mt-[-16px] max-[720px]:mt-[4px] flex flex-wrap items-center gap-x-2 gap-y-0 font-satoshi text-[16px] max-[720px]:text-[14px] font-normal leading-[150%] tracking-[-0.02em]`}
             style={{ fontFeatureSettings: "'ss03' on" }}
           >
-            <span className={isPositive ? "text-[#128044]" : "text-red-600"}>
-              {loading || !summary ? "" : `${isPositive ? "+" : "-"}${currSymbol}${gainAmount} (${gainPct})`}
-            </span>
+            {!loading && summary && !currencyChanging && !valuesRefetching && (
+              <span className={isPositive ? "text-[#128044]" : "text-red-600"}>
+                {`${isPositive ? "+" : "-"}${currSymbol}${gainAmount} (${gainPct})`}
+              </span>
+            )}
             {!loading && excludedCount > 0 && summary && (
               <>
                 <span className="text-black/20">•</span>
@@ -229,17 +231,8 @@ function ChevronDown({ className = "" }: { className?: string }) {
   );
 }
 
-const DIGITS = "0123456789";
-const CHARS = "₹$0123456789.LKM";
-
 function RollingText({ text, isLoading, className }: { text: string; isLoading: boolean; className: string }) {
-  const [prevText, setPrevText] = useState(text);
-  const [currentText, setCurrentText] = useState(text);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const isFirstRender = useRef(true);
   const lastStableText = useRef(text === "..." ? "" : text);
-  const containerRef = useRef<HTMLHeadingElement>(null);
-  const [lockedWidth, setLockedWidth] = useState<number | null>(null);
 
   useEffect(() => {
     if (text !== "...") {
@@ -247,164 +240,14 @@ function RollingText({ text, isLoading, className }: { text: string; isLoading: 
     }
   }, [text]);
 
-  // Before the text actually changes in DOM, snapshot the current rendered width
-  useLayoutEffect(() => {
-    if (isFirstRender.current) return;
-    if (text !== currentText && text !== "...") {
-      if (containerRef.current) {
-        setLockedWidth(containerRef.current.offsetWidth);
-      }
-    }
-  }, [text]);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      setCurrentText(text);
-      setPrevText(text);
-      return;
-    }
-    if (text !== currentText && text !== "...") {
-      setPrevText(currentText);
-      setCurrentText(text);
-      setIsAnimating(true);
-      // Release locked width after a frame so the transition runs from old → new
-      requestAnimationFrame(() => setLockedWidth(null));
-      const timeout = setTimeout(() => setIsAnimating(false), 600);
-      return () => clearTimeout(timeout);
-    }
-    if (text === "...") {
-      setCurrentText(text);
-    }
-  }, [text]);
-
-  const widthStyle = lockedWidth != null
-    ? { width: lockedWidth, transition: "width 0.5s cubic-bezier(0.23, 1, 0.32, 1)" }
-    : { transition: "width 0.5s cubic-bezier(0.23, 1, 0.32, 1)" };
-
   if (text === "..." || isLoading) {
-    const placeholder = lastStableText.current || "₹00.0L";
+    const placeholder = lastStableText.current || "€28.36M";
     return (
-      <h2 ref={containerRef} className={className} style={{ display: "flex", alignItems: "baseline", overflow: "hidden", ...widthStyle }}>
-        {placeholder.split("").map((char, i) => {
-          if (DIGITS.includes(char)) {
-            return (
-              <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    animation: `slot-spin-infinite 0.8s infinite linear`,
-                    animationDelay: `${i * 0.1}s`,
-                  }}
-                >
-                  <span style={{ height: "1em", lineHeight: 1 }}>0</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>1</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>2</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>3</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>4</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>5</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>6</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>7</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>8</span>
-                  <span style={{ height: "1em", lineHeight: 1 }}>9</span>
-                </span>
-              </span>
-            );
-          }
-          if (char === "L" || char === "K" || char === "M" || char === "B" || char === "C" || char === "r") {
-            return (
-              <span key={i} style={{ display: "inline-block", overflow: "hidden", height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
-                <span
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    animation: `slot-spin-suffix 1s infinite linear`,
-                    animationDelay: `${i * 0.1}s`,
-                  }}
-                >
-                  <span style={{ height: "1em", lineHeight: 1 }}>{char}</span>
-                </span>
-              </span>
-            );
-          }
-          return <span key={i} style={{ marginRight: PUNCT.has(char) ? "0" : "-0.03em" }}>{char}</span>;
-        })}
+      <h2 className={`shimmer-overlay ${className}`} style={{ display: "inline-block", color: "transparent", padding: "0.08em 0.05em" }}>
+        {placeholder}
       </h2>
     );
   }
 
-  return (
-    <h2 ref={containerRef} className={className} style={{ display: "flex", alignItems: "baseline", overflow: "hidden", ...widthStyle }}>
-      {currentText.split("").map((char, i) => {
-        const prevChar = prevText[i] || "";
-        const isDigit = DIGITS.includes(char) && DIGITS.includes(prevChar);
-
-        if (!isAnimating || char === prevChar) {
-          return <SlotChar key={i} char={char} />;
-        }
-
-        if (isDigit) {
-          return <RollingDigit key={i} from={prevChar} to={char} />;
-        }
-
-        return <FlipChar key={i} char={char} />;
-      })}
-    </h2>
-  );
-}
-
-const PUNCT = new Set([".", ",", " "]);
-
-function SlotChar({ char }: { char: string }) {
-  return (
-    <span className="inline-block" style={{ marginRight: PUNCT.has(char) ? "0" : "-0.03em" }}>
-      {char === " " ? " " : char}
-    </span>
-  );
-}
-
-function FlipChar({ char }: { char: string }) {
-  return (
-    <span className="inline-block overflow-hidden" style={{ height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
-      <span
-        style={{
-          display: "inline-block",
-          animation: "slot-flip 0.4s cubic-bezier(0.23, 1, 0.32, 1) forwards",
-        }}
-      >
-        {char}
-      </span>
-    </span>
-  );
-}
-
-function RollingDigit({ from, to }: { from: string; to: string }) {
-  const fromNum = parseInt(from);
-  const toNum = parseInt(to);
-  const diff = ((toNum - fromNum) + 10) % 10;
-  const steps: string[] = [];
-  for (let i = 0; i <= diff; i++) {
-    steps.push(String((fromNum + i) % 10));
-  }
-
-  const totalHeight = steps.length;
-
-  return (
-    <span className="inline-block overflow-hidden" style={{ height: "1em", lineHeight: 1, marginRight: "-0.03em" }}>
-      <span
-        style={{
-          display: "inline-flex",
-          flexDirection: "column",
-          animation: `slot-roll-${steps.length} 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards`,
-        }}
-      >
-        {steps.map((digit, i) => (
-          <span key={i} className="inline-block" style={{ height: "1em", lineHeight: 1 }}>
-            {digit}
-          </span>
-        ))}
-      </span>
-    </span>
-  );
+  return <h2 className={className}>{text}</h2>;
 }

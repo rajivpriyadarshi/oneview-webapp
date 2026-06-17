@@ -22,7 +22,11 @@ type Props = {
 };
 
 export default function PortfolioChart({ series, currency, currencySymbol, loading }: Props) {
-  void loading;
+  if (loading) {
+    return (
+      <div className="shimmer-overlay relative min-h-[240px] w-full min-w-0 max-[900px]:h-[160px] rounded-2xl" />
+    );
+  }
   const currSymbol = currencySymbol ?? (currency === "USD" ? "$" : "₹");
 
   const labels = series.map((p) => p.date);

@@ -22,7 +22,6 @@ import {
   useGetValuationsViewQuery,
   useListBrokerStatementJobsQuery,
   useListCurrenciesQuery,
-  api,
 } from "../store/api";
 import { useAppDispatch } from "../store/hooks";
 import { dismissTray } from "../store/uploadTraySlice";
@@ -155,24 +154,6 @@ export default function DashboardPage() {
     [selectedAccountId],
   );
 
-  useEffect(() => {
-    if (!activePortfolioId || apiCurrencies.length === 0) return;
-
-    const allCurrencies = ["USD", ...apiCurrencies.map((c) => c.currency_code)].filter(
-      (c, i, arr) => arr.indexOf(c) === i,
-    );
-
-    // All account combinations per currency
-    const accountCombinations: (number | "all")[] = ["all", ...accounts.map((a) => a.id)];
-
-    for (const curr of allCurrencies) {
-      for (const acc of accountCombinations) {
-        const ids = acc === "all" ? [] : [acc as number];
-        dispatch(api.util.prefetch("getPortfolioView", { accountIds: ids, currency: curr }, { force: false }));
-        dispatch(api.util.prefetch("getValuationsView", { accountIds: ids, currency: curr }, { force: false }));
-      }
-    }
-  }, [activePortfolioId, apiCurrencies, accounts]);
 
   const { data: portfolioView, isLoading: viewLoading, isFetching: viewFetching } = useGetPortfolioViewQuery(
     { accountIds, currency },

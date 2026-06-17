@@ -2652,62 +2652,22 @@ button:disabled {
   40% { transform: scale(1); opacity: 1; }
 }
 
-@keyframes slot-spin {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-10em); }
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
 }
 
-@keyframes slot-spin-infinite {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-10em); }
+.shimmer-overlay {
+  background: rgba(0, 0, 0, 0.07);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  animation: shimmer-pulse 1.6s ease-in-out infinite;
+  border-radius: 0.2em;
 }
 
-@keyframes slot-spin-suffix {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-3em); }
-}
-
-
-@keyframes slot-flip {
-  0% { transform: translateY(100%); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes slot-roll-2 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-1em); }
-}
-@keyframes slot-roll-3 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-2em); }
-}
-@keyframes slot-roll-4 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-3em); }
-}
-@keyframes slot-roll-5 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-4em); }
-}
-@keyframes slot-roll-6 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-5em); }
-}
-@keyframes slot-roll-7 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-6em); }
-}
-@keyframes slot-roll-8 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-7em); }
-}
-@keyframes slot-roll-9 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-8em); }
-}
-@keyframes slot-roll-10 {
-  0% { transform: translateY(0); }
-  100% { transform: translateY(-9em); }
+@keyframes shimmer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 @keyframes fadeInUp {
