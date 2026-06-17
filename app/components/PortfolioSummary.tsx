@@ -145,7 +145,7 @@ export default function PortfolioSummary({
                   ) : (
                     <>
                       <span className="underline underline-offset-2">
-                        {excludedCount} of your holding{excludedCount !== 1 ? "s" : ""}
+                        {excludedCount} of your holdings
                       </span>
                       {excludedCount !== 1 ? " were" : " was"} excluded from this analysis
                     </>

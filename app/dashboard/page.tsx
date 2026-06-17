@@ -430,7 +430,7 @@ function FileIcon({ type }: { type: string }) {
 function PendingDocumentsModal({ jobs, onClose }: { jobs: BrokerStatementJob[]; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm"
       role="presentation"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -516,7 +516,7 @@ function ExcludedHoldingsModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm"
       role="presentation"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
