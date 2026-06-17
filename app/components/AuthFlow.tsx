@@ -300,7 +300,13 @@ export function AuthFlow() {
     try {
       const profileResult = await store.dispatch(api.endpoints.getProfile.initiate(undefined, { forceRefetch: true }));
       if (profileResult.error || !profileResult.data) {
-        throw new Error("Failed to fetch profile");
+        const status = profileResult.error && "status" in profileResult.error ? profileResult.error.status : "unknown";
+        const data = profileResult.error && "data" in profileResult.error ? profileResult.error.data : null;
+        // If server returned HTML instead of JSON, it's a server-side error for this account
+        if (typeof data === "string" && data.trim().startsWith("<")) {
+          throw new Error("We're having trouble loading your account. Please try again or contact support if this persists.");
+        }
+        throw new Error(`Failed to load your profile (${status}). Please try again.`);
       }
       const profile = profileResult.data;
 
@@ -318,10 +324,11 @@ export function AuthFlow() {
       });
 
       router.replace(await getPostProfileRouteFromStore(profile));
-    } catch {
+    } catch (err) {
       clearAuthToken();
       store.dispatch(api.util.resetApiState());
-      router.replace("/");
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setIsSubmitting(false);
     }
   }
 
