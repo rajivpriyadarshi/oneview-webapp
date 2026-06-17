@@ -557,6 +557,7 @@ export function StatementUpload() {
       setShowPasswordPrompt(false);
       setPendingPasswordDocId(null);
       setPasswordError("");
+      setHasStartedUploadFlow(true);
       setMessage("File unlocked and processed successfully.");
       if (pendingPasswordItemId) {
         const posCount = "positions_count" in response ? response.positions_count : undefined;
@@ -606,6 +607,7 @@ export function StatementUpload() {
   }
 
   function handleRetryPassword(itemId: string, documentId: string) {
+    setHasStartedUploadFlow(true);
     setPendingPasswordDocId(documentId);
     setPendingPasswordItemId(itemId);
     setPasswordError("");
