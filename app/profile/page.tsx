@@ -6,6 +6,7 @@ import { clearAuthToken } from "../lib/session";
 import { getUserProfile, updateUserProfile, type UserProfile } from "../lib/profileApi";
 import { useAppDispatch } from "../store/hooks";
 import { dismissTray } from "../store/uploadTraySlice";
+import { useListCurrenciesQuery } from "../store/api";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import EditProfileModal from "../components/EditProfileModal";
@@ -28,6 +29,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<"email" | "currency" | null>(null);
+  const { data: apiCurrencies = [] } = useListCurrenciesQuery();
 
   useEffect(() => {
     getUserProfile()
@@ -218,7 +220,9 @@ export default function ProfilePage() {
     (reverseEmailFrequencyMap[profile.mailer_frequency] as "daily" | "weekly" | "monthly") ||
     "weekly";
 
-  const currencyOptions = ["USD", "INR"];
+  const currencyOptions = apiCurrencies.length > 0
+    ? apiCurrencies.map((c) => c.currency_code)
+    : ["USD", "INR"];
 
   return (
     <ProtectedRoute>

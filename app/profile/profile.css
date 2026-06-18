@@ -229,6 +229,13 @@
 
 .profile-select-menu-compact {
   width: 132px;
+  max-height: 208px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.profile-select-menu-compact::-webkit-scrollbar {
+  display: none;
 }
 
 .profile-select-option {
