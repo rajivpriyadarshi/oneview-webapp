@@ -8,7 +8,7 @@ export type UserProfile = {
   base_currency: string;
   timezone: string;
   is_active: boolean;
-  mailer_frequency: "DAILY" | "WEEKLY" | "MONTHLY";
+  mailer_frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "NEVER";
   created_at: string;
   updated_at: string;
 };
@@ -17,7 +17,7 @@ export type ProfileUpdateRequest = {
   display_name?: string;
   base_currency?: string;
   timezone?: string;
-  mailer_frequency?: "DAILY" | "WEEKLY" | "MONTHLY";
+  mailer_frequency?: "DAILY" | "WEEKLY" | "MONTHLY" | "NEVER";
 };
 
 export async function getUserProfile(): Promise<UserProfile> {

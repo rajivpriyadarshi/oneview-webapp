@@ -114,7 +114,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleEmailPreferenceChange = async (frequency: "DAILY" | "WEEKLY" | "MONTHLY") => {
+  const handleEmailPreferenceChange = async (frequency: "DAILY" | "WEEKLY" | "MONTHLY" | "NEVER") => {
     if (!profile) return;
 
     trackClick({
@@ -198,26 +198,29 @@ export default function ProfilePage() {
   const avatarColor = getColorFromName(profile.display_name);
 
   // Map mailer_frequency to dropdown values
-  const emailFrequencyMap: Record<string, "DAILY" | "WEEKLY" | "MONTHLY"> = {
+  const emailFrequencyMap: Record<string, "DAILY" | "WEEKLY" | "MONTHLY" | "NEVER"> = {
     daily: "DAILY",
     weekly: "WEEKLY",
     monthly: "MONTHLY",
+    never: "NEVER",
   };
 
   const reverseEmailFrequencyMap: Record<string, string> = {
     DAILY: "daily",
     WEEKLY: "weekly",
     MONTHLY: "monthly",
+    NEVER: "never",
   };
 
-  const emailFrequencyLabels: Record<"daily" | "weekly" | "monthly", string> = {
+  const emailFrequencyLabels: Record<"daily" | "weekly" | "monthly" | "never", string> = {
     daily: "Daily",
     weekly: "Weekly",
     monthly: "Monthly",
+    never: "Never",
   };
 
   const selectedEmailFrequency =
-    (reverseEmailFrequencyMap[profile.mailer_frequency] as "daily" | "weekly" | "monthly") ||
+    (reverseEmailFrequencyMap[profile.mailer_frequency] as "daily" | "weekly" | "monthly" | "never") ||
     "weekly";
 
   const currencyOptions = apiCurrencies.length > 0
@@ -299,7 +302,7 @@ export default function ProfilePage() {
                     </button>
                     {openDropdown === "email" && (
                       <div className="profile-select-menu" role="listbox">
-                        {(["daily", "weekly", "monthly"] as const).map((value) => (
+                        {(["daily", "weekly", "monthly", "never"] as const).map((value) => (
                           <button
                             key={value}
                             type="button"
