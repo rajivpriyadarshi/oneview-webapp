@@ -127,7 +127,7 @@ export default function PortfolioSummary({
                 {`${isPositive ? "+" : "-"}${currSymbol}${gainAmount} (${gainPct})`}
               </span>
             )}
-            {!loading && excludedCount > 0 && summary && (
+            {!loading && !currencyChanging && !valuesRefetching && excludedCount > 0 && summary && (
               <>
                 <span className="text-black/20">•</span>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="flex-shrink-0" style={{ color: "#B91C1C" }}>
