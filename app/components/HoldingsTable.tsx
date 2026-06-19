@@ -267,8 +267,8 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
                 placeholder="Search holdings…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-[240px] border-none bg-transparent text-[14px] font-normal text-black outline-none placeholder:text-black/35"
-                style={{ fontFeatureSettings: "'ss03' on" }}
+                className="w-[240px] border-none bg-transparent font-normal text-black outline-none placeholder:text-black/35"
+                style={{ fontFeatureSettings: "'ss03' on", fontSize: "16px" }}
               />
               {search && (
                 <button
