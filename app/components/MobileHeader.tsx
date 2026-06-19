@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MeridianLogo } from "./MeridianLogo";
 
+
 type Props = {
   onMenuOpen?: () => void;
 };
@@ -24,27 +25,12 @@ export function MobileHeader({ onMenuOpen }: Props) {
             <MeridianLogo width={44} height={44} />
           </Link>
         </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/documents-vault"
-            className="inline-flex h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border border-black/15 bg-white transition hover:bg-black/[0.04]"
-            aria-label="Add statements"
-          >
-            <PlusIcon />
-          </Link>
-        </div>
+        <div className="flex items-center gap-2" />
       </div>
     </header>
   );
 }
 
-function PlusIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M12 5V19M5 12H19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  );
-}
 
 function HamburgerIcon() {
   return (
