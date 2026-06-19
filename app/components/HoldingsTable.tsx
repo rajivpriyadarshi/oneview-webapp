@@ -125,6 +125,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
   const { trackClick } = useAnalytics();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [activeCategory, setActiveCategory] = useState<AssetCategory | null>(null);
+  const [search, setSearch] = useState("");
 
   const presentCategories = useMemo<AssetCategory[]>(() => {
     const seen = new Set<AssetCategory>();
@@ -133,13 +134,17 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
     return (Object.keys(CATEGORY_LABELS) as AssetCategory[]).filter((c) => seen.has(c));
   }, [positions]);
 
-  const filteredPositions = useMemo(
-    () =>
-      activeCategory
-        ? positions.filter((p) => getCategory(p.asset_type) === activeCategory)
-        : positions,
-    [positions, activeCategory],
-  );
+  const filteredPositions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return positions.filter((p) => {
+      if (activeCategory && getCategory(p.asset_type) !== activeCategory) return false;
+      if (q) {
+        const haystack = `${p.ticker ?? ""} ${p.name ?? ""}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [positions, activeCategory, search]);
 
   const columns = useMemo(
     () => [
@@ -250,43 +255,84 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
           <HoldingsIcon />
           Your holdings
         </h3>
-        {!loading && presentCategories.length > 1 && (
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-black/12 px-4 py-2 transition-all duration-200 hover:border-black/25 hover:bg-black/[0.02]">
-            <span className="text-[14px] font-normal text-black/60 whitespace-nowrap">
-              Asset type:
-            </span>
-            <div className="relative inline-flex items-center gap-1">
-              <select
-                className="appearance-none border-none bg-transparent text-[14px] font-semibold text-black cursor-pointer outline-none pr-4"
-                style={{ fontFeatureSettings: "'ss03' on" }}
-                value={activeCategory ?? ""}
-                onChange={(e) =>
-                  setActiveCategory((e.target.value as AssetCategory) || null)
-                }
-              >
-                <option value="">All</option>
-                {presentCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {CATEGORY_LABELS[cat]}
-                  </option>
-                ))}
-              </select>
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                className="pointer-events-none absolute right-0 text-black flex-shrink-0"
-              >
-                <path
-                  d="M3 4.5L6 7.5L9 4.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+        {!loading && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex h-[42px] items-center gap-2 rounded-full border border-black/12 px-4 transition-all duration-200 hover:border-black/25 hover:bg-black/[0.02]">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 text-black/40">
+                <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               </svg>
+              <input
+                type="text"
+                placeholder="Search holdings…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-[240px] border-none bg-transparent text-[14px] font-normal text-black outline-none placeholder:text-black/35"
+                style={{ fontFeatureSettings: "'ss03' on" }}
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="flex-shrink-0 text-black/30 hover:text-black/60 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 2L10 10M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              )}
             </div>
+
+            {presentCategories.length > 1 && (
+              <div className="inline-flex h-[42px] items-center gap-1.5 rounded-full border border-black/12 px-4 transition-all duration-200 hover:border-black/25 hover:bg-black/[0.02]">
+                <span className="text-[14px] font-normal text-black/60 whitespace-nowrap">
+                  Asset type:
+                </span>
+                <div className="inline-flex items-center gap-1">
+                  {/* ghost span owns the layout width; select sits absolutely on top */}
+                  <div className="relative inline-block">
+                    <span
+                      aria-hidden
+                      className="invisible block whitespace-nowrap text-[14px] font-semibold"
+                      style={{ fontFeatureSettings: "'ss03' on" }}
+                    >
+                      {activeCategory ? CATEGORY_LABELS[activeCategory] : "All"}
+                    </span>
+                    <select
+                      className="absolute inset-0 h-full w-full appearance-none border-none bg-transparent text-[14px] font-semibold text-black cursor-pointer outline-none"
+                      style={{ fontFeatureSettings: "'ss03' on" }}
+                      value={activeCategory ?? ""}
+                      onChange={(e) =>
+                        setActiveCategory((e.target.value as AssetCategory) || null)
+                      }
+                    >
+                      <option value="">All</option>
+                      {presentCategories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {CATEGORY_LABELS[cat]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    className="pointer-events-none flex-shrink-0 text-black"
+                  >
+                    <path
+                      d="M3 4.5L6 7.5L9 4.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
