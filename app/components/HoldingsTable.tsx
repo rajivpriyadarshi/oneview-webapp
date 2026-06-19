@@ -23,6 +23,61 @@ type Props = {
   apiCurrencies?: CurrencyOption[];
 };
 
+type AssetCategory =
+  | "equity"
+  | "etf"
+  | "mutual_fund"
+  | "debt"
+  | "cash"
+  | "derivative"
+  | "crypto"
+  | "commodity"
+  | "real_estate"
+  | "private"
+  | "other"
+  | "unknown";
+
+const ASSET_TYPE_TO_CATEGORY: Record<string, AssetCategory> = {
+  equity:         "equity",
+  etf:            "etf",
+  mutual_fund:    "mutual_fund",
+  bond:           "debt",
+  debt:           "debt",
+  cash:           "cash",
+  deposit:        "cash",
+  option:         "derivative",
+  future:         "derivative",
+  derivative:     "derivative",
+  structured_note:"derivative",
+  crypto:         "crypto",
+  commodity:      "commodity",
+  real_estate:    "real_estate",
+  private_fund:   "private",
+  private:        "private",
+  other:          "other",
+  unknown:        "unknown",
+};
+
+const CATEGORY_LABELS: Record<AssetCategory, string> = {
+  equity:       "Equity",
+  etf:          "ETF",
+  mutual_fund:  "Mutual Fund",
+  debt:         "Debt",
+  cash:         "Cash",
+  derivative:   "Derivative",
+  crypto:       "Crypto",
+  commodity:    "Commodity",
+  real_estate:  "Real Estate",
+  private:      "Private",
+  other:        "Other",
+  unknown:      "Unknown",
+};
+
+function getCategory(assetType?: string): AssetCategory {
+  if (!assetType) return "unknown";
+  return ASSET_TYPE_TO_CATEGORY[assetType.toLowerCase()] ?? "other";
+}
+
 const columnHelper = createColumnHelper<PortfolioViewPosition>();
 const FALLBACK_ICON_COLORS = [
   "#7F4E0B", "#CE8016", "#A29076", "#444341", "#CAC0B2",
@@ -69,6 +124,22 @@ function formatNumber(value: number) {
 export default function HoldingsTable({ positions, loading, apiCurrencies = [] }: Props) {
   const { trackClick } = useAnalytics();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [activeCategory, setActiveCategory] = useState<AssetCategory | null>(null);
+
+  const presentCategories = useMemo<AssetCategory[]>(() => {
+    const seen = new Set<AssetCategory>();
+    for (const p of positions) seen.add(getCategory(p.asset_type));
+    // preserve a stable display order
+    return (Object.keys(CATEGORY_LABELS) as AssetCategory[]).filter((c) => seen.has(c));
+  }, [positions]);
+
+  const filteredPositions = useMemo(
+    () =>
+      activeCategory
+        ? positions.filter((p) => getCategory(p.asset_type) === activeCategory)
+        : positions,
+    [positions, activeCategory],
+  );
 
   const columns = useMemo(
     () => [
@@ -163,7 +234,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
   );
 
   const table = useReactTable({
-    data: positions,
+    data: filteredPositions,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -174,10 +245,51 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
 
   return (
     <section data-analytics-section="your_holdings" className="mb-7 flex flex-col rounded-[32px] bg-[#ffffffab] px-[16px] pl-[24px] backdrop-blur-[21px]">
-      <h3 className="flex align-center items-center gap-2 pl-[6px] py-[24px] font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
-        <HoldingsIcon />
-        Your holdings
-      </h3>
+      <div className="flex flex-wrap items-center justify-between gap-3 py-[24px]">
+        <h3 className="flex align-center items-center gap-2 pl-[6px] font-satoshi text-[16px] font-bold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
+          <HoldingsIcon />
+          Your holdings
+        </h3>
+        {!loading && presentCategories.length > 1 && (
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-black/12 px-4 py-2 transition-all duration-200 hover:border-black/25 hover:bg-black/[0.02]">
+            <span className="text-[14px] font-normal text-black/60 whitespace-nowrap">
+              Asset type:
+            </span>
+            <div className="relative inline-flex items-center gap-1">
+              <select
+                className="appearance-none border-none bg-transparent text-[14px] font-semibold text-black cursor-pointer outline-none pr-4"
+                style={{ fontFeatureSettings: "'ss03' on" }}
+                value={activeCategory ?? ""}
+                onChange={(e) =>
+                  setActiveCategory((e.target.value as AssetCategory) || null)
+                }
+              >
+                <option value="">All</option>
+                {presentCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {CATEGORY_LABELS[cat]}
+                  </option>
+                ))}
+              </select>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                className="pointer-events-none absolute right-0 text-black flex-shrink-0"
+              >
+                <path
+                  d="M3 4.5L6 7.5L9 4.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="overflow-x-auto pb-4">
         <table className="w-full min-w-0 border-separate border-spacing-0">
           <thead className="table w-full table-fixed">
@@ -228,7 +340,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
               </tr>
             ))}
           </thead>
-          <tbody className="mt-2 mb-2 block max-h-[70vh] overflow-y-auto">
+          <tbody className="mt-2 mb-2 block min-h-[574px] max-h-[70vh] overflow-y-auto">
             {loading && (
               <tr className="table w-full table-fixed">
                 <td colSpan={6} style={{ textAlign: "center", padding: "40px" }}>
@@ -236,7 +348,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
                 </td>
               </tr>
             )}
-            {!loading && positions.length === 0 && (
+            {!loading && filteredPositions.length === 0 && (
               <tr className="table w-full table-fixed">
                 <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "var(--muted)" }}>
                   No holdings found
