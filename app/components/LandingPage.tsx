@@ -128,7 +128,7 @@ export function LandingPage() {
               <Link href="/privacy" className="transition-colors hover:text-black">
                 Privacy
               </Link>
-              <Link href="#" className="transition-colors hover:text-black">
+              <Link href="/terms" className="transition-colors hover:text-black">
                 Terms
               </Link>
               <span className="text-black/20">|</span>
