@@ -11,9 +11,6 @@ export function MobileHeader({ onMenuOpen }: Props) {
   return (
     <header className="fixed top-0 left-0 right-0 border-b border-black/10 bg-[#ffffff26] backdrop-blur-[30px] md:hidden">
       <div className="flex items-center justify-between px-4 py-3">
-        <Link href="/dashboard" aria-label="Go to Dashboard">
-          <MeridianLogo width={44} height={44} />
-        </Link>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -23,6 +20,18 @@ export function MobileHeader({ onMenuOpen }: Props) {
           >
             <HamburgerIcon />
           </button>
+          <Link href="/dashboard" aria-label="Go to Dashboard">
+            <MeridianLogo width={44} height={44} />
+          </Link>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/documents-vault"
+            className="inline-flex h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border border-black/15 bg-white transition hover:bg-black/[0.04]"
+            aria-label="Add statements"
+          >
+            <PlusIcon />
+          </Link>
         </div>
       </div>
     </header>
