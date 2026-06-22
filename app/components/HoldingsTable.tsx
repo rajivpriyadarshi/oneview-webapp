@@ -126,9 +126,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [], 
   const { trackClick } = useAnalytics();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [activeCategory, setActiveCategory] = useState<AssetCategory | null>(null);
-  const [activeCurrency, setActiveCurrency] = useState<string | null>(
-    () => baseCurrency?.toUpperCase() ?? null,
-  );
+  const [activeCurrency, setActiveCurrency] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const presentCategories = useMemo<AssetCategory[]>(() => {
