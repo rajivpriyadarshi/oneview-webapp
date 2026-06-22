@@ -285,52 +285,32 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
             </div>
 
             {presentCategories.length > 1 && (
-              <div className="inline-flex h-[42px] items-center gap-1.5 rounded-full border border-black/12 px-4 transition-all duration-200 hover:border-black/25 hover:bg-black/[0.02]">
-                <span className="text-[14px] font-normal text-black/60 whitespace-nowrap">
+              <div className="relative inline-flex h-[42px] cursor-pointer items-center gap-1.5 rounded-full border border-black/12 px-4 transition-all duration-200 hover:border-black/25 hover:bg-black/[0.02]">
+                {/* visible display — pointer-events-none so clicks fall through to select */}
+                <span className="pointer-events-none text-[14px] font-normal text-black/60 whitespace-nowrap">
                   Asset type:
                 </span>
-                <div className="inline-flex items-center gap-1">
-                  {/* ghost span owns the layout width; select sits absolutely on top */}
-                  <div className="relative inline-block">
-                    <span
-                      aria-hidden
-                      className="invisible block whitespace-nowrap text-[14px] font-semibold"
-                      style={{ fontFeatureSettings: "'ss03' on" }}
-                    >
-                      {activeCategory ? CATEGORY_LABELS[activeCategory] : "All"}
-                    </span>
-                    <select
-                      className="absolute inset-0 h-full w-full appearance-none border-none bg-transparent text-[14px] font-semibold text-black cursor-pointer outline-none"
-                      style={{ fontFeatureSettings: "'ss03' on" }}
-                      value={activeCategory ?? ""}
-                      onChange={(e) =>
-                        setActiveCategory((e.target.value as AssetCategory) || null)
-                      }
-                    >
-                      <option value="">All</option>
-                      {presentCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {CATEGORY_LABELS[cat]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    fill="none"
-                    className="pointer-events-none flex-shrink-0 text-black"
-                  >
-                    <path
-                      d="M3 4.5L6 7.5L9 4.5"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </div>
+                <span className="pointer-events-none text-[14px] font-semibold text-black whitespace-nowrap" style={{ fontFeatureSettings: "'ss03' on" }}>
+                  {activeCategory ? CATEGORY_LABELS[activeCategory] : "All"}
+                </span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="pointer-events-none flex-shrink-0 text-black">
+                  <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {/* transparent select covers the entire pill */}
+                <select
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  value={activeCategory ?? ""}
+                  onChange={(e) =>
+                    setActiveCategory((e.target.value as AssetCategory) || null)
+                  }
+                >
+                  <option value="">All</option>
+                  {presentCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {CATEGORY_LABELS[cat]}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
