@@ -366,7 +366,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
               </tr>
             ))}
           </thead>
-          <tbody className="mt-2 mb-2 block min-h-[574px] max-h-[70vh] overflow-y-auto">
+          <tbody className="mt-2 mb-2 block min-h-[574px] max-h-[70vh] overflow-y-auto [&>tr:last-child>td]:border-b-0">
             {loading && (
               <tr className="table w-full table-fixed">
                 <td colSpan={6} style={{ textAlign: "center", padding: "40px" }}>
@@ -402,6 +402,29 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
                 </tr>
               ))}
           </tbody>
+          {!loading && filteredPositions.length > 0 && activeCategory && (() => {
+            const totalMarketValue = filteredPositions.reduce((s, p) => s + p.market_value, 0);
+            const totalCostBasis = filteredPositions.reduce((s, p) => s + (p.cost_basis ?? 0), 0);
+            const primaryCurrency = filteredPositions[0]?.currency;
+            return (
+              <tfoot className="table w-full table-fixed border-t border-black/10">
+                <tr>
+                  <td className="holdings-security-column px-4 py-[20px] text-[14px] font-semibold text-black/50" style={{ width: 324 }}>
+                    Total
+                  </td>
+                  <td style={{ width: 100 }} />
+                  <td style={{ width: 120 }} />
+                  <td className="px-4 py-[20px] text-right text-[14px] font-semibold text-black" style={{ width: 160 }}>
+                    {formatCurrencyAmount(totalMarketValue, primaryCurrency, apiCurrencies)}
+                  </td>
+                  <td className="px-4 py-[20px] text-right text-[14px] font-semibold text-black" style={{ width: 160 }}>
+                    {totalCostBasis > 0 ? formatCurrencyAmount(totalCostBasis, primaryCurrency, apiCurrencies) : "—"}
+                  </td>
+                  <td style={{ width: 220 }} />
+                </tr>
+              </tfoot>
+            );
+          })()}
         </table>
       </div>
     </section>
