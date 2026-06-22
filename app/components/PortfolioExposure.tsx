@@ -116,7 +116,7 @@ export default function PortfolioExposure({ portfolioView, currency = "INR", api
 
         <div className={`relative pt-[32px] pb-[46px] flex h-full min-w-0 flex-col items-center overflow-visible bg-transparent ${hasSectorData ? "md:border-r md:border-black/15" : ""}`}>
           <p className="mb-4 mt-0 text-center font-satoshi text-sm font-normal leading-[150%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
-            By <strong>Currency</strong>
+            By <strong>Asset Currency</strong>
           </p>
           <div className="w-full">
             <SectorDonutChart segments={currencyData} />

@@ -325,7 +325,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [], 
             {presentCurrencies.length > 0 && (
               <div className="relative inline-flex h-[42px] cursor-pointer items-center gap-1.5 rounded-full border border-black/12 px-4 transition-all duration-200 hover:border-black/25 hover:bg-black/[0.02]">
                 <span className="pointer-events-none text-[14px] font-normal text-black/60 whitespace-nowrap">
-                  Currency:
+                  Asset Currency:
                 </span>
                 <span className="pointer-events-none text-[14px] font-semibold text-black whitespace-nowrap" style={{ fontFeatureSettings: "'ss03' on" }}>
                   {activeCurrency ?? "All"}
