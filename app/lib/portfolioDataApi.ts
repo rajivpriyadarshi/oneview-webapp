@@ -43,6 +43,7 @@ export type PortfolioViewPosition = {
   gain_pct: number | null;
   weight_pct: number | null;
   currency: string;
+  base_currency: string;
   account_ids: number[];
 };
 

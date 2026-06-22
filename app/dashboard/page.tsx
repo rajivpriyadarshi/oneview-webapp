@@ -342,7 +342,7 @@ export default function DashboardPage() {
               ) : (
                 <>
                   <PortfolioExposure portfolioView={portfolioView ?? null} currency={currency} apiCurrencies={apiCurrencies} />
-                  <HoldingsTable positions={portfolioView?.positions || []} loading={loading} apiCurrencies={apiCurrencies} />
+                  <HoldingsTable positions={portfolioView?.positions || []} loading={loading} apiCurrencies={apiCurrencies} baseCurrency={portfolioView?.currency} />
                 </>
               )}
             </>

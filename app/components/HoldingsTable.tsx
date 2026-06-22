@@ -21,6 +21,7 @@ type Props = {
   positions: PortfolioViewPosition[];
   loading: boolean;
   apiCurrencies?: CurrencyOption[];
+  baseCurrency?: string;
 };
 
 type AssetCategory =
@@ -121,30 +122,38 @@ function formatNumber(value: number) {
   });
 }
 
-export default function HoldingsTable({ positions, loading, apiCurrencies = [] }: Props) {
+export default function HoldingsTable({ positions, loading, apiCurrencies = [], baseCurrency }: Props) {
   const { trackClick } = useAnalytics();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [activeCategory, setActiveCategory] = useState<AssetCategory | null>(null);
+  const [activeCurrency, setActiveCurrency] = useState<string | null>(
+    () => baseCurrency?.toUpperCase() ?? null,
+  );
   const [search, setSearch] = useState("");
 
   const presentCategories = useMemo<AssetCategory[]>(() => {
     const seen = new Set<AssetCategory>();
     for (const p of positions) seen.add(getCategory(p.asset_type));
-    // preserve a stable display order
     return (Object.keys(CATEGORY_LABELS) as AssetCategory[]).filter((c) => seen.has(c));
   }, [positions]);
+
+  const presentCurrencies = useMemo<string[]>(
+    () => apiCurrencies.map((c) => c.currency_code.toUpperCase()).sort(),
+    [apiCurrencies],
+  );
 
   const filteredPositions = useMemo(() => {
     const q = search.trim().toLowerCase();
     return positions.filter((p) => {
       if (activeCategory && getCategory(p.asset_type) !== activeCategory) return false;
+      if (activeCurrency && p.base_currency?.toUpperCase() !== activeCurrency) return false;
       if (q) {
         const haystack = `${p.ticker ?? ""} ${p.name ?? ""}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
     });
-  }, [positions, activeCategory, search]);
+  }, [positions, activeCategory, activeCurrency, search]);
 
   const columns = useMemo(
     () => [
@@ -313,6 +322,29 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
                 </select>
               </div>
             )}
+            {presentCurrencies.length > 0 && (
+              <div className="relative inline-flex h-[42px] cursor-pointer items-center gap-1.5 rounded-full border border-black/12 px-4 transition-all duration-200 hover:border-black/25 hover:bg-black/[0.02]">
+                <span className="pointer-events-none text-[14px] font-normal text-black/60 whitespace-nowrap">
+                  Currency:
+                </span>
+                <span className="pointer-events-none text-[14px] font-semibold text-black whitespace-nowrap" style={{ fontFeatureSettings: "'ss03' on" }}>
+                  {activeCurrency ?? "All"}
+                </span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="pointer-events-none flex-shrink-0 text-black">
+                  <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <select
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  value={activeCurrency ?? ""}
+                  onChange={(e) => setActiveCurrency(e.target.value || null)}
+                >
+                  <option value="">All</option>
+                  {presentCurrencies.map((cur) => (
+                    <option key={cur} value={cur}>{cur}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -402,7 +434,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
                 </tr>
               ))}
           </tbody>
-          {!loading && filteredPositions.length > 1 && activeCategory && (() => {
+          {!loading && filteredPositions.length > 1 && (activeCategory || activeCurrency) && (() => {
             const totalMarketValue = filteredPositions.reduce((s, p) => s + p.market_value, 0);
             const totalCostBasis = filteredPositions.reduce((s, p) => s + (p.cost_basis ?? 0), 0);
             const primaryCurrency = filteredPositions[0]?.currency;
