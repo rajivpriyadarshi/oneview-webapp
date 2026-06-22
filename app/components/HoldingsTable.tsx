@@ -402,7 +402,7 @@ export default function HoldingsTable({ positions, loading, apiCurrencies = [] }
                 </tr>
               ))}
           </tbody>
-          {!loading && filteredPositions.length > 0 && activeCategory && (() => {
+          {!loading && filteredPositions.length > 1 && activeCategory && (() => {
             const totalMarketValue = filteredPositions.reduce((s, p) => s + p.market_value, 0);
             const totalCostBasis = filteredPositions.reduce((s, p) => s + (p.cost_basis ?? 0), 0);
             const primaryCurrency = filteredPositions[0]?.currency;
