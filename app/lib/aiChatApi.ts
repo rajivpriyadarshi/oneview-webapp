@@ -2,10 +2,65 @@ import type { UIMessage } from "ai";
 import { appConfig } from "./config";
 import { getAuthHeaders, getStoredAuthToken } from "./session";
 
-const AI_AGENT_SLUG = "wealth-advisor";
-const AI_CHAT_BASE_PATH = "chats/";
+function getCsrfToken(): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const match = document.cookie.match(/csrftoken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+export function getAiRequestHeaders(headers?: HeadersInit): Record<string, string> {
+  const requestHeaders = new Headers(headers);
+
+  for (const [key, value] of Object.entries(getAuthHeaders())) {
+    if (value) {
+      requestHeaders.set(key, value);
+    }
+  }
+
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    requestHeaders.set("X-CSRFToken", csrfToken);
+  }
+
+  return Object.fromEntries(requestHeaders.entries());
+}
+
+export function buildAiChatApiUrl(path = "") {
+  if (/^https?:\/\//.test(path)) {
+    return path;
+  }
+
+  const baseUrl = appConfig.apiBaseUrl.endsWith("/")
+    ? appConfig.apiBaseUrl
+    : `${appConfig.apiBaseUrl}/`;
+
+  return new URL(path.replace(/^\//, ""), baseUrl).toString();
+}
+
+let csrfPromise: Promise<void> | null = null;
+const AI_CHAT_BASE_PATH = "oneview/chats/";
 const LOCAL_CHAT_SESSIONS_KEY = "oneview:ai-chat-sessions";
 
+async function ensureCsrfToken(): Promise<void> {
+  if (getCsrfToken()) {
+    return;
+  }
+
+  if (csrfPromise) {
+    return csrfPromise;
+  }
+
+  csrfPromise = fetch(buildAiChatApiUrl(AI_CHAT_BASE_PATH), {
+    credentials: "include",
+    headers: getAiRequestHeaders(),
+  })
+    .then(() => undefined)
+    .catch(() => undefined);
+
+  return csrfPromise;
+}
 export type AiChatSession = {
   id: string;
   title: string;
@@ -25,62 +80,30 @@ type ChatListResponse = {
   }>;
 };
 
-type CreateChatResponse = {
-  id: string;
-  title?: string | null;
-  agent?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-};
-
 type MessagesResponse = {
   id: string;
   messages: UIMessage[];
 };
 
+type NormalizableSession = Partial<
+  Omit<AiChatSession, "title" | "agent" | "created_at" | "updated_at"> & {
+    title: string | null;
+    agent: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+  }
+>;
+
 export function getAiAgentSlug() {
-  return AI_AGENT_SLUG;
+  return appConfig.aiAgentSlug;
 }
 
-export function buildAiChatApiUrl(path = "") {
-  if (/^https?:\/\//.test(path)) {
-    return path;
-  }
-
-  const baseUrl = getAiApiBaseUrl();
-  if (baseUrl.startsWith("/")) {
-    return `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
-  }
-
-  return new URL(path.replace(/^\//, ""), baseUrl).toString();
+export function getAiChatsUrl() {
+  return buildAiChatApiUrl(AI_CHAT_BASE_PATH);
 }
 
 export function getAiChatMessagesUrl(sessionId: string) {
   return buildAiChatApiUrl(`${AI_CHAT_BASE_PATH}${encodeURIComponent(sessionId)}/messages/`);
-}
-
-export async function createAiChatSession() {
-  requireAiAuthToken();
-
-  const response = await aiChatFetch(buildAiChatApiUrl(AI_CHAT_BASE_PATH), {
-    method: "POST",
-    headers: getAiRequestHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({
-      metadata: {
-        agent: AI_AGENT_SLUG,
-      },
-    }),
-  });
-
-  const payload = await readJson<CreateChatResponse>(response);
-
-  if (!response.ok) {
-    throw new Error(getErrorMessage(payload, "Could not start a chat."));
-  }
-
-  const session = normalizeSession(payload, "local");
-  upsertStoredAiChatSession(session);
-  return session;
 }
 
 export async function listAiChatSessions() {
@@ -115,48 +138,19 @@ export async function loadAiChatMessages(sessionId: string) {
   return payload.messages ?? [];
 }
 
-export function getAiRequestHeaders(headers?: HeadersInit): Record<string, string> {
-  const requestHeaders: Record<string, string> = {};
+export async function aiChatFetch(input: RequestInfo | URL, init?: RequestInit) {
+  const method = init?.method?.toUpperCase() ?? "GET";
+  const needsCsrf = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
 
-  for (const [key, value] of Object.entries(getAuthHeaders())) {
-    if (value) {
-      requestHeaders[key] = value;
-    }
+  if (needsCsrf) {
+    await ensureCsrfToken();
   }
 
-  new Headers(headers).forEach((value, key) => {
-    requestHeaders[key] = value;
-  });
-
-  return requestHeaders;
-}
-
-export async function aiChatFetch(input: RequestInfo | URL, init?: RequestInit) {
   return fetch(input, {
     ...init,
     credentials: init?.credentials ?? "include",
     headers: getAiRequestHeaders(init?.headers),
   });
-}
-
-function getAiApiBaseUrl() {
-  if (!appConfig.apiBaseUrl) {
-    return "/api/ai/";
-  }
-
-  const normalized = appConfig.apiBaseUrl.endsWith("/")
-    ? appConfig.apiBaseUrl
-    : `${appConfig.apiBaseUrl}/`;
-
-  if (normalized.includes("/api/wealth/")) {
-    return normalized.replace(/\/api\/wealth\/.*$/, "/api/ai/");
-  }
-
-  if (normalized.endsWith("/api/")) {
-    return new URL("ai/", normalized).toString();
-  }
-
-  return new URL("/api/ai/", normalized).toString();
 }
 
 function requireAiAuthToken() {
@@ -228,13 +222,13 @@ export function createTitleFromPrompt(prompt: string) {
 }
 
 function normalizeSession(
-  session: Partial<CreateChatResponse | AiChatSession>,
+  session: NormalizableSession,
   source: AiChatSession["source"],
 ): AiChatSession {
   return {
     id: String(session.id ?? ""),
     title: session.title || "New chat",
-    agent: session.agent || AI_AGENT_SLUG,
+    agent: session.agent || appConfig.aiAgentSlug,
     created_at: session.created_at ?? undefined,
     updated_at: session.updated_at ?? session.created_at ?? new Date().toISOString(),
     source,

@@ -40,6 +40,12 @@ Use `.env.local`, `.env.development.local`, or `.env.production.local` for priva
 https://labs-sbox.zinc.money/api/wealth
 ```
 
+`NEXT_PUBLIC_AI_AGENT_SLUG` is optional and defaults to:
+
+```text
+wealth-advisor
+```
+
 Authenticated requests send:
 
 ```text
