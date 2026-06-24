@@ -64,6 +64,7 @@ type ChatUiMessage = UIMessage<AiChatMessageMetadata>;
 
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [railCollapsed, setRailCollapsed] = useState(false);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [initialMessages, setInitialMessages] = useState<ChatUiMessage[]>([]);
@@ -211,8 +212,16 @@ export default function ChatPage() {
             New chat
           </button>
         </header>
-        <main className="chat-page-main">
-          <aside className="chat-session-rail" aria-label="Chat sessions">
+        <main className={`chat-page-main${railCollapsed ? " rail-collapsed" : ""}`}>
+          {railCollapsed && (
+            <button type="button" className="chat-rail-expand-btn" onClick={() => setRailCollapsed(false)} aria-label="Expand sidebar">
+              <ExpandIcon />
+            </button>
+          )}
+          <aside className={`chat-session-rail${railCollapsed ? " is-collapsed" : ""}`} aria-label="Chat sessions">
+            <button type="button" className="chat-rail-collapse-btn" aria-label="Collapse sidebar" onClick={() => setRailCollapsed(true)}>
+              <CollapseIcon />
+            </button>
             <div className="chat-session-list">
               {isLoadingSessions ? (
                 <p className="chat-session-muted">Loading chats...</p>
@@ -908,6 +917,26 @@ function SendArrowIcon() {
       <g clipPath="url(#send-arrow-clip)">
         <path d="M5.38478 6.15388H2.56427M2.52085 6.30337L1.32346 9.88014C1.22939 10.1611 1.18235 10.3016 1.21611 10.3882C1.24542 10.4633 1.30838 10.5203 1.38606 10.5419C1.47551 10.5669 1.61062 10.5061 1.88085 10.3845L10.4508 6.52801C10.7146 6.40932 10.8465 6.34997 10.8872 6.26753C10.9226 6.1959 10.9226 6.11187 10.8872 6.04024C10.8465 5.9578 10.7146 5.89845 10.4508 5.77976L1.87786 1.92195C1.60845 1.80071 1.47375 1.7401 1.38438 1.76496C1.30677 1.78656 1.24382 1.84337 1.21441 1.91837C1.18054 2.00472 1.22707 2.14492 1.32014 2.42531L2.52119 6.0439C2.53717 6.09206 2.54516 6.11613 2.54832 6.14076C2.55112 6.16261 2.55109 6.18473 2.54823 6.20658C2.54501 6.2312 2.53696 6.25526 2.52085 6.30337Z" stroke="url(#send-arrow-grad)" strokeWidth="1.23077" strokeLinecap="round" strokeLinejoin="round" />
       </g>
+    </svg>
+  );
+}
+
+function ExpandIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M5.15625 18.2812H14.8438C16.7422 18.2812 18.2812 16.7422 18.2812 14.8438V5.15625C18.2812 3.25777 16.7422 1.71875 14.8438 1.71875H5.15625C3.25777 1.71875 1.71875 3.25777 1.71875 5.15625V14.8438C1.71875 16.7422 3.25777 18.2812 5.15625 18.2812Z" stroke="#262C31" strokeWidth="1.4"/>
+      <path d="M7.5 18.2812V1.71875" stroke="#262C31" strokeWidth="1.4"/>
+      <path d="M11.0156 11.9922L13.3594 9.64844L11.0156 7.30469" stroke="#262C31" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function CollapseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M5.15625 18.2812H14.8438C16.7422 18.2812 18.2812 16.7422 18.2812 14.8438V5.15625C18.2812 3.25777 16.7422 1.71875 14.8438 1.71875H5.15625C3.25777 1.71875 1.71875 3.25777 1.71875 5.15625V14.8438C1.71875 16.7422 3.25777 18.2812 5.15625 18.2812Z" stroke="#262C31" strokeWidth="1.4"/>
+      <path d="M7.5 18.2812V1.71875" stroke="#262C31" strokeWidth="1.4"/>
+      <path d="M13.3594 11.9922L11.0156 9.64844L13.3594 7.30469" stroke="#262C31" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
