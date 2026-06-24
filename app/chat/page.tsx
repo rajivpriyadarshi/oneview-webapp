@@ -204,7 +204,7 @@ export default function ChatPage() {
         <MobileHeader onMenuOpen={() => setSidebarOpen(true)} />
         <header className="chat-page-header">
           <div className="chat-page-header-left">
-            <h1 className="chat-page-header-title">Pike - The trading expert</h1>
+            <h1 className="chat-page-header-title">Smart advisor</h1>
             <p className="chat-page-header-subtitle">Chat with it about  your investments and what’s happening in the markets</p>
           </div>
           <button type="button" className="chat-page-header-btn" onClick={startNewChat}>
@@ -229,15 +229,27 @@ export default function ChatPage() {
                 <p className="chat-session-muted">No chats yet.</p>
               ) : (
                 <>
-                  <p className="chat-session-section-label">
-                    <PinIcon />
-                    Pinned conversations
-                  </p>
-                  <p className="chat-session-section-label" style={{ marginTop: 8 }}>
+                  {sessions.some((s) => (s as any).pinned) && (
+                    <p className="chat-session-section-label">
+                      <PinIcon />
+                      Pinned conversations
+                    </p>
+                  )}
+                  {sessions.filter((s) => (s as any).pinned).map((session) => (
+                    <button
+                      key={`pinned-${session.id}`}
+                      type="button"
+                      className={`chat-session-item${session.id === selectedSessionId ? " active" : ""}`}
+                      onClick={() => selectSession(session)}
+                    >
+                      <span className="chat-session-title">{session.title}</span>
+                    </button>
+                  ))}
+                  <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => (s as any).pinned) ? 8 : 0 }}>
                     <LockIcon />
                     Other conversations
                   </p>
-                  {sessions.map((session) => (
+                  {sessions.filter((s) => !(s as any).pinned).map((session) => (
                     <button
                       key={session.id}
                       type="button"
@@ -255,9 +267,15 @@ export default function ChatPage() {
           </aside>
 
           <section className="chat-thread-panel" aria-label="Wealth advisor chat">
-            <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none" }}>
-              <Image src="/Hero_bg.png" alt="" fill className="object-cover" priority />
-            </div>
+            {selectedSession && !isDraftChat ? (
+              <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none" }}>
+                <Image src="/chat-hero-bg.png" alt="" fill className="object-cover" priority />
+              </div>
+            ) : (
+              <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none" }}>
+                <Image src="/Hero_bg.png" alt="" fill className="object-cover" priority />
+              </div>
+            )}
             {selectedSession || isDraftChat ? (
               isLoadingMessages ? (
                 <div className="chat-loading-state">Loading chat...</div>
