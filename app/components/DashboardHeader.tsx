@@ -145,7 +145,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
   );
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[200] border-b border-black/10 bg-[#ffffff26] backdrop-blur-[30px] md:left-16">
+    <header className="fixed top-0 left-0 right-0 z-[200] border-b border-black/10 bg-[#ffffff26] backdrop-blur-[30px] md:left-[80px]">
       {/* Mobile navbar */}
       <div className="flex items-center justify-between px-4 py-3 md:hidden">
         {/* Left: hamburger + logo */}
