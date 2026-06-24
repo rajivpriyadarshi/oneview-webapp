@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
 import {
   ActionBarPrimitive,
@@ -39,10 +40,18 @@ import {
 } from "../lib/aiChatApi";
 import "./chat.css";
 
-const PROMPT_SUGGESTIONS = [
-  "What changed in my portfolio?",
-  "Where am I overexposed?",
-  "Summarize my recent account activity",
+const PROMPT_SUGGESTIONS_ROW1 = [
+  "How will falling oil prices impact my holdings?",
+  "Do I have enough exposure to AI beneficiaries like NVIDIA and Broadcom?",
+  "Could the Iran peace deal create new opportunities in energy?",
+  "What sectors benefit most from rate cuts?",
+];
+
+const PROMPT_SUGGESTIONS_ROW2 = [
+  "What strategies can I employ to hedge against geopolitical instability?",
+  "Are emerging tech startups showing signs of becoming the next market leaders?",
+  "How might changes in inflation affect my bond allocation?",
+  "Which of my holdings are most sensitive to dollar strength?",
 ];
 
 type AiChatMessageMetadata = {
@@ -192,52 +201,44 @@ export default function ChatPage() {
       <div className="chat-page-shell">
         <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
         <MobileHeader onMenuOpen={() => setSidebarOpen(true)} />
+        <header className="chat-page-header">
+          <div className="chat-page-header-left">
+            <h1 className="chat-page-header-title">Pike - The trading expert</h1>
+            <p className="chat-page-header-subtitle">Chat with it about  your investments and what’s happening in the markets</p>
+          </div>
+          <button type="button" className="chat-page-header-btn" onClick={startNewChat}>
+            <span className="chat-page-header-btn-icon"><PlusIcon /></span>
+            New chat
+          </button>
+        </header>
         <main className="chat-page-main">
           <aside className="chat-session-rail" aria-label="Chat sessions">
-            <div className="chat-session-rail-header">
-              <div>
-                <p className="chat-kicker">AI advisor</p>
-                <h1>Chat</h1>
-              </div>
-              <button
-                type="button"
-                className="chat-new-icon-btn"
-                onClick={startNewChat}
-                aria-label="Start new chat"
-                title="Start new chat"
-              >
-                <PlusIcon />
-              </button>
-            </div>
-
-            <button
-              type="button"
-              className="chat-new-session-btn"
-              onClick={startNewChat}
-            >
-              <PlusIcon />
-              <span>New chat</span>
-            </button>
-
             <div className="chat-session-list">
               {isLoadingSessions ? (
                 <p className="chat-session-muted">Loading chats...</p>
               ) : sessions.length === 0 ? (
                 <p className="chat-session-muted">No chats yet.</p>
               ) : (
-                sessions.map((session) => (
-                  <button
-                    key={session.id}
-                    type="button"
-                    className={`chat-session-item${session.id === selectedSessionId ? " active" : ""}`}
-                    onClick={() => selectSession(session)}
-                  >
-                    <span className="chat-session-title">{session.title}</span>
-                    <span className="chat-session-meta">
-                      {formatSessionDate(session.updated_at ?? session.created_at)}
-                    </span>
-                  </button>
-                ))
+                <>
+                  <p className="chat-session-section-label">
+                    <PinIcon />
+                    Pinned conversations
+                  </p>
+                  <p className="chat-session-section-label" style={{ marginTop: 8 }}>
+                    <LockIcon />
+                    Other conversations
+                  </p>
+                  {sessions.map((session) => (
+                    <button
+                      key={session.id}
+                      type="button"
+                      className={`chat-session-item${session.id === selectedSessionId ? " active" : ""}`}
+                      onClick={() => selectSession(session)}
+                    >
+                      <span className="chat-session-title">{session.title}</span>
+                    </button>
+                  ))}
+                </>
               )}
             </div>
 
@@ -245,6 +246,9 @@ export default function ChatPage() {
           </aside>
 
           <section className="chat-thread-panel" aria-label="Wealth advisor chat">
+            <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none" }}>
+              <Image src="/Hero_bg.png" alt="" fill className="object-cover" priority />
+            </div>
             {selectedSession || isDraftChat ? (
               isLoadingMessages ? (
                 <div className="chat-loading-state">Loading chat...</div>
@@ -363,33 +367,47 @@ function ChatThread({ session, initialMessages, onPromptSubmitted, onAssistantFi
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <div className="chat-thread">
-        <div className="chat-thread-topbar">
-          <div>
-            <p className="chat-kicker">Wealth advisor</p>
-            <h2>{session?.title ?? "New chat"}</h2>
-          </div>
-          <span className={`chat-status ${isChatBusy(chat.status) ? "active" : ""}`}>
-            {chat.status === "streaming" ? "Answering" : chat.status === "submitted" ? "Thinking" : "Ready"}
-          </span>
-        </div>
-
         <ThreadPrimitive.Root className="chat-assistant-thread">
           <AuiIf condition={(state) => state.thread.isEmpty}>
             <div className="chat-message-viewport is-empty">
               <div className="chat-empty-copy">
-                <p className="chat-wordmark">OneView</p>
-                <p className="chat-empty-subtitle">
-                  Ask about portfolio moves, allocation, documents, or recent account activity.
-                </p>
-                <div className="chat-suggestions">
-                  {PROMPT_SUGGESTIONS.map((suggestion) => (
-                    <ThreadPrimitive.Suggestion key={suggestion} prompt={suggestion} send>
-                      {suggestion}
-                    </ThreadPrimitive.Suggestion>
-                  ))}
+                <p className="chat-empty-heading">Ask anything about your portfolio</p>
+                <Composer placeholder="Ask me anything about your holdings, market stocks, crypto, risk, or returns..." agent={agent} />
+              </div>
+              <div className="chat-suggestions-wrap">
+                <div className="chat-suggestions-row">
+                  <div className="chat-suggestions-row-inner">
+                    {PROMPT_SUGGESTIONS_ROW1.map((suggestion) => (
+                      <ThreadPrimitive.Suggestion key={suggestion} prompt={suggestion} send className="chat-suggestion-pill">
+                        <SendArrowIcon />
+                        {suggestion}
+                      </ThreadPrimitive.Suggestion>
+                    ))}
+                    {PROMPT_SUGGESTIONS_ROW1.map((suggestion) => (
+                      <ThreadPrimitive.Suggestion key={`dup-${suggestion}`} prompt={suggestion} send className="chat-suggestion-pill">
+                        <SendArrowIcon />
+                        {suggestion}
+                      </ThreadPrimitive.Suggestion>
+                    ))}
+                  </div>
+                </div>
+                <div className="chat-suggestions-row">
+                  <div className="chat-suggestions-row-inner">
+                    {PROMPT_SUGGESTIONS_ROW2.map((suggestion) => (
+                      <ThreadPrimitive.Suggestion key={suggestion} prompt={suggestion} send className="chat-suggestion-pill">
+                        <SendArrowIcon />
+                        {suggestion}
+                      </ThreadPrimitive.Suggestion>
+                    ))}
+                    {PROMPT_SUGGESTIONS_ROW2.map((suggestion) => (
+                      <ThreadPrimitive.Suggestion key={`dup-${suggestion}`} prompt={suggestion} send className="chat-suggestion-pill">
+                        <SendArrowIcon />
+                        {suggestion}
+                      </ThreadPrimitive.Suggestion>
+                    ))}
+                  </div>
                 </div>
               </div>
-              <Composer placeholder="Ask anything about your wealth..." agent={agent} />
             </div>
           </AuiIf>
 
@@ -402,7 +420,6 @@ function ChatThread({ session, initialMessages, onPromptSubmitted, onAssistantFi
                 <ThreadPrimitive.ScrollToBottom className="chat-scroll-to-bottom" aria-label="Scroll to bottom">
                   <ArrowDownIcon />
                 </ThreadPrimitive.ScrollToBottom>
-                <Composer placeholder="Ask a follow-up..." agent={agent} />
               </ThreadPrimitive.ViewportFooter>
             </ThreadPrimitive.Viewport>
           </AuiIf>
@@ -413,6 +430,12 @@ function ChatThread({ session, initialMessages, onPromptSubmitted, onAssistantFi
             {chat.error.message || "The chat stream failed. Please try again."}
           </div>
         ) : null}
+
+        <AuiIf condition={(state) => !state.thread.isEmpty}>
+          <div className="chat-composer-dock">
+            <Composer placeholder="Ask a follow-up..." agent={agent} />
+          </div>
+        </AuiIf>
       </div>
     </AssistantRuntimeProvider>
   );
@@ -435,18 +458,24 @@ function Composer({ placeholder, agent }: { placeholder: string; agent: string }
   return (
     <ComposerPrimitive.Root className="chat-composer-wrap">
       <div className="chat-composer">
-        <ComposerPrimitive.Input
-          className="chat-composer-input"
-          placeholder={placeholder}
-          rows={2}
-          autoFocus
-        />
+        <div className="chat-composer-input-row">
+          <ComposerPrimitive.Input
+            className="chat-composer-input"
+            placeholder={placeholder}
+            rows={2}
+            autoFocus
+          />
+        </div>
         <div className="chat-composer-footer">
-          <span className="chat-agent-pill">
-            <SearchIcon />
-            {agent}
-          </span>
-          <ComposerPrimaryAction />
+          {/* <button type="button" className="chat-composer-icon-btn" aria-label="Attach">
+            <PlusIcon />
+          </button> */}
+          <div className="chat-composer-footer-right">
+            {/* <button type="button" className="chat-composer-icon-btn" aria-label="Voice input">
+              <MicIcon />
+            </button> */}
+            <ComposerPrimaryAction />
+          </div>
         </div>
       </div>
     </ComposerPrimitive.Root>
@@ -519,6 +548,7 @@ function AssistantMessage() {
             }}
           </MessagePrimitive.GroupedParts>
         </div>
+        <div className="chat-message-controls">
         <AssistantActionBar />
         <BranchPickerPrimitive.Root className="chat-branch-picker" hideWhenSingleBranch>
           <BranchPickerPrimitive.Previous className="chat-branch-btn" aria-label="Previous response">
@@ -531,6 +561,7 @@ function AssistantMessage() {
             <ChevronRightIcon />
           </BranchPickerPrimitive.Next>
         </BranchPickerPrimitive.Root>
+        </div>
       </div>
     </MessagePrimitive.Root>
   );
@@ -538,7 +569,7 @@ function AssistantMessage() {
 
 function AssistantActionBar() {
   return (
-    <ActionBarPrimitive.Root className="chat-action-bar" hideWhenRunning autohide="not-last">
+    <ActionBarPrimitive.Root className="chat-action-bar" hideWhenRunning>
       <ActionBarPrimitive.Copy className="chat-action-btn" aria-label="Copy response" title="Copy response">
         <CopyIcon />
       </ActionBarPrimitive.Copy>
@@ -849,6 +880,56 @@ function ChevronDownIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MicIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 2C10.9 2 10 2.9 10 4V12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12V4C14 2.9 13.1 2 12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M19 10V12C19 15.87 15.87 19 12 19C8.13 19 5 15.87 5 12V10M12 19V22M8 22H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function SendArrowIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="send-arrow-grad" x1="6.05858" y1="1.75946" x2="6.05858" y2="10.5475" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#B37F40" />
+          <stop offset="1" stopColor="#432411" />
+        </linearGradient>
+        <clipPath id="send-arrow-clip">
+          <rect width="12.3077" height="12.3077" fill="white" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#send-arrow-clip)">
+        <path d="M5.38478 6.15388H2.56427M2.52085 6.30337L1.32346 9.88014C1.22939 10.1611 1.18235 10.3016 1.21611 10.3882C1.24542 10.4633 1.30838 10.5203 1.38606 10.5419C1.47551 10.5669 1.61062 10.5061 1.88085 10.3845L10.4508 6.52801C10.7146 6.40932 10.8465 6.34997 10.8872 6.26753C10.9226 6.1959 10.9226 6.11187 10.8872 6.04024C10.8465 5.9578 10.7146 5.89845 10.4508 5.77976L1.87786 1.92195C1.60845 1.80071 1.47375 1.7401 1.38438 1.76496C1.30677 1.78656 1.24382 1.84337 1.21441 1.91837C1.18054 2.00472 1.22707 2.14492 1.32014 2.42531L2.52119 6.0439C2.53717 6.09206 2.54516 6.11613 2.54832 6.14076C2.55112 6.16261 2.55109 6.18473 2.54823 6.20658C2.54501 6.2312 2.53696 6.25526 2.52085 6.30337Z" stroke="url(#send-arrow-grad)" strokeWidth="1.23077" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+    </svg>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <defs><clipPath id="pin-clip"><rect width="16" height="16" fill="white"/></clipPath></defs>
+      <g clipPath="url(#pin-clip)">
+        <path d="M5.58447 10.4109L1.81323 14.1821M7.79626 4.4279L6.75567 5.46849C6.67079 5.55337 6.62834 5.59581 6.57999 5.62954C6.53707 5.65947 6.49078 5.68425 6.44206 5.70335C6.38718 5.72488 6.32832 5.73665 6.21061 5.76019L3.76764 6.24879C3.13277 6.37576 2.81533 6.43925 2.66683 6.60662C2.53745 6.75242 2.47837 6.94755 2.50514 7.14064C2.53586 7.36227 2.76477 7.59118 3.22258 8.04899L7.9464 12.7728C8.40421 13.2306 8.63312 13.4595 8.85476 13.4903C9.04784 13.517 9.24297 13.4579 9.38878 13.3286C9.55614 13.1801 9.61963 12.8626 9.7466 12.2278L10.2352 9.78478C10.2587 9.66707 10.2705 9.60821 10.292 9.55333C10.3111 9.50462 10.3359 9.45832 10.3659 9.4154C10.3996 9.36705 10.442 9.32461 10.5269 9.23972L11.5675 8.19913C11.6218 8.14486 11.6489 8.11773 11.6787 8.09404C11.7052 8.07299 11.7333 8.05399 11.7627 8.0372C11.7957 8.01831 11.831 8.00319 11.9016 7.97296L13.5645 7.26029C14.0496 7.05237 14.2922 6.94841 14.4024 6.78042C14.4987 6.63352 14.5332 6.45452 14.4983 6.28234C14.4584 6.08544 14.2718 5.89883 13.8985 5.52562L10.4698 2.09686C10.0966 1.72364 9.90995 1.53703 9.71305 1.49712C9.54087 1.46221 9.36187 1.49669 9.21497 1.59304C9.04698 1.70323 8.94302 1.94579 8.73511 2.43093L8.02243 4.09383C7.9922 4.16437 7.97708 4.19965 7.95819 4.23272C7.9414 4.2621 7.9224 4.29017 7.90136 4.31666C7.87767 4.34649 7.85053 4.37363 7.79626 4.4279Z" stroke="black" strokeOpacity="0.3" strokeWidth="1.84615" strokeLinecap="round" strokeLinejoin="round"/>
+      </g>
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <defs><clipPath id="lock-clip"><rect width="16" height="16" fill="white"/></clipPath></defs>
+      <g clipPath="url(#lock-clip)">
+        <path d="M4.06283 7.48587C4.02139 7.21883 3.99989 6.94525 3.99989 6.66668C3.99989 3.72116 6.40342 1.33334 9.36831 1.33334C12.3332 1.33334 14.7367 3.72116 14.7367 6.66668C14.7367 7.33206 14.6141 7.96898 14.39 8.55635C14.3435 8.67833 14.3202 8.73933 14.3097 8.78695C14.2992 8.83413 14.2951 8.86733 14.294 8.91564C14.2929 8.96441 14.2995 9.01813 14.3127 9.12556L14.5811 11.3057C14.6101 11.5417 14.6247 11.6597 14.5854 11.7455C14.551 11.8207 14.4899 11.8804 14.414 11.913C14.3273 11.9503 14.2097 11.933 13.9744 11.8986L11.8509 11.5873C11.74 11.571 11.6846 11.5629 11.6341 11.5632C11.5841 11.5635 11.5496 11.5672 11.5007 11.5774C11.4513 11.5878 11.3882 11.6115 11.2619 11.6588C10.673 11.8793 10.0349 12 9.36831 12C9.08952 12 8.81569 11.9789 8.54836 11.9382M5.08764 14.6667C7.06424 14.6667 8.66659 13.0251 8.66659 11C8.66659 8.97497 7.06424 7.33334 5.08764 7.33334C3.11104 7.33334 1.50869 8.97497 1.50869 11C1.50869 11.4071 1.57344 11.7986 1.69295 12.1645C1.74347 12.3191 1.76873 12.3965 1.77702 12.4493C1.78568 12.5045 1.7872 12.5354 1.78397 12.5912C1.78088 12.6445 1.76753 12.7049 1.74081 12.8255L1.33325 14.6667L3.32979 14.394C3.43876 14.3791 3.49325 14.3717 3.54083 14.372C3.59093 14.3723 3.61752 14.3751 3.66666 14.3849C3.71332 14.3942 3.78269 14.4186 3.92143 14.4676C4.28698 14.5966 4.67932 14.6667 5.08764 14.6667Z" stroke="black" strokeOpacity="0.3" strokeWidth="1.84615" strokeLinecap="round" strokeLinejoin="round"/>
+      </g>
     </svg>
   );
 }
