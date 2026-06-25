@@ -204,7 +204,7 @@
 }
 
 .chat-rail-collapse-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: #fff;
 }
 
 .chat-session-rail {
@@ -244,7 +244,7 @@
 }
 
 .chat-rail-expand-btn:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: #fff;
 }
 
 .chat-session-section-label {
@@ -613,7 +613,7 @@
   font-family: var(--font-satoshi), sans-serif;
   font-size: 14px;
   font-weight: 400;
-  line-height: 18.9px;
+  line-height: 1.6;
   word-wrap: break-word;
 }
 
@@ -643,26 +643,66 @@
   overflow-wrap: anywhere;
 }
 
+.chat-markdown strong,
+.chat-markdown b {
+  font-weight: 700;
+}
+
+.chat-markdown ul {
+  list-style-type: disc;
+}
+
+.chat-markdown ol {
+  list-style-type: decimal;
+}
+
 .chat-markdown p,
 .chat-markdown ul,
 .chat-markdown ol,
 .chat-markdown blockquote,
 .chat-markdown pre,
 .chat-markdown table {
-  margin: 0 0 12px;
+  margin: 0 0 18px;
 }
 
 .chat-markdown > :last-child {
   margin-bottom: 0;
 }
 
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3,
+.chat-markdown h4 {
+  font-weight: 700;
+  margin: 0 0 10px;
+  line-height: 1.25;
+}
+
+.chat-markdown p:has(> strong:only-child) {
+  margin-bottom: 4px;
+}
+
+/* Strip AI-generated bold from list items — keep only number highlights */
+.chat-markdown li strong:not(.num) {
+  font-weight: 400;
+}
+
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 { font-size: 1em; }
+
 .chat-markdown ul,
 .chat-markdown ol {
-  padding-left: 1.35rem;
+  padding-left: 1.4rem;
 }
 
 .chat-markdown li {
-  margin: 4px 0;
+  margin: 3px 0;
+}
+
+.chat-markdown li > ul,
+.chat-markdown li > ol {
+  margin: 4px 0 0;
 }
 
 .chat-markdown a {
@@ -1173,9 +1213,27 @@
 .chat-composer-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 12px;
   padding: 0;
+}
+
+.chat-composer-format-btns {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.chat-composer-format-btn {
+  opacity: 0.45;
+  border-radius: 5px;
+  width: 28px;
+  height: 28px;
+}
+
+.chat-composer-format-btn:hover {
+  opacity: 1;
+  background: rgba(23, 22, 21, 0.07);
 }
 
 .chat-composer-footer-right {

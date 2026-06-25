@@ -22,6 +22,7 @@ import {
 import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
 import type { UIMessage } from "ai";
 import remarkGfm from "remark-gfm";
+import { visit } from "unist-util-visit";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import { MobileHeader } from "../components/MobileHeader";
@@ -391,24 +392,26 @@ export default function ChatPage() {
               ) : (
                 <>
                   {sessions.some((s) => s.is_pinned) && (
-                    <p className="chat-session-section-label">
-                      <PinIcon />
-                      Pinned conversations
-                    </p>
+                    <>
+                      <p className="chat-session-section-label">
+                        <PinIcon />
+                        Pinned conversations
+                      </p>
+                      {sessions.filter((s) => s.is_pinned).map((session) => (
+                        <SessionItem
+                          key={`pinned-${session.id}`}
+                          session={session}
+                          active={session.id === selectedSessionId}
+                          onSelect={() => selectSession(session)}
+                          onTogglePin={() => handleTogglePin(session)}
+                          onArchive={() => handleArchive(session)}
+                        />
+                      ))}
+                    </>
                   )}
-                  {sessions.filter((s) => s.is_pinned).map((session) => (
-                    <SessionItem
-                      key={`pinned-${session.id}`}
-                      session={session}
-                      active={session.id === selectedSessionId}
-                      onSelect={() => selectSession(session)}
-                      onTogglePin={() => handleTogglePin(session)}
-                      onArchive={() => handleArchive(session)}
-                    />
-                  ))}
                   <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => s.is_pinned) ? 8 : 0 }}>
                     <LockIcon />
-                    Other conversations
+                    {sessions.some((s) => s.is_pinned) ? "Other conversations" : "Your conversations"}
                   </p>
                   {sessions.filter((s) => !s.is_pinned).map((session) => (
                     <SessionItem
@@ -700,8 +703,42 @@ function EmptyChatState({ onStart }: { onStart: () => void }) {
   );
 }
 
+function useComposerFormat() {
+  const applyFormat = useCallback((type: "bold" | "bullet") => {
+    const textarea = document.querySelector<HTMLTextAreaElement>(".chat-composer-input");
+    if (!textarea) return;
+    textarea.focus();
+    const { selectionStart: start, selectionEnd: end, value } = textarea;
+
+    if (type === "bold") {
+      const selected = value.slice(start, end);
+      const replacement = `**${selected || "bold text"}**`;
+      textarea.setRangeText(replacement, start, end, "select");
+      if (!selected) {
+        textarea.setSelectionRange(start + 2, start + 2 + "bold text".length);
+      }
+    } else {
+      // bullet: prefix each selected line, or insert a new bullet
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      const lineEnd = value.indexOf("\n", end);
+      const blockEnd = lineEnd === -1 ? value.length : lineEnd;
+      const block = value.slice(lineStart, blockEnd);
+      const lines = block.split("\n");
+      const allBulleted = lines.every((l) => l.startsWith("- "));
+      const toggled = lines.map((l) => (allBulleted ? l.slice(2) : `- ${l}`)).join("\n");
+      textarea.setRangeText(toggled, lineStart, blockEnd, "preserve");
+    }
+
+    // Trigger React's onChange by dispatching an input event
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }, []);
+
+  return applyFormat;
+}
+
 function Composer({ placeholder, agent }: { placeholder: string; agent: string }) {
   const isRunning = useThread((t) => t.isRunning);
+  const applyFormat = useComposerFormat();
   return (
     <ComposerPrimitive.Root className="chat-composer-wrap">
       <div className={`chat-composer${isRunning ? " is-thinking" : ""}`}>
@@ -714,13 +751,7 @@ function Composer({ placeholder, agent }: { placeholder: string; agent: string }
           />
         </div>
         <div className="chat-composer-footer">
-          {/* <button type="button" className="chat-composer-icon-btn" aria-label="Attach">
-            <PlusIcon />
-          </button> */}
           <div className="chat-composer-footer-right">
-            {/* <button type="button" className="chat-composer-icon-btn" aria-label="Voice input">
-              <MicIcon />
-            </button> */}
             <ComposerPrimaryAction />
           </div>
         </div>
@@ -827,8 +858,86 @@ function AssistantActionBar() {
   );
 }
 
+// Converts inline • bullet strings into proper markdown list nodes
+// Converts ALL CAPS paragraph labels like "BUILD THIS:" into bold headings
+function remarkCapsHeadings() {
+  return (tree: import("mdast").Root) => {
+    visit(tree, "paragraph", (node: import("mdast").Paragraph, index: number | undefined, parent: import("mdast").Parent | undefined) => {
+      if (!parent || index == null) return;
+      const raw = node.children.map((c) => ("value" in c ? c.value : "")).join("").trim();
+      // Match heading-like lines: ALL CAPS, or short Title Case lines ending with : or ?
+      const isAllCaps = /^[A-Z][A-Z\s\d\-&/]{1,58}:?$/.test(raw);
+      const isTitleHeading = raw.length <= 60 && /^[A-Z]/.test(raw) && /[?:]$/.test(raw) && !/\./.test(raw);
+      if (!isAllCaps && !isTitleHeading) return;
+      // Use hast node directly so we can add a class — mdast strong doesn't support className
+      (node as unknown as import("hast").Element).tagName = "p";
+      node.children = [{
+        type: "html" as never,
+        value: `<strong class="heading">${raw}</strong>`,
+      } as never];
+    });
+  };
+}
+
+function remarkInlineBullets() {
+  return (tree: import("mdast").Root) => {
+    visit(tree, "paragraph", (node: import("mdast").Paragraph, index: number | undefined, parent: import("mdast").Parent | undefined) => {
+      if (!parent || index == null) return;
+      const raw = node.children.map((c) => ("value" in c ? c.value : "")).join("");
+      if (!raw.includes("•")) return;
+      const parts = raw.split("•").map((s) => s.trim()).filter(Boolean);
+      if (parts.length < 2) return;
+
+      const makeList = (items: string[]): import("mdast").List => ({
+        type: "list",
+        ordered: false,
+        spread: false,
+        children: items.map((text) => ({
+          type: "listItem" as const,
+          spread: false,
+          children: [{ type: "paragraph" as const, children: [{ type: "text" as const, value: text }] }],
+        })),
+      });
+
+      if (parent.type === "listItem") {
+        // Keep the text before the first bullet as the paragraph, add sub-list after
+        const [lead, ...rest] = parts;
+        const replacements: import("mdast").Content[] = [
+          { type: "paragraph", children: [{ type: "text", value: lead }] },
+          makeList(rest),
+        ];
+        parent.children.splice(index, 1, ...replacements);
+      } else {
+        parent.children.splice(index, 1, makeList(parts));
+      }
+    });
+  };
+}
+
+// Wraps financial figures like $2.1M, $18,903, 5%, 0.06% in <strong>
+function rehypeBoldNumbers() {
+  return (tree: import("hast").Root) => {
+    const PATTERN = /(\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?(?:\s*-\s*\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?)?|\b\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?%)/g;
+    visit(tree, "text", (node: import("hast").Text, index: number | undefined, parent: import("hast").Parent | undefined) => {
+      if (!parent || index == null) return;
+      const parts: (import("hast").Text | import("hast").Element)[] = [];
+      let last = 0;
+      let match;
+      PATTERN.lastIndex = 0;
+      while ((match = PATTERN.exec(node.value)) !== null) {
+        if (match.index > last) parts.push({ type: "text", value: node.value.slice(last, match.index) });
+        parts.push({ type: "element", tagName: "strong", properties: { className: ["num"] }, children: [{ type: "text", value: match[0] }] });
+        last = match.index + match[0].length;
+      }
+      if (parts.length === 0) return;
+      if (last < node.value.length) parts.push({ type: "text", value: node.value.slice(last) });
+      parent.children.splice(index, 1, ...parts);
+    });
+  };
+}
+
 function MarkdownText() {
-  return <MarkdownTextPrimitive className="chat-markdown" remarkPlugins={[remarkGfm]} />;
+  return <MarkdownTextPrimitive className="chat-markdown" remarkPlugins={[remarkGfm, remarkCapsHeadings, remarkInlineBullets]} rehypePlugins={[rehypeBoldNumbers]} />;
 }
 
 function ToolCallGroup({
@@ -1048,6 +1157,26 @@ function formatElapsedMs(value: number) {
   }
 
   return `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}s`;
+}
+
+function BoldIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M6 4h8a4 4 0 0 1 0 8H6V4Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M6 12h9a4 4 0 0 1 0 8H6V12Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function BulletListIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="4" cy="6" r="1.5" fill="currentColor" />
+      <circle cx="4" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="4" cy="18" r="1.5" fill="currentColor" />
+      <path d="M8 6H20M8 12H20M8 18H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 function PlusIcon() {
