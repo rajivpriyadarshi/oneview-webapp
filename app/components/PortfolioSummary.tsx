@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import PortfolioChart from "./PortfolioChart";
 import { type PortfolioViewResponse, type Account, type ValuationSeriesPoint, type PortfolioViewPosition } from "../lib/portfolioDataApi";
 import { type Portfolio } from "../lib/portfoliosApi";
@@ -73,7 +74,7 @@ export default function PortfolioSummary({
       data-analytics-section="portfolio_summary"
       className="relative mb-[16px] py-[32px]"
     >
-      <div className="mb-[-10px] hidden md:block">
+      <div className="mb-[-10px] hidden md:flex md:items-center md:gap-3">
         <div className="group relative inline-flex items-center">
           <span
             className="pointer-events-none invisible absolute whitespace-nowrap pl-5 pr-10 font-satoshi text-[16px] font-bold leading-6 tracking-[-0.02em]"
@@ -106,6 +107,13 @@ export default function PortfolioSummary({
           </select>
           <ChevronDown className="pointer-events-none absolute right-4 text-black/60" />
         </div>
+        <Link
+          href="/documents-vault"
+          className="inline-flex h-[48px] w-[48px] cursor-pointer items-center justify-center rounded-full border border-black/10 bg-white transition hover:bg-black/[0.02]"
+          aria-label="Add statements"
+        >
+          <PlusIcon />
+        </Link>
       </div>
 
       <div className="flex items-stretch justify-between gap-8 max-[900px]:flex-col max-[900px]:gap-6">
@@ -221,6 +229,14 @@ function formatLakhs(value: number, currency = "INR") {
 function truncateLabel(value: string, maxLength = 16) {
   if (!value) return "";
   return value.length > maxLength ? `${value.slice(0, maxLength)}...` : value;
+}
+
+function PlusIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 5V19M5 12H19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
 }
 
 function ChevronDown({ className = "" }: { className?: string }) {
