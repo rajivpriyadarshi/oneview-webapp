@@ -187,7 +187,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
       {/* Desktop */}
       <div className="hidden md:flex md:items-center md:justify-between px-[20px] py-[16px]">
         <div className="flex flex-col">
-          <h1 className="m-0 font-['ButlerPro'] text-[24px] font-normal leading-[28.8px] tracking-[-0.04em] text-black">
+          <h1 className="m-0 font-['ButlerPro'] text-[20px] font-normal leading-[24px] tracking-[-0.04em] text-black">
             Welcome {userName ? `${userName}` : ""}
           </h1>
           <p className="m-0 mt-[-2px] font-['Satoshi'] text-[14px] font-normal leading-[21px] tracking-[-0.02em] text-[#00000078]" style={{ fontFeatureSettings: "'ss03' on" }}>{subtitle}</p>
