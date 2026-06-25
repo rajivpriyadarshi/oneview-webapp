@@ -396,6 +396,36 @@
   margin: 12px 4px;
 }
 
+.chat-session-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.chat-session-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(23, 22, 21, 0.15);
+  color: rgba(23, 22, 21, 0.45);
+  background: transparent;
+}
+
+.chat-session-empty-label {
+  color: rgba(23, 22, 21, 0.5);
+  font-family: var(--font-satoshi), sans-serif;
+  font-size: 0.82rem;
+  margin: 0;
+}
+
 .chat-rail-notice {
   margin: 0;
   padding: 12px;

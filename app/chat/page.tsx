@@ -158,6 +158,16 @@ export default function ChatPage() {
     void refreshSessions({ showCached: true, showLoading: true });
   }, [refreshSessions]);
 
+  const prevSessionsLengthRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!isLoadingSessions && sessions.length === 0) {
+      setRailCollapsed(true);
+    } else if (prevSessionsLengthRef.current === 0 && sessions.length > 0) {
+      setRailCollapsed(false);
+    }
+    prevSessionsLengthRef.current = sessions.length;
+  }, [isLoadingSessions, sessions.length]);
+
   useEffect(() => {
     const refreshVisibleChats = () => {
       if (document.visibilityState === "visible") {
@@ -388,7 +398,15 @@ export default function ChatPage() {
               ) : isLoadingSessions ? (
                 <p className="chat-session-muted">Loading chats...</p>
               ) : sessions.length === 0 ? (
-                <p className="chat-session-muted">No chats yet.</p>
+                <div className="chat-session-empty">
+                  <div className="chat-session-empty-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      <line x1="17" y1="7" x2="7" y2="17"/>
+                    </svg>
+                  </div>
+                  <p className="chat-session-empty-label">No chats yet.</p>
+                </div>
               ) : (
                 <>
                   {sessions.some((s) => s.is_pinned) && (
