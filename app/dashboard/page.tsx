@@ -275,17 +275,17 @@ export default function DashboardPage() {
                 return (
                 <button
                   type="button"
-                  className="mb-4 w-full flex items-center gap-4 px-5 py-5 rounded-2xl text-left cursor-pointer border-0 hover:brightness-95 transition-all"
+                  className="mb-4 w-full flex items-center gap-2 px-4 py-4 rounded-2xl text-left cursor-pointer border-0 hover:brightness-95 transition-all"
                   style={{ background: "#DED7D1" }}
                   onClick={() => setIsPendingDocsModalOpen(true)}
                 >
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "#35230C" }}>
+                  <div className="flex-shrink-0 w-[42px] h-[42px] rounded-full flex items-center justify-center" style={{ background: "#35230C" }}>
                     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M10.9999 8.24997V11.9166M10.9999 15.5833H11.0091M9.73065 3.56738L2.19117 16.5901C1.77298 17.3124 1.56389 17.6736 1.59479 17.97C1.62174 18.2286 1.7572 18.4635 1.96745 18.6164C2.20849 18.7916 2.62581 18.7916 3.46046 18.7916H18.5394C19.3741 18.7916 19.7914 18.7916 20.0324 18.6164C20.2427 18.4635 20.3781 18.2286 20.4051 17.97C20.436 17.6736 20.2269 17.3124 19.8087 16.5901L12.2692 3.56738C11.8525 2.84764 11.6442 2.48778 11.3724 2.36691C11.1353 2.26148 10.8646 2.26148 10.6275 2.36691C10.3557 2.48778 10.1473 2.84765 9.73065 3.56738Z" stroke="white" strokeWidth="1.83333" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
                   <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-                    <span className="font-satoshi text-[16px] max-[768px]:text-[14px] font-semibold leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
+                    <span className="font-satoshi text-[16px] max-[768px]:text-[14px] font-medium leading-[130%] tracking-[-0.02em] text-black" style={{ fontFeatureSettings: "'ss03' on" }}>
                       We couldn&apos;t process {pendingCount} of your statement{pendingCount !== 1 ? "s" : ""} with full accuracy. Our team is reviewing them.
                     </span>
                     <span className="font-satoshi text-[14px] max-[768px]:text-[12px] font-normal leading-[140%] tracking-[-0.02em] text-black/50" style={{ fontFeatureSettings: "'ss03' on" }}>

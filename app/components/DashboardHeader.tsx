@@ -181,7 +181,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
       </div>
 
       {/* Desktop */}
-      <div className="hidden md:flex md:items-center md:justify-between px-[60px] py-4">
+      <div className="hidden md:flex md:items-center md:justify-between px-[20px] py-[16px]">
         <div className="flex flex-col">
           <h1 className="m-0 font-['ButlerPro'] text-[24px] font-normal leading-[28.8px] tracking-[-0.04em] text-black">
             Welcome {userName ? `${userName}` : ""}
