@@ -550,11 +550,11 @@
 
 .chat-message.user .chat-message-content {
   padding: 12px 14px;
-  background: #f0ebe0;
+  background: rgb(255 255 255);
   color: #000;
   border-radius: 18px 18px 4px 18px;
   box-shadow: none;
-  border: 1px solid #ffffff91;
+  border: 1px solid rgb(2 2 2 / 4%);
 }
 
 .chat-message.assistant .chat-message-content {
@@ -665,16 +665,31 @@
   display: inline-grid;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(23, 22, 21, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.56);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  backdrop-filter: blur(8px);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 1px 1px rgba(255, 255, 255, 0.7);
   color: rgba(23, 22, 21, 0.62);
-  transition: transform 150ms ease, background 150ms ease, color 150ms ease;
+  transition: transform 150ms ease, background 150ms ease, color 150ms ease, box-shadow 150ms ease;
 }
 
 .chat-action-btn:hover,
 .chat-branch-btn:hover {
-  background: #fff;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.7) 0%,
+    rgba(255, 255, 255, 0.4) 100%
+  );
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 1px rgba(255, 255, 255, 0.9);
   color: #171615;
   transform: translateY(-1px);
 }
@@ -1023,6 +1038,31 @@
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   pointer-events: none;
+}
+
+.chat-composer.is-thinking::before {
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--composer-border-angle, 0deg),
+    #b37f40 0%,
+    rgba(179, 127, 64, 0.1) 25%,
+    rgba(179, 127, 64, 0.05) 50%,
+    rgba(179, 127, 64, 0.1) 75%,
+    #b37f40 100%
+  );
+  animation: composer-border-spin 2s linear infinite;
+}
+
+@property --composer-border-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes composer-border-spin {
+  to {
+    --composer-border-angle: 360deg;
+  }
 }
 
 .chat-composer-input-row {

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -13,6 +13,7 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
   useToolCallElapsed,
+  useThread,
 } from "@assistant-ui/react";
 import {
   AssistantChatTransport,
@@ -268,7 +269,7 @@ export default function ChatPage() {
 
           <section className="chat-thread-panel" aria-label="Wealth advisor chat">
             {selectedSession && !isDraftChat ? (
-              <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none" }}>
+              <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none", opacity: 0.8 }}>
                 <Image src="/chat-hero-bg.png" alt="" fill className="object-cover" priority />
               </div>
             ) : (
@@ -482,9 +483,10 @@ function EmptyChatState({ onStart }: { onStart: () => void }) {
 }
 
 function Composer({ placeholder, agent }: { placeholder: string; agent: string }) {
+  const isRunning = useThread((t) => t.isRunning);
   return (
     <ComposerPrimitive.Root className="chat-composer-wrap">
-      <div className="chat-composer">
+      <div className={`chat-composer${isRunning ? " is-thinking" : ""}`}>
         <div className="chat-composer-input-row">
           <ComposerPrimitive.Input
             className="chat-composer-input"
