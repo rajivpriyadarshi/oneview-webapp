@@ -707,7 +707,7 @@ function Composer({ placeholder, agent }: { placeholder: string; agent: string }
           <ComposerPrimitive.Input
             className="chat-composer-input"
             placeholder={placeholder}
-            rows={2}
+            rows={1}
             autoFocus
           />
         </div>
@@ -922,7 +922,7 @@ function AssistantLoadingState() {
   return (
     <div className="chat-tool-inline-status active" aria-live="polite">
       <span className="chat-loading-dot" />
-      <span>Working…</span>
+      <span>Thinking…</span>
     </div>
   );
 }
