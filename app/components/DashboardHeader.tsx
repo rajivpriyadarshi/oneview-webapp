@@ -177,13 +177,6 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
               ))}
             </select>
           )}
-          <Link
-            href="/documents-vault"
-            className="inline-flex h-[42px] w-[42px] cursor-pointer items-center justify-center rounded-full border border-black/15 bg-white transition hover:bg-black/[0.04]"
-            aria-label="Add statements"
-          >
-            <PlusIcon />
-          </Link>
         </div>
       </div>
 
@@ -202,25 +195,9 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
             </span>
           )}
           {currencySelect}
-          <Link
-            href="/documents-vault"
-            className="inline-flex cursor-pointer justify-center items-center gap-[10px] rounded-full border-[1px] border-black/10 bg-transparent pt-[10px] pb-[10px] pl-[12px] pr-[16px] font-satoshi text-[16px] font-medium leading-6 tracking-[-0.01em] text-black transition hover:bg-black/[0.02]"
-            style={{ fontFeatureSettings: "'ss03' on" }}
-          >
-            <PlusIcon />
-            Add statements
-          </Link>
         </div>
       </div>
     </header>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 5V19M5 12H19" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
   );
 }
 
