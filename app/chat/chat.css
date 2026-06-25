@@ -550,11 +550,11 @@
 
 .chat-message.user .chat-message-content {
   padding: 12px 14px;
-  background: rgb(255 255 255);
+  background: #ede8df;
   color: #000;
   border-radius: 18px 18px 4px 18px;
   box-shadow: none;
-  border: 1px solid rgb(2 2 2 / 4%);
+  border: 1px solid #ffffff87;
 }
 
 .chat-message.assistant .chat-message-content {
