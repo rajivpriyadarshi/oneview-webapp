@@ -550,10 +550,11 @@
 
 .chat-message.user .chat-message-content {
   padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.85);
+  background: #f0ebe0;
   color: #000;
   border-radius: 18px 18px 4px 18px;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+  border: 1px solid #ffffff91;
 }
 
 .chat-message.assistant .chat-message-content {
@@ -969,12 +970,13 @@
 .chat-composer {
   width: min(100%, 720px);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   margin: 0 auto;
-  padding: 4px 0 12px;
+  padding: 8px 8px 8px 16px;
   border: none;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.40);
+  background: rgba(255, 255, 255, 0.60);
   backdrop-filter: blur(20px);
   box-shadow: 0px 2px 10px rgba(0, 0, 0, 0.06);
   position: relative;
@@ -1001,13 +1003,14 @@
 }
 
 .chat-composer-input-row {
-  padding: 16px 16px 0;
+  flex: 1;
+  padding: 0;
 }
 
 .chat-composer textarea,
 .chat-composer-input {
   width: 100%;
-  min-height: 48px;
+  min-height: unset;
   resize: none;
   border: 0;
   outline: 0;
@@ -1036,7 +1039,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
-  padding: 8px 16px 0;
+  padding: 0;
 }
 
 .chat-composer-footer-right {
