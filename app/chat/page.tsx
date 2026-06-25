@@ -442,7 +442,7 @@ export default function ChatPage() {
               </div>
             ) : (
               <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none" }}>
-                <Image src="/Hero_bg.png" alt="" fill className="object-cover" priority />
+                <Image src="/Hero-bg.png" alt="" fill className="object-cover" priority />
               </div>
             )}
             {selectedSession || isDraftChat ? (
