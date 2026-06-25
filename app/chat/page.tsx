@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -26,17 +26,22 @@ import Sidebar from "../components/Sidebar";
 import { MobileHeader } from "../components/MobileHeader";
 import {
   type AiChatSession,
+  type ChatPrompt,
   aiChatFetch,
+  archiveAiChatSession,
   createTitleFromPrompt,
   getAiAgentSlug,
   getAiChatsUrl,
   getAiChatMessagesUrl,
   getAiRequestHeaders,
   listAiChatSessions,
+  listChatPrompts,
   loadAiChatMessages,
   mergeAiChatSessions,
+  pinAiChatSession,
   readStoredAiChatSessions,
   upsertStoredAiChatSession,
+  writeStoredAiChatSessions,
 } from "../lib/aiChatApi";
 import "./chat.css";
 
@@ -62,6 +67,9 @@ type AiChatMessageMetadata = {
 
 type ChatUiMessage = UIMessage<AiChatMessageMetadata>;
 
+const WARM_CHAT_CACHE_MAX_AGE_MS = 30_000;
+const PENDING_LOCAL_CHAT_MAX_AGE_MS = 2 * 60_000;
+
 export default function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [railCollapsed, setRailCollapsed] = useState(false);
@@ -72,42 +80,97 @@ export default function ChatPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isDraftChat, setIsDraftChat] = useState(true);
   const [notice, setNotice] = useState<string | null>(null);
+  const [prompts, setPrompts] = useState<ChatPrompt[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedSessions, setArchivedSessions] = useState<AiChatSession[]>([]);
+  const [isLoadingArchived, setIsLoadingArchived] = useState(false);
+  const sessionsRefreshRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadSessions() {
-      const storedSessions = readStoredAiChatSessions();
-      if (!cancelled) {
-        setSessions(storedSessions);
-      }
-
-      try {
-        const serverSessions = await listAiChatSessions();
-        if (cancelled) {
-          return;
-        }
-
-        const mergedSessions = mergeAiChatSessions(serverSessions, storedSessions);
-        setSessions(mergedSessions);
-        setNotice(null);
-      } catch {
+    listChatPrompts()
+      .then((items) => {
         if (!cancelled) {
-          setNotice("Chat history is stored on this browser until backend listing is available.");
+          setPrompts(items);
         }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingSessions(false);
-        }
-      }
-    }
-
-    loadSessions();
+      })
+      .catch(() => {
+        /* fall back to static suggestions */
+      });
 
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const refreshSessions = useCallback(
+    async ({ showCached = false, showLoading = false }: { showCached?: boolean; showLoading?: boolean } = {}) => {
+      const requestId = ++sessionsRefreshRef.current;
+
+      if (showLoading) {
+        setIsLoadingSessions(true);
+      }
+
+      if (showCached) {
+        const cachedSessions = getVisibleSessions(
+          readStoredAiChatSessions({ maxAgeMs: WARM_CHAT_CACHE_MAX_AGE_MS }),
+        );
+        if (cachedSessions.length > 0) {
+          setSessions(cachedSessions);
+        }
+      }
+
+      try {
+        const serverSessions = getVisibleSessions(await listAiChatSessions());
+        if (requestId !== sessionsRefreshRef.current) {
+          return;
+        }
+
+        const serverIds = new Set(serverSessions.map((session) => session.id));
+        const pendingLocalSessions = getVisibleSessions(
+          readStoredAiChatSessions({ maxAgeMs: PENDING_LOCAL_CHAT_MAX_AGE_MS }),
+        ).filter((session) => session.source === "local" && !serverIds.has(session.id));
+        const nextSessions = mergeAiChatSessions(serverSessions, pendingLocalSessions);
+
+        setSessions(nextSessions);
+        writeStoredAiChatSessions(serverSessions);
+        setNotice(null);
+      } catch (error) {
+        console.error("Failed to load AI chat sessions:", error);
+        if (requestId === sessionsRefreshRef.current) {
+          const fallbackSessions = getVisibleSessions(readStoredAiChatSessions());
+          setSessions(fallbackSessions);
+          setNotice("Chat history could not be refreshed. Showing the latest browser fallback.");
+        }
+      } finally {
+        if (requestId === sessionsRefreshRef.current) {
+          setIsLoadingSessions(false);
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    void refreshSessions({ showCached: true, showLoading: true });
+  }, [refreshSessions]);
+
+  useEffect(() => {
+    const refreshVisibleChats = () => {
+      if (document.visibilityState === "visible") {
+        void refreshSessions();
+      }
+    };
+
+    window.addEventListener("focus", refreshVisibleChats);
+    document.addEventListener("visibilitychange", refreshVisibleChats);
+
+    return () => {
+      window.removeEventListener("focus", refreshVisibleChats);
+      document.removeEventListener("visibilitychange", refreshVisibleChats);
+    };
+  }, [refreshSessions]);
 
   const selectedSession = useMemo(
     () => sessions.find((session) => session.id === selectedSessionId) ?? null,
@@ -137,6 +200,77 @@ export default function ChatPage() {
     setSelectedSessionId(null);
     setInitialMessages([]);
     setNotice(null);
+  };
+
+  const handleTogglePin = async (session: AiChatSession) => {
+    const nextPinned = !session.is_pinned;
+    setSessions((current) =>
+      current.map((item) => (item.id === session.id ? { ...item, is_pinned: nextPinned } : item)),
+    );
+
+    try {
+      const updated = await pinAiChatSession(session.id, nextPinned);
+      setSessions((current) => mergeAiChatSessions(current, [updated]));
+      void refreshSessions();
+    } catch (error) {
+      console.error("Failed to toggle pin:", error);
+      setSessions((current) =>
+        current.map((item) => (item.id === session.id ? { ...item, is_pinned: session.is_pinned } : item)),
+      );
+      setNotice("Could not update the pinned state.");
+    }
+  };
+
+  const handleArchive = async (session: AiChatSession) => {
+    setSessions((current) => current.filter((item) => item.id !== session.id));
+    if (session.id === selectedSessionId) {
+      startNewChat();
+    }
+
+    try {
+      const updated = await archiveAiChatSession(session.id, true);
+      setArchivedSessions((current) => mergeAiChatSessions(current, [updated]));
+      void refreshSessions();
+    } catch (error) {
+      console.error("Failed to archive chat:", error);
+      setSessions((current) => mergeAiChatSessions(current, [session]));
+      setNotice("Could not archive the chat.");
+    }
+  };
+
+  const handleUnarchive = async (session: AiChatSession) => {
+    setArchivedSessions((current) => current.filter((item) => item.id !== session.id));
+
+    try {
+      const updated = await archiveAiChatSession(session.id, false);
+      setSessions((current) => mergeAiChatSessions(current, [updated]));
+      void refreshSessions();
+    } catch (error) {
+      console.error("Failed to unarchive chat:", error);
+      setArchivedSessions((current) => mergeAiChatSessions(current, [session]));
+      setNotice("Could not unarchive the chat.");
+    }
+  };
+
+  const toggleArchivedView = async () => {
+    if (showArchived) {
+      setShowArchived(false);
+      return;
+    }
+
+    setShowArchived(true);
+    setIsLoadingArchived(true);
+    setNotice(null);
+
+    try {
+      const archived = await listAiChatSessions({ archivedOnly: true });
+      setArchivedSessions(archived);
+    } catch (error) {
+      console.error("Failed to load archived chats:", error);
+      setNotice("Could not load archived chats.");
+    } finally {
+      setIsLoadingArchived(false);
+    }
   };
 
   const updateSessionFromPrompt = (prompt: string) => {
@@ -172,6 +306,7 @@ export default function ChatPage() {
 
         upsertStoredAiChatSession(nextSession);
         setSessions((current) => mergeAiChatSessions([nextSession], current));
+        window.setTimeout(() => void refreshSessions(), 500);
       }
 
       return;
@@ -195,6 +330,7 @@ export default function ChatPage() {
     setInitialMessages(messages);
     setSelectedSessionId(sessionId);
     setIsDraftChat(false);
+    window.setTimeout(() => void refreshSessions(), 500);
   };
 
   return (
@@ -223,45 +359,74 @@ export default function ChatPage() {
               <CollapseIcon />
             </button>
             <div className="chat-session-list">
-              {isLoadingSessions ? (
+              {showArchived ? (
+                isLoadingArchived ? (
+                  <p className="chat-session-muted">Loading archived chats...</p>
+                ) : archivedSessions.length === 0 ? (
+                  <p className="chat-session-muted">No archived chats.</p>
+                ) : (
+                  <>
+                    <p className="chat-session-section-label">
+                      <ArchiveIcon />
+                      Archived conversations
+                    </p>
+                    {archivedSessions.map((session) => (
+                      <SessionItem
+                        key={`archived-${session.id}`}
+                        session={session}
+                        archived
+                        active={session.id === selectedSessionId}
+                        onSelect={() => selectSession(session)}
+                        onTogglePin={() => handleTogglePin(session)}
+                        onArchive={() => handleUnarchive(session)}
+                      />
+                    ))}
+                  </>
+                )
+              ) : isLoadingSessions ? (
                 <p className="chat-session-muted">Loading chats...</p>
               ) : sessions.length === 0 ? (
                 <p className="chat-session-muted">No chats yet.</p>
               ) : (
                 <>
-                  {sessions.some((s) => (s as any).pinned) && (
+                  {sessions.some((s) => s.is_pinned) && (
                     <p className="chat-session-section-label">
                       <PinIcon />
                       Pinned conversations
                     </p>
                   )}
-                  {sessions.filter((s) => (s as any).pinned).map((session) => (
-                    <button
+                  {sessions.filter((s) => s.is_pinned).map((session) => (
+                    <SessionItem
                       key={`pinned-${session.id}`}
-                      type="button"
-                      className={`chat-session-item${session.id === selectedSessionId ? " active" : ""}`}
-                      onClick={() => selectSession(session)}
-                    >
-                      <span className="chat-session-title">{session.title}</span>
-                    </button>
+                      session={session}
+                      active={session.id === selectedSessionId}
+                      onSelect={() => selectSession(session)}
+                      onTogglePin={() => handleTogglePin(session)}
+                      onArchive={() => handleArchive(session)}
+                    />
                   ))}
-                  <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => (s as any).pinned) ? 8 : 0 }}>
+                  <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => s.is_pinned) ? 8 : 0 }}>
                     <LockIcon />
                     Other conversations
                   </p>
-                  {sessions.filter((s) => !(s as any).pinned).map((session) => (
-                    <button
+                  {sessions.filter((s) => !s.is_pinned).map((session) => (
+                    <SessionItem
                       key={session.id}
-                      type="button"
-                      className={`chat-session-item${session.id === selectedSessionId ? " active" : ""}`}
-                      onClick={() => selectSession(session)}
-                    >
-                      <span className="chat-session-title">{session.title}</span>
-                    </button>
+                      session={session}
+                      active={session.id === selectedSessionId}
+                      onSelect={() => selectSession(session)}
+                      onTogglePin={() => handleTogglePin(session)}
+                      onArchive={() => handleArchive(session)}
+                    />
                   ))}
                 </>
               )}
             </div>
+
+            <button type="button" className="chat-rail-archive-toggle" onClick={toggleArchivedView}>
+              <ArchiveIcon />
+              {showArchived ? "Back to chats" : "View archived"}
+            </button>
 
             {notice ? <p className="chat-rail-notice">{notice}</p> : null}
           </aside>
@@ -284,6 +449,7 @@ export default function ChatPage() {
                   key={selectedSession?.id ?? "draft"}
                   session={selectedSession}
                   initialMessages={initialMessages}
+                  prompts={prompts}
                   onPromptSubmitted={updateSessionFromPrompt}
                   onAssistantFinished={handleAssistantFinished}
                 />
@@ -298,9 +464,66 @@ export default function ChatPage() {
   );
 }
 
+function getVisibleSessions(sessions: AiChatSession[]) {
+  return mergeAiChatSessions(sessions).filter((session) => !session.is_archived);
+}
+
+function SessionItem({
+  session,
+  active,
+  archived,
+  onSelect,
+  onTogglePin,
+  onArchive,
+}: {
+  session: AiChatSession;
+  active: boolean;
+  archived?: boolean;
+  onSelect: () => void;
+  onTogglePin: () => void;
+  onArchive: () => void;
+}) {
+  return (
+    <div className={`chat-session-item${active ? " active" : ""}`}>
+      <button type="button" className="chat-session-select" onClick={onSelect}>
+        <span className="chat-session-title">{session.title}</span>
+      </button>
+      <div className="chat-session-actions">
+        {!archived && (
+          <button
+            type="button"
+            className={`chat-session-action${session.is_pinned ? " is-active" : ""}`}
+            aria-label={session.is_pinned ? "Unpin chat" : "Pin chat"}
+            title={session.is_pinned ? "Unpin chat" : "Pin chat"}
+            onClick={(event) => {
+              event.stopPropagation();
+              onTogglePin();
+            }}
+          >
+            <PinIcon />
+          </button>
+        )}
+        <button
+          type="button"
+          className="chat-session-action"
+          aria-label={archived ? "Unarchive chat" : "Archive chat"}
+          title={archived ? "Unarchive chat" : "Archive chat"}
+          onClick={(event) => {
+            event.stopPropagation();
+            onArchive();
+          }}
+        >
+          {archived ? <UnarchiveIcon /> : <ArchiveIcon />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 type ChatThreadProps = {
   session: AiChatSession | null;
   initialMessages: ChatUiMessage[];
+  prompts: ChatPrompt[];
   onPromptSubmitted: (prompt: string) => void;
   onAssistantFinished: (details: {
     sessionId: string | null;
@@ -309,7 +532,7 @@ type ChatThreadProps = {
   }) => void;
 };
 
-function ChatThread({ session, initialMessages, onPromptSubmitted, onAssistantFinished }: ChatThreadProps) {
+function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAssistantFinished }: ChatThreadProps) {
   const agent = getAiAgentSlug();
   const lastPromptRef = useRef<string | null>(null);
   const pendingSessionIdRef = useRef<string | null>(session?.id ?? null);
@@ -402,38 +625,33 @@ function ChatThread({ session, initialMessages, onPromptSubmitted, onAssistantFi
                 <Composer placeholder="Ask me anything about your holdings, market stocks, crypto, risk, or returns..." agent={agent} />
               </div>
               <div className="chat-suggestions-wrap">
-                <div className="chat-suggestions-row">
-                  <div className="chat-suggestions-row-inner">
-                    {PROMPT_SUGGESTIONS_ROW1.map((suggestion) => (
-                      <ThreadPrimitive.Suggestion key={suggestion} prompt={suggestion} send className="chat-suggestion-pill">
-                        <SendArrowIcon />
-                        {suggestion}
-                      </ThreadPrimitive.Suggestion>
-                    ))}
-                    {PROMPT_SUGGESTIONS_ROW1.map((suggestion) => (
-                      <ThreadPrimitive.Suggestion key={`dup-${suggestion}`} prompt={suggestion} send className="chat-suggestion-pill">
-                        <SendArrowIcon />
-                        {suggestion}
-                      </ThreadPrimitive.Suggestion>
-                    ))}
-                  </div>
-                </div>
-                <div className="chat-suggestions-row">
-                  <div className="chat-suggestions-row-inner">
-                    {PROMPT_SUGGESTIONS_ROW2.map((suggestion) => (
-                      <ThreadPrimitive.Suggestion key={suggestion} prompt={suggestion} send className="chat-suggestion-pill">
-                        <SendArrowIcon />
-                        {suggestion}
-                      </ThreadPrimitive.Suggestion>
-                    ))}
-                    {PROMPT_SUGGESTIONS_ROW2.map((suggestion) => (
-                      <ThreadPrimitive.Suggestion key={`dup-${suggestion}`} prompt={suggestion} send className="chat-suggestion-pill">
-                        <SendArrowIcon />
-                        {suggestion}
-                      </ThreadPrimitive.Suggestion>
-                    ))}
-                  </div>
-                </div>
+                {(() => {
+                  const promptMessages = prompts.map((p) => p.user_message).filter(Boolean);
+                  const row1 = promptMessages.length > 0
+                    ? promptMessages.filter((_, i) => i % 2 === 0)
+                    : PROMPT_SUGGESTIONS_ROW1;
+                  const row2 = promptMessages.length > 0
+                    ? promptMessages.filter((_, i) => i % 2 === 1)
+                    : PROMPT_SUGGESTIONS_ROW2;
+                  return [row1, row2].map((row, rowIndex) => (
+                    <div className="chat-suggestions-row" key={`row-${rowIndex}`}>
+                      <div className="chat-suggestions-row-inner">
+                        {row.map((suggestion) => (
+                          <ThreadPrimitive.Suggestion key={suggestion} prompt={suggestion} send className="chat-suggestion-pill">
+                            <SendArrowIcon />
+                            {suggestion}
+                          </ThreadPrimitive.Suggestion>
+                        ))}
+                        {row.map((suggestion) => (
+                          <ThreadPrimitive.Suggestion key={`dup-${suggestion}`} prompt={suggestion} send className="chat-suggestion-pill">
+                            <SendArrowIcon />
+                            {suggestion}
+                          </ThreadPrimitive.Suggestion>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
           </AuiIf>
@@ -955,6 +1173,26 @@ function CollapseIcon() {
       <path d="M5.15625 18.2812H14.8438C16.7422 18.2812 18.2812 16.7422 18.2812 14.8438V5.15625C18.2812 3.25777 16.7422 1.71875 14.8438 1.71875H5.15625C3.25777 1.71875 1.71875 3.25777 1.71875 5.15625V14.8438C1.71875 16.7422 3.25777 18.2812 5.15625 18.2812Z" stroke="#262C31" strokeWidth="1.4"/>
       <path d="M7.5 18.2812V1.71875" stroke="#262C31" strokeWidth="1.4"/>
       <path d="M13.3594 11.9922L11.0156 9.64844L13.3594 7.30469" stroke="#262C31" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function ArchiveIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 7H21V9H3V7Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M5 9V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 13H14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UnarchiveIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 7H21V9H3V7Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M5 9V19C5 20.1 5.9 21 7 21H17C18.1 21 19 20.1 19 19V9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 18V12M12 12L9.5 14.5M12 12L14.5 14.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
