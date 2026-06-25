@@ -75,7 +75,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {currencyList.length > 6 ? (
+      {currencyList.length > 5 ? (
         <div className="relative inline-grid items-center">
           <span className="invisible col-start-1 row-start-1 pl-[14px] pr-[24px] font-satoshi text-[15px] font-medium tracking-[-0.02em]">{currency}</span>
           <select
