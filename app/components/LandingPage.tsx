@@ -37,7 +37,7 @@ export function LandingPage() {
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <Image
-          src="/Hero_bg.png"
+          src="/Hero-bg.png"
           alt=""
           fill
           className="object-cover"
