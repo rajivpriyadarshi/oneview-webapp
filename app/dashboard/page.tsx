@@ -224,9 +224,12 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen overflow-x-hidden bg-transparent">
+      <div className="flex min-h-screen overflow-x-hidden bg-transparent relative">
+        <div style={{ position: "fixed", top: "-10%", right: "-10%", bottom: "-10%", left: "-10%", zIndex: 0, pointerEvents: "none", opacity: 0.5 }}>
+          <Image src="/Hero_bg.png" alt="" fill className="object-cover" priority />
+        </div>
         <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-        <main className="box-border w-full max-w-full flex-1 overflow-x-hidden pt-[120px] pb-[80px] md:pb-0 md:ml-16 px-6 sm:px-[60px]">
+        <main className="relative z-[1] box-border w-full max-w-full flex-1 overflow-x-hidden pt-[120px] pb-[80px] md:pb-0 md:ml-16 px-6 sm:px-[60px]">
           {viewLoading && !portfolioView ? (
             <div className="flex h-[calc(100vh-160px)] flex-col items-center justify-center gap-4">
               <div className="relative mb-8 inline-flex items-center justify-center">

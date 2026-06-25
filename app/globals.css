@@ -36,9 +36,7 @@ body {
 body {
   margin: 0;
   color: var(--foreground);
-  background:
-    radial-gradient(circle, #B5ADA4 0.8px, transparent 0.8px) 0 0 / 24px 24px,
-    var(--background);
+  background: var(--background);
   font-family: var(--font-inter);
 }
 

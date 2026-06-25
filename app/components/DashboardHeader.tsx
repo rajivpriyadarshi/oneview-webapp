@@ -64,7 +64,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
     fontFeatureSettings: "'ss03' on",
     backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 7L11 1' stroke='%232f2b2c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
     backgroundRepeat: "no-repeat" as const,
-    backgroundPosition: "right 12px center",
+    backgroundPosition: "right 10px center",
   };
 
   const tooltipVisible = showTooltip || hovered;
@@ -75,17 +75,20 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {currencyList.length > 4 ? (
-        <select
-          value={currency}
-          onChange={(e) => onCurrencyChange(e.target.value)}
-          className="h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-4 pr-9 font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer transition hover:bg-black/[0.02]"
-          style={selectStyle}
-        >
-          {currencyList.map((code) => (
-            <option key={code} value={code}>{code}</option>
-          ))}
-        </select>
+      {currencyList.length > 6 ? (
+        <div className="relative inline-grid items-center">
+          <span className="invisible col-start-1 row-start-1 pl-[14px] pr-[24px] font-satoshi text-[15px] font-medium tracking-[-0.02em]">{currency}</span>
+          <select
+            value={currency}
+            onChange={(e) => onCurrencyChange(e.target.value)}
+            className="col-start-1 row-start-1 h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-[14px] pr-[24px] font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer transition hover:bg-black/[0.02]"
+            style={selectStyle}
+          >
+            {currencyList.map((code) => (
+              <option key={code} value={code}>{code}</option>
+            ))}
+          </select>
+        </div>
       ) : (
         <div style={{ display: "inline-flex", alignItems: "center", borderRadius: "38px", background: "linear-gradient(90deg, #2F1E07 0%, #58442A 100%)", padding: "2px" }}>
           {currencyList.map((code) => (
@@ -111,8 +114,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
           style={{
             position: "absolute",
             top: "calc(100% + 10px)",
-            left: "50%",
-            transform: "translateX(-50%)",
+            right: 0,
             background: "#1a1a1a",
             color: "#fff",
             borderRadius: "10px",
@@ -131,8 +133,7 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
           <div style={{
             position: "absolute",
             bottom: "100%",
-            left: "50%",
-            transform: "translateX(-50%)",
+            right: "20px",
             width: 0,
             height: 0,
             borderLeft: "6px solid transparent",
@@ -166,16 +167,19 @@ export default function DashboardHeader({ asOfDate, currency = "INR", apiCurrenc
         {/* Right: controls */}
         <div className="flex items-center gap-2">
           {onCurrencyChange && (
-            <select
-              value={currency}
-              onChange={(e) => onCurrencyChange(e.target.value)}
-              className="h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-4 pr-9 font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer"
-              style={selectStyle}
-            >
-              {currencyList.map((code) => (
-                <option key={code} value={code}>{code}</option>
-              ))}
-            </select>
+            <div className="relative inline-grid items-center">
+              <span className="invisible col-start-1 row-start-1 pl-[14px] pr-[24px] font-satoshi text-[15px] font-medium tracking-[-0.02em]">{currency}</span>
+              <select
+                value={currency}
+                onChange={(e) => onCurrencyChange(e.target.value)}
+                className="col-start-1 row-start-1 h-[42px] appearance-none rounded-full border border-black/15 bg-white pl-[14px] pr-[24px] font-satoshi text-[15px] font-medium tracking-[-0.02em] text-black outline-none cursor-pointer"
+                style={selectStyle}
+              >
+                {currencyList.map((code) => (
+                  <option key={code} value={code}>{code}</option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
       </div>
