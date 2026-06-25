@@ -869,12 +869,11 @@ function remarkCapsHeadings() {
       const isAllCaps = /^[A-Z][A-Z\s\d\-&/]{1,58}:?$/.test(raw);
       const isTitleHeading = raw.length <= 60 && /^[A-Z]/.test(raw) && /[?:]$/.test(raw) && !/\./.test(raw);
       if (!isAllCaps && !isTitleHeading) return;
-      // Use hast node directly so we can add a class — mdast strong doesn't support className
-      (node as unknown as import("hast").Element).tagName = "p";
       node.children = [{
-        type: "html" as never,
-        value: `<strong class="heading">${raw}</strong>`,
-      } as never];
+        type: "strong",
+        data: { hProperties: { className: ["heading"] } },
+        children: [{ type: "text", value: raw }],
+      } as unknown as import("mdast").Strong];
     });
   };
 }
