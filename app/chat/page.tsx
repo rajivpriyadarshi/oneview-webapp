@@ -703,8 +703,12 @@ function DataStatusPart({ name, status }: { name?: string; status?: string }) {
 function AssistantLoadingState() {
   return (
     <div className="chat-tool-inline-status active" aria-live="polite">
-      <span className="chat-loading-dot" />
-      <span>Thinking…</span>
+      <span>Thinking</span>
+      <span className="chat-loading-dots">
+        <span className="chat-loading-dot" />
+        <span className="chat-loading-dot" />
+        <span className="chat-loading-dot" />
+      </span>
     </div>
   );
 }
