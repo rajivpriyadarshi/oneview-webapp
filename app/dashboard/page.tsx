@@ -224,8 +224,8 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen overflow-x-hidden bg-transparent relative">
-        <div style={{ position: "fixed", top: "-10%", right: "-10%", bottom: "-10%", left: "-10%", zIndex: 0, pointerEvents: "none", opacity: 0.5 }}>
+      <div className="flex min-h-screen overflow-x-hidden bg-[var(--background)] relative">
+        <div style={{ position: "fixed", top: "-15%", right: "-15%", bottom: "-15%", left: "-15%", zIndex: 0, pointerEvents: "none", opacity: 0.5 }}>
           <Image src="/Hero_bg.png" alt="" fill className="object-cover" priority />
         </div>
         <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
