@@ -1407,7 +1407,7 @@ button:disabled {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 60;
+  z-index: 210;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 0;
   background: #ffffff26;
