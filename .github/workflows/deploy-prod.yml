@@ -32,6 +32,7 @@ jobs:
           echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID=${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}" >> .env.local
           echo "NEXT_PUBLIC_MIXPANEL_TOKEN=${{ vars.NEXT_PUBLIC_MIXPANEL_TOKEN }}" >> .env.local
           echo "NEXT_PUBLIC_VERSION=${{ vars.NEXT_PUBLIC_VERSION }}" >> .env.local
+          echo "NEXT_PUBLIC_AI_AGENT_SLUG=${{ vars.NEXT_PUBLIC_AI_AGENT_SLUG }}" >> .env.local
           cat .env.local
           
       - name: Configure AWS credentials
