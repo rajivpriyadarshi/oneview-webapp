@@ -109,7 +109,7 @@ export default function PortfolioSummary({
         </div>
         <Link
           href="/documents-vault"
-          className="inline-flex h-[48px] w-[48px] cursor-pointer items-center justify-center rounded-full border border-black/10 bg-white transition hover:bg-black/[0.02]"
+          className="inline-flex h-[48px] w-[48px] cursor-pointer items-center justify-center rounded-full border border-black/10 bg-[#f6f5f3] transition hover:bg-[#f0efed]"
           aria-label="Add statements"
         >
           <PlusIcon />
