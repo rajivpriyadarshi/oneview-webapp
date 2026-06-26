@@ -411,7 +411,7 @@ function DashboardBottomBar({
   }, []);
 
   return (
-    <div className="hidden md:flex fixed bottom-0 left-[80px] right-0 z-[200] items-center gap-3 border-t border-black/10 bg-[#ffffff26] backdrop-blur-[30px] p-[16px] overflow-hidden">
+    <div className="hidden md:flex fixed bottom-0 left-[80px] right-0 z-[200] items-center gap-3 border-t border-black/10 bg-[#ffffff26] backdrop-blur-[30px] p-[10px] overflow-hidden">
       {/* Ask AI button */}
       <button
         type="button"
