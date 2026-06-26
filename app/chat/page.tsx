@@ -381,7 +381,15 @@ export default function ChatPage() {
                 isLoadingArchived ? (
                   <p className="chat-session-muted">Loading archived chats...</p>
                 ) : archivedSessions.length === 0 ? (
-                  <p className="chat-session-muted">No archived chats.</p>
+                  <div className="chat-session-empty">
+                    <div className="chat-session-empty-icon">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        <line x1="17" y1="7" x2="7" y2="17"/>
+                      </svg>
+                    </div>
+                    <p className="chat-session-empty-label">No archived chats.</p>
+                  </div>
                 ) : (
                   <>
                     <p className="chat-session-section-label">
