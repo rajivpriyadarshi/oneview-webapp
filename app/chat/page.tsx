@@ -185,8 +185,11 @@ export default function ChatPage() {
   }, [refreshSessions]);
 
   const selectedSession = useMemo(
-    () => sessions.find((session) => session.id === selectedSessionId) ?? null,
-    [selectedSessionId, sessions],
+    () =>
+      sessions.find((session) => session.id === selectedSessionId) ??
+      archivedSessions.find((session) => session.id === selectedSessionId) ??
+      null,
+    [selectedSessionId, sessions, archivedSessions],
   );
 
   const selectSession = async (session: AiChatSession) => {
@@ -427,10 +430,12 @@ export default function ChatPage() {
                       ))}
                     </>
                   )}
-                  <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => s.is_pinned) ? 8 : 0 }}>
-                    <LockIcon />
-                    {sessions.some((s) => s.is_pinned) ? "Other conversations" : "Your conversations"}
-                  </p>
+                  {sessions.filter((s) => !s.is_pinned).length > 0 && (
+                    <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => s.is_pinned) ? 8 : 0 }}>
+                      <LockIcon />
+                      {sessions.some((s) => s.is_pinned) ? "Other conversations" : "Your conversations"}
+                    </p>
+                  )}
                   {sessions.filter((s) => !s.is_pinned).map((session) => (
                     <SessionItem
                       key={session.id}
