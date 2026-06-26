@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -73,6 +74,8 @@ const WARM_CHAT_CACHE_MAX_AGE_MS = 30_000;
 const PENDING_LOCAL_CHAT_MAX_AGE_MS = 2 * 60_000;
 
 export default function ChatPage() {
+  const searchParams = useSearchParams();
+  const initialPromptParam = searchParams.get("prompt") ?? null;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
@@ -479,6 +482,7 @@ export default function ChatPage() {
                   prompts={prompts}
                   onPromptSubmitted={updateSessionFromPrompt}
                   onAssistantFinished={handleAssistantFinished}
+                  initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
                 />
               )
             ) : (
@@ -557,11 +561,13 @@ type ChatThreadProps = {
     prompt: string | null;
     messages: ChatUiMessage[];
   }) => void;
+  initialPrompt?: string | null;
 };
 
-function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAssistantFinished }: ChatThreadProps) {
+function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAssistantFinished, initialPrompt }: ChatThreadProps) {
   const agent = getAiAgentSlug();
   const lastPromptRef = useRef<string | null>(null);
+  const initialPromptFiredRef = useRef(false);
   const pendingSessionIdRef = useRef<string | null>(session?.id ?? null);
   const sessionId = session?.id ?? null;
 
@@ -640,6 +646,12 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
     },
   });
   const runtime = useAISDKRuntime(chat);
+
+  useEffect(() => {
+    if (!initialPrompt || initialPromptFiredRef.current) return;
+    initialPromptFiredRef.current = true;
+    runtime.thread.append({ role: "user", content: [{ type: "text", text: initialPrompt }] });
+  }, [initialPrompt, runtime]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

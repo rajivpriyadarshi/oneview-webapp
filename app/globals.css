@@ -1,6 +1,28 @@
 @config "../tailwind.config.js";
 @import "tailwindcss";
 
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.dashboard-suggestions-track {
+  display: flex;
+  width: max-content;
+  animation: dashboard-marquee 40s linear infinite;
+}
+.dashboard-suggestions-track:hover {
+  animation-play-state: paused;
+}
+.dashboard-suggestions-set {
+  display: flex;
+  gap: 10px;
+  padding-right: 10px; /* matches gap so both sets are identical width */
+  flex-shrink: 0;
+}
+@keyframes dashboard-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 :root {
   --background: #f6f5f3;
   --foreground: #080808;

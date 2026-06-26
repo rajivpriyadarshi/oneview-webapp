@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { listChatPrompts, type ChatPrompt } from "../lib/aiChatApi";
 import Link from "next/link";
 import Image from "next/image";
 import type { BrokerStatementJob } from "../lib/documentsApi";
@@ -229,7 +230,7 @@ export default function DashboardPage() {
           <Image src="/Hero-bg.png" alt="" fill className="object-cover" priority />
         </div>
         <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-        <main className="relative z-[1] box-border w-full max-w-full flex-1 overflow-x-hidden pt-[120px] pb-[80px] md:pb-0 md:ml-16 px-6 sm:px-[60px]">
+        <main className="relative z-[1] box-border w-full max-w-full flex-1 overflow-x-hidden pt-[120px] pb-[80px] md:pb-[80px] md:ml-16 px-6 sm:px-[60px]">
           {viewLoading && !portfolioView ? (
             <div className="flex h-[calc(100vh-160px)] flex-col items-center justify-center gap-4">
               <div className="relative mb-8 inline-flex items-center justify-center">
@@ -352,6 +353,15 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+      {/* Bottom bar — desktop only */}
+      {!loading && !allUnderReview && (
+        <DashboardBottomBar
+          currency={currency}
+          apiCurrencies={apiCurrencies}
+          onCurrencyChange={handleCurrencyChange}
+        />
+      )}
+
       {isPendingDocsModalOpen && (
         <PendingDocumentsModal
           jobs={(brokerJobs ?? []).filter((j) => j.status === "needs_review")}
@@ -365,6 +375,129 @@ export default function DashboardPage() {
         />
       )}
     </ProtectedRoute>
+  );
+}
+
+const DASHBOARD_SUGGESTIONS = [
+  "How will falling oil prices impact my holdings?",
+  "Do I have enough exposure to AI beneficiaries like NVIDIA and Broadcom?",
+  "Could the Iran peace deal create new market opportunities or risks?",
+  "What sectors benefit most from rate cuts?",
+  "Which of my holdings are most sensitive to dollar strength?",
+];
+
+function DashboardBottomBar({
+  currency: _currency,
+  apiCurrencies: _apiCurrencies,
+  onCurrencyChange: _onCurrencyChange,
+}: {
+  currency: string;
+  apiCurrencies: { currency_code: string }[];
+  onCurrencyChange: (c: string) => void;
+}) {
+  const router = useRouter();
+  const [suggestions, setSuggestions] = useState<string[]>(DASHBOARD_SUGGESTIONS);
+
+  useEffect(() => {
+    let cancelled = false;
+    listChatPrompts()
+      .then((items: ChatPrompt[]) => {
+        if (!cancelled && items.length > 0) {
+          setSuggestions(items.map((p) => p.user_message).filter(Boolean));
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <div className="hidden md:flex fixed bottom-0 left-[80px] right-0 z-[200] items-center gap-3 border-t border-black/10 bg-[#ffffff26] backdrop-blur-[30px] p-[16px] overflow-hidden">
+      {/* Ask AI button */}
+      <button
+        type="button"
+        onClick={() => router.push("/chat")}
+        className="flex-shrink-0 inline-flex items-center gap-[8px] rounded-full cursor-pointer transition-colors px-[16px] py-[12px] hover:bg-[#e8e0d0]"
+        style={{
+          border: "1px solid rgba(128, 77, 19, 0.18)",
+          background: "#f0ebe0",
+          fontFamily: "var(--font-satoshi), sans-serif",
+          fontSize: "14px",
+          fontWeight: 400,
+          color: "#804D13",
+          whiteSpace: "nowrap",
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = "#e8e0d0")}
+        onMouseLeave={e => (e.currentTarget.style.background = "#f0ebe0")}
+      >
+        <span style={{
+          display: "inline-grid", placeItems: "center",
+          padding: "6px", borderRadius: "999px",
+          background: "linear-gradient(180deg, #B37F40 0%, #432411 100%)",
+          flexShrink: 0,
+          color: "#fff",
+        }}>
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 1V13M1 7H13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </span>
+        Ask AI
+      </button>
+
+      {/* Suggestions — seamless looping marquee */}
+      <div className="flex-1 overflow-hidden min-w-0" style={{ maskImage: "linear-gradient(90deg, rgba(246,247,244,0) 0%, #F6F7F4 6%, #F6F7F4 94%, rgba(246,247,244,0) 100%)", WebkitMaskImage: "linear-gradient(90deg, rgba(246,247,244,0) 0%, #F6F7F4 6%, #F6F7F4 94%, rgba(246,247,244,0) 100%)" }}>
+        <div className="dashboard-suggestions-track">
+          {[0, 1].map((copy) => (
+            <div key={copy} className="dashboard-suggestions-set">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => router.push(`/chat?prompt=${encodeURIComponent(s)}`)}
+                  className="inline-flex items-center gap-[8px] flex-shrink-0 rounded-full cursor-pointer transition-all hover:bg-white/60 px-[16px] py-[12px]"
+                  style={{
+                    border: "1px solid rgba(23, 22, 21, 0.12)",
+                    background: "rgba(255, 255, 255, 0.30)",
+                    backdropFilter: "blur(22px)",
+                    fontFamily: "var(--font-satoshi), sans-serif",
+                    fontSize: "14px",
+                    fontWeight: 400,
+                    color: "#000",
+                    letterSpacing: "-0.02em",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span style={{
+                    display: "inline-grid", placeItems: "center",
+                    padding: "5px", borderRadius: "999px",
+                    background: "linear-gradient(180deg, #B37F40 0%, #432411 100%)",
+                    flexShrink: 0,
+                    color: "#fff",
+                  }}>
+                    <BottomBarSendIcon />
+                  </span>
+                  {s}
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BottomBarSendIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <g clipPath="url(#bb-send-clip)">
+        <path d="M5.38484 6.15382H2.56433M2.52091 6.30331L1.32352 9.88008C1.22945 10.1611 1.18241 10.3016 1.21617 10.3881C1.24548 10.4632 1.30844 10.5202 1.38612 10.5419C1.47557 10.5668 1.61069 10.506 1.88091 10.3844L10.4509 6.52795C10.7146 6.40926 10.8465 6.34991 10.8873 6.26747C10.9227 6.19584 10.9227 6.1118 10.8873 6.04018C10.8465 5.95774 10.7146 5.89839 10.4509 5.7797L1.87792 1.92189C1.60851 1.80065 1.47381 1.74004 1.38444 1.7649C1.30683 1.7865 1.24388 1.84331 1.21447 1.91831C1.1806 2.00466 1.22713 2.14486 1.3202 2.42524L2.52125 6.04384C2.53723 6.09199 2.54522 6.11607 2.54838 6.1407C2.55118 6.16255 2.55115 6.18467 2.54829 6.20652C2.54507 6.23114 2.53702 6.2552 2.52091 6.30331Z" stroke="white" strokeWidth="1.23077" strokeLinecap="round" strokeLinejoin="round"/>
+      </g>
+      <defs>
+        <clipPath id="bb-send-clip">
+          <rect width="12.3077" height="12.3077" fill="white"/>
+        </clipPath>
+      </defs>
+    </svg>
   );
 }
 
