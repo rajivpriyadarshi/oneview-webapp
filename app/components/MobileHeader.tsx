@@ -1,14 +1,16 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { MeridianLogo } from "./MeridianLogo";
 
 
 type Props = {
   onMenuOpen?: () => void;
+  right?: ReactNode;
 };
 
-export function MobileHeader({ onMenuOpen }: Props) {
+export function MobileHeader({ onMenuOpen, right }: Props) {
   return (
     <header className="fixed top-0 left-0 right-0 border-b border-black/10 bg-[#ffffff26] backdrop-blur-[30px] md:hidden">
       <div className="flex items-center justify-between px-4 py-3">
@@ -25,7 +27,7 @@ export function MobileHeader({ onMenuOpen }: Props) {
             <MeridianLogo width={44} height={44} />
           </Link>
         </div>
-        <div className="flex items-center gap-2" />
+        <div className="flex items-center gap-2">{right}</div>
       </div>
     </header>
   );

@@ -78,6 +78,7 @@ export default function ChatPage() {
   const initialPromptParam = searchParams.get("prompt") ?? null;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [railCollapsed, setRailCollapsed] = useState(false);
+  const [mobileRailOpen, setMobileRailOpen] = useState(false);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [initialMessages, setInitialMessages] = useState<ChatUiMessage[]>([]);
@@ -198,6 +199,7 @@ export default function ChatPage() {
   const selectSession = async (session: AiChatSession) => {
     setIsDraftChat(false);
     setSelectedSessionId(session.id);
+    setMobileRailOpen(false);
     setIsLoadingMessages(true);
     setNotice(null);
 
@@ -218,6 +220,7 @@ export default function ChatPage() {
     setSelectedSessionId(null);
     setInitialMessages([]);
     setNotice(null);
+    setMobileRailOpen(false);
   };
 
   const handleTogglePin = async (session: AiChatSession) => {
@@ -355,7 +358,23 @@ export default function ChatPage() {
     <ProtectedRoute>
       <div className="chat-page-shell">
         <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-        <MobileHeader onMenuOpen={() => setSidebarOpen(true)} />
+        <MobileHeader
+          onMenuOpen={() => setSidebarOpen(true)}
+          right={
+            <>
+              <button type="button" className="chat-mobile-history-btn" aria-label="Chat history" onClick={() => setMobileRailOpen(true)}>
+                <HistoryIcon />
+              </button>
+              <button type="button" className="chat-page-header-btn" onClick={startNewChat}>
+                <span className="chat-page-header-btn-icon"><PlusIcon /></span>
+                New chat
+              </button>
+            </>
+          }
+        />
+        {mobileRailOpen && (
+          <button type="button" className="chat-rail-mobile-backdrop" aria-label="Close chat history" onClick={() => setMobileRailOpen(false)} />
+        )}
         <header className="chat-page-header">
           <div className="chat-page-header-left">
             <h1 className="chat-page-header-title">Smart advisor</h1>
@@ -372,7 +391,7 @@ export default function ChatPage() {
               <ExpandIcon />
             </button>
           )}
-          <aside className={`chat-session-rail${railCollapsed ? " is-collapsed" : ""}`} aria-label="Chat sessions">
+          <aside className={`chat-session-rail${railCollapsed ? " is-collapsed" : ""}${mobileRailOpen ? " is-mobile-open" : ""}`} aria-label="Chat sessions">
             <button type="button" className="chat-rail-collapse-btn" aria-label="Collapse sidebar" onClick={() => setRailCollapsed(true)}>
               <CollapseIcon />
             </button>
@@ -1350,6 +1369,16 @@ function CollapseIcon() {
       <path d="M5.15625 18.2812H14.8438C16.7422 18.2812 18.2812 16.7422 18.2812 14.8438V5.15625C18.2812 3.25777 16.7422 1.71875 14.8438 1.71875H5.15625C3.25777 1.71875 1.71875 3.25777 1.71875 5.15625V14.8438C1.71875 16.7422 3.25777 18.2812 5.15625 18.2812Z" stroke="#262C31" strokeWidth="1.4"/>
       <path d="M7.5 18.2812V1.71875" stroke="#262C31" strokeWidth="1.4"/>
       <path d="M13.3594 11.9922L11.0156 9.64844L13.3594 7.30469" stroke="#262C31" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function HistoryIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+      <path d="M3 3v5h5"/>
+      <path d="M12 7v5l4 2"/>
     </svg>
   );
 }

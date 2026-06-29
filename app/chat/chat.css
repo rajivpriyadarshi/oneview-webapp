@@ -447,7 +447,7 @@
 }
 
 .chat-thread {
-  height: 100%;
+  height: calc(100vh - 76px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1088,7 +1088,7 @@
   left: 0;
   right: 0;
   z-index: 10;
-  padding-bottom: 16px; 
+  padding-bottom: 16px;
   background: transparent;
 }
 
@@ -1403,7 +1403,7 @@
   }
 
   .chat-message-viewport {
-    padding: 8px 18px 0;
+    padding: 8px 18px 100px;
   }
 
   .chat-suggestions {
@@ -1412,6 +1412,114 @@
 
   .chat-composer-wrap {
     padding: 20px 14px 18px;
+  }
+}
+
+.chat-mobile-history-btn {
+  display: none;
+}
+
+.chat-rail-mobile-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .chat-page-header {
+    display: none;
+  }
+
+  .chat-page-main {
+    margin-top: 66px;
+    height: calc(100vh - 66px);
+    padding-top: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .chat-thread,
+  .chat-empty-start,
+  .chat-loading-state {
+    min-height: calc(100vh - 66px);
+    height: calc(100vh - 66px);
+  }
+
+  .chat-rail-expand-btn {
+    display: none;
+  }
+
+  .chat-rail-collapse-btn {
+    display: none;
+  }
+
+  .chat-mobile-history-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #7F4E0B;
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+
+  .chat-mobile-history-btn:hover {
+    background: rgba(128, 77, 19, 0.08);
+  }
+
+  .chat-rail-mobile-backdrop {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: min(300px, 85vw);
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    border: 0;
+    background: rgba(0, 0, 0, 0.28);
+  }
+
+  .chat-session-rail {
+    position: fixed;
+    top: 66px;
+    left: 0;
+    bottom: 0;
+    width: min(300px, 85vw);
+    height: auto;
+    z-index: 50;
+    border-right: 1px solid rgba(23, 22, 21, 0.1);
+    border-bottom: 0;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.1);
+    transform: translateX(-110%);
+    transition: transform 220ms ease;
+    opacity: 1;
+    pointer-events: none;
+    overflow-y: auto;
+    padding: 20px 8px;
+  }
+
+  .chat-session-rail.is-mobile-open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .chat-session-list {
+    max-height: none;
+  }
+
+  .chat-session-rail.is-collapsed {
+    opacity: 1;
+    transform: translateX(-110%);
+  }
+
+  .chat-session-rail.is-collapsed.is-mobile-open {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .chat-page-main.rail-collapsed {
+    grid-template-columns: 1fr;
   }
 }
 
