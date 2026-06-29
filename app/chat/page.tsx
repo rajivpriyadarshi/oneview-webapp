@@ -360,16 +360,16 @@ export default function ChatPage() {
         <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
         <MobileHeader
           onMenuOpen={() => setSidebarOpen(true)}
+          logo={
+            <button type="button" className="chat-mobile-history-btn" aria-label="Chat history" onClick={() => setMobileRailOpen(true)}>
+              <HistoryIcon />
+            </button>
+          }
           right={
-            <>
-              <button type="button" className="chat-mobile-history-btn" aria-label="Chat history" onClick={() => setMobileRailOpen(true)}>
-                <HistoryIcon />
-              </button>
-              <button type="button" className="chat-page-header-btn" onClick={startNewChat}>
-                <span className="chat-page-header-btn-icon"><PlusIcon /></span>
-                New chat
-              </button>
-            </>
+            <button type="button" className="chat-page-header-btn" onClick={startNewChat}>
+              <span className="chat-page-header-btn-icon"><PlusIcon /></span>
+              New chat
+            </button>
           }
         />
         {mobileRailOpen && (
@@ -1374,13 +1374,7 @@ function CollapseIcon() {
 }
 
 function HistoryIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-      <path d="M3 3v5h5"/>
-      <path d="M12 7v5l4 2"/>
-    </svg>
-  );
+  return <ExpandIcon />;
 }
 
 function ArchiveIcon() {

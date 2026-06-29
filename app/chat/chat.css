@@ -1471,7 +1471,7 @@
   .chat-rail-mobile-backdrop {
     display: block;
     position: fixed;
-    top: 0;
+    top: 66px;
     left: min(300px, 85vw);
     right: 0;
     bottom: 0;

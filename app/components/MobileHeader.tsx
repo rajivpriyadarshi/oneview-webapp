@@ -8,9 +8,10 @@ import { MeridianLogo } from "./MeridianLogo";
 type Props = {
   onMenuOpen?: () => void;
   right?: ReactNode;
+  logo?: ReactNode;
 };
 
-export function MobileHeader({ onMenuOpen, right }: Props) {
+export function MobileHeader({ onMenuOpen, right, logo }: Props) {
   return (
     <header className="fixed top-0 left-0 right-0 border-b border-black/10 bg-[#ffffff26] backdrop-blur-[30px] md:hidden">
       <div className="flex items-center justify-between px-4 py-3">
@@ -23,9 +24,11 @@ export function MobileHeader({ onMenuOpen, right }: Props) {
           >
             <HamburgerIcon />
           </button>
-          <Link href="/dashboard" aria-label="Go to Dashboard">
-            <MeridianLogo width={44} height={44} />
-          </Link>
+          {logo ?? (
+            <Link href="/dashboard" aria-label="Go to Dashboard">
+              <MeridianLogo width={44} height={44} />
+            </Link>
+          )}
         </div>
         <div className="flex items-center gap-2">{right}</div>
       </div>
