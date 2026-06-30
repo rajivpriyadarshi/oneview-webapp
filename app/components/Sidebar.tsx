@@ -19,6 +19,17 @@ export default function Sidebar({ open, onOpenChange }: SidebarProps = {}) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [showChatTooltip, setShowChatTooltip] = useState(false);
+
+  useEffect(() => {
+    if (pathname !== "/dashboard" || localStorage.getItem("chatTooltipDismissed")) return;
+    const show = window.setTimeout(() => setShowChatTooltip(true), 800);
+    const hide = window.setTimeout(() => {
+      setShowChatTooltip(false);
+      localStorage.setItem("chatTooltipDismissed", "1");
+    }, 2000);
+    return () => { window.clearTimeout(show); window.clearTimeout(hide); };
+  }, [pathname]);
 
   useEffect(() => {
     if (typeof open === "boolean") setIsOpen(open);
@@ -124,6 +135,43 @@ export default function Sidebar({ open, onOpenChange }: SidebarProps = {}) {
               />
             </svg>
           </Link>
+          <div style={{ position: "relative" }}>
+          {showChatTooltip && (
+            <div
+              role="tooltip"
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "calc(100% + 16px)",
+                transform: "translateY(-50%)",
+                zIndex: 300,
+                width: "210px",
+                padding: "12px 16px",
+                borderRadius: "14px",
+                background: "#2d2926",
+                color: "#fff",
+                fontSize: "13px",
+                fontWeight: 400,
+                lineHeight: 1.45,
+                pointerEvents: "none",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+                animation: "tooltipFadeIn 200ms ease both, tooltipFadeOut 200ms ease 1000ms both",
+              }}
+            >
+              <span style={{
+                position: "absolute",
+                top: "50%",
+                right: "100%",
+                transform: "translateY(-50%)",
+                width: 0,
+                height: 0,
+                borderTop: "7px solid transparent",
+                borderBottom: "7px solid transparent",
+                borderRight: "7px solid #2d2926",
+              }} />
+              You can now interact with your holdings, the market, and more.
+            </div>
+          )}
           <Link href="/chat" className={`sidebar-btn ${pathname === "/chat" ? "active" : ""}`} aria-label="Chat" onClick={closeSidebar}>
             <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
               <path
@@ -142,6 +190,7 @@ export default function Sidebar({ open, onOpenChange }: SidebarProps = {}) {
               />
             </svg>
           </Link>
+          </div>
         </nav>
 
         <div className="sidebar-avatar">
