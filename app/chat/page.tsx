@@ -484,10 +484,12 @@ export default function ChatPage() {
                 )}
               </div>
 
-              <button type="button" className="chat-rail-archive-toggle" onClick={toggleArchivedView}>
-                <ArchiveIcon />
-                {showArchived ? "Back to chats" : "View archived"}
-              </button>
+              <div className="px-[8px]">
+                <button type="button" className="chat-rail-archive-toggle w-[100%]" onClick={toggleArchivedView}>
+                  <ArchiveIcon />
+                  {showArchived ? "Back to chats" : "View archived"}
+                </button>
+              </div>
             </div>
 
             {notice ? <p className="chat-rail-notice">{notice}</p> : null}
