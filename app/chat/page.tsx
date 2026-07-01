@@ -1,7 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -74,8 +74,9 @@ const WARM_CHAT_CACHE_MAX_AGE_MS = 30_000;
 const PENDING_LOCAL_CHAT_MAX_AGE_MS = 2 * 60_000;
 
 export default function ChatPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const initialPromptParam = searchParams.get("prompt") ?? null;
+  const [initialPromptParam, setInitialPromptParam] = useState(() => searchParams.get("prompt") ?? null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [mobileRailOpen, setMobileRailOpen] = useState(false);
@@ -221,6 +222,8 @@ export default function ChatPage() {
     setInitialMessages([]);
     setNotice(null);
     setMobileRailOpen(false);
+    setInitialPromptParam(null);
+    router.replace("/chat");
   };
 
   const handleTogglePin = async (session: AiChatSession) => {
@@ -361,7 +364,7 @@ export default function ChatPage() {
         <MobileHeader
           onMenuOpen={() => setSidebarOpen(true)}
           logo={
-            <button type="button" className="chat-mobile-history-btn" aria-label="Chat history" onClick={() => setMobileRailOpen(true)}>
+            <button type="button" className="chat-mobile-history-btn" aria-label="Chat history" onClick={() => setMobileRailOpen(v => !v)}>
               <HistoryIcon />
             </button>
           }
@@ -395,11 +398,43 @@ export default function ChatPage() {
             <button type="button" className="chat-rail-collapse-btn" aria-label="Collapse sidebar" onClick={() => setRailCollapsed(true)}>
               <CollapseIcon />
             </button>
-            <div className="chat-session-list">
-              {showArchived ? (
-                isLoadingArchived ? (
-                  <p className="chat-session-muted">Loading archived chats...</p>
-                ) : archivedSessions.length === 0 ? (
+            <div className="flex flex-col gap-2 px-[20px] py-[8px]" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+              <div className="chat-session-list">
+                {showArchived ? (
+                  isLoadingArchived ? (
+                    <p className="chat-session-muted">Loading archived chats...</p>
+                  ) : archivedSessions.length === 0 ? (
+                    <div className="chat-session-empty">
+                      <div className="chat-session-empty-icon">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                          <line x1="17" y1="7" x2="7" y2="17"/>
+                        </svg>
+                      </div>
+                      <p className="chat-session-empty-label">No archived chats.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="chat-session-section-label">
+                        <ArchiveIcon />
+                        Archived conversations
+                      </p>
+                      {archivedSessions.map((session) => (
+                        <SessionItem
+                          key={`archived-${session.id}`}
+                          session={session}
+                          archived
+                          active={session.id === selectedSessionId}
+                          onSelect={() => selectSession(session)}
+                          onTogglePin={() => handleTogglePin(session)}
+                          onArchive={() => handleUnarchive(session)}
+                        />
+                      ))}
+                    </>
+                  )
+                ) : isLoadingSessions ? (
+                  <p className="chat-session-muted">Loading chats...</p>
+                ) : sessions.length === 0 ? (
                   <div className="chat-session-empty">
                     <div className="chat-session-empty-icon">
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -407,83 +442,53 @@ export default function ChatPage() {
                         <line x1="17" y1="7" x2="7" y2="17"/>
                       </svg>
                     </div>
-                    <p className="chat-session-empty-label">No archived chats.</p>
+                    <p className="chat-session-empty-label">No chats yet.</p>
                   </div>
                 ) : (
                   <>
-                    <p className="chat-session-section-label">
-                      <ArchiveIcon />
-                      Archived conversations
-                    </p>
-                    {archivedSessions.map((session) => (
+                    {sessions.some((s) => s.is_pinned) && (
+                      <>
+                        <p className="chat-session-section-label">
+                          <PinIcon />
+                          Pinned conversations
+                        </p>
+                        {sessions.filter((s) => s.is_pinned).map((session) => (
+                          <SessionItem
+                            key={`pinned-${session.id}`}
+                            session={session}
+                            active={session.id === selectedSessionId}
+                            onSelect={() => selectSession(session)}
+                            onTogglePin={() => handleTogglePin(session)}
+                            onArchive={() => handleArchive(session)}
+                          />
+                        ))}
+                      </>
+                    )}
+                    {sessions.filter((s) => !s.is_pinned).length > 0 && (
+                      <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => s.is_pinned) ? 8 : 0 }}>
+                        <LockIcon />
+                        {sessions.some((s) => s.is_pinned) ? "Other conversations" : "Your conversations"}
+                      </p>
+                    )}
+                    {sessions.filter((s) => !s.is_pinned).map((session) => (
                       <SessionItem
-                        key={`archived-${session.id}`}
+                        key={session.id}
                         session={session}
-                        archived
                         active={session.id === selectedSessionId}
                         onSelect={() => selectSession(session)}
                         onTogglePin={() => handleTogglePin(session)}
-                        onArchive={() => handleUnarchive(session)}
+                        onArchive={() => handleArchive(session)}
                       />
                     ))}
                   </>
-                )
-              ) : isLoadingSessions ? (
-                <p className="chat-session-muted">Loading chats...</p>
-              ) : sessions.length === 0 ? (
-                <div className="chat-session-empty">
-                  <div className="chat-session-empty-icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                      <line x1="17" y1="7" x2="7" y2="17"/>
-                    </svg>
-                  </div>
-                  <p className="chat-session-empty-label">No chats yet.</p>
-                </div>
-              ) : (
-                <>
-                  {sessions.some((s) => s.is_pinned) && (
-                    <>
-                      <p className="chat-session-section-label">
-                        <PinIcon />
-                        Pinned conversations
-                      </p>
-                      {sessions.filter((s) => s.is_pinned).map((session) => (
-                        <SessionItem
-                          key={`pinned-${session.id}`}
-                          session={session}
-                          active={session.id === selectedSessionId}
-                          onSelect={() => selectSession(session)}
-                          onTogglePin={() => handleTogglePin(session)}
-                          onArchive={() => handleArchive(session)}
-                        />
-                      ))}
-                    </>
-                  )}
-                  {sessions.filter((s) => !s.is_pinned).length > 0 && (
-                    <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => s.is_pinned) ? 8 : 0 }}>
-                      <LockIcon />
-                      {sessions.some((s) => s.is_pinned) ? "Other conversations" : "Your conversations"}
-                    </p>
-                  )}
-                  {sessions.filter((s) => !s.is_pinned).map((session) => (
-                    <SessionItem
-                      key={session.id}
-                      session={session}
-                      active={session.id === selectedSessionId}
-                      onSelect={() => selectSession(session)}
-                      onTogglePin={() => handleTogglePin(session)}
-                      onArchive={() => handleArchive(session)}
-                    />
-                  ))}
-                </>
-              )}
-            </div>
+                )}
+              </div>
 
-            <button type="button" className="chat-rail-archive-toggle" onClick={toggleArchivedView}>
-              <ArchiveIcon />
-              {showArchived ? "Back to chats" : "View archived"}
-            </button>
+              <button type="button" className="chat-rail-archive-toggle" onClick={toggleArchivedView}>
+                <ArchiveIcon />
+                {showArchived ? "Back to chats" : "View archived"}
+              </button>
+            </div>
 
             {notice ? <p className="chat-rail-notice">{notice}</p> : null}
           </aside>
