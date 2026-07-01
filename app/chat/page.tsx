@@ -398,8 +398,8 @@ export default function ChatPage() {
             <button type="button" className="chat-rail-collapse-btn" aria-label="Collapse sidebar" onClick={() => setRailCollapsed(true)}>
               <CollapseIcon />
             </button>
-            <div className="flex flex-col gap-2 px-[20px] py-[8px]" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              <div className="chat-session-list">
+            <div className="flex flex-col gap-2 py-4" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+              <div className="chat-session-list px-[8px]">
                 {showArchived ? (
                   isLoadingArchived ? (
                     <p className="chat-session-muted">Loading archived chats...</p>
