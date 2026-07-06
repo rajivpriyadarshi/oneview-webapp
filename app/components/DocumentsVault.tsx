@@ -127,6 +127,7 @@ export function DocumentsVault() {
   const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingAbortControllerRef = useRef<AbortController | null>(null);
+  const pendingUploadsRef = useRef<{ file: File; itemId: string }[]>([]);
 
   useEffect(() => {
     return () => {
@@ -137,11 +138,21 @@ export function DocumentsVault() {
   const activeTrayItems = uploadItems.filter(
     (i) => i.status === "queued" || i.status === "uploading" || i.status === "processing",
   );
+
+  useEffect(() => {
+    if (activeTrayItems.length === 0) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [activeTrayItems.length]);
   const activeTrayNames = new Set(activeTrayItems.map((i) => i.name.toLowerCase()));
 
   const [hasApiProcessing, setHasApiProcessing] = useState(false);
 
   const { data: rawDocuments = [], isLoading: loading } = useListDocumentsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
     pollingInterval: activeTrayItems.length > 0 || hasApiProcessing ? 5000 : 0,
   });
 
@@ -152,6 +163,27 @@ export function DocumentsVault() {
       ),
     );
   }, [rawDocuments]);
+
+  // Reconcile: if API shows a document as processed but tray item is still "active",
+  // mark it complete so the ghost row clears.
+  useEffect(() => {
+    if (rawDocuments.length === 0) return;
+    const processedDocs = rawDocuments.filter(
+      (d: DocumentRecord) => !d.processing_status || d.processing_status === "processed",
+    );
+    const processedIds = new Set(processedDocs.map((d: DocumentRecord) => String(d.id)));
+    const processedNames = new Set(
+      processedDocs.flatMap((d: DocumentRecord) => [d.name.toLowerCase(), (d.display_name || "").toLowerCase()].filter(Boolean)),
+    );
+    for (const item of trayItems) {
+      if (item.status !== "uploading" && item.status !== "queued") continue;
+      const matchById = item.documentId && processedIds.has(item.documentId);
+      const matchByName = processedNames.has(item.name.toLowerCase());
+      if (matchById || matchByName) {
+        dispatch(patchTrayItem({ id: item.id, status: "complete" }));
+      }
+    }
+  }, [rawDocuments, trayItems, dispatch]);
   const [deleteDocumentMutation] = useDeleteDocumentMutation();
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
   const [retryWithPassword] = useRetryWithPasswordMutation();
@@ -175,10 +207,20 @@ export function DocumentsVault() {
     .filter((d) => !activeTrayNames.has(d.filename.toLowerCase()) && !apiProcessingNames.has(d.filename.toLowerCase()));
 
   // Merge tray items + API-level processing docs into one list for the ghost rows
+  const activeTrayDocIds = new Set(
+    activeTrayItems.map((i) => {
+      const trayItem = trayItems.find((t) => t.id === i.id);
+      return trayItem?.documentId;
+    }).filter(Boolean),
+  );
   const processingItems = [
     ...activeTrayItems.map((i) => ({ id: i.id, name: i.name, status: i.status, detail: i.detail })),
     ...apiProcessingDocs
-      .filter((d: DocumentRecord) => !activeTrayNames.has((d.display_name || d.name).toLowerCase()))
+      .filter((d: DocumentRecord) =>
+        !activeTrayNames.has((d.display_name || d.name).toLowerCase()) &&
+        !activeTrayNames.has(d.name.toLowerCase()) &&
+        !activeTrayDocIds.has(String(d.id))
+      )
       .map((d: DocumentRecord) => ({ id: String(d.id), name: d.display_name || d.name, status: "processing", detail: "Processing document." })),
   ];
 
@@ -268,12 +310,14 @@ export function DocumentsVault() {
     }
 
     setUploading(true);
+    pendingUploadsRef.current = [];
 
     try {
       let successCount = 0;
 
-      for (const { file, item } of validUploads) {
-        updateUploadItem(item.id, { status: "uploading", error: undefined });
+      for (let i = 0; i < validUploads.length; i++) {
+        const { file, item } = validUploads[i];
+        updateUploadItem(item.id, { status: "uploading" });
 
         trackAPI({
           pageName: trackingEventsMap.documentsVaultPage.PAGE,
@@ -322,6 +366,8 @@ export function DocumentsVault() {
                 status: "error",
                 error: "Password required",
               });
+              // Save remaining queued files to resume after password handling
+              pendingUploadsRef.current = validUploads.slice(i + 1).map(({ file, item }) => ({ file, itemId: item.id }));
               break;
             } else {
               trackAPI({
@@ -338,6 +384,7 @@ export function DocumentsVault() {
               });
             }
           } else if (response.status === "processing") {
+            dispatch(patchTrayItem({ id: item.id, documentId: String(response.document_id) }));
             updateUploadItem(item.id, {
               status: "processing",
               detail: response.message ?? "Extracting statement details.",
@@ -448,6 +495,7 @@ export function DocumentsVault() {
             setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
             setShowPasswordPrompt(true);
             updateUploadItem(item.id, { status: "error", error: "Password required" });
+            pendingUploadsRef.current = validUploads.slice(i + 1).map(({ file, item }) => ({ file, itemId: item.id }));
             break;
           } else {
             trackAPI({
@@ -506,24 +554,6 @@ export function DocumentsVault() {
     return "";
   }
 
-  function clearUploadPanel() {
-    if (uploading) {
-      return;
-    }
-
-    trackClick({
-      buttonName: trackingEventsMap.documentsVaultPage.CLICK_UPLOAD_PANEL_CLOSE,
-      pageName: trackingEventsMap.documentsVaultPage.PAGE,
-      params: {
-        total_items: uploadItems.length,
-        successful_uploads: uploadItems.filter((item) => item.status === "complete").length,
-        failed_uploads: uploadItems.filter((item) => item.status === "error").length,
-      },
-    });
-
-    dispatch(dismissTray());
-    setUploadMessage("");
-  }
 
   async function handlePasswordSubmit(password: string) {
     if (!pendingPasswordDocId) return;
@@ -559,6 +589,7 @@ export function DocumentsVault() {
         updateUploadItem(pendingPasswordItemId, { status: "complete", error: undefined });
       }
       setUploadMessage("File unlocked and processed successfully.");
+      resumePendingUploads();
     } catch (err) {
       setPasswordError(
         err instanceof Error ? err.message : "Failed to unlock document.",
@@ -573,6 +604,104 @@ export function DocumentsVault() {
     setPendingPasswordDocId(null);
     setPendingPasswordItemId(null);
     setPasswordError("");
+    resumePendingUploads();
+  }
+
+  function resumePendingUploads() {
+    const remaining = pendingUploadsRef.current;
+    pendingUploadsRef.current = [];
+    if (remaining.length > 0) {
+      void processRemainingFiles(remaining);
+    }
+  }
+
+  async function processRemainingFiles(items: { file: File; itemId: string }[]) {
+    setUploading(true);
+    try {
+      for (let i = 0; i < items.length; i++) {
+        const { file, itemId } = items[i];
+        updateUploadItem(itemId, { status: "uploading" });
+
+        try {
+          const response = await uploadBrokerStatement({
+            file,
+            name: file.name,
+            storeData: true,
+            useLlmFallback: true,
+          }).unwrap();
+
+          if (response.status === "duplicate") {
+            const uploadDate = new Date(response.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            updateUploadItem(itemId, { status: "error", error: `This file was already uploaded on ${uploadDate}.` });
+          } else if (response.status === "error") {
+            if (response.error_code === "password_required" || response.error_code === "password_incorrect") {
+              setPendingPasswordDocId(response.document_id ?? null);
+              setPendingPasswordItemId(itemId);
+              setPasswordError(response.error_code === "password_incorrect" ? (response.error ?? "The provided password is incorrect.") : "");
+              setShowPasswordPrompt(true);
+              updateUploadItem(itemId, { status: "error", error: "Password required" });
+              pendingUploadsRef.current = items.slice(i + 1);
+              break;
+            } else {
+              updateUploadItem(itemId, { status: "error", error: response.error ?? "Unable to parse this statement." });
+            }
+          } else if (response.status === "processing") {
+            dispatch(patchTrayItem({ id: itemId, documentId: String(response.document_id) }));
+            updateUploadItem(itemId, { status: "processing", detail: response.message ?? "Extracting statement details." });
+
+            const abortController = new AbortController();
+            pollingAbortControllerRef.current = abortController;
+            let jobResult;
+            try {
+              jobResult = await pollBrokerStatementJobStatus({
+                jobId: response.job_id,
+                signal: abortController.signal,
+                getStatus: (jobId) => getBrokerStatementJobStatus(jobId, false).unwrap(),
+                onProgress: (progress) => {
+                  const label = progress?.label?.replace(/^OCR/i, "Scanning") ?? "Extracting statement details.";
+                  updateUploadItem(itemId, { detail: label });
+                },
+              });
+            } finally {
+              pollingAbortControllerRef.current = null;
+            }
+
+            if (jobResult.status === "error") {
+              updateUploadItem(itemId, { status: "error", detail: undefined, error: jobResult.error ?? "Unable to process this statement." });
+            } else if (jobResult.status === "needs_review") {
+              updateUploadItem(itemId, { status: "review", detail: undefined, error: jobResult.message ?? "Needs manual review to extract information." });
+            } else {
+              dispatch(api.util.invalidateTags(["Documents", "Portfolios", "PortfolioView", "Sankey"]));
+              const detail = jobResult.storage?.overwrote_existing ? `Updated ${jobResult.storage.positions_updated} existing positions` : undefined;
+              updateUploadItem(itemId, { status: "complete", detail, error: undefined });
+            }
+          } else if (response.status === "success") {
+            dispatch(api.util.invalidateTags(["Documents", "Portfolios", "PortfolioView", "Sankey"]));
+            const detail = response.storage?.overwrote_existing ? `Updated ${response.storage.positions_updated} existing positions` : undefined;
+            updateUploadItem(itemId, { status: "complete", detail, error: undefined });
+          }
+        } catch (uploadError) {
+          if (uploadError instanceof Error && uploadError.name === "AbortError") break;
+          const errorData = typeof uploadError === "object" && uploadError !== null && "data" in uploadError
+            ? (uploadError as { data: unknown }).data : null;
+          if (errorData && typeof errorData === "object" && "error_code" in errorData &&
+            ((errorData as { error_code: string }).error_code === "password_required" || (errorData as { error_code: string }).error_code === "password_incorrect")) {
+            const data = errorData as { document_id: string | number; error?: string; error_code: string };
+            setPendingPasswordDocId(data.document_id);
+            setPendingPasswordItemId(itemId);
+            setPasswordError(data.error_code === "password_incorrect" ? (data.error ?? "The provided password is incorrect.") : "");
+            setShowPasswordPrompt(true);
+            updateUploadItem(itemId, { status: "error", error: "Password required" });
+            pendingUploadsRef.current = items.slice(i + 1);
+            break;
+          } else {
+            updateUploadItem(itemId, { status: "error", error: getRequestErrorMessage(uploadError, "Upload failed.") });
+          }
+        }
+      }
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function confirmDeleteDocuments() {
@@ -725,39 +854,6 @@ export function DocumentsVault() {
         processingItems={processingItems}
       />
 
-      {uploadItems.length > 0 && (
-        <section className="docs-upload-panel" aria-live="polite">
-          <div className="docs-upload-panel-header">
-            <div>
-              <strong>{getUploadPanelTitle(uploadItems, uploading)}</strong>
-              <span>{getUploadPanelSubtitle(uploadItems)}</span>
-            </div>
-            <button
-              type="button"
-              className="docs-upload-panel-close"
-              onClick={clearUploadPanel}
-              disabled={uploading}
-              aria-label="Close upload status"
-            >
-              ×
-            </button>
-          </div>
-          <div className="docs-upload-list">
-            {uploadItems.map((item) => (
-              <div className="docs-upload-row" key={item.id}>
-                <div className="docs-upload-file">
-                  <span className={`docs-upload-status is-${item.status}`} />
-                  <div>
-                    <strong>{item.name}</strong>
-                    <span>{item.error ?? item.detail ?? item.size}</span>
-                  </div>
-                </div>
-                <span className="docs-upload-state">{getUploadStatusLabel(item.status)}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       <DownloadInstructionModal
         isOpen={isModalOpen}
@@ -815,61 +911,4 @@ export function DocumentsVault() {
   );
 }
 
-function getUploadStatusLabel(status: UploadStatus) {
-  if (status === "queued") return "Queued";
-  if (status === "uploading") return "Uploading";
-  if (status === "processing") return "Extracting";
-  if (status === "complete") return "Uploaded";
-  if (status === "review") return "Review";
-  return "Failed";
-}
 
-function getUploadPanelTitle(items: UploadItem[], uploading: boolean) {
-  if (uploading) {
-    return `Uploading ${items.length} item${items.length > 1 ? "s" : ""}`;
-  }
-
-  const failedCount = items.filter((item) => item.status === "error").length;
-  const completeCount = items.filter((item) => item.status === "complete").length;
-  const reviewCount = items.filter((item) => item.status === "review").length;
-
-  if (reviewCount > 0 && failedCount > 0) {
-    return "Upload complete with review and errors";
-  }
-
-  if (reviewCount > 0) {
-    return "Upload complete with review needed";
-  }
-
-  if (failedCount > 0 && completeCount === 0) {
-    return "Upload failed";
-  }
-
-  if (failedCount > 0) {
-    return "Upload complete with errors";
-  }
-
-  return "Upload complete";
-}
-
-function getUploadPanelSubtitle(items: UploadItem[]) {
-  const completeCount = items.filter((item) => item.status === "complete").length;
-  const failedCount = items.filter((item) => item.status === "error").length;
-  const reviewCount = items.filter((item) => item.status === "review").length;
-
-  const parts = [`${completeCount} uploaded`];
-
-  if (reviewCount > 0) {
-    parts.push(`${reviewCount} need review`);
-  }
-
-  if (failedCount > 0) {
-    parts.push(`${failedCount} failed`);
-  }
-
-  if (parts.length > 1) {
-    return parts.join(", ");
-  }
-
-  return `${completeCount} of ${items.length} uploaded`;
-}

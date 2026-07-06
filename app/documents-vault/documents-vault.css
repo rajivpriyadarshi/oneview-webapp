@@ -501,7 +501,7 @@ svg.docs-dropzone-border {
   position: fixed;
   right: 28px;
   bottom: 28px;
-  z-index: 50;
+  z-index: 210;
   width: min(420px, calc(100vw - 40px));
   overflow: hidden;
   border-radius: 16px;
@@ -745,13 +745,13 @@ svg.docs-dropzone-border {
 }
 
 .docs-confirm-danger {
-  background: #2F9FF8;
+  background: #e7000b;
   color: #fff;
   transition: background 0.15s ease;
 }
 
 .docs-confirm-danger:hover:not(:disabled) {
-  background: #1a8de8;
+  background: #c50009;
 }
 
 .docs-confirm-secondary:disabled {
@@ -761,7 +761,7 @@ svg.docs-dropzone-border {
 
 .docs-confirm-danger:disabled {
   cursor: not-allowed;
-  background: #c8d8e8;
+  background: #f4999e;
   color: #fff;
 }
 

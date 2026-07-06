@@ -1,11 +1,27 @@
 "use client";
 
-import { CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { dismissTray, removeTrayItem } from "../store/uploadTraySlice";
+import "./UploadTray.css";
 
-const HIDE_TRAY_PATHS = ["/documents-vault", "/onboarding/documents", "/onboarding/processing"];
+const HIDE_TRAY_PATHS = ["/onboarding/documents", "/onboarding/processing"];
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${Math.round(kb)} KB`;
+  return `${(kb / 1024).toFixed(1)} MB`;
+}
+
+function getStatusLabel(status: string) {
+  if (status === "complete") return "Uploaded";
+  if (status === "error") return "Failed";
+  if (status === "review") return "Review";
+  if (status === "uploading") return "Uploading";
+  return "Queued";
+}
 
 export function UploadTray() {
   const dispatch = useAppDispatch();
@@ -25,239 +41,97 @@ export function UploadTray() {
     return () => clearTimeout(timer);
   }, [allSucceeded, onUploadPage, dispatch]);
 
+  const isDashboard = pathname === "/dashboard" || pathname === "/";
+
   if (onUploadPage || dismissed || items.length === 0) return null;
 
+  const successCount = items.filter((i) => i.status === "complete").length;
+  const failedCount = items.filter((i) => i.status === "error").length;
+  const reviewCount = items.filter((i) => i.status === "review").length;
+  const uploading = !allDone;
+
+  let title = "Uploading…";
+  if (allDone) {
+    if (reviewCount > 0 && failedCount > 0) title = "Upload complete with review and errors";
+    else if (reviewCount > 0) title = "Upload complete with review needed";
+    else if (failedCount > 0 && successCount === 0) title = "Upload failed";
+    else if (failedCount > 0) title = "Upload complete with errors";
+    else title = "Uploads complete";
+  }
+
+  let subtitle = "";
+  if (allDone) {
+    const parts: string[] = [];
+    if (successCount > 0) parts.push(`${successCount} uploaded`);
+    if (reviewCount > 0) parts.push(`${reviewCount} need review`);
+    if (failedCount > 0) parts.push(`${failedCount} failed`);
+    subtitle = parts.join(", ");
+  } else {
+    const activeCount = items.filter((i) => i.status === "uploading" || i.status === "queued").length;
+    subtitle = `${activeCount} file${activeCount !== 1 ? "s" : ""} in progress`;
+  }
+
   return (
-    <>
-      {/* Desktop tray */}
-      <div
-        className="hidden md:flex"
-        style={{
-          position: "fixed",
-          bottom: 24,
-          right: 24,
-          zIndex: 9999,
-          width: 340,
-          flexDirection: "column",
-          gap: 8,
-          borderRadius: 20,
-          border: "1px solid rgba(0,0,0,0.08)",
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-          overflow: "hidden",
-        }}
-      >
-        <TrayContents
-          items={items}
-          allDone={allDone}
-          minimized={minimized}
-          setMinimized={setMinimized}
-          onDismiss={() => dispatch(dismissTray())}
-          onRemove={(id) => dispatch(removeTrayItem(id))}
-        />
-      </div>
-
-      {/* Mobile tray — sits above bottom account bar */}
-      <div
-        className="md:hidden"
-        style={{
-          position: "fixed",
-          bottom: 72,
-          left: 12,
-          right: 12,
-          zIndex: 9999,
-          borderRadius: 20,
-          border: "1px solid rgba(0,0,0,0.08)",
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-          overflow: "hidden",
-        }}
-      >
-        <TrayContents
-          items={items}
-          allDone={allDone}
-          minimized={minimized}
-          setMinimized={setMinimized}
-          onDismiss={() => dispatch(dismissTray())}
-          onRemove={(id) => dispatch(removeTrayItem(id))}
-        />
-      </div>
-    </>
-  );
-}
-
-type TrayItem = {
-  id: string;
-  name: string;
-  size: number;
-  status: string;
-  progress: number;
-  detail?: string;
-  error?: string;
-  documentId?: string;
-};
-
-function TrayContents({
-  items,
-  allDone,
-  minimized,
-  setMinimized,
-  onDismiss,
-  onRemove,
-}: {
-  items: TrayItem[];
-  allDone: boolean;
-  minimized: boolean;
-  setMinimized: (v: boolean) => void;
-  onDismiss: () => void;
-  onRemove: (id: string) => void;
-}) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+    <div className={`docs-upload-panel upload-tray-float ${isDashboard ? "!bottom-20" : ""}`}>
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "14px 16px 10px",
-          borderBottom: minimized ? "none" : "1px solid rgba(0,0,0,0.06)",
-          cursor: "pointer",
-        }}
-        onClick={() => setMinimized(!minimized)}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-satoshi), Arial, sans-serif",
-            fontSize: 14,
-            fontWeight: 600,
-            letterSpacing: "-0.28px",
-            color: "#000",
-          }}
-        >
-          {allDone ? "Uploads complete" : "Uploading…"}
-        </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {/* Minimize/expand toggle */}
+      <div className="docs-upload-panel-header" onClick={() => setMinimized(!minimized)} style={{ cursor: "pointer" }}>
+        <div>
+          <strong>{title}</strong>
+          <span>{subtitle}</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 4, flexShrink: 0 }}>
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); setMinimized(!minimized); }}
-            aria-label={minimized ? "Expand" : "Minimize"}
-            style={{
-              border: "none", background: "rgba(0,0,0,0.05)", cursor: "pointer",
-              padding: 4, display: "flex", alignItems: "center", justifyContent: "center",
-              borderRadius: 8, color: "rgba(0,0,0,0.5)",
+            className="docs-upload-panel-close"
+            onClick={(e) => {
+              e.stopPropagation();
+              setMinimized(!minimized);
             }}
+            aria-label={minimized ? "Expand" : "Minimize"}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              {minimized
-                ? <path d="M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                : <path d="M3 8h10M8 3v10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              }
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ transform: minimized ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+              <path d="M5 7L9 11L13 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          {allDone && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-              aria-label="Close"
-              style={{
-                border: "none", background: "rgba(0,0,0,0.05)", cursor: "pointer",
-                padding: 4, display: "flex", alignItems: "center", justifyContent: "center",
-                borderRadius: 8, color: "rgba(0,0,0,0.5)",
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M11.333 4.667L4.667 11.333M4.667 4.667L11.333 11.333" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          )}
+          <button
+            type="button"
+            className="docs-upload-panel-close"
+            onClick={(e) => {
+              e.stopPropagation();
+              dispatch(dismissTray());
+            }}
+            disabled={!allDone}
+            aria-label="Close"
+            style={{ opacity: allDone ? 1 : 0.3, cursor: allDone ? "pointer" : "not-allowed" }}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M5 5L13 13M13 5L5 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Items — hidden when minimized */}
+      {/* Items */}
       {!minimized && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "4px 12px 12px" }}>
+        <div className="docs-upload-list">
           {items.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "10px 8px", borderRadius: 14, background: "rgba(0,0,0,0.025)",
-              }}
-            >
-              <div
-                className={[
-                  "statement-file-loader",
-                  item.status === "queued" ? "is-queued" : "",
-                  item.status === "uploading" ? "is-uploading" : "",
-                  item.status === "complete" ? "is-uploaded" : "",
-                  item.status === "review" ? "is-review" : "",
-                  item.status === "error" ? "is-error" : "",
-                ].filter(Boolean).join(" ")}
-                style={{ "--upload-progress": `${item.progress}%` } as CSSProperties}
-              >
-                {item.status === "complete" ? (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M20 6L9 17L4 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : item.status === "review" ? (
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 2V6M12 18V22M6 12H2M22 12H18M19.0784 19.0784L16.25 16.25M19.0784 4.99994L16.25 7.82837M4.92157 19.0784L7.75 16.25M4.92157 4.99994L7.75 7.82837" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : item.status === "error" ? (
-                  <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 4V8M8 10.6667V12M14.6667 8C14.6667 11.6819 11.6819 14.6667 8 14.6667C4.3181 14.6667 1.33333 11.6819 1.33333 8C1.33333 4.3181 4.3181 1.33333 8 1.33333C11.6819 1.33333 14.6667 4.3181 14.6667 8Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : (
-                  <span />
-                )}
+            <div className="docs-upload-row" key={item.id}>
+              <div className="docs-upload-file">
+                <span className={`docs-upload-status is-${item.status}`} />
+                <div>
+                  <strong>{item.name}</strong>
+                  <span>
+                    {item.status === "error" || item.status === "review"
+                      ? (item.error || item.detail || formatFileSize(item.size))
+                      : (item.detail || formatFileSize(item.size))}
+                  </span>
+                </div>
               </div>
-
-              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
-                <span style={{ fontFamily: "var(--font-satoshi), Arial, sans-serif", fontSize: 13, fontWeight: 600, letterSpacing: "-0.26px", color: "#000", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {item.name}
-                </span>
-                <span style={{ fontFamily: "var(--font-satoshi), Arial, sans-serif", fontSize: 12, fontWeight: 500, letterSpacing: "-0.24px", color: "rgba(0,0,0,0.45)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {item.status === "complete"
-                    ? (item.detail ?? formatFileSize(item.size))
-                    : item.status === "error" || item.status === "review"
-                      ? item.error
-                      : (item.detail ?? formatFileSize(item.size))}
-                </span>
-              </div>
-
-              {(item.status === "complete" || item.status === "error" || item.status === "review") && (
-                <button
-                  type="button"
-                  onClick={() => onRemove(item.id)}
-                  aria-label="Dismiss"
-                  style={{
-                    flexShrink: 0, border: "none", background: "rgba(0,0,0,0.05)", cursor: "pointer",
-                    width: 28, height: 28, borderRadius: "50%", display: "flex",
-                    alignItems: "center", justifyContent: "center", color: "rgba(0,0,0,0.5)",
-                  }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                    <path d="M11.333 4.667L4.667 11.333M4.667 4.667L11.333 11.333" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              )}
+              <span className="docs-upload-state">{getStatusLabel(item.status)}</span>
             </div>
           ))}
         </div>
       )}
     </div>
   );
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const kb = bytes / 1024;
-  if (kb < 1024) return `${Math.round(kb)} KB`;
-  return `${(kb / 1024).toFixed(1)} MB`;
 }

@@ -142,6 +142,7 @@ export const api = createApi({
       query: () => "/oneview/documents/",
       transformResponse: (response: DocumentRecord[] | { results: DocumentRecord[] }) =>
         Array.isArray(response) ? response : response.results,
+      keepUnusedDataFor: 0,
       providesTags: ["Documents"],
     }),
     getDocument: builder.query<DocumentRecord, string>({

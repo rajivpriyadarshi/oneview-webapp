@@ -18,7 +18,47 @@ type UploadTrayState = {
   dismissed: boolean;
 };
 
-const initialState: UploadTrayState = {
+const STORAGE_KEY = "uploadTray";
+
+function loadPersistedState(): UploadTrayState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as UploadTrayState;
+    // On reload, any "uploading"/"queued" items are orphaned — keep them so reconciliation can resolve
+    return {
+      items: parsed.items.map((item) => ({
+        ...item,
+        // Reset progress since the upload fetch is gone
+        progress: item.status === "uploading" || item.status === "queued" ? 0 : item.progress,
+      })),
+      dismissed: parsed.dismissed,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function persistState(state: UploadTrayState) {
+  if (typeof window === "undefined") return;
+  try {
+    // Only persist items that are mid-upload (server has the document). "queued" items never
+    // started, so they can't be reconciled after refresh.
+    const activeItems = state.items.filter(
+      (i) => i.status === "uploading" && i.documentId,
+    );
+    if (activeItems.length === 0) {
+      localStorage.removeItem(STORAGE_KEY);
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ items: activeItems, dismissed: false }));
+    }
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+const initialState: UploadTrayState = loadPersistedState() || {
   items: [],
   dismissed: false,
 };
@@ -36,18 +76,22 @@ export const uploadTraySlice = createSlice({
         }
       }
       state.dismissed = false;
+      persistState(state);
     },
     patchTrayItem(state, action: PayloadAction<{ id: string } & Partial<TrayItem>>) {
       const { id, ...patch } = action.payload;
       const item = state.items.find((i) => i.id === id);
       if (item) Object.assign(item, patch);
+      persistState(state);
     },
     removeTrayItem(state, action: PayloadAction<string>) {
       state.items = state.items.filter((item) => item.id !== action.payload);
+      persistState(state);
     },
     dismissTray(state) {
       state.dismissed = true;
       state.items = [];
+      persistState(state);
     },
   },
 });
