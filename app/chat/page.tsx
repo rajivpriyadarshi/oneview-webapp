@@ -11,10 +11,12 @@ import {
   BranchPickerPrimitive,
   ComposerPrimitive,
   groupPartByType,
+  type MessageState,
   MessagePrimitive,
   ThreadPrimitive,
   useToolCallElapsed,
   useThread,
+  useThreadRuntime,
 } from "@assistant-ui/react";
 import {
   AssistantChatTransport,
@@ -46,6 +48,7 @@ import {
   upsertStoredAiChatSession,
   writeStoredAiChatSessions,
 } from "../lib/aiChatApi";
+import { appConfig } from "../lib/config";
 import "./chat.css";
 
 const PROMPT_SUGGESTIONS_ROW1 = [
@@ -68,7 +71,15 @@ type AiChatMessageMetadata = {
   client_message_id?: string;
 };
 
-type ChatUiMessage = UIMessage<AiChatMessageMetadata>;
+type ReplySuggestionsData = {
+  suggestions: string[];
+};
+
+type AiChatDataParts = {
+  "reply-suggestions": ReplySuggestionsData;
+};
+
+type ChatUiMessage = UIMessage<AiChatMessageMetadata, AiChatDataParts>;
 
 const WARM_CHAT_CACHE_MAX_AGE_MS = 30_000;
 const PENDING_LOCAL_CHAT_MAX_AGE_MS = 2 * 60_000;
@@ -732,7 +743,11 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
           <AuiIf condition={(state) => !state.thread.isEmpty}>
             <ThreadPrimitive.Viewport className="chat-message-viewport" autoScroll>
               <ThreadPrimitive.Messages>
-                {({ message }) => (message.role === "user" ? <UserMessage /> : <AssistantMessage />)}
+                {({ message }) => (
+                  message.role === "user"
+                    ? <UserMessage />
+                    : <AssistantMessage message={message} showReplySuggestions={message.isLast} />
+                )}
               </ThreadPrimitive.Messages>
               <ThreadPrimitive.ViewportFooter className="chat-thread-footer">
                 <ThreadPrimitive.ScrollToBottom className="chat-scroll-to-bottom" aria-label="Scroll to bottom">
@@ -861,7 +876,15 @@ function UserMessage() {
   );
 }
 
-function AssistantMessage() {
+function AssistantMessage({
+  message,
+  showReplySuggestions,
+}: {
+  message: MessageState;
+  showReplySuggestions: boolean;
+}) {
+  const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
+
   return (
     <MessagePrimitive.Root className="chat-message assistant">
       <div className="chat-message-stack">
@@ -895,6 +918,17 @@ function AssistantMessage() {
             }}
           </MessagePrimitive.GroupedParts>
         </div>
+        {replySuggestions.length > 0 ? (
+          <div className="chat-reply-suggestions" aria-label="Reply suggestions">
+            {replySuggestions.map((suggestion) => (
+              <ReplySuggestionButton
+                key={suggestion}
+                suggestion={suggestion}
+                autoSubmit={appConfig.replySuggestionsAutoSubmit}
+              />
+            ))}
+          </div>
+        ) : null}
         <div className="chat-message-controls">
         <AssistantActionBar />
         <BranchPickerPrimitive.Root className="chat-branch-picker" hideWhenSingleBranch>
@@ -911,6 +945,40 @@ function AssistantMessage() {
         </div>
       </div>
     </MessagePrimitive.Root>
+  );
+}
+
+function ReplySuggestionButton({
+  suggestion,
+  autoSubmit,
+}: {
+  suggestion: string;
+  autoSubmit: boolean;
+}) {
+  const threadRuntime = useThreadRuntime({ optional: true });
+
+  const handleClick = () => {
+    const composer = threadRuntime?.composer;
+    if (!composer) {
+      return;
+    }
+
+    composer.setText(suggestion);
+
+    if (autoSubmit) {
+      composer.send();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLTextAreaElement>(".chat-composer-input")?.focus();
+    });
+  };
+
+  return (
+    <button type="button" className="chat-reply-suggestion-pill" onClick={handleClick}>
+      {suggestion}
+    </button>
   );
 }
 
@@ -1128,6 +1196,36 @@ function getRecord(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
+function getReplySuggestions(parts: readonly unknown[]) {
+  for (let index = parts.length - 1; index >= 0; index -= 1) {
+    const part = getRecord(parts[index]);
+    if (part.type !== "data" || part.name !== "reply-suggestions") {
+      continue;
+    }
+
+    const data = getRecord(part.data);
+    const suggestions = data.suggestions;
+    if (!Array.isArray(suggestions)) {
+      return [];
+    }
+
+    const seenSuggestions = new Set<string>();
+    return suggestions
+      .filter((suggestion): suggestion is string => typeof suggestion === "string")
+      .map((suggestion) => suggestion.trim())
+      .filter((suggestion) => {
+        if (!suggestion || seenSuggestions.has(suggestion)) {
+          return false;
+        }
+
+        seenSuggestions.add(suggestion);
+        return true;
+      });
+  }
+
+  return [];
+}
+
 function isChatBusy(status: string) {
   return status === "submitted" || status === "streaming";
 }
@@ -1179,7 +1277,7 @@ function shouldHideDataPart(name?: string) {
     return false;
   }
 
-  return /tool[-_\s]?status/i.test(name);
+  return name === "reply-suggestions" || /tool[-_\s]?status/i.test(name);
 }
 
 function humanizeToolName(value: string) {

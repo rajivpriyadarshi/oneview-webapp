@@ -665,6 +665,40 @@
   padding: 4px 0;
 }
 
+.chat-reply-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 6px;
+  max-width: 100%;
+}
+
+.chat-reply-suggestion-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 8px 12px;
+  border: 1px solid rgba(23, 22, 21, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  color: #171615;
+  font-family: var(--font-satoshi), sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 17px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.chat-reply-suggestion-pill:hover {
+  border-color: rgba(127, 78, 11, 0.28);
+  background: rgba(255, 255, 255, 0.68);
+  transform: translateY(-1px);
+}
+
 .chat-message.user .chat-message-content p {
   margin: 0;
   white-space: pre-wrap;
