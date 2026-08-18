@@ -5,13 +5,17 @@
   "scripts": {
     "dev": "next dev",
     "dev:host": "next dev -H 0.0.0.0",
-    "build": "next build",
-    "build:prod": "next build",
+    "build": "npm run test && next build",
+    "build:prod": "npm run test && next build",
     "start": "next start",
     "start:prod": "next start",
     "start:host": "next start -H 0.0.0.0",
-    "check": "npm run build && npm audit --audit-level=moderate",
-    "lint": "next lint"
+    "check": "npm run lint && npm run test:ci && npm run build",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:ci": "vitest run --coverage --reporter=verbose",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@ai-sdk/react": "^3.0.211",
@@ -33,12 +37,20 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.5.2",
     "@types/node": "20.17.50",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^3.2.4",
     "autoprefixer": "^10.5.0",
+    "jsdom": "^26.0.0",
+    "msw": "^2.8.3",
     "postcss": "^8.5.15",
     "tailwindcss": "^4.3.0",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vitest": "^3.2.4"
   }
 }

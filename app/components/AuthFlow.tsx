@@ -13,10 +13,11 @@ import {
   useSendPasswordlessOtpMutation,
   useVerifyPasswordlessOtpMutation,
   useResendPasswordlessOtpMutation,
+  useCrmLoginMutation,
 } from "../store/api";
 import { api } from "../store/api";
 import { store } from "../store/store";
-import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
+import { clearAuthToken, getStoredAuthToken, storeAuthToken, storeAdvisorProfile } from "../lib/session";
 import { GoogleIdentityScript } from "./GoogleIdentityScript";
 import type { Profile } from "../lib/realAuthApi";
 import useAnalytics from "../hooks/useAnalytics";
@@ -27,6 +28,8 @@ export function AuthFlow() {
   const { trackPage, trackClick, trackAPI, trackUserAttributes } = useAnalytics();
   const [step, setStep] = useState<"login" | "otp">("login");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +42,7 @@ export function AuthFlow() {
   const [sendPasswordlessOtp] = useSendPasswordlessOtpMutation();
   const [verifyPasswordlessOtp] = useVerifyPasswordlessOtpMutation();
   const [resendPasswordlessOtp] = useResendPasswordlessOtpMutation();
+  const [crmLogin] = useCrmLoginMutation();
 
   // Track page load
   useEffect(() => {
@@ -133,25 +137,50 @@ export function AuthFlow() {
     try {
       const normalizedEmail = email.trim();
       validateEmail(normalizedEmail);
-      await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
 
-      trackAPI({
-        pageName: trackingEventsMap.authPage.PAGE,
-        params: {
-          event_name: trackingEventsMap.authPage.API_SEND_OTP_SUCCESS,
+      // Try CRM login with password if provided
+      if (password) {
+        const session = await crmLogin({
           email: normalizedEmail,
-        },
-      });
+          password,
+        }).unwrap();
 
-      setEmail(normalizedEmail);
-      setOtp(Array(6).fill(""));
-      setResendCooldown(60);
-      setStep("otp");
+        trackAPI({
+          pageName: trackingEventsMap.authPage.PAGE,
+          params: {
+            event_name: "CRM_LOGIN_SUCCESS",
+            email: normalizedEmail,
+          },
+        });
+
+        storeAuthToken(session.token);
+        storeAdvisorProfile(session.advisor);
+
+        // CRM users go directly to dashboard (skip profile fetch)
+        router.replace("/dashboard");
+        return;
+      }
+
+      // Fallback to OTP flow (commented out for now)
+      // await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
+      // trackAPI({
+      //   pageName: trackingEventsMap.authPage.PAGE,
+      //   params: {
+      //     event_name: trackingEventsMap.authPage.API_SEND_OTP_SUCCESS,
+      //     email: normalizedEmail,
+      //   },
+      // });
+      // setEmail(normalizedEmail);
+      // setOtp(Array(6).fill(""));
+      // setResendCooldown(60);
+      // setStep("otp");
+
+      throw new Error("Please enter your password to continue.");
     } catch (requestError) {
       trackAPI({
         pageName: trackingEventsMap.authPage.PAGE,
         params: {
-          event_name: trackingEventsMap.authPage.API_SEND_OTP_FAILURE,
+          event_name: trackingEventsMap.authPage.API_LOGIN_FAILURE,
           error: getErrorMessage(requestError),
         },
       });
@@ -373,8 +402,46 @@ export function AuthFlow() {
               />
             </label>
 
+            <label className={`field account-field ${password ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.625s both", position: "relative" }}>
+              <span>Password</span>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                autoComplete="current-password"
+                aria-label="Password"
+                required
+                style={{ paddingRight: "40px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#6b7280",
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#111827")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#6b7280")}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </button>
+            </label>
+
             <button className="continue-button" type="submit" disabled={isSubmitting} style={{ animation: "fadeInUp 0.6s ease-out 0.7s both" }}>
-              Continue with Email
+              {isSubmitting ? "Signing in..." : "Sign in"}
             </button>
 
             {error ? <p className="form-error">{error}</p> : null}
@@ -411,7 +478,9 @@ export function AuthFlow() {
           </form>
           <ZincBrand />
         </section>
-      ) : (
+      ) : null}
+      {/* OTP Section - Temporarily Hidden */}
+      {/* {step === "otp" && (
         <section className="auth-shell otp-shell" aria-labelledby="otp-title">
           <OneviewBrand />
           <form className="otp-panel" onSubmit={handleOtpSubmit}>
@@ -475,7 +544,7 @@ export function AuthFlow() {
           </form>
           <ZincBrand />
         </section>
-      )}
+      )} */}
       </main>
     </>
   );
@@ -537,4 +606,40 @@ function validateEmail(email: string) {
   if (!email.includes("@")) {
     throw new Error("Enter a valid email address.");
   }
+}
+
+function EyeIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
 }
