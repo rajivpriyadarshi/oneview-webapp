@@ -952,17 +952,17 @@ function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | nu
 
       <div className="grid grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)] gap-[24px] px-[36px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px]">
         <div className="grid gap-[24px]">
-          <section className="rounded-[18px] bg-white px-[36px] py-[36px] max-[640px]:px-[22px] max-[640px]:py-[26px]">
-            <p className="m-0 font-satoshi text-[16px] font-medium text-[#6b7280] max-[640px]:text-[14px]">AUM</p>
-            <div className="mt-[16px] flex flex-wrap items-baseline gap-x-[16px] gap-y-[8px]">
-              <strong className="font-satoshi text-[42px] font-bold leading-none tracking-normal text-[#111827] max-[640px]:text-[36px]">{clientAum}</strong>
-              <span className="inline-flex items-center gap-[6px] font-satoshi text-[15px] font-semibold text-[#10b981] max-[640px]:text-[13px]">
+          <section className="rounded-[16px] bg-[linear-gradient(135deg,rgba(0,0,0,0)_0%,rgba(255,255,255,0)_50%,rgba(255,255,255,0.40)_75%,rgba(255,255,255,0)_100%),rgba(255,255,255,0.90)] px-[24px] py-[32px] backdrop-blur-[2px] max-[640px]:px-[22px] max-[640px]:py-[26px]">
+            <p className="m-0 font-satoshi text-[16px] font-medium text-[#4D2E0C] max-[640px]:text-[14px]">AUM</p>
+            <div className="mt-[12px] flex flex-wrap items-center gap-x-[12px] gap-y-[8px]">
+              <strong className="font-satoshi text-[32px] font-bold leading-none tracking-normal text-[#1A2229] max-[640px]:text-[28px]">{clientAum}</strong>
+              <span className="inline-flex items-center gap-[6px] font-[Inter] text-[13px] font-semibold text-[#10B981] max-[640px]:text-[12px]">
                 <TrendUpIcon />
                 $142K &middot; 7.69% vs. last month
               </span>
             </div>
 
-            <h2 className="mt-[40px] mb-[20px] font-satoshi text-[13px] font-bold uppercase tracking-[0.06em] text-[#6b7280] max-[640px]:mt-[28px]">At a glance</h2>
+            <h2 className="mt-[32px] mb-[24px] font-[Inter] text-[12px] font-bold uppercase tracking-[0.06em] text-[#6B7280] max-[640px]:mt-[24px]">At a Glance</h2>
             <div className="grid">
               <AumFact label="Net worth" value={formatClientMoney(client?.net_worth, moneyCurrency, "$142M")} />
               <AumFact label="Client since" value={clientSince} />
@@ -1004,9 +1004,9 @@ function PlaceholderTab({ title }: { title: string }) {
 
 function AumFact({ label, value, last = false }: { label: string; value: string; last?: boolean }) {
   return (
-    <div className={`flex min-h-[56px] items-center justify-between gap-[20px] py-[10px] ${last ? "" : "border-b border-[#e5e7eb]"}`}>
-      <span className="font-satoshi text-[15px] font-normal text-[#6b7280] max-[640px]:text-[14px]">{label}</span>
-      <strong className="text-right font-satoshi text-[15px] font-bold text-[#111827] max-[640px]:text-[14px]">{value}</strong>
+    <div className={`flex items-center justify-between gap-[20px] py-[12px] ${last ? "" : "border-b border-[#E5E7EB]"}`}>
+      <span className="font-satoshi text-[14px] font-normal text-[#6B7280]">{label}</span>
+      <strong className="text-right font-satoshi text-[14px] font-bold text-[#111827]">{value}</strong>
     </div>
   );
 }
@@ -1186,11 +1186,11 @@ function AssetAllocationCard({ totalLabel = "$20.1M" }: { totalLabel?: string })
 
 function AssetAllocationChart({ totalLabel = "$20.1M" }: { totalLabel?: string }) {
   const chartData: ChartData<"doughnut", number[], string> = {
-    labels: ["Equity", "Fixed income", "Hedge funds", "Real assets"],
+    labels: ["Equity", "Venture Capital", "Fixed income", "Hedge funds", "Real assets"],
     datasets: [
       {
-        data: [34.6, 47.6, 10.6, 7.2],
-        backgroundColor: ["#197B22", "#FFC14F", "#17BD86", "#C4EF4D"],
+        data: [34.6, 24.1, 23.5, 10.6, 7.2],
+        backgroundColor: ["#1D761F", "#1E8A4B", "#FFC14E", "#10B981", "#C8F65C"],
         borderColor: "transparent",
         borderWidth: 0,
         hoverOffset: 4,
@@ -1203,7 +1203,7 @@ function AssetAllocationChart({ totalLabel = "$20.1M" }: { totalLabel?: string }
     responsive: true,
     maintainAspectRatio: false,
     cutout: "58%",
-    rotation: 0,
+    rotation: -90,
     plugins: {
       legend: {
         display: false,
@@ -1218,40 +1218,82 @@ function AssetAllocationChart({ totalLabel = "$20.1M" }: { totalLabel?: string }
   };
 
   return (
-    <div className="mt-[40px] max-[640px]:mt-[28px]">
-      <h2 className="m-0 font-satoshi text-[18px] font-bold text-[#111827] max-[640px]:text-[16px]">Asset allocation</h2>
-      <div className="relative mx-auto mt-[28px] aspect-square max-w-[400px] max-[640px]:max-w-[320px]">
-        <div className="absolute inset-[15%]">
+    <div className="relative mt-[40px] overflow-hidden rounded-[16px] bg-[#FCF9F4] px-[24px] pt-[32px] pb-[32px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] max-[640px]:mt-[28px] max-[640px]:px-[16px] max-[640px]:pt-[24px] max-[640px]:pb-[24px]">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[16px] opacity-70" aria-hidden="true">
+        <div className="absolute -left-[60px] top-0 h-[320px] w-[600px] opacity-40 blur-[135px]" style={{ background: "linear-gradient(180deg, rgba(255,241,163,0.8) 0%, rgba(255,241,163,0.8) 50%, rgba(255,179,134,0.8) 75%, rgba(255,111,50,0.8) 100%)" }} />
+        <div className="absolute -right-[60px] bottom-0 h-[320px] w-[600px] rotate-180 opacity-40 blur-[135px]" style={{ background: "linear-gradient(180deg, rgba(255,241,163,0.8) 0%, rgba(255,241,163,0.8) 50%, rgba(255,179,134,0.8) 75%, rgba(255,111,50,0.8) 100%)" }} />
+      </div>
+
+      <h2 className="relative z-[1] m-0 font-[Inter] text-[16px] font-semibold text-[#1A2229]">Asset allocation</h2>
+
+      <div className="relative z-[1] mx-auto mt-[24px] aspect-square max-w-[320px] max-[640px]:max-w-[260px]">
+        <div className="absolute inset-[12%]">
           <Doughnut data={chartData} options={chartOptions} />
-          <span className="absolute inset-1/2 grid h-[52%] w-[52%] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#fffdf7] text-center">
-            <strong className="font-satoshi text-[28px] font-bold leading-none text-black max-[640px]:text-[22px]">{totalLabel}</strong>
-            <small className="mt-[-6px] font-satoshi text-[12px] font-normal text-[#6b7280] max-[640px]:text-[10px]">Managed assets</small>
+          <span className="absolute inset-0 flex flex-col items-center justify-center text-center">
+            <strong className="font-satoshi text-[28px] font-[900] leading-[1.2] text-black max-[640px]:text-[22px]">{totalLabel}</strong>
+            <small className="mt-[2px] font-satoshi text-[12px] font-normal text-black/60">Managed assets</small>
           </span>
         </div>
 
-        <svg className="absolute inset-0 h-full w-full" viewBox="0 0 400 400" fill="none" aria-hidden="true">
-          {/* Equity: outer edge at ~-28° (1:30 o'clock), line outward to right */}
-          <circle cx="324" cy="135" r="5" fill="#111827" />
-          <line x1="324" y1="135" x2="355" y2="108" stroke="#111827" strokeWidth="1.2" />
-          {/* Hedge funds: outer edge at ~225° (10:30 o'clock), line outward to left */}
-          <circle cx="101" cy="101" r="5" fill="#111827" />
-          <line x1="101" y1="101" x2="72" y2="80" stroke="#111827" strokeWidth="1.2" />
-          {/* Real assets: outer edge at ~257° (11:30 o'clock), line outward to upper-left */}
-          <circle cx="169" cy="64" r="5" fill="#111827" />
-          <line x1="169" y1="64" x2="148" y2="35" stroke="#111827" strokeWidth="1.2" />
+        <svg className="absolute inset-0 h-full w-full" viewBox="0 0 320 320" fill="none" aria-hidden="true">
+          <circle cx="258" cy="108" r="4" fill="#1A2229" />
+          <line x1="258" y1="108" x2="282" y2="88" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
+          <circle cx="258" cy="228" r="4" fill="#1A2229" />
+          <line x1="258" y1="228" x2="280" y2="245" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
+          <circle cx="100" cy="245" r="4" fill="#1A2229" />
+          <line x1="100" y1="245" x2="78" y2="258" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
+          <circle cx="62" cy="140" r="4" fill="#1A2229" />
+          <line x1="62" y1="140" x2="38" y2="118" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
+          <circle cx="145" cy="50" r="4" fill="#1A2229" />
+          <line x1="145" y1="50" x2="130" y2="30" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
         </svg>
 
-        <div className="absolute top-[20%] right-[0%] text-left">
-          <span className="block font-satoshi text-[14px] leading-tight text-[#4b5563]">Equity</span>
-          <strong className="block font-satoshi text-[18px] font-bold leading-tight text-[#111827]">34.6%</strong>
+        <div className="absolute right-[-10px] top-[16%] text-left max-[640px]:right-[-4px]">
+          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Equity</span>
+          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">34.6%</strong>
         </div>
-        <div className="absolute top-[12%] left-[2%] text-right">
-          <span className="block font-satoshi text-[14px] leading-tight text-[#4b5563]">Hedge funds</span>
-          <strong className="block font-satoshi text-[18px] font-bold leading-tight text-[#111827]">10.6%</strong>
+        <div className="absolute bottom-[14%] right-[-10px] text-left max-[640px]:right-[-4px]">
+          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Venture Capital</span>
+          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">24.1%</strong>
         </div>
-        <div className="absolute top-[2%] left-[24%] text-right">
-          <span className="block font-satoshi text-[14px] leading-tight text-[#4b5563]">Real assets</span>
-          <strong className="block font-satoshi text-[18px] font-bold leading-tight text-[#111827]">7.2%</strong>
+        <div className="absolute bottom-[8%] left-[0px] text-right max-[640px]:left-[4px]">
+          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Fixed income</span>
+          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">23.5%</strong>
+        </div>
+        <div className="absolute left-[-16px] top-[28%] text-right max-[640px]:left-[-4px]">
+          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Hedge funds</span>
+          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">10.6%</strong>
+        </div>
+        <div className="absolute left-[22%] top-[0%] text-right">
+          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Real assets</span>
+          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">7.2%</strong>
+        </div>
+      </div>
+
+      <div className="relative z-[1] mt-[16px] flex flex-col items-center gap-[4px]">
+        <div className="flex flex-wrap items-center justify-center gap-[4px]">
+          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
+            <span className="h-[8px] w-[8px] rounded-full bg-[#1D761F]" />
+            <span className="font-satoshi text-[12px] font-medium text-black/80">Equity</span>
+          </span>
+          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
+            <span className="h-[8px] w-[8px] rounded-full bg-[#C8F65C]" />
+            <span className="font-satoshi text-[12px] font-medium text-black/80">Real assets</span>
+          </span>
+          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
+            <span className="h-[8px] w-[8px] rounded-full bg-[#10B981]" />
+            <span className="font-satoshi text-[12px] font-medium text-black/80">Hedge funds</span>
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-[4px]">
+          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
+            <span className="h-[8px] w-[8px] rounded-full bg-[#FFC14E]" />
+            <span className="font-satoshi text-[12px] font-medium text-black/80">Fixed income</span>
+          </span>
+          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
+            <span className="h-[8px] w-[8px] rounded-full bg-[#1E8A4B]" />
+            <span className="font-satoshi text-[12px] font-medium text-black/80">Venture Capital</span>
+          </span>
         </div>
       </div>
     </div>
