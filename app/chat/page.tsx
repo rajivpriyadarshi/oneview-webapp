@@ -1079,8 +1079,8 @@ function ClientOverview({
 
       {activeTab === "overview" ? <OverviewTab client={client} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "wealth-map" ? <WealthMapTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
-      {activeTab === "interactions" ? <InteractionsTab clientId={client?.id} isLoadingClient={isLoadingClient} /> : null}
-      {activeTab === "documents" ? <DocumentsTab /> : null}
+      {activeTab === "interactions" ? <InteractionsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} isLoadingClient={isLoadingClient} /> : null}
+      {activeTab === "documents" ? <DocumentsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
     </section>
   );
 }
@@ -1203,10 +1203,10 @@ function WealthMapTab({ clientId }: { clientId: number | null }) {
   );
 }
 
-function DocumentsTab() {
+function DocumentsTab({ clientId }: { clientId?: number | null }) {
   return (
     <div className="min-h-0 overflow-auto bg-white px-[32px] py-[24px]">
-      <DocumentsListView />
+      <DocumentsListView clientId={clientId} />
     </div>
   );
 }
