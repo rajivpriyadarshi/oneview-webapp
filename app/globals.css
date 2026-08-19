@@ -78,13 +78,14 @@ button:disabled {
   opacity: 0.68;
 }
 
-.login-page {
-  min-height: 100vh;
-  height: 100vh;
-  overflow: hidden;
-  background: #ffffff;
-  position: relative;
-}
+@layer components {
+  .login-page {
+    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
+    background: #ffffff;
+    position: relative;
+  }
 
 .login-background {
   position: absolute;
@@ -549,6 +550,7 @@ button:disabled {
 
 .otp-shell .zinc-brand {
   margin-top: 147px;
+}
 }
 
 .profile-shell {
