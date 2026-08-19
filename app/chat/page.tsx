@@ -978,26 +978,23 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
   const runtime = useAISDKRuntime(chat);
   const handlePromptSelect = useCallback(
     (prompt: ChatPrompt) => {
-      runtime.thread.append({
-        role: "user",
-        content: [{ type: "text", text: prompt.user_message }],
+      void chat.sendMessage({
+        text: prompt.user_message,
         metadata: prompt.workflow_intent
           ? {
-              custom: {
-                workflow_intent: prompt.workflow_intent,
-              },
+              workflow_intent: prompt.workflow_intent,
             }
           : undefined,
       });
     },
-    [runtime],
+    [chat],
   );
 
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current || !clientId) return;
     initialPromptFiredRef.current = true;
-    runtime.thread.append({ role: "user", content: [{ type: "text", text: initialPrompt }] });
-  }, [clientId, initialPrompt, runtime]);
+    void chat.sendMessage({ text: initialPrompt });
+  }, [chat, clientId, initialPrompt]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
