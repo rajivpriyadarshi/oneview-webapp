@@ -36,6 +36,25 @@ export type CrmClient = {
   updated_at: string;
 };
 
+export type CrmAlert = {
+  id: number;
+  relationship_manager: number;
+  client: number | null;
+  client_name: string | null;
+  title: string;
+  cta_url: string | null;
+  cta_text: string | null;
+  mark_read: boolean;
+  created_at: string;
+};
+
+export type CrmAlertsResponse = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: CrmAlert[];
+};
+
 export type CrmClientsResponse = {
   count: number;
   next: string | null;
@@ -271,6 +290,14 @@ export const api = createApi({
       transformResponse: (response: { currencies: { currency_code: string; name: string | null; symbol: string | null; decimals: number }[] }) => response.currencies,
     }),
 
+    // CRM Alerts
+    getCrmAlerts: builder.query<CrmAlertsResponse, { page?: number } | void>({
+      query: (params) => {
+        const qs = params?.page ? `?page=${params.page}` : "";
+        return `/crm/alerts/${qs}`;
+      },
+    }),
+
     // CRM Clients
     getCrmClients: builder.query<CrmClientsResponse, { search?: string; is_active?: string; page?: number } | void>({
       query: (params) => {
@@ -315,5 +342,6 @@ export const {
   useLazyGetBrokerStatementJobStatusQuery,
   useListBrokerStatementJobsQuery,
   useListCurrenciesQuery,
+  useGetCrmAlertsQuery,
   useGetCrmClientsQuery,
 } = api;

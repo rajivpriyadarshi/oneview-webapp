@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
-import { useGetCrmClientsQuery, type CrmClient } from "../store/api";
+import { useGetCrmClientsQuery, useGetCrmAlertsQuery, type CrmClient, type CrmAlert } from "../store/api";
 import { getStoredAuthToken, getStoredAdvisorProfile } from "../lib/session";
 
 export default function ClientsPage() {
@@ -22,9 +22,11 @@ export default function ClientsPage() {
   }, [router]);
 
   const { data, isLoading, isError } = useGetCrmClientsQuery();
+  const { data: alertsData } = useGetCrmAlertsQuery();
 
   const clients = data?.results ?? [];
   const totalCount = data?.count ?? 0;
+  const alerts = alertsData?.results ?? [];
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
@@ -123,7 +125,7 @@ export default function ClientsPage() {
 
             {/* Right panels */}
             <div style={{ flex: "0 0 360px", display: "flex", flexDirection: "column", gap: 16 }}>
-              <AlertsPanel />
+              <AlertsPanel alerts={alerts} />
               <MeetingsPanel clients={clients} />
             </div>
           </div>
@@ -264,14 +266,52 @@ function AttentionIcon({ type }: { type: "meeting" | "message" }) {
   );
 }
 
-function AlertsPanel() {
+function timeAgo(isoDate: string): string {
+  const diff = (Date.now() - new Date(isoDate).getTime()) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+  return `${Math.floor(diff / 86400)} days ago`;
+}
+
+function AlertsPanel({ alerts }: { alerts: CrmAlert[] }) {
   return (
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Alerts</h3>
         <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
       </div>
-      <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No alerts</p>
+
+      {alerts.length === 0 ? (
+        <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No alerts</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {alerts.map((alert) => (
+            <div key={alert.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
+                background: alert.client ? "#39952D" : "#3B82F6",
+              }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
+                <div style={{ fontSize: 12, color: "rgba(33,37,37,0.70)", marginTop: 2 }}>
+                  {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
+                </div>
+                {alert.cta_url && alert.cta_text && (
+                  <a
+                    href={alert.cta_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", textDecoration: "none", marginTop: 4, display: "inline-block" }}
+                  >
+                    {alert.cta_text}
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
