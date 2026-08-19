@@ -39,6 +39,7 @@ import Sidebar from "../components/Sidebar";
 import { MobileHeader } from "../components/MobileHeader";
 import { SourceWealthChart } from "../components/SourceWealthChart";
 import DocumentsListView from "../components/DocumentsListView";
+import InteractionsTabContent from "../components/InteractionsTabContent";
 import {
   type AiChatSession,
   type ChatPrompt,
@@ -867,7 +868,7 @@ function ClientOverview() {
 
       {activeTab === "overview" ? <OverviewTab client={client} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "wealth-map" ? <WealthMapTab /> : null}
-      {activeTab === "interactions" ? <PlaceholderTab title="Interactions" /> : null}
+      {activeTab === "interactions" ? <InteractionsTab clientId={client?.id} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "documents" ? <DocumentsTab /> : null}
     </section>
   );
@@ -999,6 +1000,30 @@ function DocumentsTab() {
   return (
     <div className="min-h-0 overflow-auto bg-white px-[32px] py-[24px]">
       <DocumentsListView />
+    </div>
+  );
+}
+
+function InteractionsTab({ clientId, isLoadingClient }: { clientId?: number | null; isLoadingClient?: boolean }) {
+  if (isLoadingClient) {
+    return (
+      <div className="grid min-h-0 flex-1 place-items-center bg-white p-[32px]">
+        <p className="m-0 font-satoshi text-[14px] text-black/45">Loading client...</p>
+      </div>
+    );
+  }
+
+  if (!clientId) {
+    return (
+      <div className="grid min-h-0 flex-1 place-items-center bg-white p-[32px]">
+        <p className="m-0 font-satoshi text-[14px] text-black/45">No client selected</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-0 overflow-auto bg-white">
+      <InteractionsTabContent clientId={clientId} />
     </div>
   );
 }
