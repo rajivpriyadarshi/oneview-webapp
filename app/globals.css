@@ -82,8 +82,45 @@ button:disabled {
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
-  background: url('/auth-Hero-bg.png') center/cover no-repeat fixed;
+  background: #ffffff;
   position: relative;
+}
+
+.login-background {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.login-background img {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  object-position: bottom center;
+  pointer-events: none;
+}
+
+.zinc-logo-centered {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.zinc-logo-full {
+  width: 134px;
+  height: 43px;
 }
 
 .auth-shell {
@@ -144,9 +181,10 @@ button:disabled {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 42px 36px 32px;
-  background: var(--card);
-  border-radius: 25px;
+  padding: 32px 16px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 32px;
   box-shadow: 0 18px 60px rgba(53, 44, 34, 0.05);
 }
 
@@ -162,17 +200,17 @@ button:disabled {
 .account-card h1,
 .otp-panel h1 {
   margin: 0;
-  color: #092423;
+  color: #000000;
   font-family: var(--font-butler), Georgia, "Times New Roman", serif;
-  font-size: 36px;
+  font-size: 32px;
   font-style: normal;
   font-weight: 400;
-  line-height: 3.5rem;
+  line-height: 56px;
   letter-spacing: -1.28px;
 }
 
 .account-card h1 {
-  margin-bottom: 16px;
+  margin-bottom: 32px;
 }
 
 .google-button {
@@ -218,34 +256,38 @@ button:disabled {
 
 .field {
   position: relative;
-  width: min(100%, 459px);
-  min-height: 85px;
+  width: 100%;
+  max-width: 448px;
+  min-height: 72px;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  margin-bottom: 0;
-  margin-top: 32px;
-  padding: 22px 23px 14px;
-  background: var(--field);
-  border: 1px solid rgba(0, 0, 0, 0.01);
+  margin-bottom: 16px;
+  padding: 16px 16px;
+  background: #e8e8e8;
+  border: none;
   border-radius: 16px;
+}
+
+.field:focus-within {
+  background: #f8f8f8;
 }
 
 .field span {
   position: absolute;
   top: 50%;
-  left: 23px;
+  left: 16px;
   transform: translateY(-50%);
   overflow: hidden;
   color: #828282;
   text-overflow: ellipsis;
   font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
-  font-size: 0.875rem;
+  font-size: 14px;
   font-style: normal;
   font-weight: 500;
-  line-height: 1.25rem;
-  letter-spacing: var(--Kerning-None, 0);
+  line-height: 20px;
+  letter-spacing: 0;
   pointer-events: none;
   transition: all 0.2s ease-in-out;
   background: transparent;
@@ -253,10 +295,10 @@ button:disabled {
 
 .field:focus-within span,
 .field.has-value span {
-  top: 14px;
+  top: 12px;
   transform: translateY(0);
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .field input,
@@ -287,28 +329,29 @@ button:disabled {
 }
 
 .continue-button {
-  width: min(100%, 459px);
+  width: 100%;
+  max-width: 448px;
   display: flex;
-  height: 64px;
+  height: 56px;
   padding: 16px 24px;
   justify-content: center;
   align-items: center;
   gap: 4px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 56px;
   background: #000;
   overflow: hidden;
-  color: var(--Greyscale-Text-White, #FFF);
+  color: #FFF;
   text-align: center;
   text-overflow: ellipsis;
   font-family: "Satoshi";
   font-feature-settings: 'ss03' on;
   font-size: 16px;
   font-style: normal;
-  font-weight: 500;
-  line-height: 1.5rem;
-  letter-spacing: var(--Kerning-None, 0);
-  margin-top: 32px;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0;
+  margin-top: 16px;
   cursor: pointer;
   transition: opacity 0.2s ease;
 }
@@ -316,6 +359,50 @@ button:disabled {
 .continue-button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.password-field-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-field-wrapper .field {
+  padding-right: 48px;
+  width: 100%;
+}
+
+.password-field-wrapper .field input {
+  padding-right: 32px;
+}
+
+.password-toggle-button {
+  position: absolute;
+  right: 16px;
+  bottom: 40px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  color: #828282;
+  transition: color 0.2s ease;
+  pointer-events: auto;
+}
+
+.password-toggle-button:hover {
+  color: #262626;
+}
+
+.password-toggle-button svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .terms {

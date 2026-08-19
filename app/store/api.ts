@@ -18,7 +18,7 @@ import {
   isBrokerStatementJobStatusValid,
   isBrokerStatementUploadStatusValid,
 } from "../lib/documentsApi";
-import type { AuthSession, PasswordlessAuthSession, Profile } from "../lib/realAuthApi";
+import type { AuthSession, PasswordlessAuthSession, Profile, CRMAuthSession } from "../lib/realAuthApi";
 
 export const api = createApi({
   reducerPath: "api",
@@ -58,6 +58,12 @@ export const api = createApi({
     }),
     logout: builder.mutation<void, void>({
       query: () => ({ url: "/auth/logout/", method: "POST" }),
+    }),
+    crmLogin: builder.mutation<CRMAuthSession, { email: string; password: string }>({
+      query: (body) => ({ url: "/crm/login/", method: "POST", body }),
+    }),
+    crmLogout: builder.mutation<{ message: string }, void>({
+      query: () => ({ url: "/crm/logout/", method: "POST" }),
     }),
 
     // Profile
@@ -254,6 +260,8 @@ export const {
   useVerifyPasswordlessOtpMutation,
   useResendPasswordlessOtpMutation,
   useLogoutMutation,
+  useCrmLoginMutation,
+  useCrmLogoutMutation,
   useGetProfileQuery,
   useUpdateProfileMutation,
   useListPortfoliosQuery,

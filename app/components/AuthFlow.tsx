@@ -13,10 +13,11 @@ import {
   useSendPasswordlessOtpMutation,
   useVerifyPasswordlessOtpMutation,
   useResendPasswordlessOtpMutation,
+  useCrmLoginMutation,
 } from "../store/api";
 import { api } from "../store/api";
 import { store } from "../store/store";
-import { clearAuthToken, getStoredAuthToken, storeAuthToken } from "../lib/session";
+import { clearAuthToken, getStoredAuthToken, storeAuthToken, storeAdvisorProfile } from "../lib/session";
 import { GoogleIdentityScript } from "./GoogleIdentityScript";
 import type { Profile } from "../lib/realAuthApi";
 import useAnalytics from "../hooks/useAnalytics";
@@ -27,6 +28,8 @@ export function AuthFlow() {
   const { trackPage, trackClick, trackAPI, trackUserAttributes } = useAnalytics();
   const [step, setStep] = useState<"login" | "otp">("login");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,6 +42,7 @@ export function AuthFlow() {
   const [sendPasswordlessOtp] = useSendPasswordlessOtpMutation();
   const [verifyPasswordlessOtp] = useVerifyPasswordlessOtpMutation();
   const [resendPasswordlessOtp] = useResendPasswordlessOtpMutation();
+  const [crmLogin] = useCrmLoginMutation();
 
   // Track page load
   useEffect(() => {
@@ -133,6 +137,17 @@ export function AuthFlow() {
     try {
       const normalizedEmail = email.trim();
       validateEmail(normalizedEmail);
+
+      // Use CRM login with password
+      if (password) {
+        const session = await crmLogin({ email: normalizedEmail, password }).unwrap();
+        storeAuthToken(session.token);
+        storeAdvisorProfile(session.advisor);
+        await routeByProfile();
+        return;
+      }
+
+      // Fallback to OTP flow (currently disabled in UI)
       await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
 
       trackAPI({
@@ -337,12 +352,22 @@ export function AuthFlow() {
       <GoogleIdentityScript onLoad={() => setIsGoogleLoaded(true)} />
       <div ref={hiddenGoogleButtonRef} style={{ display: 'none', position: 'absolute' }} />
       <main className="login-page">
+        {/* Background gradient */}
+        <div className="login-background">
+          <img src="/auth/gradient-bg.png" alt="" />
+        </div>
+
+        {/* Centered Zinc logo */}
+        <div className="zinc-logo-centered">
+          <img src="/auth/logo-full.svg" alt="Zinc" className="zinc-logo-full" />
+        </div>
+
         {step === "login" ? (
           <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
-            <OneviewBrand />
             <form className="login-card account-card" onSubmit={handleEmailSubmit}>
-              <h1 id="login-title" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both", fontSize: "36px", fontWeight: 400 }}>Get started</h1>
+              <h1 id="login-title" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both" }}>Login to your account</h1>
 
+              {/* Google sign-in temporarily disabled - preserved for future use
               <button
                 className="google-button"
                 type="button"
@@ -354,11 +379,10 @@ export function AuthFlow() {
                 <span>Continue with Google</span>
               </button>
 
-              {/* Hidden Google button rendered outside conditional */}
-
               <div className="or-divider" style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}>OR</div>
+              */}
 
-            <label className={`field account-field ${email ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}>
+            <label className={`field account-field ${email ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.25s both" }}>
               <span>Email address</span>
               <input
                 type="email"
@@ -373,8 +397,32 @@ export function AuthFlow() {
               />
             </label>
 
-            <button className="continue-button" type="submit" disabled={isSubmitting} style={{ animation: "fadeInUp 0.6s ease-out 0.7s both" }}>
-              Continue with Email
+            <div className="password-field-wrapper">
+              <label className={`field account-field ${password ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}>
+                <span>Password</span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  aria-label="Password"
+                  required
+                />
+              </label>
+              <button
+                type="button"
+                className="password-toggle-button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}
+              >
+                {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+              </button>
+            </div>
+
+            <button className="continue-button" type="submit" disabled={isSubmitting || !email || !password} style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}>
+              Continue
             </button>
 
             {error ? <p className="form-error">{error}</p> : null}
@@ -409,7 +457,6 @@ export function AuthFlow() {
               </a>.
             </p>
           </form>
-          <ZincBrand />
         </section>
       ) : (
         <section className="auth-shell otp-shell" aria-labelledby="otp-title">
@@ -473,7 +520,6 @@ export function AuthFlow() {
                 : "Didn't receive it? Resend code"}
             </button>
           </form>
-          <ZincBrand />
         </section>
       )}
       </main>
@@ -482,17 +528,27 @@ export function AuthFlow() {
 }
 
 async function getPostProfileRouteFromStore(profile: Profile): Promise<string> {
-  const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.display_name?.trim();
+  // Skip onboarding screens - go directly to home page
+  // TODO: Update to new landing page when designed
+  return "/dashboard";
+}
 
-  if (!displayName || displayName === emailPrefix) {
-    return "/profile/setup";
-  }
+function EyeIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
-  const portfoliosResult = await store.dispatch(api.endpoints.listPortfolios.initiate(undefined, { forceRefetch: true }));
-  const portfolios = portfoliosResult.data ?? [];
-
-  return portfolios.length === 0 ? "/onboarding/documents" : "/dashboard";
+function EyeOffIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
 }
 
 function GoogleIcon() {
