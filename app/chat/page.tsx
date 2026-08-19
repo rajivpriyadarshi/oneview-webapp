@@ -5,6 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
 import {
+  ArcElement,
+  Chart as ChartJS,
+  Tooltip,
+  type ChartData,
+  type ChartOptions,
+} from "chart.js";
+import { Doughnut } from "react-chartjs-2";
+import {
   ActionBarPrimitive,
   AssistantRuntimeProvider,
   AuiIf,
@@ -29,6 +37,7 @@ import { visit } from "unist-util-visit";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import { MobileHeader } from "../components/MobileHeader";
+import { SourceWealthChart } from "../components/SourceWealthChart";
 import {
   type AiChatSession,
   type ChatPrompt,
@@ -49,7 +58,13 @@ import {
   writeStoredAiChatSessions,
 } from "../lib/aiChatApi";
 import { appConfig } from "../lib/config";
-import "./chat.css";
+import {
+  getWealthCrmClient,
+  listWealthCrmClients,
+  type WealthCrmClient,
+} from "../lib/wealthCrmApi";
+
+ChartJS.register(ArcElement, Tooltip);
 
 const PROMPT_SUGGESTIONS_ROW1 = [
   "How will falling oil prices impact my holdings?",
@@ -63,6 +78,25 @@ const PROMPT_SUGGESTIONS_ROW2 = [
   "Are emerging tech startups showing signs of becoming the next market leaders?",
   "How might changes in inflation affect my bond allocation?",
   "Which of my holdings are most sensitive to dollar strength?",
+];
+
+const ATTENTION_ITEMS = [
+  {
+    action: "Find alternatives to reduce tech exposure",
+    prompt: "Find alternatives to reduce technology exposure in the portfolio.",
+  },
+  {
+    action: "Evaluation options about selling property",
+    prompt: "Evaluate options for funding a property sale versus taking a loan.",
+  },
+  {
+    action: "Draft an email to ask for insurance document",
+    prompt: "Draft an email asking for the updated insurance document.",
+  },
+  {
+    action: "Compare ways to fund property purchase",
+    prompt: "Compare ways to fund the upcoming $42,000 education payment.",
+  },
 ];
 
 type AiChatMessageMetadata = {
@@ -80,9 +114,92 @@ type AiChatDataParts = {
 };
 
 type ChatUiMessage = UIMessage<AiChatMessageMetadata, AiChatDataParts>;
+type ClientTab = "overview" | "wealth-map" | "interactions" | "documents";
 
 const WARM_CHAT_CACHE_MAX_AGE_MS = 30_000;
 const PENDING_LOCAL_CHAT_MAX_AGE_MS = 2 * 60_000;
+
+const TW = {
+  shell: "h-screen overflow-hidden bg-white text-[#171615]",
+  mobileHistoryBtn: "hidden h-[36px] w-[36px] items-center justify-center rounded-full border-0 bg-transparent text-[#7f4e0b] max-md:inline-flex hover:bg-[#7f4e0b]/10",
+  mobileHeaderBtn: "inline-flex shrink-0 items-center gap-[8px] rounded-full border border-[#804d13]/20 bg-[#f0ebe0] py-[8px] pr-[12px] pl-[8px] font-satoshi text-[13px] text-[#804d13] hover:bg-[#e8e0d0]",
+  mobileHeaderBtnIcon: "inline-grid place-items-center rounded-full bg-gradient-to-b from-[#b37f40] to-[#432411] p-[6px] text-white",
+  workspace: "ml-[80px] grid h-screen grid-cols-[minmax(300px,380px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(292px,350px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
+  advisorPanel: "relative grid h-screen min-w-0 grid-rows-[64px_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[64px_auto_auto]",
+  advisorHeader: "flex items-center justify-between gap-[10px] border-b border-black/10 pr-[14px] pl-[12px] max-[640px]:pr-[12px] max-[640px]:pl-[12px]",
+  conversationBtn: "inline-flex min-w-0 items-center gap-[8px] border-0 bg-transparent py-[6px] font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [overflow-wrap:break-word]",
+  conversationText: "truncate",
+  advisorAddBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
+  attentionContent: "flex min-h-0 flex-col justify-end overflow-auto pr-[14px] pl-[12px] pt-[28px] pb-[128px] max-[900px]:justify-start max-[900px]:pr-[12px] max-[900px]:pl-[12px] max-[900px]:pt-[24px] max-[900px]:pb-[128px]",
+  attentionTitle: "m-0 mb-[24px] max-w-[340px] font-serif text-[38px] font-normal leading-[45.6px] tracking-normal text-black [overflow-wrap:break-word]",
+  attentionList: "grid gap-[10px]",
+  attentionSuggestion: "inline-flex items-center gap-[8px] rounded-[8px] bg-[#f0ebe0] px-[12px] py-[10px] text-left font-mono text-[13px] font-normal leading-[16.9px] text-[#282420] transition hover:bg-[#e8e0d0]",
+  promptChipsRow: "mb-[10px] flex flex-wrap items-center gap-[8px]",
+  promptChip: "inline-flex items-center rounded-full border border-black/10 bg-[#f7f3ee] px-[12px] py-[8px] font-satoshi text-[13px] font-medium leading-tight text-[#282420] transition hover:bg-[#ede8df]",
+  promptChipExpand: "inline-grid h-[32px] w-[32px] place-items-center rounded-full border border-black/10 bg-[#f7f3ee] text-[#282420] transition hover:bg-[#ede8df]",
+  compactThread: "absolute right-[14px] bottom-[14px] left-[12px] z-[5] max-[900px]:right-[12px] max-[900px]:left-[12px]",
+  loading: "flex min-h-screen flex-col items-center justify-center p-[32px] font-satoshi text-[13px] text-black/50",
+  notice: "m-0 rounded-lg border border-[#171615]/10 bg-white/50 p-[12px] font-satoshi text-[13px] leading-snug text-[#171615]/50",
+  thread: "relative flex h-auto min-h-0 flex-col overflow-visible",
+  assistantThread: "flex min-h-0 flex-1 flex-col",
+  emptyViewport: "block overflow-visible",
+  emptyCopy: "mx-auto flex w-full flex-col items-center p-0 text-center",
+  emptyHeading: "hidden",
+  suggestionsWrap: "hidden",
+  suggestionsRow: "flex overflow-hidden py-1",
+  suggestionsRowInner: "flex shrink-0 gap-2.5",
+  suggestionPill: "inline-flex shrink-0 items-center gap-[8px] rounded-full border border-[#171615]/10 bg-white/30 px-[12px] py-[10px] font-satoshi text-[13px] leading-tight text-black backdrop-blur-xl transition hover:-translate-y-px hover:bg-white/55",
+  messageViewport: "relative max-h-60 min-h-0 flex-1 overflow-y-auto px-0 pt-0 pb-[78px]",
+  threadFooter: "sticky bottom-0 z-[5] bg-transparent pt-3",
+  scrollToBottom: "hidden data-[state=visible]:inline-grid absolute left-1/2 top-[-16px] h-9 w-9 -translate-x-1/2 -translate-y-full place-items-center rounded-full border border-white/60 bg-white/85 text-[#171615] shadow-[0_2px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl",
+  errorBanner: "mx-auto mb-[10px] w-full rounded-lg border border-[#973022]/20 bg-white/70 px-[12px] py-[10px] font-satoshi text-[13px] text-[#8f2415]",
+  composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent p-0",
+  composerWrap: "w-full p-0",
+  composer: "relative mx-auto grid min-h-[104px] w-full grid-rows-[1fr_auto] rounded-[22px] border border-black/10 bg-white px-[16px] py-[14px] shadow-[0px_2px_10px_0px_#0000000F] transition max-[640px]:min-h-[104px] max-[640px]:rounded-[20px] max-[640px]:px-[14px] max-[640px]:py-[14px]",
+  composerThinking: "ring-1 ring-[#b37f40]/40",
+  composerInputRow: "min-w-0 self-start",
+  composerInput: "h-auto min-h-0 w-full resize-none border-0 bg-transparent p-0 font-satoshi text-[14px] font-normal leading-[18.9px] text-black outline-none [overflow-wrap:break-word] placeholder:text-[14px] placeholder:font-normal placeholder:leading-[18.9px] placeholder:text-black/40",
+  composerFooter: "flex min-w-0 items-center justify-between gap-[10px] p-0",
+  composerFooterLeft: "flex min-w-0 items-center gap-[9px]",
+  composerFooterRight: "flex items-center gap-[10px]",
+  composerIconBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent p-0 text-black transition hover:bg-black/5 [&_svg]:h-[20px] [&_svg]:w-[20px]",
+  composerModeBtn: "inline-flex min-h-[32px] min-w-0 items-center gap-[9px] rounded-full border border-black/10 bg-white px-[12px] font-satoshi text-[12px] font-normal leading-[14.4px] text-black [overflow-wrap:break-word] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] transition hover:bg-black/[0.02] max-[640px]:max-w-[168px]",
+  composerModeText: "truncate font-satoshi text-[12px] font-normal leading-[14.4px] text-black [overflow-wrap:break-word]",
+  sendBtn: "inline-grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full border-0 bg-black p-0 text-white transition hover:-translate-y-px hover:bg-[#2d2926] disabled:bg-black disabled:text-white [&_svg]:h-[24px] [&_svg]:w-[24px]",
+  messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
+  messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
+  messageContent: "max-w-full [overflow-wrap:anywhere] rounded-lg font-satoshi text-[13px] leading-relaxed text-black",
+  userMessageContent: "rounded-[18px_18px_4px_18px] border border-white/50 bg-[#ede8df] px-[14px] py-[12px] text-black",
+  assistantMessageContent: "py-1",
+  messageStack: "max-w-full",
+  replySuggestions: "mt-2 mb-1.5 flex max-w-full flex-wrap gap-2",
+  replyPill: "inline-flex min-h-[34px] max-w-full items-center [overflow-wrap:anywhere] rounded-full border border-[#171615]/10 bg-white/40 px-[12px] py-[8px] text-left font-satoshi text-[13px] font-medium leading-[17px] text-[#171615] transition hover:-translate-y-px hover:border-[#7f4e0b]/30 hover:bg-white/70",
+  messageControls: "mt-2 inline-flex items-center gap-1.5",
+  inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
+  actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
+  branchCount: "font-satoshi text-[12px] font-bold tabular-nums",
+  markdown: "[overflow-wrap:anywhere] font-satoshi text-[13px] leading-relaxed text-black [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
+  toolGroup: "my-3 overflow-hidden rounded-[10px] border border-[#0e5f5b]/10 bg-white/70",
+  toolSummary: "flex cursor-pointer list-none items-center justify-between gap-2.5 px-3.5 py-3 select-none [&::-webkit-details-marker]:hidden",
+  toolLabel: "inline-flex items-center gap-[8px] font-satoshi text-[12px] font-bold text-[#0e5f5b] [&_svg]:transition-transform",
+  toolStatus: "font-satoshi text-[12px] font-bold text-[#171615]/55",
+  toolStatusActive: "text-[#0e5f5b]",
+  toolBody: "grid gap-2.5 px-3 pb-3",
+  toolCard: "rounded-xl border border-[#171615]/10 bg-[#fffdf9] p-3",
+  toolCardHeader: "mb-2.5 flex items-start justify-between gap-2.5",
+  toolEyebrow: "m-0 mb-[2px] font-satoshi text-[10px] font-bold uppercase tracking-[0.08em] text-[#171615]/50",
+  toolTitle: "m-0 font-satoshi text-[13px] font-bold leading-tight",
+  toolMeta: "inline-flex flex-wrap items-center justify-end gap-2",
+  toolBadge: "inline-flex w-fit items-center gap-[6px] rounded-full border px-[10px] py-[4px] font-satoshi text-[11px] font-bold leading-tight",
+  toolTime: "inline-flex w-fit items-center gap-[6px] rounded-full bg-[#171615]/5 px-[10px] py-[4px] font-satoshi text-[11px] font-bold leading-tight text-[#171615]/60",
+  toolPayload: "grid gap-1.5",
+  toolPayloadLabel: "font-satoshi text-[10px] font-bold uppercase tracking-[0.08em] text-[#171615]/50",
+  toolPayloadPre: "m-0 overflow-x-auto [overflow-wrap:anywhere] whitespace-pre-wrap rounded-[10px] bg-[#171615]/5 px-[12px] py-[10px] font-mono text-[12px] leading-normal text-[#171615]",
+  inlineStatus: "mt-[10px] inline-flex w-fit items-center gap-[6px] rounded-full bg-[#171615]/5 px-[10px] py-[4px] font-satoshi text-[11px] font-bold leading-tight text-[#171615]/60",
+  inlineStatusActive: "mt-[10px] inline-flex items-center gap-[6px] bg-transparent px-0 py-[4px] font-satoshi text-[12px] font-normal text-black/50",
+  loadingDots: "ml-0.5 inline-flex items-center gap-[3px]",
+  loadingDot: "h-1 w-1 rounded-full bg-current",
+};
 
 export default function ChatPage() {
   const router = useRouter();
@@ -237,6 +354,16 @@ export default function ChatPage() {
     router.replace("/chat");
   };
 
+  const startPromptChat = (prompt: string) => {
+    setIsDraftChat(true);
+    setSelectedSessionId(null);
+    setInitialMessages([]);
+    setNotice(null);
+    setMobileRailOpen(false);
+    setInitialPromptParam(prompt);
+    router.replace("/chat");
+  };
+
   const handleTogglePin = async (session: AiChatSession) => {
     const nextPinned = !session.is_pinned;
     setSessions((current) =>
@@ -369,174 +496,85 @@ export default function ChatPage() {
   };
 
   return (
-    <ProtectedRoute>
-      <div className="chat-page-shell">
-        <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
-        <MobileHeader
-          onMenuOpen={() => setSidebarOpen(true)}
-          logo={
-            <button type="button" className="chat-mobile-history-btn" aria-label="Chat history" onClick={() => setMobileRailOpen(v => !v)}>
-              <HistoryIcon />
-            </button>
-          }
-          right={
-            <button type="button" className="chat-page-header-btn" onClick={startNewChat}>
-              <span className="chat-page-header-btn-icon"><PlusIcon /></span>
-              New chat
-            </button>
-          }
-        />
-        {mobileRailOpen && (
-          <button type="button" className="chat-rail-mobile-backdrop" aria-label="Close chat history" onClick={() => setMobileRailOpen(false)} />
-        )}
-        <header className="chat-page-header">
-          <div className="chat-page-header-left">
-            <h1 className="chat-page-header-title">Smart advisor</h1>
-            <p className="chat-page-header-subtitle">Chat with it about  your investments and what’s happening in the markets</p>
-          </div>
-          <button type="button" className="chat-page-header-btn" onClick={startNewChat}>
-            <span className="chat-page-header-btn-icon"><PlusIcon /></span>
+    <div className={TW.shell}>
+      <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
+      <MobileHeader
+        onMenuOpen={() => setSidebarOpen(true)}
+        logo={
+          <button type="button" className={TW.mobileHistoryBtn} aria-label="Chat history" onClick={() => setMobileRailOpen(v => !v)}>
+            <HistoryIcon />
+          </button>
+        }
+        right={
+          <button type="button" className={TW.mobileHeaderBtn} onClick={startNewChat}>
+            <span className={TW.mobileHeaderBtnIcon}><PlusIcon /></span>
             New chat
           </button>
-        </header>
-        <main className={`chat-page-main${railCollapsed ? " rail-collapsed" : ""}`}>
-          {railCollapsed && (
-            <button type="button" className="chat-rail-expand-btn" onClick={() => setRailCollapsed(false)} aria-label="Expand sidebar">
-              <ExpandIcon />
+        }
+      />
+      <main className={TW.workspace}>
+        <aside className={TW.advisorPanel} aria-label="Advisor chat">
+          <div className={TW.advisorHeader}>
+            <ul className="m-0 min-w-0 list-none p-0">
+              <li
+                className={TW.conversationBtn}
+                role="button"
+                tabIndex={0}
+                onClick={startNewChat}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    startNewChat();
+                  }
+                }}
+              >
+                <span className={TW.conversationText}>{selectedSession?.title && selectedSession.title !== "New chat" ? selectedSession.title : "New conversation"}</span>
+                <ChevronDownIcon />
+              </li>
+            </ul>
+            <button type="button" className={TW.advisorAddBtn} aria-label="New conversation" onClick={startNewChat}>
+              <PlusIcon />
             </button>
-          )}
-          <aside className={`chat-session-rail${railCollapsed ? " is-collapsed" : ""}${mobileRailOpen ? " is-mobile-open" : ""}`} aria-label="Chat sessions">
-            <button type="button" className="chat-rail-collapse-btn" aria-label="Collapse sidebar" onClick={() => setRailCollapsed(true)}>
-              <CollapseIcon />
-            </button>
-            <div className="flex flex-col gap-2 py-4" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-              <div className="chat-session-list px-[8px]">
-                {showArchived ? (
-                  isLoadingArchived ? (
-                    <p className="chat-session-muted">Loading archived chats...</p>
-                  ) : archivedSessions.length === 0 ? (
-                    <div className="chat-session-empty">
-                      <div className="chat-session-empty-icon">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                          <line x1="17" y1="7" x2="7" y2="17"/>
-                        </svg>
-                      </div>
-                      <p className="chat-session-empty-label">No archived chats.</p>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="chat-session-section-label">
-                        <ArchiveIcon />
-                        Archived conversations
-                      </p>
-                      {archivedSessions.map((session) => (
-                        <SessionItem
-                          key={`archived-${session.id}`}
-                          session={session}
-                          archived
-                          active={session.id === selectedSessionId}
-                          onSelect={() => selectSession(session)}
-                          onTogglePin={() => handleTogglePin(session)}
-                          onArchive={() => handleUnarchive(session)}
-                        />
-                      ))}
-                    </>
-                  )
-                ) : isLoadingSessions ? (
-                  <p className="chat-session-muted">Loading chats...</p>
-                ) : sessions.length === 0 ? (
-                  <div className="chat-session-empty">
-                    <div className="chat-session-empty-icon">
-                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                        <line x1="17" y1="7" x2="7" y2="17"/>
-                      </svg>
-                    </div>
-                    <p className="chat-session-empty-label">No chats yet.</p>
-                  </div>
-                ) : (
-                  <>
-                    {sessions.some((s) => s.is_pinned) && (
-                      <>
-                        <p className="chat-session-section-label">
-                          <PinIcon />
-                          Pinned conversations
-                        </p>
-                        {sessions.filter((s) => s.is_pinned).map((session) => (
-                          <SessionItem
-                            key={`pinned-${session.id}`}
-                            session={session}
-                            active={session.id === selectedSessionId}
-                            onSelect={() => selectSession(session)}
-                            onTogglePin={() => handleTogglePin(session)}
-                            onArchive={() => handleArchive(session)}
-                          />
-                        ))}
-                      </>
-                    )}
-                    {sessions.filter((s) => !s.is_pinned).length > 0 && (
-                      <p className="chat-session-section-label" style={{ marginTop: sessions.some((s) => s.is_pinned) ? 8 : 0 }}>
-                        <LockIcon />
-                        {sessions.some((s) => s.is_pinned) ? "Other conversations" : "Your conversations"}
-                      </p>
-                    )}
-                    {sessions.filter((s) => !s.is_pinned).map((session) => (
-                      <SessionItem
-                        key={session.id}
-                        session={session}
-                        active={session.id === selectedSessionId}
-                        onSelect={() => selectSession(session)}
-                        onTogglePin={() => handleTogglePin(session)}
-                        onArchive={() => handleArchive(session)}
-                      />
-                    ))}
-                  </>
-                )}
-              </div>
+          </div>
 
-              <div className="px-[8px]">
-                <button type="button" className="chat-rail-archive-toggle w-[100%]" onClick={toggleArchivedView}>
-                  <ArchiveIcon />
-                  {showArchived ? "Back to chats" : "View archived"}
+          <div className={TW.attentionContent}>
+            <h1 className={TW.attentionTitle}>What can I help you with?</h1>
+            <div className={TW.attentionList}>
+              {ATTENTION_ITEMS.map((item) => (
+                <button
+                  type="button"
+                  className={TW.attentionSuggestion}
+                  key={item.action}
+                  onClick={() => startPromptChat(item.prompt)}
+                >
+                  <span aria-hidden="true">&rarr;</span>
+                  {item.action}
                 </button>
-              </div>
+              ))}
             </div>
+          </div>
 
-            {notice ? <p className="chat-rail-notice">{notice}</p> : null}
-          </aside>
+          <div className={TW.compactThread}>
+            {isLoadingMessages ? (
+              <div className={TW.loading}>Loading chat...</div>
+            ) : (
+              <ChatThread
+                key={selectedSession?.id ?? initialPromptParam ?? "draft"}
+                session={selectedSession}
+                initialMessages={initialMessages}
+                prompts={prompts}
+                onPromptSubmitted={updateSessionFromPrompt}
+                onAssistantFinished={handleAssistantFinished}
+                initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
+              />
+            )}
+          </div>
+          {notice ? <p className={TW.notice}>{notice}</p> : null}
+        </aside>
 
-          <section className="chat-thread-panel" aria-label="Wealth advisor chat">
-            {selectedSession && !isDraftChat ? (
-              <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none", opacity: 0.8 }}>
-                <Image src="/chat-hero-bg.png" alt="" fill className="object-cover" priority />
-              </div>
-            ) : (
-              <div style={{ position: "absolute", top: "-15%", right: "-15%", bottom: "-15%", left: "-30%", zIndex: 0, pointerEvents: "none" }}>
-                <Image src="/Hero-bg.png" alt="" fill className="object-cover" priority />
-              </div>
-            )}
-            {selectedSession || isDraftChat ? (
-              isLoadingMessages ? (
-                <div className="chat-loading-state">Loading chat...</div>
-              ) : (
-                <ChatThread
-                  key={selectedSession?.id ?? "draft"}
-                  session={selectedSession}
-                  initialMessages={initialMessages}
-                  prompts={prompts}
-                  onPromptSubmitted={updateSessionFromPrompt}
-                  onAssistantFinished={handleAssistantFinished}
-                  initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
-                />
-              )
-            ) : (
-              <EmptyChatState onStart={startNewChat} />
-            )}
-          </section>
-        </main>
-      </div>
-    </ProtectedRoute>
+        <ClientOverview />
+      </main>
+    </div>
   );
 }
 
@@ -560,15 +598,15 @@ function SessionItem({
   onArchive: () => void;
 }) {
   return (
-    <div className={`chat-session-item${active ? " active" : ""}`}>
-      <button type="button" className="chat-session-select" onClick={onSelect}>
-        <span className="chat-session-title">{session.title}</span>
+    <div className={`flex w-full items-center gap-1 rounded-xl py-1 pr-1 pl-3 text-left text-[#171615] transition hover:bg-black/5 ${active ? "bg-[#ede8df]" : "bg-transparent"}`}>
+      <button type="button" className="flex min-w-0 flex-1 items-center border-0 bg-transparent py-2 text-left text-inherit" onClick={onSelect}>
+        <span className={`truncate font-satoshi text-[13px] leading-snug text-[#171615] ${active ? "font-medium" : "font-normal"}`}>{session.title}</span>
       </button>
-      <div className="chat-session-actions">
+      <div className="flex items-center gap-0.5">
         {!archived && (
           <button
             type="button"
-            className={`chat-session-action${session.is_pinned ? " is-active" : ""}`}
+            className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border-0 bg-transparent transition hover:bg-black/5 ${session.is_pinned ? "text-[#b37f40]" : "text-black/40"}`}
             aria-label={session.is_pinned ? "Unpin chat" : "Pin chat"}
             title={session.is_pinned ? "Unpin chat" : "Pin chat"}
             onClick={(event) => {
@@ -581,7 +619,7 @@ function SessionItem({
         )}
         <button
           type="button"
-          className="chat-session-action"
+          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border-0 bg-transparent text-black/40 transition hover:bg-black/5 hover:text-[#171615]"
           aria-label={archived ? "Unarchive chat" : "Archive chat"}
           title={archived ? "Unarchive chat" : "Archive chat"}
           onClick={(event) => {
@@ -700,15 +738,15 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <div className="chat-thread">
-        <ThreadPrimitive.Root className="chat-assistant-thread">
+      <div className={TW.thread}>
+        <ThreadPrimitive.Root className={TW.assistantThread}>
           <AuiIf condition={(state) => state.thread.isEmpty}>
-            <div className="chat-message-viewport is-empty">
-              <div className="chat-empty-copy">
-                <p className="chat-empty-heading">Ask anything about your portfolio</p>
-                <Composer placeholder="Ask me anything about your holdings, market stocks, crypto, risk, or returns..." agent={agent} />
+            <div className={TW.emptyViewport}>
+              <div className={TW.emptyCopy}>
+                <p className={TW.emptyHeading}>Ask anything about your portfolio</p>
+                <Composer placeholder="What can I help you with?" agent={agent} prompts={prompts} onPromptSelect={(msg) => runtime.thread.append({ role: "user", content: [{ type: "text", text: msg }] })} />
               </div>
-              <div className="chat-suggestions-wrap">
+              <div className={TW.suggestionsWrap}>
                 {(() => {
                   const promptMessages = prompts.map((p) => p.user_message).filter(Boolean);
                   const row1 = promptMessages.length > 0
@@ -718,16 +756,16 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
                     ? promptMessages.filter((_, i) => i % 2 === 1)
                     : PROMPT_SUGGESTIONS_ROW2;
                   return [row1, row2].map((row, rowIndex) => (
-                    <div className="chat-suggestions-row" key={`row-${rowIndex}`}>
-                      <div className="chat-suggestions-row-inner">
+                    <div className={TW.suggestionsRow} key={`row-${rowIndex}`}>
+                      <div className={TW.suggestionsRowInner}>
                         {row.map((suggestion) => (
-                          <ThreadPrimitive.Suggestion key={suggestion} prompt={suggestion} send className="chat-suggestion-pill">
+                          <ThreadPrimitive.Suggestion key={suggestion} prompt={suggestion} send className={TW.suggestionPill}>
                             <SendArrowIcon />
                             {suggestion}
                           </ThreadPrimitive.Suggestion>
                         ))}
                         {row.map((suggestion) => (
-                          <ThreadPrimitive.Suggestion key={`dup-${suggestion}`} prompt={suggestion} send className="chat-suggestion-pill">
+                          <ThreadPrimitive.Suggestion key={`dup-${suggestion}`} prompt={suggestion} send className={TW.suggestionPill}>
                             <SendArrowIcon />
                             {suggestion}
                           </ThreadPrimitive.Suggestion>
@@ -741,7 +779,7 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
           </AuiIf>
 
           <AuiIf condition={(state) => !state.thread.isEmpty}>
-            <ThreadPrimitive.Viewport className="chat-message-viewport" autoScroll>
+            <ThreadPrimitive.Viewport className={TW.messageViewport} autoScroll>
               <ThreadPrimitive.Messages>
                 {({ message }) => (
                   message.role === "user"
@@ -749,8 +787,8 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
                     : <AssistantMessage message={message} showReplySuggestions={message.isLast} />
                 )}
               </ThreadPrimitive.Messages>
-              <ThreadPrimitive.ViewportFooter className="chat-thread-footer">
-                <ThreadPrimitive.ScrollToBottom className="chat-scroll-to-bottom" aria-label="Scroll to bottom">
+              <ThreadPrimitive.ViewportFooter className={TW.threadFooter}>
+                <ThreadPrimitive.ScrollToBottom className={TW.scrollToBottom} aria-label="Scroll to bottom">
                   <ArrowDownIcon />
                 </ThreadPrimitive.ScrollToBottom>
               </ThreadPrimitive.ViewportFooter>
@@ -759,13 +797,13 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
         </ThreadPrimitive.Root>
 
         {chat.error ? (
-          <div className="chat-error-banner" role="alert">
+          <div className={TW.errorBanner} role="alert">
             {chat.error.message || "The chat stream failed. Please try again."}
           </div>
         ) : null}
 
         <AuiIf condition={(state) => !state.thread.isEmpty}>
-          <div className="chat-composer-dock">
+          <div className={TW.composerDock}>
             <Composer placeholder="Ask a follow-up..." agent={agent} />
           </div>
         </AuiIf>
@@ -774,12 +812,486 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
   );
 }
 
+function ClientOverview() {
+  const [activeTab, setActiveTab] = useState<ClientTab>("overview");
+  const searchParams = useSearchParams();
+  const requestedClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
+  const [client, setClient] = useState<WealthCrmClient | null>(null);
+  const [isLoadingClient, setIsLoadingClient] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadClient() {
+      setIsLoadingClient(true);
+
+      try {
+        const nextClient = requestedClientId
+          ? await getWealthCrmClient(requestedClientId)
+          : (await listWealthCrmClients({ isActive: true }))[0] ?? null;
+
+        if (!cancelled) {
+          setClient(nextClient);
+        }
+      } catch (error) {
+        console.error("Failed to load wealth CRM client:", error);
+        if (!cancelled) {
+          setClient(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingClient(false);
+        }
+      }
+    }
+
+    void loadClient();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedClientId]);
+
+  return (
+    <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[64px_minmax(0,1fr)] bg-gradient-to-b from-white to-[#f6f1eb] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
+      <header className="flex min-w-0 items-center justify-between gap-[9px] overflow-hidden border-b border-black/10 bg-white/85 px-[18px] pr-[12px] backdrop-blur-xl max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
+        <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
+          <ul className="m-0 flex min-w-0 list-none items-center gap-[10px] p-0">
+            <ClientTabButton active={activeTab === "overview"} icon={<OverviewIcon />} label="Overview" onClick={() => setActiveTab("overview")} />
+            <ClientTabButton active={activeTab === "wealth-map"} icon={<WealthMapIcon />} label="Wealth map" onClick={() => setActiveTab("wealth-map")} />
+            <ClientTabButton active={activeTab === "interactions"} icon={<InteractionsIcon />} label="Interactions" onClick={() => setActiveTab("interactions")} />
+            <ClientTabButton active={activeTab === "documents"} icon={<DocumentsNavIcon />} label="Documents" onClick={() => setActiveTab("documents")} />
+          </ul>
+        </nav>
+        <div className="flex shrink-0 items-center gap-[9px] max-[640px]:hidden">
+          <button type="button" className="inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[12px] border border-black/20 bg-white p-[9px] text-black hover:bg-black/5 [&_svg]:h-[18px] [&_svg]:w-[18px]" aria-label="More options"><MoreIcon /></button>
+          <button type="button" className="inline-flex h-[32px] shrink-0 items-center justify-center gap-[7px] rounded-[9px] border-0 bg-black px-[12px] py-[8px] text-white max-[1320px]:w-[32px] max-[1320px]:px-0 max-[1320px]:py-0 [&_svg]:h-[16px] [&_svg]:w-[16px]" aria-label="Share">
+            <ShareIcon />
+            <span className="[font-family:var(--font-inter)] text-[11.99px] font-[600] leading-[17.12px] text-white [overflow-wrap:break-word] max-[1320px]:sr-only">Share</span>
+          </button>
+        </div>
+      </header>
+
+      {activeTab === "overview" ? <OverviewTab client={client} isLoadingClient={isLoadingClient} /> : null}
+      {activeTab === "wealth-map" ? <WealthMapTab /> : null}
+      {activeTab === "interactions" ? <PlaceholderTab title="Interactions" /> : null}
+      {activeTab === "documents" ? <PlaceholderTab title="Documents" /> : null}
+    </section>
+  );
+}
+
+function ClientTabButton({
+  active,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        className={`inline-flex min-h-[32px] shrink-0 items-center gap-[7px] rounded-[9px] border-0 px-[12px] font-satoshi text-[14px] leading-[18.2px] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [&_svg]:h-[16px] [&_svg]:w-[16px] ${active ? "bg-[#eeeae4] font-bold" : "bg-transparent font-medium hover:bg-black/5"}`}
+        aria-current={active ? "page" : undefined}
+        onClick={onClick}
+      >
+        {icon}
+        {label}
+      </button>
+    </li>
+  );
+}
+
+function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | null; isLoadingClient: boolean }) {
+  const clientName = client?.display_name || client?.legal_name || "PRTR Family Office";
+  const clientSubtitle = getClientSubtitle(client);
+  const moneyCurrency = client?.net_worth_currency ?? client?.base_currency;
+  const clientAum = formatClientMoney(client?.net_worth, moneyCurrency, "$20.1 M");
+  const clientTagValue = formatClientMoney(client?.net_worth, moneyCurrency, "$20 M");
+  const locationTag = client?.primary_tax_jurisdiction || client?.base_currency || "Singapore";
+  const clientSince = getYear(client?.created_at) ?? "2019";
+  const segment = client?.segment || (client?.party_type ? formatLabelText(client.party_type) : "UHNW");
+  const familyStatus = client?.family_status || (client?.party_type ? formatLabelText(client.party_type) : "Married, 2 kids");
+  const riskProfile = client?.risk_profile || "Moderate";
+
+  return (
+    <div className="min-h-0 overflow-auto bg-[#f6f2ec] pb-[48px]">
+      <section className="relative h-[344px] overflow-hidden bg-[#f6f2ec] px-[44px] max-[1180px]:h-[318px] max-[1180px]:px-[30px] max-[640px]:h-[350px] max-[640px]:px-[18px]">
+        <div className="absolute inset-x-0 top-0 h-[344px] overflow-hidden max-[1180px]:h-[318px] max-[640px]:h-[300px]">
+          <Image
+            src="/overview.png"
+            alt=""
+            fill
+            priority
+            className="object-cover object-[center_top]"
+            sizes="(max-width: 900px) 100vw, calc(100vw - 460px)"
+          />
+          <div className="absolute inset-0" />
+          <div className="absolute inset-x-0 bottom-0 h-[72px] bg-gradient-to-b from-transparent to-[#f6f2ec]" />
+        </div>
+
+        <div className="absolute top-[74px] left-[44px] z-[1] max-w-[670px] max-[1180px]:top-[58px] max-[1180px]:left-[30px] max-[640px]:top-[34px] max-[640px]:right-[18px] max-[640px]:left-[18px]">
+          <h1 className="m-0 font-serif text-[42px] font-semibold leading-[50.4px] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:text-[38px] max-[640px]:leading-[45.6px]">
+            {clientName}
+          </h1>
+          <p
+            className="mt-[16px] mb-0 max-w-[620px] font-satoshi text-[16px] font-normal leading-[20.8px] [overflow-wrap:break-word]"
+            style={{ color: "rgba(231.34, 218.66, 148.04, 0)" }}
+          >
+            {clientSubtitle}
+          </p>
+          <div className="mt-[24px] flex flex-wrap gap-[14px]" aria-label="Client tags">
+            <span className="inline-flex min-h-[46px] items-center rounded-full bg-[#ece7df]/90 px-[23px] font-satoshi text-[19px] font-bold text-black max-[640px]:min-h-[40px] max-[640px]:px-[18px] max-[640px]:text-[16px]">{clientTagValue}</span>
+            <span className="inline-flex min-h-[46px] items-center rounded-full bg-[#ece7df]/90 px-[23px] font-satoshi text-[19px] font-bold text-black max-[640px]:min-h-[40px] max-[640px]:px-[18px] max-[640px]:text-[16px]">{locationTag}</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="-mt-[6px] grid grid-cols-[minmax(0,1.55fr)_minmax(320px,0.88fr)] gap-[24px] px-[44px] max-[1180px]:grid-cols-1 max-[1180px]:px-[30px] max-[640px]:mt-0 max-[640px]:px-[18px]">
+        <div className="grid gap-[24px]">
+          <section className="rounded-[18px] bg-white/82 px-[36px] py-[36px] shadow-[0_18px_50px_rgba(60,42,24,0.08)] backdrop-blur-xl max-[640px]:px-[22px] max-[640px]:py-[26px]">
+            <p className="m-0 font-satoshi text-[22px] font-medium text-[#3a2208] max-[640px]:text-[18px]">AUM{isLoadingClient ? " loading" : ""}</p>
+            <div className="mt-[24px] flex flex-wrap items-end gap-x-[18px] gap-y-[8px]">
+              <strong className="font-satoshi text-[50px] font-bold leading-none tracking-normal text-[#171d27] max-[640px]:text-[40px]">{clientAum}</strong>
+              <span className="inline-flex items-center gap-[8px] pb-[7px] font-satoshi text-[19px] font-bold text-[#10b981] max-[640px]:text-[15px]">
+                <TrendUpIcon />
+                $142K - 7.69% vs. last month
+              </span>
+            </div>
+
+            <h2 className="mt-[52px] mb-[24px] font-satoshi text-[18px] font-bold uppercase text-[#737b8b] max-[640px]:mt-[36px]">At a glance</h2>
+            <div className="grid">
+              <AumFact label="Net worth" value={formatClientMoney(client?.net_worth, moneyCurrency, "$142M")} />
+              <AumFact label="Client since" value={clientSince} />
+              <AumFact label="Segment" value={segment} />
+              <AumFact label="Family" value={familyStatus} />
+              <AumFact label="Risk profile" value={riskProfile} last />
+            </div>
+          </section>
+
+          <AssetAllocationCard totalLabel={clientAum.replace(/\s/g, "")} />
+        </div>
+
+        <aside className="grid content-start gap-[24px]">
+          <InsightPanel />
+          <RecentActivityPanel />
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function WealthMapTab() {
+  return (
+    <div className="min-h-0 overflow-auto bg-white">
+      <section className="relative h-[calc(100vh-64px)] min-h-[640px] overflow-hidden bg-white">
+        <SourceWealthChart />
+      </section>
+    </div>
+  );
+}
+
+function PlaceholderTab({ title }: { title: string }) {
+  return (
+    <div className="grid min-h-0 flex-1 place-items-center bg-[#f7f3ee] p-[32px]">
+      <p className="m-0 font-satoshi text-[14px] text-black/45">{title}</p>
+    </div>
+  );
+}
+
+function AumFact({ label, value, last = false }: { label: string; value: string; last?: boolean }) {
+  return (
+    <div className={`flex min-h-[75px] items-center justify-between gap-[20px] py-[12px] ${last ? "" : "border-b border-[#dfe2e7]"}`}>
+      <span className="font-satoshi text-[19px] font-normal text-[#707785] max-[640px]:text-[16px]">{label}</span>
+      <strong className="text-right font-satoshi text-[20px] font-bold text-[#121722] max-[640px]:text-[17px]">{value}</strong>
+    </div>
+  );
+}
+
+function getClientSubtitle(client: WealthCrmClient | null) {
+  if (!client) {
+    return "Singapore-based entrepreneur with wealth distributed across Singapore, USA, and Australia";
+  }
+
+  const location = client.primary_tax_jurisdiction || client.base_currency || "Singapore";
+  const partyType = client.party_type ? formatLabelText(client.party_type).toLowerCase() : "client";
+  const currency = client.net_worth_currency || client.base_currency;
+
+  return `${location}-based ${partyType}${currency ? ` with wealth reported in ${currency}` : ""}`;
+}
+
+function formatClientMoney(value: string | number | null | undefined, currency?: string | null, fallback = "-") {
+  const amount = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
+
+  if (!Number.isFinite(amount)) {
+    return fallback;
+  }
+
+  const absAmount = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  const symbol = getCurrencySymbol(currency);
+  const format = (scaled: number) => {
+    const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+    return scaled.toFixed(decimals).replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
+  };
+
+  if (absAmount >= 1_000_000_000) {
+    return `${sign}${symbol}${format(absAmount / 1_000_000_000)} B`;
+  }
+
+  if (absAmount >= 1_000_000) {
+    return `${sign}${symbol}${format(absAmount / 1_000_000)} M`;
+  }
+
+  if (absAmount >= 1_000) {
+    return `${sign}${symbol}${format(absAmount / 1_000)} K`;
+  }
+
+  return `${sign}${symbol}${format(absAmount)}`;
+}
+
+function getCurrencySymbol(currency?: string | null) {
+  switch (currency?.toUpperCase()) {
+    case "USD":
+      return "$";
+    case "EUR":
+      return "\u20ac";
+    case "GBP":
+      return "\u00a3";
+    case "INR":
+      return "\u20b9";
+    case "JPY":
+      return "\u00a5";
+    default:
+      return currency ? `${currency.toUpperCase()} ` : "$";
+  }
+}
+
+function getYear(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : String(date.getFullYear());
+}
+
+function formatLabelText(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function InsightPanel() {
+  return (
+    <section className="relative min-h-[600px] overflow-hidden rounded-[24px] bg-[#fff4e8] px-[36px] py-[34px] max-[1180px]:min-h-[420px] max-[640px]:rounded-[18px] max-[640px]:px-[24px]">
+      <Image
+        src="/insights.png"
+        alt=""
+        fill
+        className="object-cover"
+        sizes="(max-width: 1180px) 100vw, 420px"
+      />
+      <div className="absolute inset-0 bg-white/5" />
+      <div className="relative z-[1] flex items-start justify-between gap-[20px]">
+        <div>
+          <h2 className="m-0 font-satoshi text-[28px] font-semibold leading-none text-[#282420] max-[640px]:text-[23px]">Insights</h2>
+          <p className="mt-[6px] mb-0 font-satoshi text-[14px] text-[#6c625b]">Updated 10 min ago</p>
+        </div>
+        <div className="flex items-center gap-[8px]" aria-hidden="true">
+          <span className="h-[12px] w-[12px] rounded-full bg-black" />
+          <span className="h-[12px] w-[12px] rounded-full bg-black/18" />
+          <span className="h-[12px] w-[12px] rounded-full bg-black/18" />
+          <span className="h-[12px] w-[12px] rounded-full bg-black/18" />
+        </div>
+      </div>
+
+      <div className="relative z-[1] mt-[165px] max-w-[320px] max-[1180px]:mt-[92px] max-[640px]:mt-[70px]">
+        <p className="m-0 font-satoshi text-[40px] font-medium leading-[1.12] tracking-normal text-[#282420] max-[640px]:text-[32px]">
+          Technology concentration is worrying
+        </p>
+        <p className="mt-[18px] mb-0 font-satoshi text-[17px] font-normal leading-[1.45] text-[#675443]">
+          Diversification options for the NASDAQ position have not yet been discussed.
+        </p>
+      </div>
+
+      <div className="relative z-[1] mt-[58px] flex flex-wrap items-center justify-between gap-[16px] max-[640px]:mt-[40px]">
+        <button type="button" className="inline-flex min-h-[48px] items-center gap-[10px] rounded-full border border-[#b37f40]/20 bg-[#fff5d7]/35 px-[18px] font-satoshi text-[20px] font-semibold text-[#a87536]">
+          <SparkleIcon />
+          Ask AI
+        </button>
+        <button type="button" className="inline-flex min-h-[44px] items-center gap-[12px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[20px] font-medium text-[#443830]">
+          <span aria-hidden="true" className="text-[28px] leading-none">x</span>
+          Dismiss
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function RecentActivityPanel() {
+  const activities = [
+    {
+      icon: <PhoneActivityIcon />,
+      iconClass: "bg-[#f0efff] text-[#5856d6]",
+      title: "Portfolio review call",
+      date: "AUG 14",
+      copy: "Walked through Q2 performance. Wants to trim single-stock concentration in tech before year end.",
+    },
+    {
+      icon: <CheckActivityIcon />,
+      iconClass: "bg-[#e8fbf3] text-[#008e65]",
+      title: "Capital call funded",
+      date: "AUG 09",
+      copy: "$250K to Blue River Growth Fund III. Confirmed wire same day.",
+    },
+    {
+      icon: <MailActivityIcon />,
+      iconClass: "bg-[#fff3d8] text-[#b56a14]",
+      title: "Email from client",
+      date: "AUG 04",
+      copy: "Shared updated liquidity preferences for the next allocation review.",
+    },
+  ];
+
+  return (
+    <section className="rounded-[22px] border border-[#b36f2f] bg-white/74 px-[36px] py-[34px] shadow-[0_16px_44px_rgba(60,42,24,0.06)] max-[640px]:rounded-[18px] max-[640px]:px-[24px]">
+      <h2 className="m-0 font-satoshi text-[18px] font-bold uppercase text-[#707785]">Recent activity</h2>
+      <div className="mt-[26px] grid">
+        {activities.map((activity, index) => (
+          <article key={activity.title} className={`grid grid-cols-[48px_minmax(0,1fr)_auto] gap-[18px] py-[22px] ${index === 0 ? "pt-0" : ""} ${index === activities.length - 1 ? "" : "border-b border-[#dfe2e7]"}`}>
+            <span className={`inline-grid h-[48px] w-[48px] place-items-center rounded-[12px] ${activity.iconClass}`}>
+              {activity.icon}
+            </span>
+            <div className="min-w-0">
+              <h3 className="m-0 font-satoshi text-[22px] font-bold leading-tight text-[#121722] max-[640px]:text-[18px]">{activity.title}</h3>
+              <p className="mt-[8px] mb-0 font-satoshi text-[18px] font-normal leading-[1.35] text-[#6f7787] max-[640px]:text-[15px]">{activity.copy}</p>
+            </div>
+            <time className="pt-[4px] font-satoshi text-[16px] font-bold text-[#9aa1af] max-[640px]:text-[12px]">{activity.date}</time>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AssetAllocationCard({ totalLabel = "$20.1M" }: { totalLabel?: string }) {
+  const chartData: ChartData<"doughnut", number[], string> = {
+    labels: ["Equity", "Fixed income", "Hedge funds", "Real assets"],
+    datasets: [
+      {
+        data: [34.6, 47.6, 10.6, 7.2],
+        backgroundColor: ["#197B22", "#FFC14F", "#17BD86", "#C4EF4D"],
+        borderColor: "transparent",
+        borderWidth: 0,
+        hoverOffset: 4,
+        spacing: 0,
+      },
+    ],
+  };
+
+  const chartOptions: ChartOptions<"doughnut"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: "58%",
+    rotation: -90,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: "rgba(18, 23, 34, 0.92)",
+        bodyColor: "#fff",
+        displayColors: false,
+        padding: 10,
+        callbacks: {
+          label: (context) => `${context.label}: ${context.parsed}%`,
+        },
+      },
+    },
+  };
+
+  return (
+    <section className="min-h-[490px] overflow-hidden rounded-[18px] bg-[radial-gradient(circle_at_72%_92%,rgba(246,210,83,0.36),transparent_42%),linear-gradient(135deg,#fffdf9_0%,#fbf7ef_100%)] px-[36px] py-[34px] shadow-[0_18px_50px_rgba(60,42,24,0.08)] max-[640px]:min-h-[430px] max-[640px]:px-[22px]">
+      <h2 className="m-0 font-satoshi text-[24px] font-bold text-[#171d27] max-[640px]:text-[20px]">Asset allocation</h2>
+      <div className="relative mx-auto mt-[36px] h-[330px] max-w-[600px] max-[640px]:h-[290px]">
+        <div className="absolute top-[58px] left-1/2 h-[230px] w-[230px] -translate-x-1/2 max-[640px]:top-[64px] max-[640px]:h-[190px] max-[640px]:w-[190px]">
+          <Doughnut data={chartData} options={chartOptions} />
+          <span className="absolute inset-1/2 grid h-[132px] w-[132px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#fffaf0] text-center max-[640px]:h-[110px] max-[640px]:w-[110px]">
+            <strong className="font-satoshi text-[40px] font-bold leading-none text-black max-[640px]:text-[28px]">{totalLabel}</strong>
+            <small className="mt-[-12px] font-satoshi text-[16px] font-normal text-black max-[640px]:text-[12px]">Managed assets</small>
+          </span>
+        </div>
+
+        <AllocationLabel className="left-[9%] top-[68px]" name="Hedge funds" value="10.6%" lineClass="left-[118px] top-[20px] h-px w-[78px] rotate-[39deg]" dotClass="left-[184px] top-[70px]" />
+        <AllocationLabel className="left-[31%] top-[14px]" name="Real assets" value="7.2%" lineClass="left-[120px] top-[12px] h-px w-[72px] rotate-[67deg]" dotClass="left-[172px] top-[92px]" />
+        <AllocationLabel className="right-[9%] top-[92px]" name="Equity" value="34.6%" lineClass="right-[116px] top-[8px] h-px w-[70px] -rotate-[42deg]" dotClass="right-[178px] top-[48px]" alignRight />
+      </div>
+    </section>
+  );
+}
+
+function AllocationLabel({
+  className,
+  name,
+  value,
+  lineClass,
+  dotClass,
+  alignRight = false,
+}: {
+  className: string;
+  name: string;
+  value: string;
+  lineClass: string;
+  dotClass: string;
+  alignRight?: boolean;
+}) {
+  return (
+    <div className={`absolute ${className} ${alignRight ? "text-left" : "text-right"} max-[640px]:hidden`}>
+      <span className="block font-satoshi text-[16px] leading-tight text-[#6e7683]">{name}</span>
+      <strong className="block font-satoshi text-[20px] leading-tight text-[#151923]">{value}</strong>
+      <span className={`absolute bg-black/20 ${lineClass}`} aria-hidden="true" />
+      <span className={`absolute h-[8px] w-[8px] rounded-full bg-black ${dotClass}`} aria-hidden="true" />
+    </div>
+  );
+}
+
+function MetricCard({ label, value, change, date }: { label: string; value: string; change: string; date: string }) {
+  return (
+    <article className="flex min-h-[300px] flex-col px-[20px] py-[32px] [backdrop-filter:blur(2px)] [background:linear-gradient(135deg,rgba(0,0,0,0)_0%,rgba(255,255,255,0)_50%,rgba(255,255,255,0.40)_75%,rgba(255,255,255,0)_100%),rgba(255,255,255,0.50)] [border-radius:16px] [outline-offset:-1px] [outline:1px_solid_rgba(0,0,0,0.16)] max-[640px]:min-h-[220px] max-[640px]:px-[22px] max-[640px]:py-[22px]">
+      <h3 className="m-0 mb-[28px] [font-family:var(--font-inter)] text-[16px] font-[500] text-[#4D2E0C] [overflow-wrap:break-word]">{label}</h3>
+      <strong className="font-satoshi text-[32px] font-bold tracking-normal text-[#1A2229] [overflow-wrap:break-word]">{value}</strong>
+      <p className="mt-[24px] mb-0 flex flex-wrap gap-[12px] [font-family:var(--font-inter)] text-[13px] font-[400] leading-[24px] text-[#8899A6] [overflow-wrap:break-word]"><span className="inline-flex items-center gap-[8px] [font-family:var(--font-inter)] text-[13px] font-[600] text-[#10B981] [overflow-wrap:break-word]"><TrendUpIcon />{change}</span>{date}</p>
+      <button type="button" className="mt-auto inline-flex w-fit items-center gap-[10px] rounded-[6px] border-0 bg-gradient-to-r from-[#fff6e7] via-[#fff8e8] to-[#f0e7f1] px-[18px] py-[12px] text-[#d69b2b] [&_svg]:h-[14px] [&_svg]:w-[14px]">
+        <SendArrowIcon />
+        <span className="[font-family:'Cascadia_Code',ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace] text-[12px] font-normal leading-none [overflow-wrap:break-word]">Ask AI</span>
+      </button>
+    </article>
+  );
+}
+
+function AvatarSeed({ wide = false }: { wide?: boolean }) {
+  return (
+    <span
+      className={`${wide ? "row-auto h-[102px] w-full rounded-[10px]" : "row-span-2 h-[36px] w-[36px] rounded-full"} border-2 border-white/80 bg-[linear-gradient(135deg,rgba(15,73,47,0.85),rgba(216,152,51,0.78)),url('/avatar.png')] bg-cover bg-center`}
+      aria-hidden="true"
+    />
+  );
+}
+
 function EmptyChatState({ onStart }: { onStart: () => void }) {
   return (
-    <div className="chat-empty-start">
-      <p className="chat-wordmark">OneView</p>
-      <p className="chat-empty-subtitle">Start a session with your wealth advisor.</p>
-      <button type="button" className="chat-start-btn" onClick={onStart}>
+    <div className="flex min-h-screen flex-col items-center justify-center p-8">
+      <p className="m-0 mb-2 font-serif text-[clamp(48px,8vw,106px)] leading-none text-[#171615]">OneView</p>
+      <p className="m-0 max-w-[480px] font-satoshi text-[16px] leading-normal text-[#171615]/60">Start a session with your wealth advisor.</p>
+      <button type="button" className="mt-6 inline-flex min-h-[44px] items-center justify-center gap-[8px] rounded-full border border-[#171615]/15 bg-[#fffaf4] px-[18px] font-satoshi text-[13px] font-bold text-[#171615] transition hover:-translate-y-px hover:border-[#171615]/30 hover:bg-white" onClick={onStart}>
         <PlusIcon />
         <span>Start new chat</span>
       </button>
@@ -789,7 +1301,7 @@ function EmptyChatState({ onStart }: { onStart: () => void }) {
 
 function useComposerFormat() {
   const applyFormat = useCallback((type: "bold" | "bullet") => {
-    const textarea = document.querySelector<HTMLTextAreaElement>(".chat-composer-input");
+    const textarea = document.querySelector<HTMLTextAreaElement>("[data-chat-composer-input]");
     if (!textarea) return;
     textarea.focus();
     const { selectionStart: start, selectionEnd: end, value } = textarea;
@@ -820,22 +1332,57 @@ function useComposerFormat() {
   return applyFormat;
 }
 
-function Composer({ placeholder, agent }: { placeholder: string; agent: string }) {
+function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder: string; agent: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: string) => void }) {
   const isRunning = useThread((t) => t.isRunning);
   const applyFormat = useComposerFormat();
+  const [promptsExpanded, setPromptsExpanded] = useState(false);
+  void agent;
+  void applyFormat;
+
+  const visiblePrompts = prompts && prompts.length > 0
+    ? (promptsExpanded ? prompts : prompts.slice(0, 3))
+    : [];
+
   return (
-    <ComposerPrimitive.Root className="chat-composer-wrap">
-      <div className={`chat-composer${isRunning ? " is-thinking" : ""}`}>
-        <div className="chat-composer-input-row">
+    <ComposerPrimitive.Root className={TW.composerWrap}>
+      {visiblePrompts.length > 0 && (
+        <div className={TW.promptChipsRow}>
+          {visiblePrompts.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={TW.promptChip}
+              onClick={() => onPromptSelect?.(p.user_message)}
+            >
+              /{p.title}
+            </button>
+          ))}
+          {prompts && prompts.length > 3 && (
+            <button
+              type="button"
+              className={TW.promptChipExpand}
+              aria-label={promptsExpanded ? "Show fewer" : "Show more"}
+              onClick={() => setPromptsExpanded((v) => !v)}
+            >
+              <ChevronDownIcon />
+            </button>
+          )}
+        </div>
+      )}
+      <div className={`${TW.composer} ${isRunning ? TW.composerThinking : ""}`}>
+        <div className={TW.composerInputRow}>
           <ComposerPrimitive.Input
-            className="chat-composer-input"
+            className={TW.composerInput}
+            data-chat-composer-input
             placeholder={placeholder}
             rows={1}
             autoFocus
           />
         </div>
-        <div className="chat-composer-footer">
-          <div className="chat-composer-footer-right">
+        <div className={TW.composerFooter}>
+          <div className={TW.composerFooterLeft}>
+          </div>
+          <div className={TW.composerFooterRight}>
             <ComposerPrimaryAction />
           </div>
         </div>
@@ -848,17 +1395,17 @@ function ComposerPrimaryAction() {
   return (
     <>
       <AuiIf condition={(state) => state.thread.isRunning}>
-        <ComposerPrimitive.Cancel className="chat-send-btn" aria-label="Stop response" title="Stop response">
+        <ComposerPrimitive.Cancel className={TW.sendBtn} aria-label="Stop response" title="Stop response">
           <StopIcon />
         </ComposerPrimitive.Cancel>
       </AuiIf>
       <AuiIf condition={(state) => !state.thread.isRunning && !state.composer.isEmpty}>
-        <ComposerPrimitive.Send className="chat-send-btn" aria-label="Send message" title="Send message">
+        <ComposerPrimitive.Send className={TW.sendBtn} aria-label="Send message" title="Send message">
           <ArrowUpIcon />
         </ComposerPrimitive.Send>
       </AuiIf>
       <AuiIf condition={(state) => !state.thread.isRunning && state.composer.isEmpty}>
-        <button className="chat-send-btn" type="button" disabled aria-label="Send message" title="Send message">
+        <button className={TW.sendBtn} type="button" disabled aria-label="Send message" title="Send message">
           <ArrowUpIcon />
         </button>
       </AuiIf>
@@ -868,8 +1415,8 @@ function ComposerPrimaryAction() {
 
 function UserMessage() {
   return (
-    <MessagePrimitive.Root className="chat-message user">
-      <div className="chat-message-content">
+    <MessagePrimitive.Root className={TW.messageUser}>
+      <div className={`${TW.messageContent} ${TW.userMessageContent}`}>
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
@@ -886,9 +1433,9 @@ function AssistantMessage({
   const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
 
   return (
-    <MessagePrimitive.Root className="chat-message assistant">
-      <div className="chat-message-stack">
-        <div className="chat-message-content">
+    <MessagePrimitive.Root className={TW.messageAssistant}>
+      <div className={TW.messageStack}>
+        <div className={`${TW.messageContent} ${TW.assistantMessageContent}`}>
           <MessagePrimitive.GroupedParts
             groupBy={groupPartByType({
               "tool-call": ["group-tools"],
@@ -919,7 +1466,7 @@ function AssistantMessage({
           </MessagePrimitive.GroupedParts>
         </div>
         {replySuggestions.length > 0 ? (
-          <div className="chat-reply-suggestions" aria-label="Reply suggestions">
+          <div className={TW.replySuggestions} aria-label="Reply suggestions">
             {replySuggestions.map((suggestion) => (
               <ReplySuggestionButton
                 key={suggestion}
@@ -929,16 +1476,16 @@ function AssistantMessage({
             ))}
           </div>
         ) : null}
-        <div className="chat-message-controls">
+        <div className={TW.messageControls}>
         <AssistantActionBar />
-        <BranchPickerPrimitive.Root className="chat-branch-picker" hideWhenSingleBranch>
-          <BranchPickerPrimitive.Previous className="chat-branch-btn" aria-label="Previous response">
+        <BranchPickerPrimitive.Root className={TW.inlineControls} hideWhenSingleBranch>
+          <BranchPickerPrimitive.Previous className={TW.actionBtn} aria-label="Previous response">
             <ChevronLeftIcon />
           </BranchPickerPrimitive.Previous>
-          <span>
+          <span className={TW.branchCount}>
             <BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count />
           </span>
-          <BranchPickerPrimitive.Next className="chat-branch-btn" aria-label="Next response">
+          <BranchPickerPrimitive.Next className={TW.actionBtn} aria-label="Next response">
             <ChevronRightIcon />
           </BranchPickerPrimitive.Next>
         </BranchPickerPrimitive.Root>
@@ -971,12 +1518,12 @@ function ReplySuggestionButton({
     }
 
     window.requestAnimationFrame(() => {
-      document.querySelector<HTMLTextAreaElement>(".chat-composer-input")?.focus();
+      document.querySelector<HTMLTextAreaElement>("[data-chat-composer-input]")?.focus();
     });
   };
 
   return (
-    <button type="button" className="chat-reply-suggestion-pill" onClick={handleClick}>
+    <button type="button" className={TW.replyPill} onClick={handleClick}>
       {suggestion}
     </button>
   );
@@ -984,11 +1531,11 @@ function ReplySuggestionButton({
 
 function AssistantActionBar() {
   return (
-    <ActionBarPrimitive.Root className="chat-action-bar" hideWhenRunning>
-      <ActionBarPrimitive.Copy className="chat-action-btn" aria-label="Copy response" title="Copy response">
+    <ActionBarPrimitive.Root className={TW.inlineControls} hideWhenRunning>
+      <ActionBarPrimitive.Copy className={TW.actionBtn} aria-label="Copy response" title="Copy response">
         <CopyIcon />
       </ActionBarPrimitive.Copy>
-      <ActionBarPrimitive.Reload className="chat-action-btn" aria-label="Regenerate response" title="Regenerate response">
+      <ActionBarPrimitive.Reload className={TW.actionBtn} aria-label="Regenerate response" title="Regenerate response">
         <RefreshIcon />
       </ActionBarPrimitive.Reload>
     </ActionBarPrimitive.Root>
@@ -1073,7 +1620,7 @@ function rehypeBoldNumbers() {
 }
 
 function MarkdownText() {
-  return <MarkdownTextPrimitive className="chat-markdown" remarkPlugins={[remarkGfm, remarkCapsHeadings, remarkInlineBullets]} rehypePlugins={[rehypeBoldNumbers]} />;
+  return <MarkdownTextPrimitive className={TW.markdown} remarkPlugins={[remarkGfm, remarkCapsHeadings, remarkInlineBullets]} rehypePlugins={[rehypeBoldNumbers]} />;
 }
 
 function ToolCallGroup({
@@ -1089,17 +1636,17 @@ function ToolCallGroup({
   const summary = isRunning ? "Using tools" : count === 1 ? "Used 1 tool" : `Used ${count} tools`;
 
   return (
-    <details className="chat-tool-group" open={isRunning}>
-      <summary className="chat-tool-group-summary">
-        <span className="chat-tool-group-label">
+    <details className={TW.toolGroup} open={isRunning}>
+      <summary className={TW.toolSummary}>
+        <span className={TW.toolLabel}>
           <ChevronDownIcon />
           <span>{summary}</span>
         </span>
-        <span className={`chat-tool-group-status${isRunning ? " active" : ""}`}>
+        <span className={`${TW.toolStatus} ${isRunning ? TW.toolStatusActive : ""}`}>
           {isRunning ? "Running" : "Done"}
         </span>
       </summary>
-      <div className="chat-tool-group-body">{children}</div>
+      <div className={TW.toolBody}>{children}</div>
     </details>
   );
 }
@@ -1115,17 +1662,17 @@ function ToolCallPart(props: {
   const inputText = formatToolPayload(props.argsText);
 
   return (
-    <div className="chat-tool-card">
-      <div className="chat-tool-card-header">
+    <div className={TW.toolCard}>
+      <div className={TW.toolCardHeader}>
         <div>
-          <p className="chat-tool-card-eyebrow">Tool</p>
-          <h3>{humanizeToolName(props.toolName)}</h3>
+          <p className={TW.toolEyebrow}>Tool</p>
+          <h3 className={TW.toolTitle}>{humanizeToolName(props.toolName)}</h3>
         </div>
-        <div className="chat-tool-card-meta">
-          <span className={`chat-tool-badge ${getToolBadgeClassName(props.status.type)}`}>
+        <div className={TW.toolMeta}>
+          <span className={`${TW.toolBadge} ${getToolBadgeClassName(props.status.type)}`}>
             {formatToolState(props.status.type)}
           </span>
-          {elapsedMs !== undefined ? <span className="chat-tool-time">{formatElapsedMs(elapsedMs)}</span> : null}
+          {elapsedMs !== undefined ? <span className={TW.toolTime}>{formatElapsedMs(elapsedMs)}</span> : null}
         </div>
       </div>
 
@@ -1149,16 +1696,16 @@ function ToolPayloadBlock({
   placeholder?: string;
 }) {
   return (
-    <div className="chat-tool-payload">
-      <span className="chat-tool-payload-label">{label}</span>
-      <pre className="chat-tool-payload-pre">{value ?? placeholder ?? "No data."}</pre>
+    <div className={TW.toolPayload}>
+      <span className={TW.toolPayloadLabel}>{label}</span>
+      <pre className={TW.toolPayloadPre}>{value ?? placeholder ?? "No data."}</pre>
     </div>
   );
 }
 
 function DataStatusPart({ name, status }: { name?: string; status?: string }) {
   return (
-    <div className="chat-tool-inline-status">
+    <div className={TW.inlineStatus}>
       {name ? humanizeToolName(name) : "Event"}
       {status ? ` · ${formatToolState(status)}` : ""}
     </div>
@@ -1167,12 +1714,12 @@ function DataStatusPart({ name, status }: { name?: string; status?: string }) {
 
 function AssistantLoadingState() {
   return (
-    <div className="chat-tool-inline-status active" aria-live="polite">
+    <div className={TW.inlineStatusActive} aria-live="polite">
       <span>Thinking</span>
-      <span className="chat-loading-dots">
-        <span className="chat-loading-dot" />
-        <span className="chat-loading-dot" />
-        <span className="chat-loading-dot" />
+      <span className={TW.loadingDots}>
+        <span className={TW.loadingDot} />
+        <span className={TW.loadingDot} />
+        <span className={TW.loadingDot} />
       </span>
     </div>
   );
@@ -1307,13 +1854,13 @@ function formatToolState(status: string) {
 function getToolBadgeClassName(status: string) {
   switch (status) {
     case "complete":
-      return "is-complete";
+      return "border-[#0e5f5b]/15 bg-[#0e5f5b]/10 text-[#0e5f5b]";
     case "incomplete":
-      return "is-incomplete";
+      return "border-[#973022]/20 bg-[#973022]/10 text-[#8f2415]";
     case "requires-action":
-      return "is-warning";
+      return "border-[#973022]/20 bg-[#973022]/10 text-[#8f2415]";
     default:
-      return "is-running";
+      return "border-[#b36624]/20 bg-[#b36624]/10 text-[#9a5316]";
   }
 }
 
@@ -1430,11 +1977,174 @@ function ChevronDownIcon() {
   );
 }
 
+function OverviewIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path
+        d="M15.1345 11.3374C14.6806 12.4108 13.9706 13.3568 13.0667 14.0924C12.1627 14.8281 11.0923 15.3312 9.94904 15.5576C8.80576 15.784 7.62442 15.727 6.5083 15.3914C5.39218 15.0558 4.37525 14.4519 3.54644 13.6325C2.71763 12.8131 2.10215 11.8031 1.75383 10.6909C1.40552 9.57868 1.33495 8.39807 1.54832 7.25228C1.76168 6.10649 2.25248 5.03041 2.97779 4.11812C3.70311 3.20583 4.64086 2.48511 5.70907 2.01896M15.1551 5.83135C15.4407 6.52093 15.6159 7.24995 15.6754 7.99162C15.69 8.17485 15.6974 8.26646 15.661 8.34899C15.6306 8.41793 15.5704 8.48316 15.5041 8.51896C15.4248 8.56183 15.3256 8.56183 15.1274 8.56183H9.1339C8.9341 8.56183 8.8342 8.56183 8.75789 8.52294C8.69076 8.48874 8.63619 8.43416 8.60198 8.36703C8.5631 8.29072 8.5631 8.19082 8.5631 7.99102V1.99756C8.5631 1.7993 8.5631 1.70017 8.60596 1.62081C8.64176 1.55452 8.707 1.49431 8.77594 1.46392C8.85846 1.42753 8.95008 1.43488 9.1333 1.44957C9.87498 1.50903 10.604 1.68424 11.2936 1.96987C12.1592 2.32845 12.9458 2.85401 13.6084 3.51656C14.2709 4.17912 14.7965 4.96568 15.1551 5.83135Z"
+        stroke="currentColor"
+        strokeWidth="1.42702"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function WealthMapIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <g clipPath="url(#wealth-map-icon-clip)">
+        <path
+          d="M15.6979 14.9838V13.5567C15.6979 12.2269 14.7883 11.1095 13.5574 10.7926M11.0601 2.34808C12.106 2.77147 12.8439 3.7969 12.8439 4.99466C12.8439 6.19241 12.106 7.21784 11.0601 7.64123M12.1303 14.9838C12.1303 13.654 12.1303 12.989 11.9131 12.4646C11.6234 11.7652 11.0678 11.2096 10.3685 10.92C9.84402 10.7027 9.17911 10.7027 7.8493 10.7027H5.70878C4.37897 10.7027 3.71406 10.7027 3.18957 10.92C2.49026 11.2096 1.93465 11.7652 1.64498 12.4646C1.42773 12.989 1.42773 13.654 1.42773 14.9838M9.63307 4.99466C9.63307 6.57089 8.35528 7.84869 6.77904 7.84869C5.2028 7.84869 3.92501 6.57089 3.92501 4.99466C3.92501 3.41842 5.2028 2.14062 6.77904 2.14062C8.35528 2.14062 9.63307 3.41842 9.63307 4.99466Z"
+          stroke="currentColor"
+          strokeWidth="1.42702"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+      <defs>
+        <clipPath id="wealth-map-icon-clip">
+          <rect width="17.1242" height="17.1242" fill="white" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+}
+
+function InteractionsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <g clipPath="url(#interactions-icon-clip)">
+        <path
+          d="M4.34909 8.01157C4.30475 7.72576 4.28174 7.43296 4.28174 7.13482C4.28174 3.98234 6.85414 1.42676 10.0274 1.42676C13.2006 1.42676 15.773 3.98234 15.773 7.13482C15.773 7.84695 15.6417 8.52862 15.4019 9.15726C15.3521 9.28782 15.3272 9.3531 15.3159 9.40407C15.3047 9.45456 15.3003 9.49009 15.2991 9.5418C15.2979 9.59399 15.305 9.65148 15.3191 9.76646L15.6064 12.0998C15.6375 12.3524 15.653 12.4787 15.611 12.5705C15.5742 12.6509 15.5088 12.7148 15.4275 12.7498C15.3348 12.7897 15.2089 12.7712 14.9571 12.7343L12.6844 12.4012C12.5657 12.3838 12.5063 12.3751 12.4523 12.3754C12.3989 12.3757 12.3619 12.3796 12.3095 12.3906C12.2567 12.4017 12.1891 12.427 12.054 12.4777C11.4237 12.7137 10.7407 12.8429 10.0274 12.8429C9.72897 12.8429 9.4359 12.8203 9.14978 12.7767M5.44591 15.6969C7.56138 15.6969 9.27632 13.9399 9.27632 11.7726C9.27632 9.60529 7.56138 7.84833 5.44591 7.84833C3.33043 7.84833 1.6155 9.60529 1.6155 11.7726C1.6155 12.2083 1.68479 12.6274 1.81271 13.0189C1.86678 13.1844 1.89381 13.2672 1.90269 13.3237C1.91195 13.3828 1.91357 13.4159 1.91012 13.4756C1.90682 13.5327 1.89252 13.5973 1.86393 13.7264L1.42773 15.6969L3.56455 15.4051C3.68118 15.3892 3.7395 15.3812 3.79042 15.3815C3.84404 15.3819 3.8725 15.3848 3.92509 15.3953C3.97503 15.4052 4.04928 15.4314 4.19776 15.4839C4.589 15.6219 5.00891 15.6969 5.44591 15.6969Z"
+          stroke="currentColor"
+          strokeWidth="1.42702"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+      <defs>
+        <clipPath id="interactions-icon-clip">
+          <rect width="17.1242" height="17.1242" fill="white" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+}
+
+function DocumentsNavIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path
+        d="M9.98859 1.61907V4.56624C9.98859 4.96584 9.98859 5.16564 10.0664 5.31827C10.1348 5.45253 10.2439 5.56168 10.3782 5.63009C10.5308 5.70785 10.7306 5.70785 11.1302 5.70785H14.0774M11.4156 9.27534H5.70755M11.4156 12.1294H5.70755M7.13456 6.42131H5.70755M9.98859 1.42676H6.27835C5.07955 1.42676 4.48014 1.42676 4.02226 1.66006C3.6195 1.86528 3.29204 2.19274 3.08682 2.5955C2.85352 3.05339 2.85352 3.65279 2.85352 4.85159V12.2721C2.85352 13.4709 2.85352 14.0703 3.08682 14.5282C3.29204 14.9309 3.6195 15.2584 4.02226 15.4636C4.48014 15.6969 5.07955 15.6969 6.27835 15.6969H10.8448C12.0436 15.6969 12.643 15.6969 13.1009 15.4636C13.5037 15.2584 13.8311 14.9309 14.0363 14.5282C14.2696 14.0703 14.2696 13.4709 14.2696 12.2721V5.7078L9.98859 1.42676Z"
+        stroke="currentColor"
+        strokeWidth="1.42702"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8.00065 8.66699C8.36884 8.66699 8.66732 8.36852 8.66732 8.00033C8.66732 7.63214 8.36884 7.33366 8.00065 7.33366C7.63246 7.33366 7.33398 7.63214 7.33398 8.00033C7.33398 8.36852 7.63246 8.66699 8.00065 8.66699Z" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.00065 4.00033C8.36884 4.00033 8.66732 3.70185 8.66732 3.33366C8.66732 2.96547 8.36884 2.66699 8.00065 2.66699C7.63246 2.66699 7.33398 2.96547 7.33398 3.33366C7.33398 3.70185 7.63246 4.00033 8.00065 4.00033Z" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.00065 13.3337C8.36884 13.3337 8.66732 13.0352 8.66732 12.667C8.66732 12.2988 8.36884 12.0003 8.00065 12.0003C7.63246 12.0003 7.33398 12.2988 7.33398 12.667C7.33398 13.0352 7.63246 13.3337 8.00065 13.3337Z" stroke="black" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M14 8V10.8C14 11.9201 14 12.4802 13.782 12.908C13.5903 13.2843 13.2843 13.5903 12.908 13.782C12.4802 14 11.9201 14 10.8 14H5.2C4.07989 14 3.51984 14 3.09202 13.782C2.71569 13.5903 2.40973 13.2843 2.21799 12.908C2 12.4802 2 11.9201 2 10.8V8M5.33333 4.66667L8 2L10.6667 4.66667M8 2V10"
+        stroke="white"
+        strokeWidth="1.14161"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrendUpIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 11L11 4M7 4H11V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3L13.7 8.3L19 10L13.7 11.7L12 17L10.3 11.7L5 10L10.3 8.3L12 3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M5 14L5.8 16.2L8 17L5.8 17.8L5 20L4.2 17.8L2 17L4.2 16.2L5 14Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M18 15L18.6 16.4L20 17L18.6 17.6L18 19L17.4 17.6L16 17L17.4 16.4L18 15Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PhoneActivityIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7.5 4.5L9.8 9.4L7.9 11.1C9.2 13.7 10.8 15.2 13.4 16.5L15.1 14.6L20 16.9V20.1C20 20.7 19.6 21.2 19 21.3C10.5 20.8 3.7 14 3.2 5.5C3.1 4.9 3.6 4.5 4.2 4.5H7.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckActivityIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 12.5L9.2 16.5L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MailActivityIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 6.5H20V18H4V6.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M5 7.5L12 13L19 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ExpandCornersIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M8 3H3V8M3 3L9 9M16 21H21V16M21 21L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PaperclipIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path
+        d="M14.5827 4.38017V13.7503C14.5827 16.2816 12.5307 18.3337 9.99935 18.3337C7.46804 18.3337 5.41602 16.2816 5.41602 13.7503V4.72255C5.41602 3.03501 6.78404 1.66699 8.47157 1.66699C10.1591 1.66699 11.5271 3.03501 11.5271 4.72255V13.7051C11.5271 14.5489 10.8431 15.2329 9.99935 15.2329C9.15558 15.2329 8.47157 14.5489 8.47157 13.7051V5.54296"
+        stroke="black"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function MicIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 2C10.9 2 10 2.9 10 4V12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12V4C14 2.9 13.1 2 12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M19 10V12C19 15.87 15.87 19 12 19C8.13 19 5 15.87 5 12V10M12 19V22M8 22H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M20 12V13C20 17.4183 16.4183 21 12 21C7.58172 21 4 17.4183 4 13V12M12 17C9.79086 17 8 15.2091 8 13V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V13C16 15.2091 14.2091 17 12 17Z"
+        stroke="black"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

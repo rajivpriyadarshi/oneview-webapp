@@ -138,35 +138,49 @@ export function AuthFlow() {
       const normalizedEmail = email.trim();
       validateEmail(normalizedEmail);
 
-      // Use CRM login with password
+      // Try CRM login with password if provided
       if (password) {
-        const session = await crmLogin({ email: normalizedEmail, password }).unwrap();
+        const session = await crmLogin({
+          email: normalizedEmail,
+          password,
+        }).unwrap();
+
+        trackAPI({
+          pageName: trackingEventsMap.authPage.PAGE,
+          params: {
+            event_name: "CRM_LOGIN_SUCCESS",
+            email: normalizedEmail,
+          },
+        });
+
         storeAuthToken(session.token);
         storeAdvisorProfile(session.advisor);
-        await routeByProfile();
+
+        // CRM users go directly to clients page (skip profile fetch)
+        router.replace("/clients");
         return;
       }
 
-      // Fallback to OTP flow (currently disabled in UI)
-      await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
+      // Fallback to OTP flow (commented out for now)
+      // await sendPasswordlessOtp({ email: normalizedEmail }).unwrap();
+      // trackAPI({
+      //   pageName: trackingEventsMap.authPage.PAGE,
+      //   params: {
+      //     event_name: trackingEventsMap.authPage.API_SEND_OTP_SUCCESS,
+      //     email: normalizedEmail,
+      //   },
+      // });
+      // setEmail(normalizedEmail);
+      // setOtp(Array(6).fill(""));
+      // setResendCooldown(60);
+      // setStep("otp");
 
-      trackAPI({
-        pageName: trackingEventsMap.authPage.PAGE,
-        params: {
-          event_name: trackingEventsMap.authPage.API_SEND_OTP_SUCCESS,
-          email: normalizedEmail,
-        },
-      });
-
-      setEmail(normalizedEmail);
-      setOtp(Array(6).fill(""));
-      setResendCooldown(60);
-      setStep("otp");
+      throw new Error("Please enter your password to continue.");
     } catch (requestError) {
       trackAPI({
         pageName: trackingEventsMap.authPage.PAGE,
         params: {
-          event_name: trackingEventsMap.authPage.API_SEND_OTP_FAILURE,
+          event_name: trackingEventsMap.authPage.API_LOGIN_FAILURE,
           error: getErrorMessage(requestError),
         },
       });
@@ -458,7 +472,9 @@ export function AuthFlow() {
             </p>
           </form>
         </section>
-      ) : (
+      ) : null}
+      {/* OTP Section - Temporarily Hidden */}
+      {/* {step === "otp" && (
         <section className="auth-shell otp-shell" aria-labelledby="otp-title">
           <OneviewBrand />
           <form className="otp-panel" onSubmit={handleOtpSubmit}>
@@ -521,7 +537,7 @@ export function AuthFlow() {
             </button>
           </form>
         </section>
-      )}
+      )} */}
       </main>
     </>
   );
@@ -531,24 +547,6 @@ async function getPostProfileRouteFromStore(profile: Profile): Promise<string> {
   // Skip onboarding screens - go directly to home page
   // TODO: Update to new landing page when designed
   return "/dashboard";
-}
-
-function EyeIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  );
 }
 
 function GoogleIcon() {
@@ -593,4 +591,40 @@ function validateEmail(email: string) {
   if (!email.includes("@")) {
     throw new Error("Enter a valid email address.");
   }
+}
+
+function EyeIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
 }

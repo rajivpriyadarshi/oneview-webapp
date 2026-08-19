@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { clearAuthToken } from "../lib/session";
+import { clearAuthToken, getStoredAdvisorProfile } from "../lib/session";
 import { useAppDispatch } from "../store/hooks";
 import { dismissTray } from "../store/uploadTraySlice";
+import { useLogoutMutation, useCrmLogoutMutation } from "../store/api";
 
 interface HeaderProps {
   title?: string;
@@ -24,10 +25,25 @@ export default function Header({
   const dispatch = useAppDispatch();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  const handleLogout = () => {
-    dispatch(dismissTray());
-    clearAuthToken();
-    router.push("/");
+  const [logout] = useLogoutMutation();
+  const [crmLogout] = useCrmLogoutMutation();
+
+  const handleLogout = async () => {
+    const isCRMUser = getStoredAdvisorProfile() !== null;
+
+    try {
+      if (isCRMUser) {
+        await crmLogout().unwrap();
+      } else {
+        await logout().unwrap();
+      }
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      dispatch(dismissTray());
+      clearAuthToken();
+      router.push("/");
+    }
   };
 
   return (

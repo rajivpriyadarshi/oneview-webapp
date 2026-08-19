@@ -41,6 +41,19 @@ export type Profile = {
   updated_at: string;
 };
 
+export type CRMAdvisor = {
+  id: number;
+  name: string;
+  email: string;
+  designation: string;
+  team: string;
+};
+
+export type CRMAuthSession = {
+  token: string;
+  advisor: CRMAdvisor;
+};
+
 export function initiateSignup(input: {
   name: string;
   email: string;

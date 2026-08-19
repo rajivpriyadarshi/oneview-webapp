@@ -20,6 +20,66 @@ import {
 } from "../lib/documentsApi";
 import type { AuthSession, PasswordlessAuthSession, Profile, CRMAuthSession } from "../lib/realAuthApi";
 
+export type CrmClient = {
+  id: number;
+  display_name: string;
+  legal_name: string;
+  party_type: string;
+  base_currency: string;
+  primary_tax_jurisdiction: string;
+  is_active: boolean;
+  last_interaction_at: string | null;
+  upcoming_meeting_at: string | null;
+  net_worth: string | null;
+  net_worth_currency: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CrmAlert = {
+  id: number;
+  relationship_manager: number;
+  client: number | null;
+  client_name: string | null;
+  title: string;
+  cta_url: string | null;
+  cta_text: string | null;
+  mark_read: boolean;
+  created_at: string;
+};
+
+export type CrmAlertsResponse = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: CrmAlert[];
+};
+
+export type CrmMeeting = {
+  id: number;
+  relationship_manager: number;
+  client: number | null;
+  client_name: string | null;
+  title: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  created_at: string;
+};
+
+export type CrmMeetingsResponse = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: CrmMeeting[];
+};
+
+export type CrmClientsResponse = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: CrmClient[];
+};
+
 export const api = createApi({
   reducerPath: "api",
   baseQuery,
@@ -247,6 +307,37 @@ export const api = createApi({
       query: () => ({ url: "/currencies/" }),
       transformResponse: (response: { currencies: { currency_code: string; name: string | null; symbol: string | null; decimals: number }[] }) => response.currencies,
     }),
+
+    // CRM Meetings
+    getCrmMeetings: builder.query<CrmMeetingsResponse, { upcoming?: boolean; page?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.upcoming) searchParams.set("upcoming", "true");
+        if (params?.page) searchParams.set("page", String(params.page));
+        const qs = searchParams.toString();
+        return `/crm/meetings/${qs ? `?${qs}` : ""}`;
+      },
+    }),
+
+    // CRM Alerts
+    getCrmAlerts: builder.query<CrmAlertsResponse, { page?: number } | void>({
+      query: (params) => {
+        const qs = params?.page ? `?page=${params.page}` : "";
+        return `/crm/alerts/${qs}`;
+      },
+    }),
+
+    // CRM Clients
+    getCrmClients: builder.query<CrmClientsResponse, { search?: string; is_active?: string; page?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.search) searchParams.set("search", params.search);
+        if (params?.is_active) searchParams.set("is_active", params.is_active);
+        if (params?.page) searchParams.set("page", String(params.page));
+        const qs = searchParams.toString();
+        return `/crm/clients/${qs ? `?${qs}` : ""}`;
+      },
+    }),
   }),
 });
 
@@ -280,4 +371,7 @@ export const {
   useLazyGetBrokerStatementJobStatusQuery,
   useListBrokerStatementJobsQuery,
   useListCurrenciesQuery,
+  useGetCrmMeetingsQuery,
+  useGetCrmAlertsQuery,
+  useGetCrmClientsQuery,
 } = api;

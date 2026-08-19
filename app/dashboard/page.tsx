@@ -133,7 +133,13 @@ export default function DashboardPage() {
   const { data: brokerJobs } = useListBrokerStatementJobsQuery();
   console.log("[Dashboard] Portfolios data:", portfolios);
 
-  // Removed automatic redirect to onboarding - users can manually upload via documents page
+  const router = useRouter();
+  useEffect(() => {
+    const hasReviewJobs = brokerJobs?.some(j => j.status === "needs_review");
+    if (portfoliosLoaded && portfolios.length === 0 && !hasReviewJobs) {
+      router.replace("/clients");
+    }
+  }, [portfoliosLoaded, portfolios.length, brokerJobs, router]);
 
   const activePortfolioId = selectedPortfolioId ?? portfolios[0]?.id ?? null;
   const selectedPortfolio = portfolios.find((p) => p.id === activePortfolioId) ?? null;
