@@ -3,219 +3,123 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MeridianLogo } from "./MeridianLogo";
-import { getUserProfile, type UserProfile } from "../lib/profileApi";
+import { getStoredAdvisorProfile } from "../lib/session";
 
-const CHART_COLORS = [
-  "#FE5D26", "#388DE8", "#CE8016", "#6438E8", "#59886B",
-  "#444444", "#FFC75F", "#9EDE73", "#184D47", "#D2DB20",
-  "#939191", "#76FDB0", "#2F2B2C", "#FFB2FC", "#B0EDFF",
-  "#A3A1FB", "#7A2783", "#F46396"
-];
+const ACTIVE_COLOR = "#804D13";
+const INACTIVE_COLOR = "rgba(0,0,0,0.70)";
 
-type SidebarProps = { open?: boolean; onOpenChange?: (open: boolean) => void };
-
-export default function Sidebar({ open, onOpenChange }: SidebarProps = {}) {
+export default function Sidebar() {
   const pathname = usePathname();
-  const [isOpen, setIsOpen] = useState(false);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [showChatTooltip, setShowChatTooltip] = useState(false);
+  const [initial, setInitial] = useState("N");
 
   useEffect(() => {
-    if (pathname !== "/dashboard" || localStorage.getItem("chatTooltipDismissed")) return;
-    const show = window.setTimeout(() => setShowChatTooltip(true), 800);
-    const hide = window.setTimeout(() => {
-      setShowChatTooltip(false);
-      localStorage.setItem("chatTooltipDismissed", "1");
-    }, 2000);
-    return () => { window.clearTimeout(show); window.clearTimeout(hide); };
-  }, [pathname]);
-
-  useEffect(() => {
-    if (typeof open === "boolean") setIsOpen(open);
-  }, [open]);
-
-  const closeSidebar = () => {
-    setIsOpen(false);
-    onOpenChange?.(false);
-  };
-
-  useEffect(() => {
-    // Load cached profile from localStorage
-    const cachedProfile = localStorage.getItem('userProfile');
-    if (cachedProfile) {
-      try {
-        setProfile(JSON.parse(cachedProfile));
-      } catch (error) {
-        console.error("Failed to parse cached profile:", error);
-      }
-    }
-
-    const fetchProfile = () => {
-      getUserProfile()
-        .then((data) => {
-          setProfile(data);
-          // Cache the profile in localStorage
-          localStorage.setItem('userProfile', JSON.stringify(data));
-        })
-        .catch((error) => console.error("Failed to fetch profile:", error));
-    };
-
-    // Initial fetch
-    fetchProfile();
-
-    // Listen for profile updates
-    const handleProfileUpdate = () => {
-      fetchProfile();
-    };
-
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-    return () => window.removeEventListener('profileUpdated', handleProfileUpdate);
+    const advisor = getStoredAdvisorProfile();
+    if (advisor?.name) setInitial(advisor.name.trim()[0].toUpperCase());
   }, []);
 
-  const getInitials = (name: string) => {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return name[0]?.toUpperCase() || "U";
-  };
-
-  const getColorFromName = (name: string) => {
-    const asciiSum = name.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    return CHART_COLORS[asciiSum % CHART_COLORS.length];
-  };
-
-  const initials = profile ? getInitials(profile.display_name) : "U";
-  const avatarColor = profile ? getColorFromName(profile.display_name) : CHART_COLORS[0];
+  const nav = [
+    { href: "/clients", label: "Home", icon: <HomeIcon /> },
+    { href: "/clients/list", label: "Clients", icon: <UserIcon /> },
+    { href: "/documents-vault", label: "Documents", icon: <TerminalIcon /> },
+    { href: "/chat", label: "Chat", icon: <ChatIcon /> },
+  ];
 
   return (
-    <>
-      {isOpen ? (
-        <button
-          className="sidebar-backdrop"
-          type="button"
-          onClick={closeSidebar}
-          aria-label="Close navigation"
-        />
-      ) : null}
+    <aside style={{
+      width: 80, height: "100vh", position: "fixed", left: 0, top: 0, zIndex: 210,
+      background: "#F8F8F8", borderRight: "1px solid rgba(0,0,0,0.04)",
+      display: "flex", flexDirection: "column", alignItems: "flex-start", paddingBottom: 20,
+    }}>
+      {/* Logo */}
+      <div style={{ alignSelf: "stretch", height: 97, display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <ZincLogo />
+      </div>
 
-      <aside className={`sidebar${isOpen ? " is-open" : ""}`}>
-        <Link href="/dashboard" className="sidebar-logo" onClick={closeSidebar} aria-label="Go to Dashboard">
-          <MeridianLogo width={36} height={36} />
-        </Link>
-
-        <nav className="sidebar-nav">
-          <Link href="/dashboard" className={`sidebar-btn ${pathname === "/dashboard" ? "active" : ""}`} aria-label="Home" onClick={closeSidebar}>
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-              <path
-                d="M3 10.5L12 3l9 7.5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M5 9.5V19a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1V9.5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-          <Link href="/documents-vault" className={`sidebar-btn ${pathname === "/documents-vault" ? "active" : ""}`} aria-label="Document Vault" onClick={closeSidebar}>
-            <svg viewBox="0 0 18 18" fill="none" width="20" height="20">
-              <path
-                d="M14.286 7.143V4.85728C14.286 3.65717 14.286 3.05711 14.0524 2.59873C13.847 2.19553 13.5192 1.86771 13.116 1.66227C12.6576 1.42871 12.0575 1.42871 10.8574 1.42871H6.28599C5.08588 1.42871 4.48582 1.42871 4.02744 1.66227C3.62424 1.86771 3.29642 2.19553 3.09098 2.59873C2.85742 3.05711 2.85742 3.65717 2.85742 4.85728V12.2859C2.85742 13.486 2.85742 14.086 3.09098 14.5444C3.29642 14.9476 3.62424 15.2754 4.02744 15.4809C4.48582 15.7144 5.08588 15.7144 6.28599 15.7144H7.50028M9.28599 7.85728H5.71456M7.85742 10.7144H5.71456M11.4288 5.00014H5.71456M13.7503 12.143V10.893C13.7503 10.2026 13.1906 9.643 12.5003 9.643C11.8099 9.643 11.2503 10.2026 11.2503 10.893V12.143M11.1431 15.0001H13.8574C14.2575 15.0001 14.4575 15.0001 14.6103 14.9223C14.7447 14.8538 14.8539 14.7445 14.9224 14.6101C15.0003 14.4573 15.0003 14.2573 15.0003 13.8573V13.2859C15.0003 12.8858 15.0003 12.6858 14.9224 12.533C14.8539 12.3986 14.7447 12.2893 14.6103 12.2208C14.4575 12.143 14.2575 12.143 13.8574 12.143H11.1431C10.7431 12.143 10.5431 12.143 10.3903 12.2208C10.2559 12.2893 10.1466 12.3986 10.0781 12.533C10.0003 12.6858 10.0003 12.8858 10.0003 13.2859V13.8573C10.0003 14.2573 10.0003 14.4573 10.0781 14.6101C10.1466 14.7445 10.2559 14.8538 10.3903 14.9223C10.5431 15.0001 10.7431 15.0001 11.1431 15.0001Z"
-                stroke="currentColor"
-                strokeWidth="1.71429"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-          <div style={{ position: "relative" }}>
-          {showChatTooltip && (
-            <div
-              role="tooltip"
-              style={{
-                position: "absolute",
-                top: "50%",
-                left: "calc(100% + 16px)",
-                transform: "translateY(-50%)",
-                zIndex: 300,
-                width: "210px",
-                padding: "12px 16px",
-                borderRadius: "14px",
-                background: "#2d2926",
-                color: "#fff",
-                fontSize: "13px",
-                fontWeight: 400,
-                lineHeight: 1.45,
-                pointerEvents: "none",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
-                animation: "tooltipFadeIn 200ms ease both, tooltipFadeOut 200ms ease 1000ms both",
-              }}
-            >
-              <span style={{
-                position: "absolute",
-                top: "50%",
-                right: "100%",
-                transform: "translateY(-50%)",
-                width: 0,
-                height: 0,
-                borderTop: "7px solid transparent",
-                borderBottom: "7px solid transparent",
-                borderRight: "7px solid #2d2926",
-              }} />
-              You can now interact with your holdings, the market, and more.
-            </div>
-          )}
-          <Link href="/chat" className={`sidebar-btn ${pathname === "/chat" ? "active" : ""}`} aria-label="Chat" onClick={closeSidebar}>
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-              <path
-                d="M21 11.5C21 15.6421 16.9706 19 12 19C10.8206 19 9.69413 18.8109 8.66189 18.4671L4 20L5.3382 16.4306C3.89274 15.1239 3 13.3984 3 11.5C3 7.35786 7.02944 4 12 4C16.9706 4 21 7.35786 21 11.5Z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M8.5 11.5H8.51M12 11.5H12.01M15.5 11.5H15.51"
-                stroke="currentColor"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </Link>
-          </div>
-        </nav>
-
-        <div className="sidebar-avatar">
-          <Link href="/profile" className="avatar-btn" onClick={closeSidebar}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <circle cx="16" cy="16" r="16" fill={avatarColor} />
-              <text
-                x="16"
-                y="16"
-                textAnchor="middle"
-                dominantBaseline="central"
-                style={{
-                  fill: "#FFF",
-                  fontFamily: "Inter",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  letterSpacing: "-0.48px",
-                }}
-              >
-                {initials}
-              </text>
-            </svg>
-          </Link>
+      {/* Nav + avatar */}
+      <div style={{ flex: 1, alignSelf: "stretch", display: "flex", flexDirection: "column", alignItems: "center", padding: "0 7px" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+          {nav.map(({ href, label, icon }) => {
+            const active = pathname === href;
+            return (
+              <Link key={label} href={href} aria-label={label} style={{ textDecoration: "none" }}>
+                <div style={{ padding: 8 }}>
+                  <div style={{
+                    padding: 8, borderRadius: 11,
+                    background: active ? "#F1ECE1" : "transparent",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <IconWrapper active={active}>{icon}</IconWrapper>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
-      </aside>
-    </>
+
+        {/* Avatar */}
+        <div style={{
+          width: 40, height: 40, borderRadius: "50%", background: ACTIVE_COLOR,
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        }}>
+          <span style={{ color: "white", fontSize: 15, fontFamily: "Inter", fontWeight: 600, lineHeight: 1 }}>
+            {initial}
+          </span>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function IconWrapper({ active, children }: { active: boolean; children: React.ReactNode }) {
+  return (
+    <span style={{ display: "flex", color: active ? ACTIVE_COLOR : INACTIVE_COLOR }}>
+      {children}
+    </span>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M2 7.04386C2 6.66095 2 6.4695 2.04935 6.29319C2.09307 6.13701 2.16491 5.99012 2.26135 5.85973C2.37022 5.71252 2.52135 5.59498 2.82359 5.3599L7.34513 1.84315C7.57935 1.66099 7.69646 1.5699 7.82577 1.53489C7.93987 1.504 8.06013 1.504 8.17423 1.53489C8.30354 1.5699 8.42065 1.66099 8.65487 1.84315L13.1764 5.35991C13.4787 5.59499 13.6298 5.71252 13.7386 5.85973C13.8351 5.99012 13.9069 6.13701 13.9506 6.29319C14 6.4695 14 6.66095 14 7.04386V11.8671C14 12.6139 14 12.9872 13.8547 13.2725C13.7268 13.5233 13.5229 13.7273 13.272 13.8552C12.9868 14.0005 12.6134 14.0005 11.8667 14.0005H4.13333C3.3866 14.0005 3.01323 14.0005 2.72801 13.8552C2.47713 13.7273 2.27316 13.5233 2.14532 13.2725C2 12.9872 2 12.6139 2 11.8671V7.04386Z"
+        stroke="currentColor" strokeWidth="1.84615" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M13.3307 14C13.3307 13.0696 13.3307 12.6044 13.2159 12.2259C12.9574 11.3736 12.2904 10.7067 11.4382 10.4482C11.0596 10.3333 10.5944 10.3333 9.66406 10.3333H6.33073C5.40035 10.3333 4.93517 10.3333 4.55663 10.4482C3.70437 10.7067 3.03742 11.3736 2.77889 12.2259C2.66406 12.6044 2.66406 13.0696 2.66406 14M10.9974 5C10.9974 6.65685 9.65425 8 7.9974 8C6.34054 8 4.9974 6.65685 4.9974 5C4.9974 3.34315 6.34054 2 7.9974 2C9.65425 2 10.9974 3.34315 10.9974 5Z"
+        stroke="currentColor" strokeWidth="1.84615" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function TerminalIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M4.66667 10L6.66667 8L4.66667 6M8.66667 10H11.3333M5.2 14H10.8C11.9201 14 12.4802 14 12.908 13.782C13.2843 13.5903 13.5903 13.2843 13.782 12.908C14 12.4802 14 11.9201 14 10.8V5.2C14 4.0799 14 3.51984 13.782 3.09202C13.5903 2.71569 13.2843 2.40973 12.908 2.21799C12.4802 2 11.9201 2 10.8 2H5.2C4.0799 2 3.51984 2 3.09202 2.21799C2.71569 2.40973 2.40973 2.71569 2.21799 3.09202C2 3.51984 2 4.0799 2 5.2V10.8C2 11.9201 2 12.4802 2.21799 12.908C2.40973 13.2843 2.71569 13.5903 3.09202 13.782C3.51984 14 4.0799 14 5.2 14Z"
+        stroke="currentColor" strokeWidth="1.84615" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M4.06551 7.48554C4.02408 7.21849 4.00258 6.94491 4.00258 6.66634C4.00258 3.72082 6.4061 1.33301 9.371 1.33301C12.3359 1.33301 14.7394 3.72082 14.7394 6.66634C14.7394 7.33172 14.6168 7.96864 14.3927 8.55601C14.3462 8.678 14.3229 8.73899 14.3123 8.78661C14.3019 8.8338 14.2978 8.86699 14.2967 8.91531C14.2955 8.96407 14.3022 9.01779 14.3154 9.12522L14.5838 11.3054C14.6128 11.5414 14.6274 11.6594 14.5881 11.7452C14.5537 11.8203 14.4926 11.88 14.4167 11.9127C14.33 11.9499 14.2124 11.9327 13.9771 11.8982L11.8536 11.5869C11.7427 11.5707 11.6873 11.5626 11.6368 11.5629C11.5868 11.5631 11.5523 11.5668 11.5034 11.5771C11.454 11.5875 11.3908 11.6111 11.2646 11.6584C10.6757 11.879 10.0375 11.9997 9.371 11.9997C9.09221 11.9997 8.81838 11.9786 8.55104 11.9379M5.09032 14.6663C7.06692 14.6663 8.66927 13.0247 8.66927 10.9997C8.66927 8.97463 7.06692 7.33301 5.09032 7.33301C3.11373 7.33301 1.51138 8.97463 1.51138 10.9997C1.51138 11.4067 1.57612 11.7983 1.69564 12.1642C1.74616 12.3188 1.77142 12.3961 1.77971 12.449C1.78836 12.5041 1.78988 12.5351 1.78666 12.5908C1.78357 12.6442 1.77021 12.7045 1.7435 12.8252L1.33594 14.6663L3.33247 14.3937C3.44145 14.3788 3.49594 14.3713 3.54352 14.3717C3.59362 14.372 3.62021 14.3747 3.66934 14.3845C3.71601 14.3938 3.78538 14.4183 3.92412 14.4673C4.28967 14.5963 4.68201 14.6663 5.09032 14.6663Z"
+        stroke="currentColor" strokeWidth="1.84615" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function ZincLogo() {
+  return (
+    <svg width="38" height="43" viewBox="0 0 38 43" fill="none">
+      <path d="M37.7754 21.8323L29.4922 26.6314V17.4561L37.7754 21.8323Z" fill="#050505"/>
+      <path d="M8.24112 16.9682L8.2556 26.5413L0.0546875 22.0811L8.24112 16.9682Z" fill="#050505"/>
+      <path d="M18.21 42.999L15.5098 41.4404L9.46875 38.0576V38.0244L9.53125 37.9883L9.46875 37.9521L9.46875 14.6719L0 20.5283L0 10.5967L18.1963 0.0898437L18.21 42.999ZM28.2012 4.99414L28.2852 28.7812L37.8203 23.2676V32.4033L19.5654 42.9424L19.5508 0L28.2012 4.99414Z" fill="#050505"/>
+    </svg>
   );
 }
