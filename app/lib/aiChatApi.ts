@@ -41,6 +41,8 @@ export function buildAiChatApiUrl(path = "") {
 
 let csrfPromise: Promise<void> | null = null;
 const AI_CHAT_BASE_PATH = "oneview/chats/";
+const CRM_CHAT_BASE_PATH = "crm/clients";
+const RM_CHAT_AGENT_SLUG = "oneview-rm";
 const LOCAL_CHAT_SESSIONS_KEY = "oneview:ai-chat-sessions";
 const LOCAL_CHAT_SESSIONS_MAX = 24;
 const LOCAL_CHAT_SESSIONS_FRESH_MS = 60_000;
@@ -73,6 +75,7 @@ export type AiChatSession = {
   id: string;
   title: string;
   agent: string;
+  client_id?: number | string;
   created_at?: string;
   updated_at?: string;
   is_pinned?: boolean;
@@ -85,12 +88,27 @@ export type ChatPrompt = {
   title: string;
   description: string;
   user_message: string;
+  workflow_intent?: ChatWorkflowIntent;
+};
+
+export type ChatWorkflowIntent = {
+  tool_name: string;
+  mode: "suggest" | "run";
+};
+
+export type ChatWorkflowCommand = {
+  command: string;
+  tool_name: string;
+  name: string;
+  description?: string;
+  input_schema?: Record<string, unknown>;
 };
 
 type ChatSummary = {
   id: string;
   title?: string | null;
   agent?: string | null;
+  client_id?: number | string | null;
   created_at?: string | null;
   updated_at?: string | null;
   is_pinned?: boolean | null;
@@ -105,6 +123,11 @@ type ChatPromptsResponse = {
   prompts?: ChatPrompt[];
 };
 
+type ChatWorkflowCommandsResponse = {
+  agent?: string;
+  commands?: ChatWorkflowCommand[];
+};
+
 type MessagesResponse = {
   id: string;
   messages: UIMessage[];
@@ -114,6 +137,7 @@ type NormalizableSession = Partial<
   Omit<AiChatSession, "title" | "agent" | "created_at" | "updated_at" | "is_pinned" | "is_archived"> & {
     title: string | null;
     agent: string | null;
+    client_id: number | string | null;
     created_at: string | null;
     updated_at: string | null;
     is_pinned: boolean | null;
@@ -122,7 +146,7 @@ type NormalizableSession = Partial<
 >;
 
 export function getAiAgentSlug() {
-  return appConfig.aiAgentSlug;
+  return RM_CHAT_AGENT_SLUG;
 }
 
 export function getAiChatsUrl() {
@@ -133,10 +157,32 @@ export function getAiChatMessagesUrl(sessionId: string) {
   return buildAiChatApiUrl(`${AI_CHAT_BASE_PATH}${encodeURIComponent(sessionId)}/messages/`);
 }
 
-export async function listAiChatSessions(options?: { archivedOnly?: boolean }) {
+export function getCrmClientChatsUrl(clientId: number | string) {
+  return buildAiChatApiUrl(`${CRM_CHAT_BASE_PATH}/${encodeURIComponent(String(clientId))}/chats/`);
+}
+
+export function getCrmClientChatMessagesUrl(clientId: number | string, sessionId: string) {
+  return buildAiChatApiUrl(
+    `${CRM_CHAT_BASE_PATH}/${encodeURIComponent(String(clientId))}/chats/${encodeURIComponent(sessionId)}/messages/`,
+  );
+}
+
+function getChatsUrl(options?: { clientId?: number | string | null }) {
+  return options?.clientId ? getCrmClientChatsUrl(options.clientId) : getAiChatsUrl();
+}
+
+function getChatMessagesUrl(sessionId: string, options?: { clientId?: number | string | null }) {
+  return options?.clientId ? getCrmClientChatMessagesUrl(options.clientId, sessionId) : getAiChatMessagesUrl(sessionId);
+}
+
+function normalizeClientId(clientId: number | string | null | undefined) {
+  return clientId ?? undefined;
+}
+
+export async function listAiChatSessions(options?: { archivedOnly?: boolean; clientId?: number | string | null }) {
   requireAiAuthToken();
 
-  const url = new URL(buildAiChatApiUrl(AI_CHAT_BASE_PATH));
+  const url = new URL(getChatsUrl(options));
   if (options?.archivedOnly) {
     url.searchParams.set("archived_only", "true");
   }
@@ -152,21 +198,35 @@ export async function listAiChatSessions(options?: { archivedOnly?: boolean }) {
     throw new Error(getErrorMessage(payload, "Chat listing is not available."));
   }
 
-  return (payload.chats ?? []).map((chat) => normalizeSession(chat, "server"));
+  return (payload.chats ?? []).map((chat) =>
+    normalizeSession({ ...chat, client_id: normalizeClientId(chat.client_id ?? options?.clientId) }, "server"),
+  );
 }
 
-function getAiChatPinUrl(sessionId: string) {
+function getAiChatPinUrl(sessionId: string, options?: { clientId?: number | string | null }) {
+  if (options?.clientId) {
+    return buildAiChatApiUrl(
+      `${CRM_CHAT_BASE_PATH}/${encodeURIComponent(String(options.clientId))}/chats/${encodeURIComponent(sessionId)}/pin/`,
+    );
+  }
+
   return buildAiChatApiUrl(`${AI_CHAT_BASE_PATH}${encodeURIComponent(sessionId)}/pin/`);
 }
 
-function getAiChatArchiveUrl(sessionId: string) {
+function getAiChatArchiveUrl(sessionId: string, options?: { clientId?: number | string | null }) {
+  if (options?.clientId) {
+    return buildAiChatApiUrl(
+      `${CRM_CHAT_BASE_PATH}/${encodeURIComponent(String(options.clientId))}/chats/${encodeURIComponent(sessionId)}/archive/`,
+    );
+  }
+
   return buildAiChatApiUrl(`${AI_CHAT_BASE_PATH}${encodeURIComponent(sessionId)}/archive/`);
 }
 
-export async function pinAiChatSession(sessionId: string, isPinned?: boolean) {
+export async function pinAiChatSession(sessionId: string, isPinned?: boolean, options?: { clientId?: number | string | null }) {
   requireAiAuthToken();
 
-  const response = await aiChatFetch(getAiChatPinUrl(sessionId), {
+  const response = await aiChatFetch(getAiChatPinUrl(sessionId, options), {
     method: "PATCH",
     headers: { ...getAiRequestHeaders(), "Content-Type": "application/json" },
     body: typeof isPinned === "boolean" ? JSON.stringify({ is_pinned: isPinned }) : undefined,
@@ -178,13 +238,13 @@ export async function pinAiChatSession(sessionId: string, isPinned?: boolean) {
     throw new Error(getErrorMessage(payload, "Could not update the pinned state."));
   }
 
-  return normalizeSession(payload, "server");
+  return normalizeSession({ ...payload, client_id: normalizeClientId(payload.client_id ?? options?.clientId) }, "server");
 }
 
-export async function archiveAiChatSession(sessionId: string, isArchived?: boolean) {
+export async function archiveAiChatSession(sessionId: string, isArchived?: boolean, options?: { clientId?: number | string | null }) {
   requireAiAuthToken();
 
-  const response = await aiChatFetch(getAiChatArchiveUrl(sessionId), {
+  const response = await aiChatFetch(getAiChatArchiveUrl(sessionId, options), {
     method: "PATCH",
     headers: { ...getAiRequestHeaders(), "Content-Type": "application/json" },
     body: typeof isArchived === "boolean" ? JSON.stringify({ is_archived: isArchived }) : undefined,
@@ -196,7 +256,7 @@ export async function archiveAiChatSession(sessionId: string, isArchived?: boole
     throw new Error(getErrorMessage(payload, "Could not update the archived state."));
   }
 
-  return normalizeSession(payload, "server");
+  return normalizeSession({ ...payload, client_id: normalizeClientId(payload.client_id ?? options?.clientId) }, "server");
 }
 
 export async function listChatPrompts() {
@@ -215,10 +275,32 @@ export async function listChatPrompts() {
   return payload.prompts ?? [];
 }
 
-export async function loadAiChatMessages(sessionId: string) {
+export async function listChatWorkflowCommands(options?: { agent?: string }) {
   requireAiAuthToken();
 
-  const response = await aiChatFetch(getAiChatMessagesUrl(sessionId), {
+  const url = new URL(buildAiChatApiUrl("crm/chats/workflow-commands/"));
+  if (options?.agent) {
+    url.searchParams.set("agent", options.agent);
+  }
+
+  const response = await aiChatFetch(url.toString(), {
+    cache: "no-store",
+    headers: getAiRequestHeaders(),
+  });
+
+  const payload = await readJson<ChatWorkflowCommandsResponse>(response);
+
+  if (!response.ok) {
+    throw new Error(getErrorMessage(payload, "Chat workflow commands are not available."));
+  }
+
+  return payload.commands ?? [];
+}
+
+export async function loadAiChatMessages(sessionId: string, options?: { clientId?: number | string | null }) {
+  requireAiAuthToken();
+
+  const response = await aiChatFetch(getChatMessagesUrl(sessionId, options), {
     cache: "no-store",
     headers: getAiRequestHeaders(),
   });
@@ -322,6 +404,7 @@ export function mergeAiChatSessions(...groups: AiChatSession[][]) {
       ...existing,
       ...session,
       title: session.title || existing?.title || "New chat",
+      client_id: session.client_id ?? existing?.client_id,
       updated_at: session.updated_at || existing?.updated_at || session.created_at || existing?.created_at,
       is_pinned: session.is_pinned ?? existing?.is_pinned ?? false,
       is_archived: session.is_archived ?? existing?.is_archived ?? false,
@@ -352,6 +435,7 @@ function normalizeSession(
     id: String(session.id ?? ""),
     title: session.title || "New chat",
     agent: session.agent || appConfig.aiAgentSlug,
+    client_id: session.client_id ?? undefined,
     created_at: session.created_at ?? undefined,
     updated_at: session.updated_at ?? session.created_at ?? new Date().toISOString(),
     is_pinned: session.is_pinned ?? false,

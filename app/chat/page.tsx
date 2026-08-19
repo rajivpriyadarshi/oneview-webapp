@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
@@ -45,11 +45,12 @@ import {
   archiveAiChatSession,
   createTitleFromPrompt,
   getAiAgentSlug,
-  getAiChatsUrl,
-  getAiChatMessagesUrl,
   getAiRequestHeaders,
+  getCrmClientChatsUrl,
+  getCrmClientChatMessagesUrl,
   listAiChatSessions,
   listChatPrompts,
+  listChatWorkflowCommands,
   loadAiChatMessages,
   mergeAiChatSessions,
   pinAiChatSession,
@@ -103,10 +104,35 @@ const ATTENTION_ITEMS = [
   },
 ];
 
+const DEFAULT_COMPOSER_PROMPTS: ChatPrompt[] = [
+  {
+    id: -10_001,
+    title: "Portfolio review",
+    description: "Review the portfolio and identify priority follow-ups.",
+    user_message: "Review my portfolio and identify priority follow-ups.",
+  },
+  {
+    id: -10_002,
+    title: "Meeting prep",
+    description: "Prepare talking points for an upcoming client meeting.",
+    user_message: "Help me prepare talking points for my next client meeting.",
+  },
+  {
+    id: -10_003,
+    title: "Opportunity finder",
+    description: "Find portfolio opportunities based on current holdings.",
+    user_message: "Find portfolio opportunities based on current holdings.",
+  },
+];
+
 type AiChatMessageMetadata = {
   session_id?: string;
   message_id?: string;
   client_message_id?: string;
+  workflow_intent?: {
+    tool_name: string;
+    mode: "suggest" | "run";
+  };
 };
 
 type ReplySuggestionsData = {
@@ -130,10 +156,14 @@ const TW = {
   mobileHeaderBtnIcon: "inline-grid place-items-center rounded-full bg-gradient-to-b from-[#b37f40] to-[#432411] p-[6px] text-white",
   workspace: "ml-[80px] grid h-screen grid-cols-[minmax(300px,380px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(292px,350px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
-  advisorHeader: "flex h-[52px] items-center justify-between gap-[10px] border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
-  conversationBtn: "inline-flex min-w-0 items-center gap-[8px] border-0 bg-transparent py-[6px] font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [overflow-wrap:break-word]",
-  conversationText: "truncate",
-  advisorAddBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
+  advisorHeader: "relative z-[40] flex h-[52px] min-w-0 items-center justify-between gap-[10px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
+  conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
+  conversationBtn: "inline-flex w-full min-w-0 max-w-full items-center justify-start gap-[8px] overflow-hidden border-0 bg-transparent py-[6px] text-left font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [&_svg]:shrink-0",
+  conversationText: "block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
+  conversationDropdown: "absolute top-[43px] left-[-7px] z-[60] w-[238px] overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] max-[640px]:left-[-4px] max-[640px]:w-[calc(100vw-64px)]",
+  conversationDropdownItem: "flex min-h-[46px] w-full cursor-pointer items-center border-0 border-b border-black/10 bg-white px-[24px] text-left font-satoshi text-[13px] font-normal leading-[1.15] text-black transition last:border-b-0 hover:bg-black/[0.025]",
+  conversationDropdownEmpty: "flex min-h-[46px] items-center px-[24px] font-satoshi text-[13px] font-normal text-black/40",
+  advisorAddBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto pr-[14px] pl-[28px] pt-[64px] pb-[190px] max-[1180px]:pl-[20px] max-[900px]:pr-[56px] max-[900px]:pl-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
   attentionTitle: "m-0 mb-[28px] max-w-[350px] font-serif text-[32px] font-normal leading-[1.1] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
   attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
@@ -143,8 +173,10 @@ const TW = {
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
   promptChip: "inline-flex min-w-0 shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07] max-[640px]:max-w-[145px] max-[640px]:truncate",
   promptChipExpand: "inline-flex h-[32px] w-[40px] shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-black transition hover:bg-white/85 [&_svg]:h-[13px] [&_svg]:w-[13px] max-[640px]:h-[32px] max-[640px]:w-[40px] max-[640px]:[&_svg]:h-[13px] max-[640px]:[&_svg]:w-[13px]",
+  promptMeasure: "pointer-events-none invisible absolute -z-10 flex items-center gap-[12px] whitespace-nowrap max-[640px]:gap-[8px]",
+  promptMeasureChip: "inline-flex shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77]",
   compactThread: "absolute right-[22px] bottom-[21px] left-[22px] z-[5] max-[1180px]:right-[20px] max-[1180px]:left-[20px] max-[900px]:right-[20px] max-[900px]:left-[20px] max-[640px]:right-[14px] max-[640px]:bottom-[18px] max-[640px]:left-[14px]",
-  fullThread: "top-[64px]",
+  fullThread: "top-[64px] !right-0 !left-0",
   loading: "flex min-h-screen flex-col items-center justify-center p-[32px] font-satoshi text-[13px] text-black/50",
   notice: "m-0 rounded-lg border border-[#171615]/10 bg-white/50 p-[12px] font-satoshi text-[13px] leading-snug text-[#171615]/50",
   thread: "relative flex h-full min-h-0 flex-col overflow-hidden",
@@ -156,12 +188,12 @@ const TW = {
   suggestionsRow: "flex overflow-hidden py-1",
   suggestionsRowInner: "flex shrink-0 gap-2.5",
   suggestionPill: "inline-flex shrink-0 items-center gap-[8px] rounded-full border border-[#171615]/10 bg-white/30 px-[12px] py-[10px] font-satoshi text-[13px] leading-tight text-black backdrop-blur-xl transition hover:-translate-y-px hover:bg-white/55",
-  messageViewport: "relative min-h-0 flex-1 overflow-y-auto px-0 pt-[32px] pb-[128px]",
+  messageViewport: "relative min-h-0 flex-1 overflow-y-auto pr-[44px] pl-[22px] pt-[24px] pb-[176px] max-[1180px]:pr-[38px] max-[1180px]:pl-[20px] max-[900px]:pr-[36px] max-[900px]:pl-[20px] max-[640px]:pr-[28px] max-[640px]:pl-[14px] max-[640px]:pb-[160px]",
   threadFooter: "sticky bottom-0 z-[5] bg-transparent pt-3",
   scrollToBottom: "hidden data-[state=visible]:inline-grid absolute left-1/2 top-[-16px] h-9 w-9 -translate-x-1/2 -translate-y-full place-items-center rounded-full border border-white/60 bg-white/85 text-[#171615] shadow-[0_2px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl",
   errorBanner: "mx-auto mb-[10px] w-full rounded-lg border border-[#973022]/20 bg-white/70 px-[12px] py-[10px] font-satoshi text-[13px] text-[#8f2415]",
-  composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent p-0",
-  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] shadow-[0_18px_50px_rgba(0,0,0,0.08)] max-[640px]:rounded-[28px] pt-[10px]",
+  composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent px-[22px] max-[1180px]:px-[20px] max-[900px]:px-[20px] max-[640px]:px-[14px]",
+  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] pt-[10px]",
   composer: "relative mx-auto flex min-h-[80px] w-full items-center rounded-[28px] border border-black/[0.06] bg-white py-[8px] transition rounded-[24px] ",
   composerThinking: "ring-1 ring-[#b37f40]/40",
   composerInputRow: "flex-1 min-w-0 px-[14px] max-[1180px]:px-[18px] max-[640px]:px-[14px]",
@@ -211,9 +243,13 @@ const TW = {
 export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const requestedClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
   const [initialPromptParam, setInitialPromptParam] = useState(() => searchParams.get("prompt") ?? null);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [mobileRailOpen, setMobileRailOpen] = useState(false);
+  const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
+  const [client, setClient] = useState<WealthCrmClient | null>(null);
+  const [isLoadingClient, setIsLoadingClient] = useState(true);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [initialMessages, setInitialMessages] = useState<ChatUiMessage[]>([]);
@@ -227,18 +263,78 @@ export default function ChatPage() {
   const [archivedSessions, setArchivedSessions] = useState<AiChatSession[]>([]);
   const [isLoadingArchived, setIsLoadingArchived] = useState(false);
   const sessionsRefreshRef = useRef(0);
+  const conversationMenuRef = useRef<HTMLDivElement | null>(null);
+  const chatClientId = client?.id ?? requestedClientId ?? null;
+  const chatRoute = chatClientId ? `/chat?clientId=${encodeURIComponent(String(chatClientId))}` : "/chat";
 
   useEffect(() => {
     let cancelled = false;
 
-    listChatPrompts()
-      .then((items) => {
+    async function loadClient() {
+      setIsLoadingClient(true);
+
+      try {
+        let nextClient: WealthCrmClient | null = null;
+
+        if (requestedClientId) {
+          nextClient = await getWealthCrmClient(requestedClientId);
+        } else {
+          const activeClients = await listWealthCrmClients({ isActive: true });
+          nextClient = activeClients[0] ?? (await listWealthCrmClients())[0] ?? null;
+        }
+
         if (!cancelled) {
-          setPrompts(items);
+          setClient(nextClient);
+        }
+      } catch (error) {
+        console.error("Failed to load wealth CRM client:", error);
+        if (!cancelled) {
+          setClient(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingClient(false);
+        }
+      }
+    }
+
+    void loadClient();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedClientId]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    Promise.allSettled([
+      listChatPrompts(),
+      listChatWorkflowCommands({ agent: getAiAgentSlug() }),
+    ])
+      .then(([promptResult, workflowResult]) => {
+        if (!cancelled) {
+          const staticPrompts = promptResult.status === "fulfilled" ? promptResult.value : [];
+          const workflowPrompts = workflowResult.status === "fulfilled"
+            ? workflowResult.value.map((command, index): ChatPrompt => ({
+                id: -index - 1,
+                title: command.name || command.command.replace(/^\//, ""),
+                description: command.description || command.command,
+                user_message: command.command,
+                workflow_intent: {
+                  tool_name: command.tool_name,
+                  mode: "run",
+                },
+              }))
+            : [];
+
+          setPrompts(mergeChatPrompts(workflowPrompts, staticPrompts));
         }
       })
       .catch(() => {
-        /* fall back to static suggestions */
+        if (!cancelled) {
+          setPrompts([]);
+        }
       });
 
     return () => {
@@ -246,25 +342,61 @@ export default function ChatPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!conversationMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node) || conversationMenuRef.current?.contains(target)) {
+        return;
+      }
+
+      setConversationMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setConversationMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [conversationMenuOpen]);
+
   const refreshSessions = useCallback(
     async ({ showCached = false, showLoading = false }: { showCached?: boolean; showLoading?: boolean } = {}) => {
       const requestId = ++sessionsRefreshRef.current;
+      const clientId = chatClientId;
 
       if (showLoading) {
         setIsLoadingSessions(true);
       }
 
+      if (!clientId) {
+        setSessions([]);
+        setIsLoadingSessions(false);
+        return;
+      }
+
       if (showCached) {
         const cachedSessions = getVisibleSessions(
           readStoredAiChatSessions({ maxAgeMs: WARM_CHAT_CACHE_MAX_AGE_MS }),
-        );
+        ).filter((session) => String(session.client_id ?? "") === String(clientId));
         if (cachedSessions.length > 0) {
           setSessions(cachedSessions);
         }
       }
 
       try {
-        const serverSessions = getVisibleSessions(await listAiChatSessions());
+        const serverSessions = getVisibleSessions(await listAiChatSessions({ clientId }));
         if (requestId !== sessionsRefreshRef.current) {
           return;
         }
@@ -272,7 +404,9 @@ export default function ChatPage() {
         const serverIds = new Set(serverSessions.map((session) => session.id));
         const pendingLocalSessions = getVisibleSessions(
           readStoredAiChatSessions({ maxAgeMs: PENDING_LOCAL_CHAT_MAX_AGE_MS }),
-        ).filter((session) => session.source === "local" && !serverIds.has(session.id));
+        ).filter((session) => {
+          return session.source === "local" && String(session.client_id ?? "") === String(clientId) && !serverIds.has(session.id);
+        });
         const nextSessions = mergeAiChatSessions(serverSessions, pendingLocalSessions);
 
         setSessions(nextSessions);
@@ -282,7 +416,7 @@ export default function ChatPage() {
         console.error("Failed to load AI chat sessions:", error);
         if (requestId === sessionsRefreshRef.current) {
           const fallbackSessions = getVisibleSessions(readStoredAiChatSessions());
-          setSessions(fallbackSessions);
+          setSessions(fallbackSessions.filter((session) => String(session.client_id ?? "") === String(clientId)));
           setNotice("Chat history could not be refreshed. Showing the latest browser fallback.");
         }
       } finally {
@@ -291,12 +425,14 @@ export default function ChatPage() {
         }
       }
     },
-    [],
+    [chatClientId],
   );
 
   useEffect(() => {
-    void refreshSessions({ showCached: true, showLoading: true });
-  }, [refreshSessions]);
+    if (!isLoadingClient) {
+      void refreshSessions({ showCached: true, showLoading: true });
+    }
+  }, [isLoadingClient, refreshSessions]);
 
   const prevSessionsLengthRef = useRef<number | null>(null);
   useEffect(() => {
@@ -336,12 +472,13 @@ export default function ChatPage() {
     setIsDraftChat(false);
     setHasStartedChat(true);
     setSelectedSessionId(session.id);
+    setConversationMenuOpen(false);
     setMobileRailOpen(false);
     setIsLoadingMessages(true);
     setNotice(null);
 
     try {
-      const messages = (await loadAiChatMessages(session.id)) as ChatUiMessage[];
+      const messages = (await loadAiChatMessages(session.id, { clientId: chatClientId })) as ChatUiMessage[];
       setInitialMessages(messages);
     } catch (error) {
       console.error("Failed to load AI chat messages:", error);
@@ -356,11 +493,12 @@ export default function ChatPage() {
     setIsDraftChat(true);
     setHasStartedChat(false);
     setSelectedSessionId(null);
+    setConversationMenuOpen(false);
     setInitialMessages([]);
     setNotice(null);
     setMobileRailOpen(false);
     setInitialPromptParam(null);
-    router.replace("/chat");
+    router.replace(chatRoute);
   };
 
   const startPromptChat = (prompt: string) => {
@@ -371,7 +509,7 @@ export default function ChatPage() {
     setNotice(null);
     setMobileRailOpen(false);
     setInitialPromptParam(prompt);
-    router.replace("/chat");
+    router.replace(chatRoute);
   };
 
   const handleTogglePin = async (session: AiChatSession) => {
@@ -381,7 +519,7 @@ export default function ChatPage() {
     );
 
     try {
-      const updated = await pinAiChatSession(session.id, nextPinned);
+      const updated = await pinAiChatSession(session.id, nextPinned, { clientId: chatClientId });
       setSessions((current) => mergeAiChatSessions(current, [updated]));
       void refreshSessions();
     } catch (error) {
@@ -400,7 +538,7 @@ export default function ChatPage() {
     }
 
     try {
-      const updated = await archiveAiChatSession(session.id, true);
+      const updated = await archiveAiChatSession(session.id, true, { clientId: chatClientId });
       setArchivedSessions((current) => mergeAiChatSessions(current, [updated]));
       void refreshSessions();
     } catch (error) {
@@ -414,7 +552,7 @@ export default function ChatPage() {
     setArchivedSessions((current) => current.filter((item) => item.id !== session.id));
 
     try {
-      const updated = await archiveAiChatSession(session.id, false);
+      const updated = await archiveAiChatSession(session.id, false, { clientId: chatClientId });
       setSessions((current) => mergeAiChatSessions(current, [updated]));
       void refreshSessions();
     } catch (error) {
@@ -435,7 +573,7 @@ export default function ChatPage() {
     setNotice(null);
 
     try {
-      const archived = await listAiChatSessions({ archivedOnly: true });
+      const archived = await listAiChatSessions({ archivedOnly: true, clientId: chatClientId });
       setArchivedSessions(archived);
     } catch (error) {
       console.error("Failed to load archived chats:", error);
@@ -496,6 +634,7 @@ export default function ChatPage() {
           ? existingSession.title
           : createTitleFromPrompt(prompt ?? ""),
       agent: existingSession?.agent ?? getAiAgentSlug(),
+      client_id: existingSession?.client_id ?? chatClientId ?? undefined,
       created_at: existingSession?.created_at,
       updated_at: new Date().toISOString(),
       source: existingSession?.source ?? "local",
@@ -529,23 +668,47 @@ export default function ChatPage() {
       <main className={TW.workspace}>
         <aside className={TW.advisorPanel} aria-label="Advisor chat">
           <div className={TW.advisorHeader}>
-            <ul className="m-0 min-w-0 list-none p-0">
-              <li
+            <div className={TW.conversationMenuWrap} ref={conversationMenuRef}>
+              <button
+                type="button"
                 className={TW.conversationBtn}
-                role="button"
-                tabIndex={0}
-                onClick={startNewChat}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    startNewChat();
-                  }
-                }}
+                aria-expanded={conversationMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setConversationMenuOpen((open) => !open)}
               >
-                <span className={TW.conversationText}>{selectedSession?.title && selectedSession.title !== "New chat" ? selectedSession.title : "New conversation"}</span>
+                <span className={TW.conversationText}>
+                  {selectedSession?.title && selectedSession.title !== "New chat" ? selectedSession.title : "New conversation"}
+                </span>
                 <ChevronDownIcon />
-              </li>
-            </ul>
+              </button>
+              {conversationMenuOpen ? (
+                <div className={TW.conversationDropdown} role="menu">
+                  {isLoadingSessions ? (
+                    <div className={TW.conversationDropdownEmpty}>Loading chats...</div>
+                  ) : sessions.length > 0 ? (
+                    sessions.map((session) => (
+                      <div
+                        key={session.id}
+                        className={TW.conversationDropdownItem}
+                        role="menuitem"
+                        tabIndex={0}
+                        onClick={() => void selectSession(session)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            void selectSession(session);
+                          }
+                        }}
+                      >
+                        <span className="truncate">{session.title}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={TW.conversationDropdownEmpty}>No chats yet</div>
+                  )}
+                </div>
+              ) : null}
+            </div>
             <button type="button" className={TW.advisorAddBtn} aria-label="New conversation" onClick={startNewChat}>
               <PlusIcon />
             </button>
@@ -578,14 +741,15 @@ export default function ChatPage() {
           ) : null}
 
           <div className={`${TW.compactThread} ${hasStartedChat ? TW.fullThread : ""}`}>
-            {isLoadingMessages ? (
+            {(isLoadingClient && hasStartedChat) || isLoadingMessages ? (
               <div className={TW.loading}>Loading chat...</div>
             ) : (
               <ChatThread
-                key={selectedSession?.id ?? initialPromptParam ?? "draft"}
+                key={`${chatClientId ?? "pending-client"}:${selectedSession?.id ?? initialPromptParam ?? "draft"}`}
                 session={selectedSession}
                 initialMessages={initialMessages}
                 prompts={prompts}
+                clientId={chatClientId}
                 onPromptSubmitted={updateSessionFromPrompt}
                 onAssistantFinished={handleAssistantFinished}
                 initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
@@ -595,7 +759,7 @@ export default function ChatPage() {
           {notice ? <p className={TW.notice}>{notice}</p> : null}
         </aside>
 
-        <ClientOverview />
+        <ClientOverview client={client} isLoadingClient={isLoadingClient} requestedClientId={requestedClientId} />
       </main>
     </div>
   );
@@ -603,6 +767,19 @@ export default function ChatPage() {
 
 function getVisibleSessions(sessions: AiChatSession[]) {
   return mergeAiChatSessions(sessions).filter((session) => !session.is_archived);
+}
+
+function mergeChatPrompts(...groups: ChatPrompt[][]) {
+  const byTitle = new Map<string, ChatPrompt>();
+
+  for (const prompt of groups.flat()) {
+    const key = prompt.title.trim().toLowerCase();
+    if (!byTitle.has(key)) {
+      byTitle.set(key, prompt);
+    }
+  }
+
+  return Array.from(byTitle.values());
 }
 
 function SessionItem({
@@ -661,6 +838,7 @@ type ChatThreadProps = {
   session: AiChatSession | null;
   initialMessages: ChatUiMessage[];
   prompts: ChatPrompt[];
+  clientId: number | string | null;
   onPromptSubmitted: (prompt: string) => void;
   onAssistantFinished: (details: {
     sessionId: string | null;
@@ -670,7 +848,7 @@ type ChatThreadProps = {
   initialPrompt?: string | null;
 };
 
-function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAssistantFinished, initialPrompt }: ChatThreadProps) {
+function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt }: ChatThreadProps) {
   const agent = getAiAgentSlug();
   const lastPromptRef = useRef<string | null>(null);
   const initialPromptFiredRef = useRef(false);
@@ -684,7 +862,11 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
   const transport = useMemo(
     () =>
       new AssistantChatTransport<ChatUiMessage>({
-        api: sessionId ? getAiChatMessagesUrl(sessionId) : getAiChatsUrl(),
+        api: clientId
+          ? sessionId
+            ? getCrmClientChatMessagesUrl(clientId, sessionId)
+            : getCrmClientChatsUrl(clientId)
+          : getCrmClientChatsUrl("missing-client"),
         credentials: "include",
         headers: getAiRequestHeaders(),
         fetch: async (input, init) => {
@@ -707,7 +889,14 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
           const body = options.body ?? {};
           const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
           const prompt = latestUserMessage ? getMessageText(latestUserMessage) : "";
-          const api = sessionId ? getAiChatMessagesUrl(sessionId) : getAiChatsUrl();
+          const latestUserMetadata = getMessageCustomMetadata(latestUserMessage?.metadata);
+          if (!clientId) {
+            throw new Error("CRM client id is required to send chat messages.");
+          }
+
+          const api = sessionId
+            ? getCrmClientChatMessagesUrl(clientId, sessionId)
+            : getCrmClientChatsUrl(clientId);
 
           if (prompt && prompt !== lastPromptRef.current) {
             lastPromptRef.current = prompt;
@@ -723,9 +912,10 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
             api,
             body: {
               ...body,
-              message: latestUserMessage,
+              message: prompt || latestUserMessage,
               messages,
               metadata: {
+                ...latestUserMetadata,
                 ...getRecord(body.metadata),
                 agent,
               },
@@ -733,7 +923,7 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
           };
         },
       }),
-    [agent, onPromptSubmitted, sessionId],
+    [agent, clientId, onPromptSubmitted, sessionId],
   );
 
   const chat = useChat<ChatUiMessage>({
@@ -752,12 +942,28 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
     },
   });
   const runtime = useAISDKRuntime(chat);
+  const handlePromptSelect = useCallback(
+    (prompt: ChatPrompt) => {
+      runtime.thread.append({
+        role: "user",
+        content: [{ type: "text", text: prompt.user_message }],
+        metadata: prompt.workflow_intent
+          ? {
+              custom: {
+                workflow_intent: prompt.workflow_intent,
+              },
+            }
+          : undefined,
+      });
+    },
+    [runtime],
+  );
 
   useEffect(() => {
-    if (!initialPrompt || initialPromptFiredRef.current) return;
+    if (!initialPrompt || initialPromptFiredRef.current || !clientId) return;
     initialPromptFiredRef.current = true;
     runtime.thread.append({ role: "user", content: [{ type: "text", text: initialPrompt }] });
-  }, [initialPrompt, runtime]);
+  }, [clientId, initialPrompt, runtime]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -767,7 +973,12 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
             <div className={TW.emptyViewport}>
               <div className={TW.emptyCopy}>
                 <p className={TW.emptyHeading}>Ask anything about your portfolio</p>
-                <Composer placeholder="What can I help you with?" agent={agent} prompts={prompts} onPromptSelect={(msg) => runtime.thread.append({ role: "user", content: [{ type: "text", text: msg }] })} />
+                <Composer
+                  placeholder="What can I help you with?"
+                  agent={agent}
+                  prompts={prompts}
+                  onPromptSelect={handlePromptSelect}
+                />
               </div>
               <div className={TW.suggestionsWrap}>
                 {(() => {
@@ -827,7 +1038,12 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
 
         <AuiIf condition={(state) => !state.thread.isEmpty}>
           <div className={TW.composerDock}>
-            <Composer placeholder="Ask a follow-up..." agent={agent} />
+            <Composer
+              placeholder="Ask a follow-up..."
+              agent={agent}
+              prompts={prompts}
+              onPromptSelect={handlePromptSelect}
+            />
           </div>
         </AuiIf>
       </div>
@@ -835,45 +1051,16 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
   );
 }
 
-function ClientOverview() {
+function ClientOverview({
+  client,
+  isLoadingClient,
+  requestedClientId,
+}: {
+  client: WealthCrmClient | null;
+  isLoadingClient: boolean;
+  requestedClientId: string | null;
+}) {
   const [activeTab, setActiveTab] = useState<ClientTab>("overview");
-  const searchParams = useSearchParams();
-  const requestedClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
-  const [client, setClient] = useState<WealthCrmClient | null>(null);
-  const [isLoadingClient, setIsLoadingClient] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadClient() {
-      setIsLoadingClient(true);
-
-      try {
-        const nextClient = requestedClientId
-          ? await getWealthCrmClient(requestedClientId)
-          : (await listWealthCrmClients({ isActive: true }))[0] ?? null;
-
-        if (!cancelled) {
-          setClient(nextClient);
-        }
-      } catch (error) {
-        console.error("Failed to load wealth CRM client:", error);
-        if (!cancelled) {
-          setClient(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingClient(false);
-        }
-      }
-    }
-
-    void loadClient();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [requestedClientId]);
 
   return (
     <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-gradient-to-b from-white to-[#f6f1eb] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
@@ -1414,33 +1601,85 @@ function useComposerFormat() {
   return applyFormat;
 }
 
-function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder: string; agent: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: string) => void }) {
+function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder: string; agent: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: ChatPrompt) => void }) {
   const isRunning = useThread((t) => t.isRunning);
   const applyFormat = useComposerFormat();
   const [promptsExpanded, setPromptsExpanded] = useState(false);
+  const [collapsedPromptCount, setCollapsedPromptCount] = useState(2);
+  const promptListRef = useRef<HTMLDivElement | null>(null);
+  const promptMeasureRef = useRef<HTMLDivElement | null>(null);
   void agent;
   void applyFormat;
 
-  const visiblePrompts = prompts && prompts.length > 0
-    ? (promptsExpanded ? prompts : prompts.slice(0, 3))
+  const composerPrompts = prompts && prompts.length > 0 ? prompts : DEFAULT_COMPOSER_PROMPTS;
+  const hasPromptOverflow = collapsedPromptCount < composerPrompts.length;
+  const visiblePrompts = composerPrompts.length > 0
+    ? (promptsExpanded ? composerPrompts : composerPrompts.slice(0, Math.max(1, collapsedPromptCount)))
     : [];
+
+  useLayoutEffect(() => {
+    const list = promptListRef.current;
+    const measure = promptMeasureRef.current;
+
+    if (!list || !measure || promptsExpanded || composerPrompts.length === 0) {
+      return;
+    }
+
+    const updateVisiblePromptCount = () => {
+      const chips = Array.from(measure.querySelectorAll<HTMLElement>("[data-prompt-measure-chip]"));
+      const availableWidth = list.clientWidth;
+      const gap = window.matchMedia("(max-width: 640px)").matches ? 8 : 12;
+      let usedWidth = 0;
+      let nextCount = 0;
+
+      for (const chip of chips) {
+        const nextWidth = usedWidth + (nextCount > 0 ? gap : 0) + chip.offsetWidth;
+        if (nextWidth > availableWidth) {
+          break;
+        }
+
+        usedWidth = nextWidth;
+        nextCount += 1;
+      }
+
+      setCollapsedPromptCount(Math.max(1, nextCount));
+    };
+
+    updateVisiblePromptCount();
+
+    const resizeObserver = new ResizeObserver(updateVisiblePromptCount);
+    resizeObserver.observe(list);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [composerPrompts, promptsExpanded]);
 
   return (
     <ComposerPrimitive.Root className={TW.composerWrap}>
+      {composerPrompts.length > 0 && (
+        <div className={TW.promptMeasure} ref={promptMeasureRef} aria-hidden="true">
+          {composerPrompts.map((p) => (
+            <div key={p.id} className={TW.promptMeasureChip} data-prompt-measure-chip>
+              /{p.title}
+            </div>
+          ))}
+        </div>
+      )}
       {visiblePrompts.length > 0 && (
         <div className={TW.promptChipsRow}>
-          <div className={`${TW.promptChipsLeft} ${promptsExpanded ? TW.promptChipsLeftExpanded : ""}`}>
+          <div className={`${TW.promptChipsLeft} ${promptsExpanded ? TW.promptChipsLeftExpanded : ""}`} ref={promptListRef}>
             {visiblePrompts.map((p) => (
               <div
                 key={p.id}
                 className={TW.promptChip}
                 role="button"
                 tabIndex={0}
-                onClick={() => onPromptSelect?.(p.user_message)}
+                onClick={() => onPromptSelect?.(p)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    onPromptSelect?.(p.user_message);
+                    onPromptSelect?.(p);
                   }
                 }}
               >
@@ -1448,7 +1687,7 @@ function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder
               </div>
             ))}
           </div>
-          {prompts && prompts.length > 1 ? (
+          {(hasPromptOverflow || promptsExpanded) && composerPrompts.length > 1 ? (
             <button
               type="button"
               className={`${TW.promptChipExpand} ${promptsExpanded ? "rotate-180" : ""}`}
@@ -1829,6 +2068,14 @@ function getSessionIdFromMetadata(metadata: AiChatMessageMetadata | undefined) {
 
 function getRecord(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function getMessageCustomMetadata(metadata: unknown) {
+  const record = getRecord(metadata);
+  return {
+    ...record,
+    ...getRecord(record.custom),
+  };
 }
 
 function getReplySuggestions(parts: readonly unknown[]) {
