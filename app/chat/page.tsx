@@ -863,13 +863,6 @@ function ClientOverview() {
             <ClientTabButton active={activeTab === "documents"} icon={<DocumentsNavIcon />} label="Documents" onClick={() => setActiveTab("documents")} />
           </ul>
         </nav>
-        <div className="flex shrink-0 items-center gap-[9px] max-[640px]:hidden">
-          <button type="button" className="inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[12px] border border-black/20 bg-white p-[9px] text-black hover:bg-black/5 [&_svg]:h-[18px] [&_svg]:w-[18px]" aria-label="More options"><MoreIcon /></button>
-          <button type="button" className="inline-flex h-[32px] shrink-0 items-center justify-center gap-[7px] rounded-[9px] border-0 bg-black px-[12px] py-[8px] text-white max-[1320px]:w-[32px] max-[1320px]:px-0 max-[1320px]:py-0 [&_svg]:h-[16px] [&_svg]:w-[16px]" aria-label="Share">
-            <ShareIcon />
-            <span className="[font-family:var(--font-inter)] text-[11.99px] font-[600] leading-[17.12px] text-white [overflow-wrap:break-word] max-[1320px]:sr-only">Share</span>
-          </button>
-        </div>
       </header>
 
       {activeTab === "overview" ? <OverviewTab client={client} isLoadingClient={isLoadingClient} /> : null}
@@ -895,7 +888,14 @@ function ClientTabButton({
     <li>
       <button
         type="button"
-        className={`inline-flex min-h-[32px] shrink-0 items-center gap-[7px] rounded-[9px] border-0 px-[12px] font-satoshi text-[14px] leading-[18.2px] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [&_svg]:h-[16px] [&_svg]:w-[16px] ${active ? "bg-[#eeeae4] font-bold" : "bg-transparent font-medium hover:bg-black/5"}`}
+        className={`shrink-0 rounded-xl border-0 font-satoshi text-[14px] leading-[18.2px] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [&_svg]:h-[16px] [&_svg]:w-[16px] ${active ? "font-bold" : "font-medium hover:bg-black/5"}`}
+        style={{
+          display: "flex",
+          padding: "10px 12px",
+          alignItems: "center",
+          gap: "8px",
+          background: active ? "rgba(162, 144, 118, 0.20)" : "rgba(162, 144, 118, 0.00)"
+        }}
         aria-current={active ? "page" : undefined}
         onClick={onClick}
       >

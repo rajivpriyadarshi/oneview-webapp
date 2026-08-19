@@ -87,7 +87,8 @@ export default function DocumentCard({
                 {isExpanded && (
                   <>
                     <button
-                      className="px-4 h-[37px] text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+                      className="text-sm font-medium text-black bg-white rounded-[26px] border border-[#E8E8E8] hover:bg-gray-50 transition-colors whitespace-nowrap"
+                      style={{ display: "flex", padding: "6px 14px", justifyContent: "center", alignItems: "center" }}
                       onClick={(e) => {
                         e.stopPropagation();
                         onViewDocument?.();
