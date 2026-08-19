@@ -31,7 +31,7 @@ import {
   useAISDKRuntime,
 } from "@assistant-ui/react-ai-sdk";
 import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
-import type { UIMessage } from "ai";
+import type { ChatTransport, UIMessage } from "ai";
 import remarkGfm from "remark-gfm";
 import { visit } from "unist-util-visit";
 import { ProtectedRoute } from "../components/ProtectedRoute";
@@ -86,7 +86,7 @@ const PROMPT_SUGGESTIONS_ROW2 = [
 const ATTENTION_ITEMS = [
   {
     action: "Find alternatives to reduce tech exposure",
-    prompt: "Find alternatives to reduce technology exposure in the portfolio.",
+    prompt: "Find alternatives to reduce tech exposure",
     bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_48%,#f4edf4_100%)]",
   },
   {
@@ -170,10 +170,10 @@ const TW = {
   attentionTitle: "m-0 mb-[28px] max-w-[350px] font-serif text-[32px] font-normal leading-[1.1] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
   attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
   attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
-  promptChipsRow: "mb-[10px] flex items-center justify-between gap-[10px] overflow-hidden rounded-[22px] p-[10px] pb-[0px]",
+  promptChipsRow: "mb-[10px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] p-[10px] pt-[8px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
-  promptChip: "inline-flex min-w-0 shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07] max-[640px]:max-w-[145px] max-[640px]:truncate",
+  promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07] max-[640px]:max-w-[145px] max-[640px]:truncate",
   promptChipExpand: "inline-flex h-[32px] w-[40px] shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-black transition hover:bg-white/85 [&_svg]:h-[13px] [&_svg]:w-[13px] max-[640px]:h-[32px] max-[640px]:w-[40px] max-[640px]:[&_svg]:h-[13px] max-[640px]:[&_svg]:w-[13px]",
   promptMeasure: "pointer-events-none invisible absolute -z-10 flex items-center gap-[12px] whitespace-nowrap max-[640px]:gap-[8px]",
   promptMeasureChip: "inline-flex shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77]",
@@ -255,6 +255,7 @@ export default function ChatPage() {
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [initialMessages, setInitialMessages] = useState<ChatUiMessage[]>([]);
+  const [chatResetId, setChatResetId] = useState(0);
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isDraftChat, setIsDraftChat] = useState(true);
@@ -268,6 +269,33 @@ export default function ChatPage() {
   const conversationMenuRef = useRef<HTMLDivElement | null>(null);
   const chatClientId = client?.id ?? requestedClientId ?? null;
   const chatRoute = chatClientId ? `/chat?clientId=${encodeURIComponent(String(chatClientId))}` : "/chat";
+
+  const resolveChatClient = useCallback(async () => {
+    if (client || requestedClientId) {
+      return client;
+    }
+
+    setIsLoadingClient(true);
+
+    try {
+      const activeClients = await listWealthCrmClients({ isActive: true });
+      const nextClient = activeClients[0] ?? (await listWealthCrmClients())[0] ?? null;
+      setClient(nextClient);
+
+      if (!nextClient) {
+        setNotice("Could not find an assigned CRM client for this chat.");
+      }
+
+      return nextClient;
+    } catch (error) {
+      console.error("Failed to resolve wealth CRM client:", error);
+      setClient(null);
+      setNotice("Could not find an assigned CRM client for this chat.");
+      return null;
+    } finally {
+      setIsLoadingClient(false);
+    }
+  }, [client, requestedClientId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -469,6 +497,7 @@ export default function ChatPage() {
       null,
     [selectedSessionId, sessions, archivedSessions],
   );
+  const isChatActive = hasStartedChat || Boolean(selectedSessionId) || Boolean(initialPromptParam) || initialMessages.length > 0;
 
   const selectSession = async (session: AiChatSession) => {
     setIsDraftChat(false);
@@ -500,10 +529,11 @@ export default function ChatPage() {
     setNotice(null);
     setMobileRailOpen(false);
     setInitialPromptParam(null);
+    setChatResetId((id) => id + 1);
     router.replace(chatRoute);
   };
 
-  const startPromptChat = (prompt: string) => {
+  const startPromptChat = async (prompt: string) => {
     setIsDraftChat(true);
     setHasStartedChat(true);
     setSelectedSessionId(null);
@@ -511,7 +541,9 @@ export default function ChatPage() {
     setNotice(null);
     setMobileRailOpen(false);
     setInitialPromptParam(prompt);
+    setChatResetId((id) => id + 1);
     router.replace(chatRoute);
+    await resolveChatClient();
   };
 
   const handleTogglePin = async (session: AiChatSession) => {
@@ -716,7 +748,7 @@ export default function ChatPage() {
             </button>
           </div>
 
-          {!hasStartedChat ? (
+          {!isChatActive ? (
             <div className={TW.attentionContent}>
               <h1 className={TW.attentionTitle}>What can I help you with?</h1>
               <div className={TW.attentionList}>
@@ -726,11 +758,11 @@ export default function ChatPage() {
                     key={item.action}
                     role="button"
                     tabIndex={0}
-                    onClick={() => startPromptChat(item.prompt)}
+                    onClick={() => void startPromptChat(item.prompt)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" || event.key === " ") {
                         event.preventDefault();
-                        startPromptChat(item.prompt);
+                        void startPromptChat(item.prompt);
                       }
                     }}
                   >
@@ -742,12 +774,12 @@ export default function ChatPage() {
             </div>
           ) : null}
 
-          <div className={`${TW.compactThread} ${hasStartedChat ? TW.fullThread : ""}`}>
-            {(isLoadingClient && hasStartedChat) || isLoadingMessages ? (
+          <div className={`${TW.compactThread} ${isChatActive ? TW.fullThread : ""}`}>
+            {((isLoadingClient || !chatClientId) && isChatActive) || isLoadingMessages ? (
               <div className={TW.loading}>Loading chat...</div>
             ) : (
               <ChatThread
-                key={`${chatClientId ?? "pending-client"}:${selectedSession?.id ?? initialPromptParam ?? "draft"}`}
+                key={`${chatClientId ?? "pending-client"}:${selectedSession?.id ?? initialPromptParam ?? "draft"}:${chatResetId}`}
                 session={selectedSession}
                 initialMessages={initialMessages}
                 prompts={prompts}
@@ -931,7 +963,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
   const chat = useChat<ChatUiMessage>({
     id: sessionId ?? "draft-chat",
     messages: initialMessages,
-    transport,
+    transport: transport as unknown as ChatTransport<ChatUiMessage>,
     onFinish({ message, messages }) {
       onAssistantFinished({
         sessionId: sessionId ?? pendingSessionIdRef.current ?? getSessionIdFromMetadata(message.metadata),
@@ -1204,9 +1236,11 @@ function WealthMapTab({ clientId }: { clientId: number | null }) {
 }
 
 function DocumentsTab({ clientId }: { clientId?: number | null }) {
+  void clientId;
+
   return (
     <div className="min-h-0 overflow-auto bg-white px-[32px] py-[24px]">
-      <DocumentsListView clientId={clientId} />
+      <DocumentsListView />
     </div>
   );
 }
