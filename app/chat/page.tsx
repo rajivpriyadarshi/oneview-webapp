@@ -84,18 +84,22 @@ const ATTENTION_ITEMS = [
   {
     action: "Find alternatives to reduce tech exposure",
     prompt: "Find alternatives to reduce technology exposure in the portfolio.",
+    bg: "bg-gradient-to-r from-[#ede8df] to-white",
   },
   {
     action: "Evaluation options about selling property",
     prompt: "Evaluate options for funding a property sale versus taking a loan.",
+    bg: "bg-gradient-to-r from-[#f0ebe3] to-white",
   },
   {
     action: "Draft an email to ask for insurance document",
     prompt: "Draft an email asking for the updated insurance document.",
+    bg: "bg-gradient-to-r from-[#f4f0e9] to-white",
   },
   {
     action: "Compare ways to fund property purchase",
     prompt: "Compare ways to fund the upcoming $42,000 education payment.",
+    bg: "bg-gradient-to-r from-[#f7f4ef] to-white",
   },
 ];
 
@@ -132,8 +136,8 @@ const TW = {
   advisorAddBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
   attentionContent: "flex min-h-0 flex-col justify-end overflow-auto pr-[14px] pl-[12px] pt-[28px] pb-[128px] max-[900px]:justify-start max-[900px]:pr-[12px] max-[900px]:pl-[12px] max-[900px]:pt-[24px] max-[900px]:pb-[128px]",
   attentionTitle: "m-0 mb-[24px] max-w-[340px] font-serif text-[38px] font-normal leading-[45.6px] tracking-normal text-black [overflow-wrap:break-word]",
-  attentionList: "grid gap-[10px]",
-  attentionSuggestion: "inline-flex items-center gap-[8px] rounded-[8px] bg-[#f0ebe0] px-[12px] py-[10px] text-left font-mono text-[13px] font-normal leading-[16.9px] text-[#282420] transition hover:bg-[#e8e0d0]",
+  attentionList: "grid gap-[14px]",
+  attentionSuggestion: "flex items-center gap-[10px] rounded-full border border-black/5 px-[16px] py-[12px] text-left font-mono text-[13px] font-normal leading-[16.9px] text-[#282420] transition hover:brightness-[0.97]",
   promptChipsRow: "mb-[10px] flex flex-wrap items-center gap-[8px]",
   promptChip: "inline-flex items-center rounded-full border border-black/10 bg-[#f7f3ee] px-[12px] py-[8px] font-satoshi text-[13px] font-medium leading-tight text-[#282420] transition hover:bg-[#ede8df]",
   promptChipExpand: "inline-grid h-[32px] w-[32px] place-items-center rounded-full border border-black/10 bg-[#f7f3ee] text-[#282420] transition hover:bg-[#ede8df]",
@@ -542,11 +546,11 @@ export default function ChatPage() {
               {ATTENTION_ITEMS.map((item) => (
                 <button
                   type="button"
-                  className={TW.attentionSuggestion}
+                  className={`${TW.attentionSuggestion} ${item.bg}`}
                   key={item.action}
                   onClick={() => startPromptChat(item.prompt)}
                 >
-                  <span aria-hidden="true">&rarr;</span>
+                  <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
                   {item.action}
                 </button>
               ))}
@@ -1199,7 +1203,7 @@ function AssetAllocationChart({ totalLabel = "$20.1M" }: { totalLabel?: string }
     responsive: true,
     maintainAspectRatio: false,
     cutout: "58%",
-    rotation: -90,
+    rotation: 0,
     plugins: {
       legend: {
         display: false,
