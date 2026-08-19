@@ -205,7 +205,6 @@ export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [initialPromptParam, setInitialPromptParam] = useState(() => searchParams.get("prompt") ?? null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [mobileRailOpen, setMobileRailOpen] = useState(false);
   const [sessions, setSessions] = useState<AiChatSession[]>([]);
@@ -497,9 +496,9 @@ export default function ChatPage() {
 
   return (
     <div className={TW.shell}>
-      <Sidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
+      <Sidebar />
       <MobileHeader
-        onMenuOpen={() => setSidebarOpen(true)}
+        onMenuOpen={() => setMobileRailOpen(true)}
         logo={
           <button type="button" className={TW.mobileHistoryBtn} aria-label="Chat history" onClick={() => setMobileRailOpen(v => !v)}>
             <HistoryIcon />
