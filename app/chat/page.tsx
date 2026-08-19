@@ -130,7 +130,7 @@ const TW = {
   mobileHeaderBtnIcon: "inline-grid place-items-center rounded-full bg-gradient-to-b from-[#b37f40] to-[#432411] p-[6px] text-white",
   workspace: "ml-[80px] grid h-screen grid-cols-[minmax(300px,380px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(292px,350px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
-  advisorHeader: "flex items-center justify-between gap-[10px] border-b border-black/10 bg-white/70 px-[16px] py-[11px] backdrop-blur-[12px] max-[640px]:px-[12px]",
+  advisorHeader: "flex h-[52px] items-center justify-between gap-[10px] border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationBtn: "inline-flex min-w-0 items-center gap-[8px] border-0 bg-transparent py-[6px] font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [overflow-wrap:break-word]",
   conversationText: "truncate",
   advisorAddBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
@@ -857,7 +857,7 @@ function ClientOverview() {
 
   return (
     <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-gradient-to-b from-white to-[#f6f1eb] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
-      <header className="flex min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/[0.08] bg-white/70 px-[16px] py-[11px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
+      <header className="flex h-[52px] min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
           <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] p-0">
             <ClientTabButton active={activeTab === "overview"} icon={<OverviewIcon />} label="Overview" onClick={() => setActiveTab("overview")} />
@@ -898,7 +898,7 @@ function ClientTabButton({
     <li>
       <button
         type="button"
-        className={`inline-flex shrink-0 items-center gap-[5px] rounded-[10px] border-0 px-[10px] py-[7px] font-satoshi text-[13px] leading-[18px] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [&_svg]:h-[15px] [&_svg]:w-[15px] ${active ? "bg-[rgba(162,144,118,0.20)] font-bold" : "bg-transparent font-medium hover:bg-black/5"}`}
+        className={`inline-flex shrink-0 items-center gap-[5px] rounded-[10px] border-0 px-[10px] py-[5px] font-satoshi text-[13px] leading-[17px] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [&_svg]:h-[14px] [&_svg]:w-[14px] ${active ? "bg-[rgba(162,144,118,0.20)] font-bold" : "bg-transparent font-medium hover:bg-black/5"}`}
         aria-current={active ? "page" : undefined}
         onClick={onClick}
       >
