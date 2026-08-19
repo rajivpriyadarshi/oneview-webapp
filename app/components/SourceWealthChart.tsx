@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Chart as ChartJS,
   Legend,
@@ -14,10 +14,100 @@ import {
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Chart } from "react-chartjs-2";
+import { apiRequest } from "../lib/apiClient";
 
 ChartJS.register(LinearScale, PointElement, Tooltip, Legend, ChartDataLabels);
 
-type NodeKind = "client" | "category" | "asset" | "dot";
+// --- API Types ---
+
+type GraphAssetItem = {
+  id: string;
+  type: "asset";
+  name: string;
+  assetType: string;
+  adjustedValue: number;
+  currency: string;
+  status: "valued" | "stale" | "not_on_record";
+};
+
+type GraphAccountItem = {
+  id: string;
+  type: "account";
+  name: string;
+  institution: string;
+  adjustedValue: number;
+  currency: string;
+  status: "valued" | "stale" | "not_on_record";
+};
+
+type GraphLiabilityItem = {
+  id: string;
+  type: "liability";
+  name: string;
+  liabilityType: string;
+  adjustedValue: number;
+  linkedAssetId: string | null;
+  status: "valued" | "stale" | "not_on_record";
+};
+
+type GraphClientItem = {
+  id: number;
+  type: "client";
+  name: string;
+  partyType: string;
+  relationship: string;
+  ownershipPct: number | null;
+  adjustedValue: number;
+  attributedValue: number;
+  sharedWith: { clientId: number; name: string; relationship: string; pct: number }[];
+};
+
+type GraphFamilyMember = {
+  id: number;
+  name: string;
+  partyType: string;
+  relationship: string;
+  adjustedValue: number;
+};
+
+type GraphFinancials = {
+  adjustedValue: number;
+  items: (GraphAssetItem | GraphAccountItem | GraphLiabilityItem)[];
+};
+
+type GraphFamily = {
+  members: GraphFamilyMember[];
+};
+
+type GraphNonFinancials = {
+  adjustedValue: number;
+  items: GraphAssetItem[];
+};
+
+type GraphEntities = {
+  adjustedValue: number;
+  items: GraphClientItem[];
+};
+
+type GraphResponse = {
+  client: {
+    id: number;
+    name: string;
+    partyType: string;
+    adjustedValue: number;
+    currency: string;
+  };
+  sections: {
+    financials: GraphFinancials;
+    family: GraphFamily;
+    nonFinancials: GraphNonFinancials;
+    entities: GraphEntities;
+  };
+};
+
+// --- Chart Node Types ---
+
+type NodeKind = "client" | "section" | "item";
 
 type WealthMapPoint = {
   id: string;
@@ -31,85 +121,300 @@ type WealthMapPoint = {
   color: string;
   accent?: string;
   tone?: "green" | "red" | "gold" | "blue" | "purple" | "orange" | "brown";
-  rotate?: number;
+  section?: string;
   badge?: string;
-  featured?: boolean;
+  value?: number;
 };
 
-const client: WealthMapPoint = {
-  id: "client",
-  x: 12,
-  y: 50,
-  r: 18,
-  kind: "client",
-  title: "Prashanth Ranganathan",
-  subtitle: "Adjusted value: $378M",
-  color: "#211507",
-  accent: "#b7771e",
+type HitZone = { id: string; left: number; top: number; right: number; bottom: number };
+
+const SECTION_META: Record<string, { tone: WealthMapPoint["tone"]; accent: string; badge: string }> = {
+  financials: { tone: "purple", accent: "#8b6b3a", badge: "FINANCIAL" },
+  family: { tone: "blue", accent: "#2a6fb0", badge: "FAMILY" },
+  nonFinancials: { tone: "orange", accent: "#b87333", badge: "NON-FINANCIAL" },
+  entities: { tone: "green", accent: "#2a7856", badge: "ENTITY" },
 };
 
-const categories: WealthMapPoint[] = [
-  { id: "family-trust", x: 38, y: 40, r: 8, kind: "category", title: "Family Trust", subtitle: "Adjusted value: $378M", color: "#ffffff", accent: "#c0c0c0", tone: "green", badge: "ENTITY" },
-  { id: "financials", x: 38, y: 50, r: 8, kind: "category", title: "Financials", subtitle: "Adjusted value: $378M", color: "#fdf6ee", accent: "#8b6b3a", tone: "purple", badge: "CATEGORY", featured: true },
-  { id: "family", x: 38, y: 58, r: 8, kind: "category", title: "Family", subtitle: "Adjusted value: $378M", color: "#ffffff", accent: "#c0c0c0", tone: "blue", badge: "CATEGORY" },
-  { id: "non-financials", x: 38, y: 68, r: 8, kind: "category", title: "Non-financials", subtitle: "Adjusted value: $378M", color: "#ffffff", accent: "#c0c0c0", tone: "orange", badge: "CATEGORY" },
-  { id: "loans", x: 62, y: 42, r: 8, kind: "category", title: "Loans", subtitle: "Adjusted value: $378M", color: "#ffffff", accent: "#c0c0c0", tone: "blue", badge: "CATEGORY" },
-  { id: "assets", x: 62, y: 50, r: 8, kind: "category", title: "Assets", subtitle: "Adjusted value: $378M", color: "#fdf6ee", accent: "#8b6b3a", tone: "red", featured: true },
-  { id: "investments", x: 62, y: 58, r: 8, kind: "category", title: "Investments", subtitle: "Adjusted value: $378M", color: "#ffffff", accent: "#c0c0c0", tone: "brown", badge: "CATEGORY" },
-];
+const SECTION_LABELS: Record<string, string> = {
+  financials: "Financials",
+  family: "Family",
+  nonFinancials: "Non-financials",
+  entities: "Entities",
+};
 
-const assetDefs = [
-  { id: "boat", title: "MENGI YAY VIRTUS XP55", subtitle: "Adjusted value: $45M", status: "Not on record", color: "#1c8f7c", badge: "ASSET" },
-  { id: "porsche", title: "Porsche 911 GT3", subtitle: "Adjusted value: $90K", status: "Not on record", color: "#266f77", badge: "ASSET" },
-  { id: "art", title: "Arts & paintings", subtitle: "Adjusted value: $101K", status: "Not on record", color: "#c9b05e", badge: "ASSET" },
-  { id: "watch", title: "Rolex watches", subtitle: "Adjusted value: $70K", status: "Verified", color: "#294b2a", badge: "ASSET" },
-  { id: "jlt", title: "Jumeirah lake tower", subtitle: "Adjusted value: $2.1M", status: "Expand details", color: "#136b77", badge: "ASSET", featured: true },
-  { id: "bmw", title: "BMW X3", subtitle: "Adjusted value: $110K", status: "Not on record", color: "#243d58", badge: "ASSET" },
-  { id: "farmland", title: "India Farmland", subtitle: "Adjusted value: $110K", status: "Not on record", color: "#4d8e35", badge: "ASSET" },
-  { id: "australia", title: "Australia apartment", subtitle: "Adjusted value: $1M", status: "Not on record", color: "#7c6230", badge: "ASSET" },
-  { id: "us-condo", title: "US condo", subtitle: "Adjusted value: $700K", status: "Not on record", color: "#5d7434", badge: "ASSET" },
-  { id: "singapore", title: "Singapore penthouse", subtitle: "Adjusted value: $1M", status: "Not on record", color: "#358c74", badge: "ASSET" },
-  { id: "mumbai", title: "Mumbai complex", subtitle: "Adjusted value: $800K", status: "Not on record", color: "#a86f2c", badge: "ASSET" },
-];
+function formatValue(value: number, currency = "USD"): string {
+  const abs = Math.abs(value);
+  const prefix = value < 0 ? "-" : "";
+  const symbol = currency === "USD" ? "$" : currency;
+  if (abs >= 1_000_000) return `${prefix}${symbol}${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${prefix}${symbol}${(abs / 1_000).toFixed(0)}K`;
+  return `${prefix}${symbol}${abs.toFixed(0)}`;
+}
 
-const ARC_CX = 62;
-const ARC_CY = 50;
-const ARC_R = 48;
+function buildNodes(data: GraphResponse, expandedSection: string | null): WealthMapPoint[] {
+  const nodes: WealthMapPoint[] = [];
 
-const assets: WealthMapPoint[] = assetDefs.map((def, i) => {
-  const angle = -60 + (120 / (assetDefs.length - 1)) * i;
-  const rad = (angle * Math.PI) / 180;
-  return {
-    ...def,
-    x: ARC_CX + ARC_R * Math.cos(rad),
-    y: ARC_CY + ARC_R * Math.sin(rad),
-    r: def.featured ? 5.5 : 5,
-    kind: "asset" as const,
-    rotate: angle,
-  };
-});
+  nodes.push({
+    id: "client",
+    x: 15,
+    y: 50,
+    r: 18,
+    kind: "client",
+    title: data.client.name,
+    subtitle: `Adjusted value: ${formatValue(data.client.adjustedValue, data.client.currency)}`,
+    color: "#211507",
+    accent: "#b7771e",
+    value: data.client.adjustedValue,
+  });
 
-const dots: WealthMapPoint[] = [
-  { id: "d1", x: 13, y: 48, r: 1.2, kind: "dot", title: "", color: "#7F4E0B" },
-  { id: "d10", x: 67, y: 63, r: 1.3, kind: "dot", title: "", color: "#7F4E0B" },
-];
+  const sectionKeys = Object.keys(data.sections) as (keyof typeof data.sections)[];
+  const sectionCount = sectionKeys.length;
+  const yStart = 30;
+  const ySpacing = 40 / Math.max(sectionCount - 1, 1);
 
-const allPoints = [client, ...categories, ...assets, ...dots];
+  sectionKeys.forEach((key, i) => {
+    const meta = SECTION_META[key];
+    const section = data.sections[key];
+    const sectionValue = "adjustedValue" in section ? section.adjustedValue : 0;
+    const isExpanded = expandedSection === key;
 
-export function SourceWealthChart({ className = "" }: { className?: string }) {
+    nodes.push({
+      id: key,
+      x: 40,
+      y: yStart + i * ySpacing,
+      r: 8,
+      kind: "section",
+      title: SECTION_LABELS[key],
+      subtitle: sectionValue ? formatValue(sectionValue, data.client.currency) : undefined,
+      color: isExpanded ? "#fdf6ee" : "#ffffff",
+      accent: meta.accent,
+      tone: meta.tone,
+      badge: meta.badge,
+      section: key,
+      value: sectionValue,
+    });
+  });
+
+  if (expandedSection) {
+    const section = data.sections[expandedSection as keyof typeof data.sections];
+    let items: { id: string; name: string; value: number; status?: string; type?: string }[] = [];
+
+    if (expandedSection === "financials") {
+      items = (section as GraphFinancials).items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        value: item.adjustedValue,
+        status: item.status,
+        type: item.type,
+      }));
+    } else if (expandedSection === "family") {
+      items = (section as GraphFamily).members.map((m) => ({
+        id: String(m.id),
+        name: m.name,
+        value: m.adjustedValue,
+        type: "family",
+      }));
+    } else if (expandedSection === "nonFinancials") {
+      items = (section as GraphNonFinancials).items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        value: item.adjustedValue,
+        status: item.status,
+        type: item.type,
+      }));
+    } else if (expandedSection === "entities") {
+      items = (section as GraphEntities).items.map((item) => ({
+        id: String(item.id),
+        name: item.name,
+        value: item.adjustedValue,
+        type: item.partyType,
+      }));
+    }
+
+    const itemCount = items.length;
+    const isLargeList = itemCount > 8;
+    const spacing = isLargeList ? 8 : 14;
+    const neededSpan = itemCount > 1 ? (itemCount - 1) * spacing : 0;
+    const maxSpan = isLargeList ? 94 : 70;
+    const totalSpan = Math.min(neededSpan, maxSpan);
+    const centerY = 50;
+    const startY = isLargeList ? 3 : centerY - totalSpan / 2;
+    const itemSpacing = itemCount > 1 ? totalSpan / (itemCount - 1) : 0;
+
+    items.forEach((item, i) => {
+      const itemY = itemCount === 1 ? 50 : startY + i * itemSpacing;
+      const arc = isLargeList ? 0 : Math.sin((itemCount > 1 ? i / (itemCount - 1) : 0.5) * Math.PI) * 12;
+      const itemX = isLargeList ? 75 : 72 + arc;
+      const meta = SECTION_META[expandedSection];
+      nodes.push({
+        id: `item:${item.id}`,
+        x: itemX,
+        y: itemY,
+        r: 5,
+        kind: "item",
+        title: item.name,
+        subtitle: item.value ? formatValue(item.value, data.client.currency) : undefined,
+        status: item.status === "valued" ? "Valued" : item.status === "stale" ? "Stale" : item.status === "not_on_record" ? "Not on record" : undefined,
+        color: meta.accent,
+        accent: meta.accent,
+        tone: meta.tone,
+        section: expandedSection,
+        value: item.value,
+      });
+    });
+  }
+
+  return nodes;
+}
+
+let _hitZones: HitZone[] = [];
+let _expandedSection: string | null = null;
+let _hoveredItem: string | null = null;
+let _animProgress = 1;
+let _animSectionX = 50;
+let _animSectionY = 50;
+
+export function SourceWealthChart({ clientId, className = "" }: { clientId: number | null; className?: string }) {
+  const [graphData, setGraphData] = useState<GraphResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const chartRef = useRef<ChartJS<"bubble", WealthMapPoint[]> | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  _expandedSection = expandedSection;
+  _hoveredItem = hoveredItem;
+
+  const animRef = useRef<number | null>(null);
+  const prevExpandedRef = useRef<string | null>(null);
+
+  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    const canvas = event.currentTarget.querySelector("canvas");
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = event.clientX - rect.left;
+    const my = event.clientY - rect.top;
+
+    let found: string | null = null;
+    for (const zone of _hitZones) {
+      if (zone.id.startsWith("item:") && mx >= zone.left && mx <= zone.right && my >= zone.top && my <= zone.bottom) {
+        found = zone.id;
+        break;
+      }
+    }
+    setHoveredItem((prev) => prev !== found ? found : prev);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredItem(null);
+  }, []);
+
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.draw();
+    }
+  }, [hoveredItem]);
+
+  useEffect(() => {
+    if (!clientId) return;
+    let cancelled = false;
+
+    async function fetchGraph() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await apiRequest<GraphResponse>(`/clients/${clientId}/graph/`);
+        if (!cancelled) setGraphData(data);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load graph");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void fetchGraph();
+    return () => { cancelled = true; };
+  }, [clientId]);
+
+  const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    const canvas = event.currentTarget.querySelector("canvas");
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+
+    for (const zone of _hitZones) {
+      if (clickX >= zone.left && clickX <= zone.right && clickY >= zone.top && clickY <= zone.bottom) {
+        if (zone.id === "client" || zone.id.startsWith("item:")) break;
+        setExpandedSection((prev) => prev === zone.id ? null : zone.id);
+        break;
+      }
+    }
+  }, []);
+
+  const nodes = useMemo(() => {
+    if (!graphData) return [];
+    return buildNodes(graphData, expandedSection);
+  }, [graphData, expandedSection]);
+
+  useEffect(() => {
+    if (expandedSection && expandedSection !== prevExpandedRef.current) {
+      const sectionNode = nodes.find((n) => n.kind === "section" && n.id === expandedSection);
+      if (sectionNode) {
+        _animSectionX = sectionNode.x;
+        _animSectionY = sectionNode.y;
+      }
+      _animProgress = 0;
+      const startTime = performance.now();
+      const duration = 350;
+
+      const animate = (now: number) => {
+        const elapsed = now - startTime;
+        _animProgress = Math.min(elapsed / duration, 1);
+        _animProgress = 1 - Math.pow(1 - _animProgress, 3);
+        if (chartRef.current) chartRef.current.draw();
+        if (elapsed < duration) {
+          animRef.current = requestAnimationFrame(animate);
+        }
+      };
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      animRef.current = requestAnimationFrame(animate);
+    } else if (!expandedSection) {
+      _animProgress = 1;
+    }
+    prevExpandedRef.current = expandedSection;
+  }, [expandedSection, nodes]);
+
+  useEffect(() => {
+    let el = containerRef.current?.parentElement;
+    while (el && el.scrollHeight <= el.clientHeight) {
+      el = el.parentElement;
+    }
+    if (!el) return;
+    const itemCount = nodes.filter((n) => n.kind === "item").length;
+    if (itemCount > 8) {
+      requestAnimationFrame(() => {
+        const scrollMax = el!.scrollHeight - el!.clientHeight;
+        el!.scrollTo({ top: scrollMax / 2, behavior: "smooth" });
+      });
+    }
+  }, [expandedSection, nodes]);
+
   const data = useMemo<ChartData<"bubble", WealthMapPoint[]>>(
     () => ({
       datasets: [
         {
           label: "Wealth map",
-          data: allPoints,
-          backgroundColor: allPoints.map((point) => point.kind === "dot" ? point.color : "rgba(0,0,0,0)"),
-          borderColor: allPoints.map((point) => point.kind === "dot" ? point.color : "rgba(0,0,0,0)"),
+          data: nodes,
+          backgroundColor: nodes.map(() => "rgba(0,0,0,0)"),
+          borderColor: nodes.map(() => "rgba(0,0,0,0)"),
           borderWidth: 0,
         },
       ],
     }),
-    [],
+    [nodes],
   );
 
   const options = useMemo<ChartOptions<"bubble">>(
@@ -131,121 +436,156 @@ export function SourceWealthChart({ className = "" }: { className?: string }) {
     [],
   );
 
+  const plugin = useMemo<Plugin<"bubble">>(() => createWealthMapPlugin(), []);
+
+  if (!clientId) {
+    return <div className="grid h-full place-items-center font-satoshi text-[14px] text-black/50">No client selected</div>;
+  }
+
+  if (loading) {
+    return <div className="grid h-full place-items-center font-satoshi text-[14px] text-black/50">Loading wealth map...</div>;
+  }
+
+  if (error) {
+    return <div className="grid h-full place-items-center font-satoshi text-[14px] text-red-500">{error}</div>;
+  }
+
+  if (!graphData) {
+    return <div className="grid h-full place-items-center font-satoshi text-[14px] text-black/50">No data available</div>;
+  }
+
+  const expandedItemCount = nodes.filter((n) => n.kind === "item").length;
+  const dynamicHeight = expandedItemCount > 8 ? Math.max(620, expandedItemCount * 70) : 620;
+
   return (
-    <div className={`relative h-full min-h-[620px] w-full overflow-auto ${className}`}>
-      <Chart type="bubble" data={data} options={options} plugins={[wealthMapPlugin]} />
-      <div className="absolute bottom-4 right-4 flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1 shadow-sm">
-        <button type="button" className="text-sm font-medium text-gray-800 w-6 h-6 flex items-center justify-center">−</button>
-        <button type="button" className="text-sm font-medium text-gray-800 w-6 h-6 flex items-center justify-center">+</button>
-        <button type="button" className="w-6 h-6 flex items-center justify-center">
-          <svg viewBox="0 0 24 24" fill="none" width="13" height="13">
-            <path d="M4 11l8-7 8 7M6.5 10v9h11v-9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      </div>
+    <div ref={containerRef} className={`relative h-full w-full cursor-pointer overflow-auto ${className}`} onClick={handleClick} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} style={{ minHeight: `${dynamicHeight}px` }}>
+      <Chart ref={chartRef} type="bubble" data={data} options={options} plugins={[plugin]} />
     </div>
   );
 }
 
-const wealthMapPlugin: Plugin<"bubble"> = {
-  id: "radialWealthMap",
-  beforeDatasetsDraw(chart) {
-    const { ctx, chartArea, scales } = chart;
-    if (!chartArea) return;
+// --- Rendering Plugin ---
 
-    const px = (x: number) => scales.x.getPixelForValue(x);
-    const py = (y: number) => scales.y.getPixelForValue(y);
+function createWealthMapPlugin(): Plugin<"bubble"> {
+  return {
+    id: "radialWealthMap",
+    beforeDatasetsDraw(chart) {
+      const { ctx, chartArea } = chart;
+      if (!chartArea) return;
 
-    ctx.save();
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
-    drawGrid(ctx, chartArea);
-    drawAmbient(ctx, px(38), py(43), "#caffdc", 170);
-    drawAmbient(ctx, px(50), py(52), "#dacdff", 155);
-    drawAmbient(ctx, px(64), py(54), "#ffd0b8", 145);
-    drawAmbient(ctx, px(42), py(76), "#fff0aa", 125);
-    drawConnections(ctx, px, py);
-    ctx.restore();
-  },
-  afterDatasetsDraw(chart) {
-    const { ctx, scales } = chart;
-    const px = (x: number) => scales.x.getPixelForValue(x);
-    const py = (y: number) => scales.y.getPixelForValue(y);
+      ctx.save();
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
+      drawGrid(ctx, chartArea);
 
-    ctx.save();
-    drawClientCard(ctx, px(client.x), py(client.y));
-    categories.forEach((node) => drawCategoryCard(ctx, px(node.x), py(node.y), node));
-    assets.forEach((asset) => drawAssetTile(ctx, px(asset.x), py(asset.y), asset));
+      const { scales } = chart;
+      const px = (x: number) => scales.x.getPixelForValue(x);
+      const py = (y: number) => scales.y.getPixelForValue(y);
 
-    // Brown dot at Financials left edge connection
-    const catLeftEdge = px(38) - 26;
-    ctx.fillStyle = "#7F4E0B";
-    ctx.beginPath();
-    ctx.arc(catLeftEdge, py(50), 4, 0, Math.PI * 2);
-    ctx.fill();
+      drawAmbient(ctx, px(40), py(45), "#caffdc", 170);
+      drawAmbient(ctx, px(55), py(50), "#dacdff", 155);
+      drawAmbient(ctx, px(70), py(55), "#ffd0b8", 145);
 
-    // Brown dot at Assets left edge connection
-    const rightCatLeftEdge = px(62) - 26;
-    ctx.fillStyle = "#7F4E0B";
-    ctx.beginPath();
-    ctx.arc(rightCatLeftEdge, py(50), 4, 0, Math.PI * 2);
-    ctx.fill();
+      const nodes = chart.data.datasets[0]?.data as WealthMapPoint[] | undefined;
+      if (nodes) {
+        drawConnections(ctx, px, py, nodes);
+      }
 
-    // Brown dot at featured asset (Jumeirah lake tower) connection
-    const featuredAsset = assets.find((a) => a.featured);
-    if (featuredAsset) {
-      ctx.fillStyle = "#7F4E0B";
-      ctx.beginPath();
-      ctx.arc(px(featuredAsset.x) - 23, py(featuredAsset.y), 4.5, 0, Math.PI * 2);
-      ctx.fill();
-    }
+      ctx.restore();
+    },
+    afterDatasetsDraw(chart) {
+      const { ctx, scales } = chart;
+      const px = (x: number) => scales.x.getPixelForValue(x);
+      const py = (y: number) => scales.y.getPixelForValue(y);
 
-    ctx.restore();
-  },
-};
+      const nodes = chart.data.datasets[0]?.data as WealthMapPoint[] | undefined;
+      if (!nodes || nodes.length === 0) return;
+
+      ctx.save();
+      const zones: HitZone[] = [];
+
+      const originX = px(_animSectionX);
+      const originY = py(_animSectionY);
+
+      for (const node of nodes) {
+        let nodeX = px(node.x);
+        let nodeY = py(node.y);
+
+        if (node.kind === "client") {
+          drawClientCard(ctx, nodeX, nodeY, node);
+          zones.push({ id: node.id, left: nodeX - 78, top: nodeY - 96, right: nodeX + 78, bottom: nodeY + 96 });
+        } else if (node.kind === "section") {
+          const isExpanded = _expandedSection === node.id;
+          drawSectionCard(ctx, nodeX, nodeY, node, isExpanded);
+          zones.push({ id: node.id, left: nodeX - 26, top: nodeY - 22, right: nodeX + 114, bottom: nodeY + 22 });
+        } else if (node.kind === "item") {
+          if (_animProgress < 1) {
+            const t = _animProgress;
+            nodeX = originX + (nodeX - originX) * t;
+            nodeY = originY + (nodeY - originY) * t;
+            ctx.globalAlpha = t;
+          }
+          drawItemTile(ctx, nodeX, nodeY, node);
+          ctx.globalAlpha = 1;
+          zones.push({ id: node.id, left: nodeX - 22, top: nodeY - 26, right: nodeX + 120, bottom: nodeY + 26 });
+        }
+      }
+
+      if (_hoveredItem) {
+        const hoveredNode = nodes.find((n) => n.id === _hoveredItem);
+        if (hoveredNode) {
+          drawItemTooltip(ctx, px(hoveredNode.x), py(hoveredNode.y), hoveredNode);
+        }
+      }
+
+      ctx.restore();
+      _hitZones = zones;
+    },
+  };
+}
 
 function drawConnections(
   ctx: CanvasRenderingContext2D,
-  px: (value: number) => number,
-  py: (value: number) => number,
+  px: (v: number) => number,
+  py: (v: number) => number,
+  nodes: WealthMapPoint[],
 ) {
-  ctx.save();
-  ctx.strokeStyle = "#c99649";
-  ctx.lineWidth = 1.4;
-  ctx.globalAlpha = 0.82;
-  ctx.beginPath();
-  ctx.moveTo(px(-5), py(client.y));
-  ctx.lineTo(px(client.x - 5), py(client.y));
-  ctx.stroke();
-  ctx.restore();
-  const greenDotX = px(client.x) + 155 / 2 - 8;
-  const greenDotY = py(client.y) + 192 / 2 - 12;
-  const catLeftEdge = px(38) - 26;
-  drawCurve(ctx, greenDotX, greenDotY, catLeftEdge, py(40), "rgba(122,210,182,0.35)", 1);
-  drawCurve(ctx, greenDotX, greenDotY, catLeftEdge, py(50), "#ad6a22", 1.2);
-  drawCurve(ctx, greenDotX, greenDotY, catLeftEdge, py(58), "rgba(70,166,232,0.35)", 1);
-  drawCurve(ctx, greenDotX, greenDotY, catLeftEdge, py(68), "rgba(241,162,27,0.35)", 1);
-  // Straight horizontal line: Financials → Assets (selected)
-  const rightCatLeftEdge = px(62) - 26;
-  ctx.save();
-  ctx.strokeStyle = "#b27331";
-  ctx.lineWidth = 1.25;
-  ctx.globalAlpha = 0.82;
-  ctx.beginPath();
-  ctx.moveTo(catLeftEdge + 140, py(50));
-  ctx.lineTo(rightCatLeftEdge, py(50));
-  ctx.stroke();
-  ctx.restore();
-  // Pink curves: center → Loans (up) and center → Investments (down) (non-selected, faded)
-  const midLineX = catLeftEdge + 140 + (rightCatLeftEdge - catLeftEdge - 140) * 0.1;
-  drawCurve(ctx, midLineX, py(50), rightCatLeftEdge, py(40), "rgba(226,170,192,0.4)", 0.8);
-  drawCurve(ctx, midLineX, py(50), rightCatLeftEdge, py(62), "rgba(226,170,192,0.4)", 0.8);
+  const clientNode = nodes.find((n) => n.kind === "client");
+  const sections = nodes.filter((n) => n.kind === "section");
+  const items = nodes.filter((n) => n.kind === "item");
 
-  const assetsRightEdge = rightCatLeftEdge + 140;
-  assets.forEach((asset) => {
-    drawCurve(ctx, assetsRightEdge, py(50), px(asset.x), py(asset.y), "#b88555", asset.featured ? 1.3 : 0.9, !asset.featured);
+  if (!clientNode) return;
+
+  const clientX = px(clientNode.x);
+  const clientY = py(clientNode.y);
+  const greenDotX = clientX + 78;
+
+  sections.forEach((section) => {
+    const sectionLeft = px(section.x) - 26;
+    const sectionY = py(section.y);
+    const isExpanded = _expandedSection === section.id;
+    const color = isExpanded ? "#ad6a22" : `rgba(180,160,120,0.35)`;
+    const width = isExpanded ? 1.4 : 1;
+    drawCurve(ctx, greenDotX, clientY, sectionLeft, sectionY, color, width);
   });
 
+  if (items.length > 0) {
+    const expandedSection = sections.find((s) => _expandedSection === s.id);
+    if (expandedSection) {
+      const sectionRight = px(expandedSection.x) - 26 + 140;
+      const sectionY = py(expandedSection.y);
+      const t = _animProgress;
+      ctx.globalAlpha = t * 0.82;
+      items.forEach((item) => {
+        const targetX = px(item.x) - 20;
+        const targetY = py(item.y);
+        const endX = sectionRight + (targetX - sectionRight) * t;
+        const endY = sectionY + (targetY - sectionY) * t;
+        drawCurve(ctx, sectionRight, sectionY, endX, endY, "#b88555", 1);
+      });
+      ctx.globalAlpha = 1;
+    }
+  }
 }
 
 function drawGrid(ctx: CanvasRenderingContext2D, area: ChartArea) {
@@ -258,7 +598,6 @@ function drawGrid(ctx: CanvasRenderingContext2D, area: ChartArea) {
     }
   }
 }
-
 
 function drawAmbient(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, radius: number) {
   const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
@@ -280,13 +619,11 @@ function drawCurve(
   y2: number,
   color: string,
   width: number,
-  dotted = false,
 ) {
   ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = width;
-  ctx.globalAlpha = dotted ? 0.62 : 0.82;
-  ctx.setLineDash(dotted ? [6, 4] : []);
+  ctx.globalAlpha = 0.82;
   const midX = x1 + (x2 - x1) * 0.55;
   ctx.beginPath();
   ctx.moveTo(x1, y1);
@@ -295,7 +632,7 @@ function drawCurve(
   ctx.restore();
 }
 
-function drawClientCard(ctx: CanvasRenderingContext2D, x: number, y: number) {
+function drawClientCard(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint) {
   const width = 155;
   const height = 192;
   const left = x - width / 2;
@@ -325,29 +662,10 @@ function drawClientCard(ctx: CanvasRenderingContext2D, x: number, y: number) {
 
   ctx.fillStyle = "#fff";
   ctx.font = "800 10px Satoshi, Arial";
-  ctx.fillText("Prashanth Ranganathan", left + 10, top + 98);
+  ctx.fillText(node.title, left + 10, top + 98);
   ctx.fillStyle = "#f3d585";
   ctx.font = "500 6px Satoshi, Arial";
-  ctx.fillText("Adjusted value: $378M", left + 10, top + 108);
-  ctx.fillStyle = "rgba(255,255,255,0.66)";
-  ctx.font = "400 6px Satoshi, Arial";
-  wrapText(
-    ctx,
-    "Prashanth's wealth spans businesses, investments, trusts and multiple geographies, with liquidity, concentration and succession being the most important areas to watch.",
-    left + 10,
-    top + 124,
-    width - 20,
-    9,
-    top + 160,
-  );
-
-  ctx.fillStyle = "#ffbf28";
-  roundRect(ctx, left + 10, top + height - 26, 62, 18, 9);
-  ctx.fill();
-  ctx.fillStyle = "#111";
-  ctx.font = "800 6px Satoshi, Arial";
-  ctx.fillText("Expand details", left + 17, top + height - 14);
-  drawArrowCircle(ctx, left + 58, top + height - 18, 4);
+  ctx.fillText(node.subtitle ?? "", left + 10, top + 108);
 
   ctx.fillStyle = "#4caf15";
   ctx.shadowColor = "rgba(76, 175, 21, 0.42)";
@@ -358,65 +676,25 @@ function drawClientCard(ctx: CanvasRenderingContext2D, x: number, y: number) {
   ctx.shadowColor = "transparent";
 }
 
-function drawPortraitPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
-  ctx.save();
-  roundRect(ctx, x, y, width, height, 14);
-  ctx.clip();
-
-  const background = ctx.createLinearGradient(x, y, x + width, y + height);
-  background.addColorStop(0, "#55b95f");
-  background.addColorStop(0.48, "#d4bd4a");
-  background.addColorStop(1, "#334d35");
-  ctx.fillStyle = background;
-  ctx.fillRect(x, y, width, height);
-
-  ctx.fillStyle = "rgba(255,255,255,0.28)";
-  for (let i = 0; i < 5; i += 1) {
-    const stripeX = x + width * (0.12 + i * 0.18);
-    ctx.fillRect(stripeX, y, width * 0.045, height);
-  }
-
-  const diagonal = ctx.createLinearGradient(x, y + height, x + width, y);
-  diagonal.addColorStop(0, "rgba(255,255,255,0)");
-  diagonal.addColorStop(0.52, "rgba(255,255,255,0.18)");
-  diagonal.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.fillStyle = diagonal;
-  ctx.fillRect(x, y, width, height);
-  ctx.restore();
-}
-
-function drawArrowCircle(ctx: CanvasRenderingContext2D, x: number, y: number, radius = 8) {
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x - radius * 0.45, y);
-  ctx.lineTo(x + radius * 0.32, y);
-  ctx.moveTo(x, y - radius * 0.38);
-  ctx.lineTo(x + radius * 0.48, y);
-  ctx.lineTo(x, y + radius * 0.38);
-  ctx.stroke();
-}
-
-function drawCategoryCard(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint) {
-  const isActive = node.featured === true;
+function drawSectionCard(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint, isExpanded: boolean) {
   const width = 140;
   const height = 44;
   const left = x - 26;
   const top = y - height / 2;
-  if (node.badge) drawBadge(ctx, left, top - 15, 42, node.badge, isActive ? "#7a6840" : "#aeb9b6", "#fff", 5.5, 12, 4);
+
+  if (node.badge) drawBadge(ctx, left, top - 15, 60, node.badge, isExpanded ? "#7a6840" : "#aeb9b6", "#fff", 5.5, 12, 4);
+
   ctx.shadowColor = "rgba(30, 28, 24, 0.12)";
-  ctx.shadowBlur = isActive ? 12 : 8;
+  ctx.shadowBlur = isExpanded ? 12 : 8;
   ctx.shadowOffsetY = 4;
-  ctx.fillStyle = isActive ? "#fdf6ee" : "#ffffff";
+  ctx.fillStyle = isExpanded ? "#fdf6ee" : "#ffffff";
   roundRect(ctx, left, top, width, height, 9);
   ctx.fill();
-  ctx.strokeStyle = isActive ? "#8b6b3a" : "rgba(0,0,0,0.1)";
-  ctx.lineWidth = isActive ? 1.6 : 1;
+  ctx.strokeStyle = isExpanded ? "#8b6b3a" : "rgba(0,0,0,0.1)";
+  ctx.lineWidth = isExpanded ? 1.6 : 1;
   ctx.stroke();
   ctx.shadowColor = "transparent";
+
   drawPhoto(ctx, left + 9, top + 8, 28, 28, node.accent ?? "#5f8f4e", true);
 
   ctx.fillStyle = "#111";
@@ -425,72 +703,103 @@ function drawCategoryCard(ctx: CanvasRenderingContext2D, x: number, y: number, n
   ctx.fillStyle = "rgba(17, 17, 17, 0.62)";
   ctx.font = "500 6px Satoshi, Arial";
   ctx.fillText(node.subtitle ?? "", left + 43, top + 32);
+
+  const arrowX = left + width - 16;
+  const arrowY = top + height / 2;
+  ctx.strokeStyle = isExpanded ? "#8b6b3a" : "#999";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  if (isExpanded) {
+    ctx.moveTo(arrowX - 3, arrowY + 2);
+    ctx.lineTo(arrowX, arrowY - 2);
+    ctx.lineTo(arrowX + 3, arrowY + 2);
+  } else {
+    ctx.moveTo(arrowX - 2, arrowY - 3);
+    ctx.lineTo(arrowX + 2, arrowY);
+    ctx.lineTo(arrowX - 2, arrowY + 3);
+  }
+  ctx.stroke();
 }
 
-function drawAssetTile(ctx: CanvasRenderingContext2D, x: number, y: number, asset: WealthMapPoint) {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(((asset.rotate ?? 0) * Math.PI) / 180);
-
-  const tileW = asset.featured ? 48 : 40;
-  const tileH = asset.featured ? 56 : 56;
-  const tileX = -tileW / 2;
-  const tileY = -tileH / 2;
-
-  drawBadge(ctx, tileX, tileY - 14, 28, asset.badge ?? "ASSET", asset.featured ? "#6a4309" : "#aeb9b6", "#fff", 5, 11, 3);
+function drawItemTile(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint) {
+  const tileW = 44;
+  const tileH = 52;
+  const left = x - tileW / 2;
+  const top = y - tileH / 2;
 
   ctx.shadowColor = "rgba(30, 28, 24, 0.18)";
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 3;
-  drawPhoto(ctx, tileX, tileY, tileW, tileH, asset.color);
+  drawPhoto(ctx, left, top, tileW, tileH, node.color);
   ctx.shadowColor = "transparent";
 
-  if (asset.featured) {
-    ctx.strokeStyle = "#b47c42";
-    ctx.lineWidth = 2;
-    roundRect(ctx, tileX - 2, tileY - 2, tileW + 4, tileH + 4, 9);
-    ctx.stroke();
-  }
+  const textX = left + tileW + 6;
+  const textY = y - 6;
 
-  const textX = tileW / 2 + 6;
-  const textY = -8;
+  ctx.fillStyle = "#111";
+  ctx.font = "800 9px Satoshi, Arial";
+  const maxTitleWidth = 100;
+  const title = node.title.length > 22 ? node.title.slice(0, 20) + "…" : node.title;
+  ctx.fillText(title, textX, textY);
+  ctx.fillStyle = "#777";
+  ctx.font = "500 7px Satoshi, Arial";
+  ctx.fillText(node.subtitle ?? "", textX, textY + 11);
 
-  if (asset.featured) {
-    ctx.fillStyle = "#9b6b2f";
-    ctx.font = "800 6px Satoshi, Arial";
-    ctx.fillText("RESIDENTIAL", textX, textY - 2);
-    ctx.fillStyle = "#111";
-    ctx.font = "800 10px Satoshi, Arial";
-    ctx.fillText(asset.title, textX, textY + 10);
-    ctx.fillStyle = "#777";
-    ctx.font = "500 7px Satoshi, Arial";
-    ctx.fillText(asset.subtitle ?? "", textX, textY + 19);
-    ctx.fillStyle = "#111";
-    roundRect(ctx, textX, textY + 24, 80, 16, 8);
-    ctx.fill();
-    ctx.fillStyle = "#fff";
-    ctx.font = "700 6.5px Satoshi, Arial";
-    ctx.fillText("Expand details", textX + 8, textY + 34);
-    ctx.beginPath();
-    ctx.arc(textX + 68, textY + 32, 5, 0, Math.PI * 2);
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  } else {
-    ctx.fillStyle = "#111";
-    ctx.font = "800 9px Satoshi, Arial";
-    ctx.fillText(asset.title, textX, textY + 3);
-    ctx.fillStyle = "#777";
-    ctx.font = "500 7px Satoshi, Arial";
-    ctx.fillText(asset.subtitle ?? "", textX, textY + 13);
-    const isVerified = asset.status === "Verified";
-    ctx.fillStyle = isVerified ? "#1a8f4a" : "#d44";
+  if (node.status) {
+    const isGood = node.status === "Valued";
+    ctx.fillStyle = isGood ? "#1a8f4a" : node.status === "Stale" ? "#d4a017" : "#d44";
     ctx.font = "600 7px Satoshi, Arial";
-    ctx.fillText((isVerified ? "✓ " : "⊘ ") + (asset.status ?? ""), textX, textY + 23);
+    const icon = isGood ? "✓ " : node.status === "Stale" ? "⏱ " : "⊘ ";
+    ctx.fillText(icon + node.status, textX, textY + 22);
+  }
+}
+
+function drawItemTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint) {
+  const padding = 10;
+  const lineHeight = 14;
+  const lines: string[] = [node.title];
+  if (node.subtitle) lines.push(node.subtitle);
+  if (node.status) lines.push(node.status);
+
+  ctx.font = "600 10px Satoshi, Arial";
+  const maxWidth = Math.max(...lines.map((l) => ctx.measureText(l).width));
+  const width = maxWidth + padding * 2;
+  const height = lines.length * lineHeight + padding * 2 - 4;
+
+  const tooltipX = x + 50;
+  const tooltipY = y - height - 10;
+
+  ctx.shadowColor = "rgba(0,0,0,0.18)";
+  ctx.shadowBlur = 12;
+  ctx.shadowOffsetY = 4;
+  ctx.fillStyle = "#1b1207";
+  roundRect(ctx, tooltipX, tooltipY, width, height, 8);
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+
+  ctx.strokeStyle = "#8b6b3a";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = "#fff";
+  ctx.font = "700 10px Satoshi, Arial";
+  ctx.fillText(lines[0], tooltipX + padding, tooltipY + padding + 10);
+
+  if (lines[1]) {
+    ctx.fillStyle = "#f3d585";
+    ctx.font = "500 9px Satoshi, Arial";
+    ctx.fillText(lines[1], tooltipX + padding, tooltipY + padding + 10 + lineHeight);
   }
 
-  ctx.restore();
+  if (lines[2]) {
+    const isGood = lines[2] === "Valued";
+    ctx.fillStyle = isGood ? "#6fd88a" : lines[2] === "Stale" ? "#f5d167" : "#ff7b7b";
+    ctx.font = "600 9px Satoshi, Arial";
+    ctx.fillText(lines[2], tooltipX + padding, tooltipY + padding + 10 + lineHeight * 2);
+  }
 }
+
+// --- Drawing Utilities ---
 
 function drawBadge(
   ctx: CanvasRenderingContext2D,
@@ -516,6 +825,19 @@ function drawBadge(
   ctx.textBaseline = "alphabetic";
 }
 
+function drawPortraitPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
+  ctx.save();
+  roundRect(ctx, x, y, width, height, 14);
+  ctx.clip();
+  const background = ctx.createLinearGradient(x, y, x + width, y + height);
+  background.addColorStop(0, "#55b95f");
+  background.addColorStop(0.48, "#d4bd4a");
+  background.addColorStop(1, "#334d35");
+  ctx.fillStyle = background;
+  ctx.fillRect(x, y, width, height);
+  ctx.restore();
+}
+
 function drawPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, color: string, circular = false) {
   ctx.save();
   roundRect(ctx, x, y, width, height, circular ? width / 2 : 8);
@@ -526,29 +848,7 @@ function drawPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: n
   gradient.addColorStop(1, "#12352b");
   ctx.fillStyle = gradient;
   ctx.fillRect(x, y, width, height);
-  ctx.fillStyle = "rgba(255,255,255,0.26)";
-  for (let i = 0; i < 4; i += 1) {
-    ctx.fillRect(x + i * width * 0.22, y, width * 0.06, height);
-  }
   ctx.restore();
-}
-
-function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, maxY = Infinity) {
-  const words = text.split(" ");
-  let line = "";
-  let currentY = y;
-  for (const word of words) {
-    if (currentY > maxY) break;
-    const testLine = `${line}${word} `;
-    if (ctx.measureText(testLine).width > maxWidth && line) {
-      ctx.fillText(line, x, currentY);
-      line = `${word} `;
-      currentY += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  if (line && currentY <= maxY) ctx.fillText(line, x, currentY);
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {

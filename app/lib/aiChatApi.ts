@@ -202,9 +202,8 @@ export async function archiveAiChatSession(sessionId: string, isArchived?: boole
 export async function listChatPrompts() {
   requireAiAuthToken();
 
-  const response = await aiChatFetch(buildAiChatApiUrl("oneview/chat-prompts/"), {
+  const response = await fetch("/api/oneview/chat-prompts", {
     cache: "no-store",
-    headers: getAiRequestHeaders(),
   });
 
   const payload = await readJson<ChatPromptsResponse>(response);
