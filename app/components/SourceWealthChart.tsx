@@ -232,19 +232,19 @@ function buildNodes(data: GraphResponse, expandedSection: string | null): Wealth
     }
 
     const itemCount = items.length;
-    const idealSpacing = 14;
-    const maxSpan = 88;
-    const neededSpan = itemCount > 1 ? (itemCount - 1) * idealSpacing : 0;
+    const isLargeList = itemCount > 8;
+    const spacing = isLargeList ? 8 : 14;
+    const neededSpan = itemCount > 1 ? (itemCount - 1) * spacing : 0;
+    const maxSpan = isLargeList ? 94 : 70;
     const totalSpan = Math.min(neededSpan, maxSpan);
     const centerY = 50;
-    const startY = centerY - totalSpan / 2;
+    const startY = isLargeList ? 3 : centerY - totalSpan / 2;
     const itemSpacing = itemCount > 1 ? totalSpan / (itemCount - 1) : 0;
 
     items.forEach((item, i) => {
       const itemY = itemCount === 1 ? 50 : startY + i * itemSpacing;
-      const t = itemCount > 1 ? i / (itemCount - 1) : 0.5;
-      const arc = Math.sin(t * Math.PI) * 12;
-      const itemX = 72 + arc;
+      const arc = isLargeList ? 0 : Math.sin((itemCount > 1 ? i / (itemCount - 1) : 0.5) * Math.PI) * 12;
+      const itemX = isLargeList ? 75 : 72 + arc;
       const meta = SECTION_META[expandedSection];
       nodes.push({
         id: `item:${item.id}`,
@@ -277,6 +277,7 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
   const [error, setError] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const chartRef = useRef<ChartJS<"bubble", WealthMapPoint[]> | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
@@ -352,6 +353,21 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
     return buildNodes(graphData, expandedSection);
   }, [graphData, expandedSection]);
 
+  useEffect(() => {
+    let el = containerRef.current?.parentElement;
+    while (el && el.scrollHeight <= el.clientHeight) {
+      el = el.parentElement;
+    }
+    if (!el) return;
+    const itemCount = nodes.filter((n) => n.kind === "item").length;
+    if (itemCount > 8) {
+      requestAnimationFrame(() => {
+        const scrollMax = el!.scrollHeight - el!.clientHeight;
+        el!.scrollTo({ top: scrollMax / 2, behavior: "smooth" });
+      });
+    }
+  }, [expandedSection, nodes]);
+
   const data = useMemo<ChartData<"bubble", WealthMapPoint[]>>(
     () => ({
       datasets: [
@@ -404,8 +420,11 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
     return <div className="grid h-full place-items-center font-satoshi text-[14px] text-black/50">No data available</div>;
   }
 
+  const expandedItemCount = nodes.filter((n) => n.kind === "item").length;
+  const dynamicHeight = expandedItemCount > 8 ? Math.max(620, expandedItemCount * 70) : 620;
+
   return (
-    <div className={`relative h-full min-h-[620px] w-full cursor-pointer overflow-auto ${className}`} onClick={handleClick} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+    <div ref={containerRef} className={`relative h-full w-full cursor-pointer overflow-auto ${className}`} onClick={handleClick} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} style={{ minHeight: `${dynamicHeight}px` }}>
       <Chart ref={chartRef} type="bubble" data={data} options={options} plugins={[plugin]} />
     </div>
   );
