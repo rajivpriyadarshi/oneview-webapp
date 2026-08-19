@@ -84,22 +84,22 @@ const ATTENTION_ITEMS = [
   {
     action: "Find alternatives to reduce tech exposure",
     prompt: "Find alternatives to reduce technology exposure in the portfolio.",
-    bg: "bg-gradient-to-r from-[#ede8df] to-white",
+    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_48%,#f4edf4_100%)]",
   },
   {
     action: "Evaluation options about selling property",
     prompt: "Evaluate options for funding a property sale versus taking a loan.",
-    bg: "bg-gradient-to-r from-[#f0ebe3] to-white",
+    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
   {
     action: "Draft an email to ask for insurance document",
     prompt: "Draft an email asking for the updated insurance document.",
-    bg: "bg-gradient-to-r from-[#f4f0e9] to-white",
+    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
   {
     action: "Compare ways to fund property purchase",
     prompt: "Compare ways to fund the upcoming $42,000 education payment.",
-    bg: "bg-gradient-to-r from-[#f7f4ef] to-white",
+    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
 ];
 
@@ -134,42 +134,45 @@ const TW = {
   conversationBtn: "inline-flex min-w-0 items-center gap-[8px] border-0 bg-transparent py-[6px] font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [overflow-wrap:break-word]",
   conversationText: "truncate",
   advisorAddBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
-  attentionContent: "flex min-h-0 flex-col justify-end overflow-auto pr-[14px] pl-[12px] pt-[28px] pb-[128px] max-[900px]:justify-start max-[900px]:pr-[12px] max-[900px]:pl-[12px] max-[900px]:pt-[24px] max-[900px]:pb-[128px]",
-  attentionTitle: "m-0 mb-[24px] max-w-[340px] font-serif text-[38px] font-normal leading-[45.6px] tracking-normal text-black [overflow-wrap:break-word]",
-  attentionList: "grid gap-[14px]",
-  attentionSuggestion: "flex items-center gap-[10px] rounded-full border border-black/5 px-[16px] py-[12px] text-left font-mono text-[13px] font-normal leading-[16.9px] text-[#282420] transition hover:brightness-[0.97]",
-  promptChipsRow: "mb-[8px] flex items-center justify-between gap-[6px] overflow-hidden rounded-[20px] bg-[#F7F7F7] px-[13px] py-[9px] outline outline-1 outline-white outline-offset-[-1px]",
-  promptChip: "inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-white/50 bg-black/[0.04] px-[7px] py-[5px] font-satoshi text-[12px] font-normal leading-[16.2px] text-black/80 transition hover:bg-black/[0.08]",
-  promptChipExpand: "inline-flex items-center rounded-full border border-white/50 bg-white/[0.57] px-[8px] py-[5px] text-black transition hover:bg-white/70",
-  compactThread: "absolute right-[16px] bottom-[16px] left-[16px] z-[5] max-[900px]:right-[12px] max-[900px]:left-[12px]",
+  attentionContent: "flex min-h-0 flex-col justify-center overflow-auto pr-[14px] pl-[28px] pt-[64px] pb-[190px] max-[1180px]:pl-[20px] max-[900px]:pr-[56px] max-[900px]:pl-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
+  attentionTitle: "m-0 mb-[28px] max-w-[350px] font-serif text-[32px] font-normal leading-[1.1] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
+  attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
+  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
+  promptChipsRow: "mb-[10px] flex items-center justify-between gap-[10px] overflow-hidden rounded-[22px] p-[10px] pb-[0px]",
+  promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
+  promptChipsLeftExpanded: "!overflow-visible flex-wrap",
+  promptChip: "inline-flex min-w-0 shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07] max-[640px]:max-w-[145px] max-[640px]:truncate",
+  promptChipExpand: "inline-flex h-[32px] w-[40px] shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-black transition hover:bg-white/85 [&_svg]:h-[13px] [&_svg]:w-[13px] max-[640px]:h-[32px] max-[640px]:w-[40px] max-[640px]:[&_svg]:h-[13px] max-[640px]:[&_svg]:w-[13px]",
+  compactThread: "absolute right-[22px] bottom-[21px] left-[22px] z-[5] max-[1180px]:right-[20px] max-[1180px]:left-[20px] max-[900px]:right-[20px] max-[900px]:left-[20px] max-[640px]:right-[14px] max-[640px]:bottom-[18px] max-[640px]:left-[14px]",
+  fullThread: "top-[64px]",
   loading: "flex min-h-screen flex-col items-center justify-center p-[32px] font-satoshi text-[13px] text-black/50",
   notice: "m-0 rounded-lg border border-[#171615]/10 bg-white/50 p-[12px] font-satoshi text-[13px] leading-snug text-[#171615]/50",
-  thread: "relative flex h-auto min-h-0 flex-col overflow-visible",
-  assistantThread: "flex min-h-0 flex-1 flex-col",
+  thread: "relative flex h-full min-h-0 flex-col overflow-hidden",
+  assistantThread: "flex h-full min-h-0 flex-1 flex-col",
   emptyViewport: "block overflow-visible",
-  emptyCopy: "mx-auto flex w-full flex-col items-center p-0 text-center",
+  emptyCopy: "mx-auto flex w-full flex-col items-center p-0 text-center rounded-[30px]",
   emptyHeading: "hidden",
   suggestionsWrap: "hidden",
   suggestionsRow: "flex overflow-hidden py-1",
   suggestionsRowInner: "flex shrink-0 gap-2.5",
   suggestionPill: "inline-flex shrink-0 items-center gap-[8px] rounded-full border border-[#171615]/10 bg-white/30 px-[12px] py-[10px] font-satoshi text-[13px] leading-tight text-black backdrop-blur-xl transition hover:-translate-y-px hover:bg-white/55",
-  messageViewport: "relative max-h-60 min-h-0 flex-1 overflow-y-auto px-0 pt-0 pb-[78px]",
+  messageViewport: "relative min-h-0 flex-1 overflow-y-auto px-0 pt-[32px] pb-[128px]",
   threadFooter: "sticky bottom-0 z-[5] bg-transparent pt-3",
   scrollToBottom: "hidden data-[state=visible]:inline-grid absolute left-1/2 top-[-16px] h-9 w-9 -translate-x-1/2 -translate-y-full place-items-center rounded-full border border-white/60 bg-white/85 text-[#171615] shadow-[0_2px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl",
   errorBanner: "mx-auto mb-[10px] w-full rounded-lg border border-[#973022]/20 bg-white/70 px-[12px] py-[10px] font-satoshi text-[13px] text-[#8f2415]",
   composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent p-0",
-  composerWrap: "w-full p-0",
-  composer: "relative mx-auto grid w-full grid-rows-[1fr_auto] rounded-[24px] border border-black/[0.06] bg-white/90 px-[16px] py-[10px] shadow-[0px_2px_10px_rgba(0,0,0,0.06)] transition max-[640px]:rounded-[20px] max-[640px]:px-[14px] max-[640px]:py-[10px]",
+  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] shadow-[0_18px_50px_rgba(0,0,0,0.08)] max-[640px]:rounded-[28px] pt-[10px]",
+  composer: "relative mx-auto flex min-h-[80px] w-full items-center rounded-[28px] border border-black/[0.06] bg-white py-[8px] transition rounded-[24px] ",
   composerThinking: "ring-1 ring-[#b37f40]/40",
-  composerInputRow: "min-w-0 self-start p-[6px]",
-  composerInput: "h-auto min-h-0 w-full resize-none border-0 bg-transparent p-0 font-satoshi text-[14px] font-normal leading-[18.9px] text-black outline-none [overflow-wrap:break-word] placeholder:text-[14px] placeholder:font-normal placeholder:leading-[18.9px] placeholder:text-black/40",
-  composerFooter: "flex min-w-0 items-center justify-between gap-[10px] p-0",
+  composerInputRow: "flex-1 min-w-0 px-[14px] max-[1180px]:px-[18px] max-[640px]:px-[14px]",
+  composerInput: "h-auto min-h-0 w-full resize-none border-0 bg-transparent p-0 font-satoshi text-[14px] font-normal leading-[1.2] text-black outline-none [overflow-wrap:break-word] placeholder:text-[14px] placeholder:font-normal placeholder:leading-[1.2] placeholder:text-black/38",
+  composerFooter: "hidden",
   composerFooterLeft: "flex min-w-0 items-center gap-[9px]",
   composerFooterRight: "flex items-center gap-[10px]",
   composerIconBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent p-0 text-black transition hover:bg-black/5 [&_svg]:h-[20px] [&_svg]:w-[20px]",
   composerModeBtn: "inline-flex min-h-[32px] min-w-0 items-center gap-[9px] rounded-full border border-black/10 bg-white px-[12px] font-satoshi text-[12px] font-normal leading-[14.4px] text-black [overflow-wrap:break-word] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] transition hover:bg-black/[0.02] max-[640px]:max-w-[168px]",
   composerModeText: "truncate font-satoshi text-[12px] font-normal leading-[14.4px] text-black [overflow-wrap:break-word]",
-  sendBtn: "inline-grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full border-0 bg-black p-0 text-white transition hover:-translate-y-px hover:bg-[#2d2926] disabled:bg-black disabled:text-white [&_svg]:h-[24px] [&_svg]:w-[24px]",
+  sendBtn: "inline-grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full border-0 bg-black p-0 text-white transition hover:-translate-y-px hover:bg-[#2d2926] disabled:bg-black disabled:text-white [&_svg]:h-[20px] [&_svg]:w-[20px] max-[1180px]:h-[48px] max-[1180px]:w-[48px] max-[1180px]:[&_svg]:h-[22px] max-[1180px]:[&_svg]:w-[22px] max-[900px]:h-[54px] max-[900px]:w-[54px] max-[900px]:[&_svg]:h-[24px] max-[900px]:[&_svg]:w-[24px] max-[640px]:h-[42px] max-[640px]:w-[42px] max-[640px]:[&_svg]:h-[20px] max-[640px]:[&_svg]:w-[20px]",
   messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
   messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
   messageContent: "max-w-full [overflow-wrap:anywhere] rounded-lg font-satoshi text-[13px] leading-relaxed text-black",
@@ -217,6 +220,7 @@ export default function ChatPage() {
   const [isLoadingSessions, setIsLoadingSessions] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isDraftChat, setIsDraftChat] = useState(true);
+  const [hasStartedChat, setHasStartedChat] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [prompts, setPrompts] = useState<ChatPrompt[]>([]);
   const [showArchived, setShowArchived] = useState(false);
@@ -330,6 +334,7 @@ export default function ChatPage() {
 
   const selectSession = async (session: AiChatSession) => {
     setIsDraftChat(false);
+    setHasStartedChat(true);
     setSelectedSessionId(session.id);
     setMobileRailOpen(false);
     setIsLoadingMessages(true);
@@ -349,6 +354,7 @@ export default function ChatPage() {
 
   const startNewChat = () => {
     setIsDraftChat(true);
+    setHasStartedChat(false);
     setSelectedSessionId(null);
     setInitialMessages([]);
     setNotice(null);
@@ -359,6 +365,7 @@ export default function ChatPage() {
 
   const startPromptChat = (prompt: string) => {
     setIsDraftChat(true);
+    setHasStartedChat(true);
     setSelectedSessionId(null);
     setInitialMessages([]);
     setNotice(null);
@@ -439,6 +446,8 @@ export default function ChatPage() {
   };
 
   const updateSessionFromPrompt = (prompt: string) => {
+    setHasStartedChat(true);
+
     if (!selectedSession) {
       return;
     }
@@ -462,6 +471,8 @@ export default function ChatPage() {
     prompt: string | null;
     messages: ChatUiMessage[];
   }) => {
+    setHasStartedChat(true);
+
     if (!sessionId) {
       if (selectedSession) {
         const nextSession = {
@@ -540,24 +551,33 @@ export default function ChatPage() {
             </button>
           </div>
 
-          <div className={TW.attentionContent}>
-            <h1 className={TW.attentionTitle}>What can I help you with?</h1>
-            <div className={TW.attentionList}>
-              {ATTENTION_ITEMS.map((item) => (
-                <button
-                  type="button"
-                  className={`${TW.attentionSuggestion} ${item.bg}`}
-                  key={item.action}
-                  onClick={() => startPromptChat(item.prompt)}
-                >
-                  <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
-                  {item.action}
-                </button>
-              ))}
+          {!hasStartedChat ? (
+            <div className={TW.attentionContent}>
+              <h1 className={TW.attentionTitle}>What can I help you with?</h1>
+              <div className={TW.attentionList}>
+                {ATTENTION_ITEMS.map((item) => (
+                  <div
+                    className={`${TW.attentionSuggestion} ${item.bg}`}
+                    key={item.action}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => startPromptChat(item.prompt)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        startPromptChat(item.prompt);
+                      }
+                    }}
+                  >
+                    <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
+                    {item.action}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
 
-          <div className={TW.compactThread}>
+          <div className={`${TW.compactThread} ${hasStartedChat ? TW.fullThread : ""}`}>
             {isLoadingMessages ? (
               <div className={TW.loading}>Loading chat...</div>
             ) : (
@@ -1409,28 +1429,36 @@ function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder
     <ComposerPrimitive.Root className={TW.composerWrap}>
       {visiblePrompts.length > 0 && (
         <div className={TW.promptChipsRow}>
-          <div className="flex min-w-0 items-center gap-[6px] overflow-hidden">
+          <div className={`${TW.promptChipsLeft} ${promptsExpanded ? TW.promptChipsLeftExpanded : ""}`}>
             {visiblePrompts.map((p) => (
-              <button
+              <div
                 key={p.id}
-                type="button"
                 className={TW.promptChip}
+                role="button"
+                tabIndex={0}
                 onClick={() => onPromptSelect?.(p.user_message)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onPromptSelect?.(p.user_message);
+                  }
+                }}
               >
                 /{p.title}
-              </button>
+              </div>
             ))}
           </div>
-          {prompts && prompts.length > 3 && (
+          {prompts && prompts.length > 1 ? (
             <button
               type="button"
-              className={TW.promptChipExpand}
-              aria-label={promptsExpanded ? "Show fewer" : "Show more"}
+              className={`${TW.promptChipExpand} ${promptsExpanded ? "rotate-180" : ""}`}
+              aria-expanded={promptsExpanded}
+              aria-label={promptsExpanded ? "Collapse prompts" : "Expand prompts"}
               onClick={() => setPromptsExpanded((v) => !v)}
             >
               <ChevronDownIcon />
             </button>
-          )}
+          ) : null}
         </div>
       )}
       <div className={`${TW.composer} ${isRunning ? TW.composerThinking : ""}`}>
@@ -1443,12 +1471,8 @@ function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder
             autoFocus
           />
         </div>
-        <div className={TW.composerFooter}>
-          <div className={TW.composerFooterLeft}>
-          </div>
-          <div className={TW.composerFooterRight}>
-            <ComposerPrimaryAction />
-          </div>
+        <div className="flex shrink-0 items-center px-[16px]">
+          <ComposerPrimaryAction />
         </div>
       </div>
     </ComposerPrimitive.Root>
