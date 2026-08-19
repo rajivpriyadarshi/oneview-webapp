@@ -129,8 +129,8 @@ const TW = {
   mobileHeaderBtn: "inline-flex shrink-0 items-center gap-[8px] rounded-full border border-[#804d13]/20 bg-[#f0ebe0] py-[8px] pr-[12px] pl-[8px] font-satoshi text-[13px] text-[#804d13] hover:bg-[#e8e0d0]",
   mobileHeaderBtnIcon: "inline-grid place-items-center rounded-full bg-gradient-to-b from-[#b37f40] to-[#432411] p-[6px] text-white",
   workspace: "ml-[80px] grid h-screen grid-cols-[minmax(300px,380px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(292px,350px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
-  advisorPanel: "relative grid h-screen min-w-0 grid-rows-[64px_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[64px_auto_auto]",
-  advisorHeader: "flex items-center justify-between gap-[10px] border-b border-black/10 pr-[14px] pl-[12px] max-[640px]:pr-[12px] max-[640px]:pl-[12px]",
+  advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
+  advisorHeader: "flex items-center justify-between gap-[10px] border-b border-black/10 bg-white/70 px-[16px] py-[11px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationBtn: "inline-flex min-w-0 items-center gap-[8px] border-0 bg-transparent py-[6px] font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [overflow-wrap:break-word]",
   conversationText: "truncate",
   advisorAddBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
@@ -138,10 +138,10 @@ const TW = {
   attentionTitle: "m-0 mb-[24px] max-w-[340px] font-serif text-[38px] font-normal leading-[45.6px] tracking-normal text-black [overflow-wrap:break-word]",
   attentionList: "grid gap-[14px]",
   attentionSuggestion: "flex items-center gap-[10px] rounded-full border border-black/5 px-[16px] py-[12px] text-left font-mono text-[13px] font-normal leading-[16.9px] text-[#282420] transition hover:brightness-[0.97]",
-  promptChipsRow: "mb-[10px] flex flex-wrap items-center gap-[8px]",
-  promptChip: "inline-flex items-center rounded-full border border-black/10 bg-[#f7f3ee] px-[12px] py-[8px] font-satoshi text-[13px] font-medium leading-tight text-[#282420] transition hover:bg-[#ede8df]",
-  promptChipExpand: "inline-grid h-[32px] w-[32px] place-items-center rounded-full border border-black/10 bg-[#f7f3ee] text-[#282420] transition hover:bg-[#ede8df]",
-  compactThread: "absolute right-[14px] bottom-[14px] left-[12px] z-[5] max-[900px]:right-[12px] max-[900px]:left-[12px]",
+  promptChipsRow: "mb-[8px] flex items-center justify-between gap-[6px] overflow-hidden rounded-[20px] bg-[#F7F7F7] px-[13px] py-[9px] outline outline-1 outline-white outline-offset-[-1px]",
+  promptChip: "inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-white/50 bg-black/[0.04] px-[7px] py-[5px] font-satoshi text-[12px] font-normal leading-[16.2px] text-black/80 transition hover:bg-black/[0.08]",
+  promptChipExpand: "inline-flex items-center rounded-full border border-white/50 bg-white/[0.57] px-[8px] py-[5px] text-black transition hover:bg-white/70",
+  compactThread: "absolute right-[16px] bottom-[16px] left-[16px] z-[5] max-[900px]:right-[12px] max-[900px]:left-[12px]",
   loading: "flex min-h-screen flex-col items-center justify-center p-[32px] font-satoshi text-[13px] text-black/50",
   notice: "m-0 rounded-lg border border-[#171615]/10 bg-white/50 p-[12px] font-satoshi text-[13px] leading-snug text-[#171615]/50",
   thread: "relative flex h-auto min-h-0 flex-col overflow-visible",
@@ -159,9 +159,9 @@ const TW = {
   errorBanner: "mx-auto mb-[10px] w-full rounded-lg border border-[#973022]/20 bg-white/70 px-[12px] py-[10px] font-satoshi text-[13px] text-[#8f2415]",
   composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent p-0",
   composerWrap: "w-full p-0",
-  composer: "relative mx-auto grid min-h-[104px] w-full grid-rows-[1fr_auto] rounded-[22px] border border-black/10 bg-white px-[16px] py-[14px] shadow-[0px_2px_10px_0px_#0000000F] transition max-[640px]:min-h-[104px] max-[640px]:rounded-[20px] max-[640px]:px-[14px] max-[640px]:py-[14px]",
+  composer: "relative mx-auto grid w-full grid-rows-[1fr_auto] rounded-[24px] border border-black/[0.06] bg-white/90 px-[16px] py-[10px] shadow-[0px_2px_10px_rgba(0,0,0,0.06)] transition max-[640px]:rounded-[20px] max-[640px]:px-[14px] max-[640px]:py-[10px]",
   composerThinking: "ring-1 ring-[#b37f40]/40",
-  composerInputRow: "min-w-0 self-start",
+  composerInputRow: "min-w-0 self-start p-[6px]",
   composerInput: "h-auto min-h-0 w-full resize-none border-0 bg-transparent p-0 font-satoshi text-[14px] font-normal leading-[18.9px] text-black outline-none [overflow-wrap:break-word] placeholder:text-[14px] placeholder:font-normal placeholder:leading-[18.9px] placeholder:text-black/40",
   composerFooter: "flex min-w-0 items-center justify-between gap-[10px] p-0",
   composerFooterLeft: "flex min-w-0 items-center gap-[9px]",
@@ -169,7 +169,7 @@ const TW = {
   composerIconBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent p-0 text-black transition hover:bg-black/5 [&_svg]:h-[20px] [&_svg]:w-[20px]",
   composerModeBtn: "inline-flex min-h-[32px] min-w-0 items-center gap-[9px] rounded-full border border-black/10 bg-white px-[12px] font-satoshi text-[12px] font-normal leading-[14.4px] text-black [overflow-wrap:break-word] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] transition hover:bg-black/[0.02] max-[640px]:max-w-[168px]",
   composerModeText: "truncate font-satoshi text-[12px] font-normal leading-[14.4px] text-black [overflow-wrap:break-word]",
-  sendBtn: "inline-grid h-[40px] w-[40px] shrink-0 place-items-center rounded-full border-0 bg-black p-0 text-white transition hover:-translate-y-px hover:bg-[#2d2926] disabled:bg-black disabled:text-white [&_svg]:h-[24px] [&_svg]:w-[24px]",
+  sendBtn: "inline-grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full border-0 bg-black p-0 text-white transition hover:-translate-y-px hover:bg-[#2d2926] disabled:bg-black disabled:text-white [&_svg]:h-[24px] [&_svg]:w-[24px]",
   messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
   messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
   messageContent: "max-w-full [overflow-wrap:anywhere] rounded-lg font-satoshi text-[13px] leading-relaxed text-black",
@@ -856,10 +856,10 @@ function ClientOverview() {
   }, [requestedClientId]);
 
   return (
-    <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[64px_minmax(0,1fr)] bg-gradient-to-b from-white to-[#f6f1eb] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
-      <header className="flex min-w-0 items-center justify-between gap-[9px] overflow-hidden border-b border-black/10 bg-white/85 px-[18px] pr-[12px] backdrop-blur-xl max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
+    <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-gradient-to-b from-white to-[#f6f1eb] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
+      <header className="flex min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/[0.08] bg-white/70 px-[16px] py-[11px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
-          <ul className="m-0 flex min-w-0 list-none items-center gap-[10px] p-0">
+          <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] p-0">
             <ClientTabButton active={activeTab === "overview"} icon={<OverviewIcon />} label="Overview" onClick={() => setActiveTab("overview")} />
             <ClientTabButton active={activeTab === "wealth-map"} icon={<WealthMapIcon />} label="Wealth map" onClick={() => setActiveTab("wealth-map")} />
             <ClientTabButton active={activeTab === "interactions"} icon={<InteractionsIcon />} label="Interactions" onClick={() => setActiveTab("interactions")} />
@@ -898,7 +898,7 @@ function ClientTabButton({
     <li>
       <button
         type="button"
-        className={`inline-flex min-h-[32px] shrink-0 items-center gap-[7px] rounded-[9px] border-0 px-[12px] font-satoshi text-[14px] leading-[18.2px] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [&_svg]:h-[16px] [&_svg]:w-[16px] ${active ? "bg-[#eeeae4] font-bold" : "bg-transparent font-medium hover:bg-black/5"}`}
+        className={`inline-flex shrink-0 items-center gap-[5px] rounded-[10px] border-0 px-[10px] py-[7px] font-satoshi text-[13px] leading-[18px] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [&_svg]:h-[15px] [&_svg]:w-[15px] ${active ? "bg-[rgba(162,144,118,0.20)] font-bold" : "bg-transparent font-medium hover:bg-black/5"}`}
         aria-current={active ? "page" : undefined}
         onClick={onClick}
       >
@@ -923,8 +923,8 @@ function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | nu
 
   return (
     <div className="min-h-0 overflow-auto bg-[#f6f2ec] pb-[48px]">
-      <section className="relative h-[280px] overflow-hidden bg-[#f6f2ec] px-[36px] max-[1180px]:h-[260px] max-[1180px]:px-[24px] max-[640px]:h-[240px] max-[640px]:px-[16px]">
-        <div className="absolute inset-x-0 top-0 h-[280px] overflow-hidden max-[1180px]:h-[260px] max-[640px]:h-[240px]">
+      <section className="relative h-[210px] overflow-hidden bg-[#f6f2ec] px-[36px] max-[1180px]:h-[195px] max-[1180px]:px-[24px] max-[640px]:h-[180px] max-[640px]:px-[16px]">
+        <div className="absolute inset-x-0 top-0 h-[210px] overflow-hidden max-[1180px]:h-[195px] max-[640px]:h-[180px]">
           <Image
             src="/overview.png"
             alt=""
@@ -950,9 +950,9 @@ function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | nu
         </div>
       </section>
 
-      <div className="grid grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)] gap-[24px] px-[36px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px]">
+      <div className="grid grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)] gap-[16px] px-[48px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px]">
         <div className="grid gap-[24px]">
-          <section className="rounded-[16px] bg-[linear-gradient(135deg,rgba(0,0,0,0)_0%,rgba(255,255,255,0)_50%,rgba(255,255,255,0.40)_75%,rgba(255,255,255,0)_100%),rgba(255,255,255,0.90)] px-[24px] py-[32px] backdrop-blur-[2px] max-[640px]:px-[22px] max-[640px]:py-[26px]">
+          <section className="rounded-[16px] bg-[linear-gradient(135deg,rgba(0,0,0,0)_0%,rgba(255,255,255,0)_50%,rgba(255,255,255,0.40)_75%,rgba(255,255,255,0)_100%),rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:px-[22px] max-[640px]:py-[26px]">
             <p className="m-0 font-satoshi text-[16px] font-medium text-[#4D2E0C] max-[640px]:text-[14px]">AUM</p>
             <div className="mt-[12px] flex flex-wrap items-center gap-x-[12px] gap-y-[8px]">
               <strong className="font-satoshi text-[32px] font-bold leading-none tracking-normal text-[#1A2229] max-[640px]:text-[28px]">{clientAum}</strong>
@@ -975,7 +975,7 @@ function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | nu
           </section>
         </div>
 
-        <aside className="grid content-start gap-[24px]">
+        <aside className="grid content-start gap-[16px]">
           <InsightPanel />
           <RecentActivityPanel />
         </aside>
@@ -1089,7 +1089,7 @@ function formatLabelText(value: string) {
 
 function InsightPanel() {
   return (
-    <section className="relative min-h-[420px] overflow-hidden rounded-[20px] bg-[#fff4e8] px-[28px] py-[26px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:px-[20px] max-[640px]:py-[20px]">
+    <section className="relative min-h-[409px] overflow-hidden rounded-[16px] bg-[#fff4e8] p-[24px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:p-[20px]">
       <Image
         src="/insights.png"
         alt=""
@@ -1409,16 +1409,18 @@ function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder
     <ComposerPrimitive.Root className={TW.composerWrap}>
       {visiblePrompts.length > 0 && (
         <div className={TW.promptChipsRow}>
-          {visiblePrompts.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={TW.promptChip}
-              onClick={() => onPromptSelect?.(p.user_message)}
-            >
-              /{p.title}
-            </button>
-          ))}
+          <div className="flex min-w-0 items-center gap-[6px] overflow-hidden">
+            {visiblePrompts.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={TW.promptChip}
+                onClick={() => onPromptSelect?.(p.user_message)}
+              >
+                /{p.title}
+              </button>
+            ))}
+          </div>
           {prompts && prompts.length > 3 && (
             <button
               type="button"
