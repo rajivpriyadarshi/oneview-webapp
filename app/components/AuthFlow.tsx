@@ -436,7 +436,7 @@ export function AuthFlow() {
             </div>
 
             <button className="continue-button" type="submit" disabled={isSubmitting || !email || !password} style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}>
-              Continue
+              Login
             </button>
 
             {error ? <p className="form-error">{error}</p> : null}
