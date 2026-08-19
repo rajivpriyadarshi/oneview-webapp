@@ -38,6 +38,7 @@ import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import { MobileHeader } from "../components/MobileHeader";
 import { SourceWealthChart } from "../components/SourceWealthChart";
+import DocumentsListView from "../components/DocumentsListView";
 import {
   type AiChatSession,
   type ChatPrompt,
@@ -874,7 +875,7 @@ function ClientOverview() {
       {activeTab === "overview" ? <OverviewTab client={client} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "wealth-map" ? <WealthMapTab /> : null}
       {activeTab === "interactions" ? <PlaceholderTab title="Interactions" /> : null}
-      {activeTab === "documents" ? <PlaceholderTab title="Documents" /> : null}
+      {activeTab === "documents" ? <DocumentsTab /> : null}
     </section>
   );
 }
@@ -990,6 +991,14 @@ function WealthMapTab() {
       <section className="relative h-[calc(100vh-64px)] min-h-[640px] overflow-hidden bg-white">
         <SourceWealthChart />
       </section>
+    </div>
+  );
+}
+
+function DocumentsTab() {
+  return (
+    <div className="min-h-0 overflow-auto bg-white px-[32px] py-[24px]">
+      <DocumentsListView />
     </div>
   );
 }
