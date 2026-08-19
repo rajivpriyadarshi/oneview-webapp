@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { dismissTray, removeTrayItem } from "../store/uploadTraySlice";
 import "./UploadTray.css";
 
-const HIDE_TRAY_PATHS = ["/onboarding/documents", "/onboarding/processing"];
+const HIDE_TRAY_PATHS: string[] = [];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

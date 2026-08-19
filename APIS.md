@@ -111,6 +111,95 @@ List clients assigned to the authenticated relationship manager.
 
 ---
 
+## RM Client Chat
+
+All chat endpoints require an active RM token and a client currently assigned to
+that RM. The URL client is fixed for the session: wealth tools can access that
+client family, but not an unrelated family.
+
+### GET/POST `/api/wealth/crm/clients/<client_id>/chats/`
+
+- `GET`: list the RM's chats for this client. Use `?archived_only=true` for archived chats.
+- `POST`: start a chat and stream the first reply. Send a user message in the
+  same format as the OneView chat API; `agent` is optional and must name an RM agent.
+
+```json
+{"message": "Summarise this family's portfolio", "agent": "oneview-rm"}
+```
+
+### GET/POST `/api/wealth/crm/clients/<client_id>/chats/<session_uid>/messages/`
+
+- `GET`: return chat history.
+- `POST`: stream a reply for an existing chat. The SSE format matches OneView chat.
+
+### PATCH `/api/wealth/crm/clients/<client_id>/chats/<session_uid>/pin/`
+
+### PATCH `/api/wealth/crm/clients/<client_id>/chats/<session_uid>/archive/`
+
+Set the corresponding boolean (`is_pinned` or `is_archived`) in the JSON body,
+or omit it to toggle the current value.
+
+Another RM's client, a mismatched client/session pair, or an inactive assignment
+returns `404`.
+
+---
+
+## RM Chat Workflows
+
+### GET `/api/wealth/crm/chats/workflow-commands/`
+
+List the active chat workflows available to an RM agent. This endpoint requires
+an active RM token but is not scoped to a client.
+
+Pass an optional `agent` query parameter to select an active RM agent:
+
+```http
+GET /api/wealth/crm/chats/workflow-commands/?agent=oneview-rm
+```
+
+When `agent` is omitted, the configured default RM agent is used. The response
+includes the resolved agent slug and its commands:
+
+```json
+{
+  "agent": "oneview-rm",
+  "commands": [
+    {
+      "command": "/meeting-prep",
+      "tool_name": "run_workflow_meeting_prep",
+      "name": "Meeting prep",
+      "description": "Prepare for an upcoming client meeting.",
+      "input_schema": {}
+    }
+  ]
+}
+```
+
+An inactive or non-RM agent returns `404`. A user without an active RM profile
+returns `403`.
+
+### POST `/api/wealth/crm/clients/<client_id>/chats/<session_uid>/messages/`
+
+Select a workflow for one or more chat turns by including an intent in message
+metadata:
+
+```json
+{
+  "message": "Prepare me for tomorrow's meeting",
+  "metadata": {
+    "workflow_intent": {
+      "tool_name": "run_workflow_meeting_prep",
+      "mode": "run"
+    }
+  }
+}
+```
+
+Use `suggest` to make the workflow preferred but optional, or `run` to resolve
+its inputs and execute it as soon as the arguments validate. Omit the intent to
+return the chat to normal behavior.
+
+---
 ## Client Memory
 
 ### GET `/api/wealth/crm/memories/`
@@ -182,6 +271,146 @@ Generate a new meeting prep note using LLM.
 
 ---
 
+## Client Graph
+
+### GET `/api/wealth/clients/<id>/graph/`
+
+Returns a hierarchical 4-section breakdown of a client's wealth universe, designed for rendering as a radial mind-map / tree visualization.
+
+**Headers:** `Authorization: Token <token>`
+
+**Query parameters:**
+
+| Param    | Type   | Description                                          |
+|----------|--------|------------------------------------------------------|
+| currency | string | Target currency for all values (default: client's base_currency) |
+
+**Success response (200):**
+
+```json
+{
+  "client": {
+    "id": 271,
+    "name": "Sarah Chen",
+    "partyType": "person",
+    "adjustedValue": 13784150.0,
+    "currency": "USD"
+  },
+  "sections": {
+    "financials": {
+      "adjustedValue": 1274014.0,
+      "items": [
+        {
+          "id": "asset-487",
+          "type": "asset",
+          "name": "JPMorgan Chase (United States)",
+          "assetType": "BANK",
+          "adjustedValue": 340000.0,
+          "currency": "USD",
+          "status": "valued"
+        },
+        {
+          "id": "account-186",
+          "type": "account",
+          "name": "Fidelity (United States)",
+          "institution": "fidelity",
+          "adjustedValue": 1436000.0,
+          "currency": "USD",
+          "status": "valued"
+        },
+        {
+          "id": "liability-106",
+          "type": "liability",
+          "name": "Wells Fargo Mortgage (Palo Alto)",
+          "liabilityType": "mortgage",
+          "adjustedValue": -2800000.0,
+          "linkedAssetId": null,
+          "status": "valued"
+        }
+      ]
+    },
+    "family": {
+      "members": [
+        {
+          "id": 272,
+          "name": "David Chen",
+          "partyType": "person",
+          "relationship": "spouse",
+          "adjustedValue": 0.0
+        }
+      ]
+    },
+    "nonFinancials": {
+      "adjustedValue": 12510136.0,
+      "items": [
+        {
+          "id": "asset-490",
+          "type": "asset",
+          "name": "742 Hillsborough Ave, Palo Alto, CA",
+          "assetType": "REAL_ESTATE",
+          "adjustedValue": 7200000.0,
+          "currency": "USD",
+          "status": "valued"
+        }
+      ]
+    },
+    "entities": {
+      "adjustedValue": 0.0,
+      "items": [
+        {
+          "id": 275,
+          "type": "client",
+          "name": "Chen Family Trust",
+          "partyType": "trust",
+          "relationship": "settlor",
+          "ownershipPct": null,
+          "adjustedValue": 0.0,
+          "attributedValue": 0.0,
+          "sharedWith": []
+        }
+      ]
+    }
+  }
+}
+```
+
+**Section mapping:**
+
+| Section        | Contents                                                                 |
+|----------------|--------------------------------------------------------------------------|
+| financials     | Bank accounts, fixed income, private investments, brokerage accounts, liabilities |
+| family         | Related clients with family relationship types (spouse, parent, child, sibling) |
+| nonFinancials  | Real estate, collectibles, digital assets, generic assets, insurance     |
+| entities       | Trusts, companies, partnerships, foundations, estates (leaf nodes — navigate to their own graph) |
+
+**Item types within sections:**
+
+| type      | Fields                                                                                  |
+|-----------|-----------------------------------------------------------------------------------------|
+| asset     | `id`, `type`, `name`, `assetType`, `adjustedValue`, `currency`, `status`               |
+| account   | `id`, `type`, `name`, `institution`, `adjustedValue`, `currency`, `status`             |
+| liability | `id`, `type`, `name`, `liabilityType`, `adjustedValue` (negative), `linkedAssetId`, `status` |
+| client    | `id`, `type`, `name`, `partyType`, `relationship`, `ownershipPct`, `adjustedValue`, `attributedValue`, `sharedWith` |
+
+**Status values:**
+
+| Status         | Meaning                              |
+|----------------|--------------------------------------|
+| valued         | Has a valuation within the last 30 days |
+| stale          | Has a valuation older than 30 days   |
+| not_on_record  | No valuation exists                  |
+
+**Shared entity handling (trusts owned by multiple clients):**
+
+When an entity (e.g. a trust) is related to multiple clients, the response includes:
+- `adjustedValue`: full value of the entity
+- `ownershipPct`: viewer's ownership percentage (from `ClientRelationship.percentage`, null if not set)
+- `attributedValue`: viewer's share (`adjustedValue * ownershipPct / 100`, or full value if pct is null)
+- `sharedWith`: array of co-owners with their `clientId`, `name`, `relationship`, and `pct`
+
+Navigating to an entity's own graph (`/api/wealth/clients/<entity_id>/graph/`) returns its assets broken down in the same 4-section structure.
+
+---
 ## Dropbox Analysis
 
 ### POST `/api/wealth/crm/my-clients/<client_id>/analyze-dropbox/` *(UI endpoint)*

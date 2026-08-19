@@ -15,6 +15,19 @@ export type PasswordlessAuthSession = AuthSession & {
   created: boolean;
 };
 
+export type CRMAdvisor = {
+  id: number;
+  name: string;
+  email: string;
+  designation: string;
+  team: string;
+};
+
+export type CRMAuthSession = {
+  token: string;
+  advisor: CRMAdvisor;
+};
+
 export type Profile = {
   id: number;
   username: string;

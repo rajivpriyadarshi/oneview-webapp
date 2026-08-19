@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+<canvas id="c" width="3024" height="1362"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const gradient = ctx.createLinearGradient(0, 0, 0, 1362);
+gradient.addColorStop(0, '#FFE5B3');
+gradient.addColorStop(0.3, '#FFD699');
+gradient.addColorStop(0.6, '#FFBC7F');
+gradient.addColorStop(0.85, '#FFA366');
+gradient.addColorStop(1, '#FF8F4D');
+ctx.fillStyle = gradient;
+ctx.fillRect(0, 0, 3024, 1362);
+</script>
+</body>
+</html>

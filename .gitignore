@@ -40,5 +40,5 @@ next-env.d.ts
 # IDE
 .idea
 
-# Mobile app - Exclude entire directory
+# Mobile app
 mobile_app/

@@ -366,12 +366,22 @@ export function AuthFlow() {
       <GoogleIdentityScript onLoad={() => setIsGoogleLoaded(true)} />
       <div ref={hiddenGoogleButtonRef} style={{ display: 'none', position: 'absolute' }} />
       <main className="login-page">
+        {/* Background gradient */}
+        <div className="login-background">
+          <img src="/auth/gradient-bg.png" alt="" />
+        </div>
+
+        {/* Centered Zinc logo */}
+        <div className="zinc-logo-centered">
+          <img src="/auth/logo-full.svg" alt="Zinc" className="zinc-logo-full" />
+        </div>
+
         {step === "login" ? (
           <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
-            <OneviewBrand />
             <form className="login-card account-card" onSubmit={handleEmailSubmit}>
-              <h1 id="login-title" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both", fontSize: "36px", fontWeight: 400 }}>Get started</h1>
+              <h1 id="login-title" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both" }}>Login to your account</h1>
 
+              {/* Google sign-in temporarily disabled - preserved for future use
               <button
                 className="google-button"
                 type="button"
@@ -383,11 +393,10 @@ export function AuthFlow() {
                 <span>Continue with Google</span>
               </button>
 
-              {/* Hidden Google button rendered outside conditional */}
-
               <div className="or-divider" style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}>OR</div>
+              */}
 
-            <label className={`field account-field ${email ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}>
+            <label className={`field account-field ${email ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.25s both" }}>
               <span>Email address</span>
               <input
                 type="email"
@@ -402,46 +411,32 @@ export function AuthFlow() {
               />
             </label>
 
-            <label className={`field account-field ${password ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.625s both", position: "relative" }}>
-              <span>Password</span>
-              <input
-                type={showPassword ? "text" : "password"}
-                name="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                autoComplete="current-password"
-                aria-label="Password"
-                required
-                style={{ paddingRight: "40px" }}
-              />
+            <div className="password-field-wrapper">
+              <label className={`field account-field ${password ? 'has-value' : ''}`} style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}>
+                <span>Password</span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  aria-label="Password"
+                  required
+                />
+              </label>
               <button
                 type="button"
+                className="password-toggle-button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                style={{
-                  position: "absolute",
-                  right: "12px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  padding: "4px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#6b7280",
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "#111827")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#6b7280")}
+                style={{ animation: "fadeInUp 0.6s ease-out 0.4s both" }}
               >
-                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                {showPassword ? <EyeIcon /> : <EyeOffIcon />}
               </button>
-            </label>
+            </div>
 
-            <button className="continue-button" type="submit" disabled={isSubmitting} style={{ animation: "fadeInUp 0.6s ease-out 0.7s both" }}>
-              {isSubmitting ? "Signing in..." : "Sign in"}
+            <button className="continue-button" type="submit" disabled={isSubmitting || !email || !password} style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}>
+              Login
             </button>
 
             {error ? <p className="form-error">{error}</p> : null}
@@ -476,7 +471,6 @@ export function AuthFlow() {
               </a>.
             </p>
           </form>
-          <ZincBrand />
         </section>
       ) : null}
       {/* OTP Section - Temporarily Hidden */}
@@ -542,7 +536,6 @@ export function AuthFlow() {
                 : "Didn't receive it? Resend code"}
             </button>
           </form>
-          <ZincBrand />
         </section>
       )} */}
       </main>
@@ -551,17 +544,9 @@ export function AuthFlow() {
 }
 
 async function getPostProfileRouteFromStore(profile: Profile): Promise<string> {
-  const emailPrefix = profile.email.split("@")[0];
-  const displayName = profile.display_name?.trim();
-
-  if (!displayName || displayName === emailPrefix) {
-    return "/profile/setup";
-  }
-
-  const portfoliosResult = await store.dispatch(api.endpoints.listPortfolios.initiate(undefined, { forceRefetch: true }));
-  const portfolios = portfoliosResult.data ?? [];
-
-  return portfolios.length === 0 ? "/clients" : "/dashboard";
+  // Skip onboarding screens - go directly to home page
+  // TODO: Update to new landing page when designed
+  return "/dashboard";
 }
 
 function GoogleIcon() {
