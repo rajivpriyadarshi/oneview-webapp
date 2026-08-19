@@ -2,20 +2,35 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { getStoredAdvisorProfile } from "../lib/session";
+import { usePathname, useRouter } from "next/navigation";
+import { getStoredAdvisorProfile, clearAuthToken } from "../lib/session";
+import { useCrmLogoutMutation } from "../store/api";
 
 const ACTIVE_COLOR = "#804D13";
 const INACTIVE_COLOR = "rgba(0,0,0,0.70)";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [initial, setInitial] = useState("N");
+  const [showLogout, setShowLogout] = useState(false);
+  const [crmLogout, { isLoading: isLoggingOut }] = useCrmLogoutMutation();
 
   useEffect(() => {
     const advisor = getStoredAdvisorProfile();
     if (advisor?.name) setInitial(advisor.name.trim()[0].toUpperCase());
   }, []);
+
+  async function handleLogout() {
+    try {
+      await crmLogout().unwrap();
+    } catch {
+      // proceed even if API fails
+    } finally {
+      clearAuthToken();
+      router.replace("/auth");
+    }
+  }
 
   const nav = [
     { href: "/clients", label: "Home", icon: <HomeIcon /> },
@@ -57,15 +72,67 @@ export default function Sidebar() {
         </div>
 
         {/* Avatar */}
-        <div style={{
-          width: 40, height: 40, borderRadius: "50%", background: ACTIVE_COLOR,
-          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-        }}>
+        <button
+          onClick={() => setShowLogout(true)}
+          style={{
+            width: 40, height: 40, borderRadius: "50%", background: ACTIVE_COLOR,
+            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            border: "none", cursor: "pointer",
+          }}
+        >
           <span style={{ color: "white", fontSize: 15, fontFamily: "Inter", fontWeight: 600, lineHeight: 1 }}>
             {initial}
           </span>
-        </div>
+        </button>
       </div>
+
+      {/* Logout confirmation dialog */}
+      {showLogout && (
+        <div
+          onClick={() => setShowLogout(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 500,
+            background: "rgba(0,0,0,0.30)", backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white", borderRadius: 20, padding: "32px 28px",
+              width: 320, boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              display: "flex", flexDirection: "column", gap: 8,
+            }}
+          >
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A" }}>Log out?</div>
+            <div style={{ fontSize: 14, color: "#475569", marginBottom: 16 }}>
+              You'll need to sign in again to access your clients.
+            </div>
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              style={{
+                padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer",
+                background: ACTIVE_COLOR, color: "white",
+                fontSize: 15, fontWeight: 600,
+                opacity: isLoggingOut ? 0.7 : 1,
+              }}
+            >
+              {isLoggingOut ? "Logging out…" : "Yes, log out"}
+            </button>
+            <button
+              onClick={() => setShowLogout(false)}
+              style={{
+                padding: "12px 0", borderRadius: 12, border: "1px solid rgba(0,0,0,0.10)",
+                cursor: "pointer", background: "white", color: "#374151",
+                fontSize: 15, fontWeight: 500,
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
