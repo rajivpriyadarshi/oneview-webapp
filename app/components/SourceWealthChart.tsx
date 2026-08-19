@@ -232,19 +232,19 @@ function buildNodes(data: GraphResponse, expandedSection: string | null): Wealth
     }
 
     const itemCount = items.length;
-    const idealSpacing = 14;
-    const maxSpan = 88;
-    const neededSpan = itemCount > 1 ? (itemCount - 1) * idealSpacing : 0;
+    const isLargeList = itemCount > 8;
+    const spacing = isLargeList ? 8 : 14;
+    const neededSpan = itemCount > 1 ? (itemCount - 1) * spacing : 0;
+    const maxSpan = isLargeList ? 94 : 70;
     const totalSpan = Math.min(neededSpan, maxSpan);
     const centerY = 50;
-    const startY = centerY - totalSpan / 2;
+    const startY = isLargeList ? 3 : centerY - totalSpan / 2;
     const itemSpacing = itemCount > 1 ? totalSpan / (itemCount - 1) : 0;
 
     items.forEach((item, i) => {
       const itemY = itemCount === 1 ? 50 : startY + i * itemSpacing;
-      const t = itemCount > 1 ? i / (itemCount - 1) : 0.5;
-      const arc = Math.sin(t * Math.PI) * 12;
-      const itemX = 72 + arc;
+      const arc = isLargeList ? 0 : Math.sin((itemCount > 1 ? i / (itemCount - 1) : 0.5) * Math.PI) * 12;
+      const itemX = isLargeList ? 75 : 72 + arc;
       const meta = SECTION_META[expandedSection];
       nodes.push({
         id: `item:${item.id}`,
@@ -270,6 +270,9 @@ function buildNodes(data: GraphResponse, expandedSection: string | null): Wealth
 let _hitZones: HitZone[] = [];
 let _expandedSection: string | null = null;
 let _hoveredItem: string | null = null;
+let _animProgress = 1;
+let _animSectionX = 50;
+let _animSectionY = 50;
 
 export function SourceWealthChart({ clientId, className = "" }: { clientId: number | null; className?: string }) {
   const [graphData, setGraphData] = useState<GraphResponse | null>(null);
@@ -277,11 +280,15 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
   const [error, setError] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const chartRef = useRef<ChartJS<"bubble", WealthMapPoint[]> | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   _expandedSection = expandedSection;
   _hoveredItem = hoveredItem;
+
+  const animRef = useRef<number | null>(null);
+  const prevExpandedRef = useRef<string | null>(null);
 
   const handleMouseMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     const canvas = event.currentTarget.querySelector("canvas");
@@ -352,6 +359,49 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
     return buildNodes(graphData, expandedSection);
   }, [graphData, expandedSection]);
 
+  useEffect(() => {
+    if (expandedSection && expandedSection !== prevExpandedRef.current) {
+      const sectionNode = nodes.find((n) => n.kind === "section" && n.id === expandedSection);
+      if (sectionNode) {
+        _animSectionX = sectionNode.x;
+        _animSectionY = sectionNode.y;
+      }
+      _animProgress = 0;
+      const startTime = performance.now();
+      const duration = 350;
+
+      const animate = (now: number) => {
+        const elapsed = now - startTime;
+        _animProgress = Math.min(elapsed / duration, 1);
+        _animProgress = 1 - Math.pow(1 - _animProgress, 3);
+        if (chartRef.current) chartRef.current.draw();
+        if (elapsed < duration) {
+          animRef.current = requestAnimationFrame(animate);
+        }
+      };
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      animRef.current = requestAnimationFrame(animate);
+    } else if (!expandedSection) {
+      _animProgress = 1;
+    }
+    prevExpandedRef.current = expandedSection;
+  }, [expandedSection, nodes]);
+
+  useEffect(() => {
+    let el = containerRef.current?.parentElement;
+    while (el && el.scrollHeight <= el.clientHeight) {
+      el = el.parentElement;
+    }
+    if (!el) return;
+    const itemCount = nodes.filter((n) => n.kind === "item").length;
+    if (itemCount > 8) {
+      requestAnimationFrame(() => {
+        const scrollMax = el!.scrollHeight - el!.clientHeight;
+        el!.scrollTo({ top: scrollMax / 2, behavior: "smooth" });
+      });
+    }
+  }, [expandedSection, nodes]);
+
   const data = useMemo<ChartData<"bubble", WealthMapPoint[]>>(
     () => ({
       datasets: [
@@ -404,8 +454,11 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
     return <div className="grid h-full place-items-center font-satoshi text-[14px] text-black/50">No data available</div>;
   }
 
+  const expandedItemCount = nodes.filter((n) => n.kind === "item").length;
+  const dynamicHeight = expandedItemCount > 8 ? Math.max(620, expandedItemCount * 70) : 620;
+
   return (
-    <div className={`relative h-full min-h-[620px] w-full cursor-pointer overflow-auto ${className}`} onClick={handleClick} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+    <div ref={containerRef} className={`relative h-full w-full cursor-pointer overflow-auto ${className}`} onClick={handleClick} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} style={{ minHeight: `${dynamicHeight}px` }}>
       <Chart ref={chartRef} type="bubble" data={data} options={options} plugins={[plugin]} />
     </div>
   );
@@ -451,9 +504,12 @@ function createWealthMapPlugin(): Plugin<"bubble"> {
       ctx.save();
       const zones: HitZone[] = [];
 
+      const originX = px(_animSectionX);
+      const originY = py(_animSectionY);
+
       for (const node of nodes) {
-        const nodeX = px(node.x);
-        const nodeY = py(node.y);
+        let nodeX = px(node.x);
+        let nodeY = py(node.y);
 
         if (node.kind === "client") {
           drawClientCard(ctx, nodeX, nodeY, node);
@@ -463,7 +519,14 @@ function createWealthMapPlugin(): Plugin<"bubble"> {
           drawSectionCard(ctx, nodeX, nodeY, node, isExpanded);
           zones.push({ id: node.id, left: nodeX - 26, top: nodeY - 22, right: nodeX + 114, bottom: nodeY + 22 });
         } else if (node.kind === "item") {
+          if (_animProgress < 1) {
+            const t = _animProgress;
+            nodeX = originX + (nodeX - originX) * t;
+            nodeY = originY + (nodeY - originY) * t;
+            ctx.globalAlpha = t;
+          }
           drawItemTile(ctx, nodeX, nodeY, node);
+          ctx.globalAlpha = 1;
           zones.push({ id: node.id, left: nodeX - 22, top: nodeY - 26, right: nodeX + 120, bottom: nodeY + 26 });
         }
       }
@@ -511,9 +574,16 @@ function drawConnections(
     if (expandedSection) {
       const sectionRight = px(expandedSection.x) - 26 + 140;
       const sectionY = py(expandedSection.y);
+      const t = _animProgress;
+      ctx.globalAlpha = t * 0.82;
       items.forEach((item) => {
-        drawCurve(ctx, sectionRight, sectionY, px(item.x) - 20, py(item.y), "#b88555", 1);
+        const targetX = px(item.x) - 20;
+        const targetY = py(item.y);
+        const endX = sectionRight + (targetX - sectionRight) * t;
+        const endY = sectionY + (targetY - sectionY) * t;
+        drawCurve(ctx, sectionRight, sectionY, endX, endY, "#b88555", 1);
       });
+      ctx.globalAlpha = 1;
     }
   }
 }

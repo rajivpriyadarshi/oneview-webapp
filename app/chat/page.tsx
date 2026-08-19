@@ -1006,8 +1006,8 @@ function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | nu
 
 function WealthMapTab({ clientId }: { clientId: number | null }) {
   return (
-    <div className="min-h-0 overflow-auto bg-white">
-      <section className="relative h-[calc(100vh-52px)] min-h-[640px] overflow-hidden bg-white">
+    <div className="min-h-0 overflow-auto bg-white" style={{ maxHeight: "calc(100vh - 52px)" }}>
+      <section className="relative min-h-[640px] bg-white">
         <SourceWealthChart clientId={clientId} />
       </section>
     </div>
