@@ -156,8 +156,8 @@ export function AuthFlow() {
         storeAuthToken(session.token);
         storeAdvisorProfile(session.advisor);
 
-        // CRM users go directly to dashboard (skip profile fetch)
-        router.replace("/dashboard");
+        // CRM users go directly to clients page (skip profile fetch)
+        router.replace("/clients");
         return;
       }
 
