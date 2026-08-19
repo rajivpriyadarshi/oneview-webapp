@@ -5,6 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
 import {
+  ArcElement,
+  Chart as ChartJS,
+  Tooltip,
+  type ChartData,
+  type ChartOptions,
+} from "chart.js";
+import { Doughnut } from "react-chartjs-2";
+import {
   ActionBarPrimitive,
   AssistantRuntimeProvider,
   AuiIf,
@@ -50,6 +58,13 @@ import {
   writeStoredAiChatSessions,
 } from "../lib/aiChatApi";
 import { appConfig } from "../lib/config";
+import {
+  getWealthCrmClient,
+  listWealthCrmClients,
+  type WealthCrmClient,
+} from "../lib/wealthCrmApi";
+
+ChartJS.register(ArcElement, Tooltip);
 
 const PROMPT_SUGGESTIONS_ROW1 = [
   "How will falling oil prices impact my holdings?",
@@ -67,27 +82,19 @@ const PROMPT_SUGGESTIONS_ROW2 = [
 
 const ATTENTION_ITEMS = [
   {
-    title: "Technology concentration is worrying",
-    copy: "Diversification options for the NASDAQ position have not yet been discussed.",
     action: "Find alternatives to reduce tech exposure",
     prompt: "Find alternatives to reduce technology exposure in the portfolio.",
   },
   {
-    title: "Enquiry about selling of property",
-    copy: "Arjun was evaluating between getting a loan or selling some of his investments",
-    action: "Evaluation options",
+    action: "Evaluation options about selling property",
     prompt: "Evaluate options for funding a property sale versus taking a loan.",
   },
   {
-    title: "Insurance document expired",
-    copy: "Ask for new document",
-    action: "Draft an email to ask",
+    action: "Draft an email to ask for insurance document",
     prompt: "Draft an email asking for the updated insurance document.",
   },
   {
-    title: "Education fee approaching",
-    copy: "The next university payment of $42,000 is expected in September. Confirm how the upcoming education payment will be funded.",
-    action: "Compare ways to fund this",
+    action: "Compare ways to fund property purchase",
     prompt: "Compare ways to fund the upcoming $42,000 education payment.",
   },
 ];
@@ -124,12 +131,12 @@ const TW = {
   conversationText: "truncate",
   advisorAddBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
   attentionContent: "flex min-h-0 flex-col justify-end overflow-auto pr-[14px] pl-[12px] pt-[28px] pb-[128px] max-[900px]:justify-start max-[900px]:pr-[12px] max-[900px]:pl-[12px] max-[900px]:pt-[24px] max-[900px]:pb-[128px]",
-  attentionTitle: "m-0 mb-[18px] max-w-[340px] font-serif text-[38px] font-normal leading-[45.6px] tracking-normal text-black [overflow-wrap:break-word]",
-  attentionList: "grid gap-[9px]",
-  attentionCard: "grid justify-items-start gap-[5px] rounded-[12px] border border-black/10 bg-white px-[13px] py-[11px] text-left shadow-[0_1px_0_rgba(0,0,0,0.02)] transition hover:-translate-y-px hover:border-[#804d13]/25 hover:shadow-[0_10px_28px_rgba(31,24,14,0.08)]",
-  attentionCardTitle: "font-satoshi text-[16px] font-normal leading-[17.6px] text-[#282420] [overflow-wrap:break-word]",
-  attentionCopy: "max-w-[340px] bg-gradient-to-b from-[#E7DB94]/40 via-[#FFB386]/40 to-[#FF6F32]/40 bg-clip-text font-satoshi text-[12px] font-normal leading-[15.6px] text-transparent [overflow-wrap:break-word]",
-  attentionAction: "mt-[6px] inline-flex max-w-full flex-wrap items-center gap-[7px] rounded-[7px] bg-gradient-to-r from-[#fff6e7] to-[#f0e7f1] px-[9px] py-[5px] font-mono text-[12px] font-normal text-black/20 [overflow-wrap:break-word]",
+  attentionTitle: "m-0 mb-[24px] max-w-[340px] font-serif text-[38px] font-normal leading-[45.6px] tracking-normal text-black [overflow-wrap:break-word]",
+  attentionList: "grid gap-[10px]",
+  attentionSuggestion: "inline-flex items-center gap-[8px] rounded-[8px] bg-[#f0ebe0] px-[12px] py-[10px] text-left font-mono text-[13px] font-normal leading-[16.9px] text-[#282420] transition hover:bg-[#e8e0d0]",
+  promptChipsRow: "mb-[10px] flex flex-wrap items-center gap-[8px]",
+  promptChip: "inline-flex items-center rounded-full border border-black/10 bg-[#f7f3ee] px-[12px] py-[8px] font-satoshi text-[13px] font-medium leading-tight text-[#282420] transition hover:bg-[#ede8df]",
+  promptChipExpand: "inline-grid h-[32px] w-[32px] place-items-center rounded-full border border-black/10 bg-[#f7f3ee] text-[#282420] transition hover:bg-[#ede8df]",
   compactThread: "absolute right-[14px] bottom-[14px] left-[12px] z-[5] max-[900px]:right-[12px] max-[900px]:left-[12px]",
   loading: "flex min-h-screen flex-col items-center justify-center p-[32px] font-satoshi text-[13px] text-black/50",
   notice: "m-0 rounded-lg border border-[#171615]/10 bg-white/50 p-[12px] font-satoshi text-[13px] leading-snug text-[#171615]/50",
@@ -531,18 +538,17 @@ export default function ChatPage() {
           </div>
 
           <div className={TW.attentionContent}>
-            <h1 className={TW.attentionTitle}>Things that need your attention</h1>
+            <h1 className={TW.attentionTitle}>What can I help you with?</h1>
             <div className={TW.attentionList}>
               {ATTENTION_ITEMS.map((item) => (
                 <button
                   type="button"
-                  className={TW.attentionCard}
-                  key={item.title}
+                  className={TW.attentionSuggestion}
+                  key={item.action}
                   onClick={() => startPromptChat(item.prompt)}
                 >
-                  <span className={TW.attentionCardTitle}>{item.title}</span>
-                  <span className={TW.attentionCopy}>{item.copy}</span>
-                  <span className={TW.attentionAction}><SendArrowIcon />{item.action}</span>
+                  <span aria-hidden="true">&rarr;</span>
+                  {item.action}
                 </button>
               ))}
             </div>
@@ -738,7 +744,7 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
             <div className={TW.emptyViewport}>
               <div className={TW.emptyCopy}>
                 <p className={TW.emptyHeading}>Ask anything about your portfolio</p>
-                <Composer placeholder="What can I help you with?" agent={agent} />
+                <Composer placeholder="What can I help you with?" agent={agent} prompts={prompts} onPromptSelect={(msg) => runtime.thread.append({ role: "user", content: [{ type: "text", text: msg }] })} />
               </div>
               <div className={TW.suggestionsWrap}>
                 {(() => {
@@ -808,6 +814,43 @@ function ChatThread({ session, initialMessages, prompts, onPromptSubmitted, onAs
 
 function ClientOverview() {
   const [activeTab, setActiveTab] = useState<ClientTab>("overview");
+  const searchParams = useSearchParams();
+  const requestedClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
+  const [client, setClient] = useState<WealthCrmClient | null>(null);
+  const [isLoadingClient, setIsLoadingClient] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadClient() {
+      setIsLoadingClient(true);
+
+      try {
+        const nextClient = requestedClientId
+          ? await getWealthCrmClient(requestedClientId)
+          : (await listWealthCrmClients({ isActive: true }))[0] ?? null;
+
+        if (!cancelled) {
+          setClient(nextClient);
+        }
+      } catch (error) {
+        console.error("Failed to load wealth CRM client:", error);
+        if (!cancelled) {
+          setClient(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingClient(false);
+        }
+      }
+    }
+
+    void loadClient();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedClientId]);
 
   return (
     <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[64px_minmax(0,1fr)] bg-gradient-to-b from-white to-[#f6f1eb] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
@@ -829,7 +872,7 @@ function ClientOverview() {
         </div>
       </header>
 
-      {activeTab === "overview" ? <OverviewTab /> : null}
+      {activeTab === "overview" ? <OverviewTab client={client} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "wealth-map" ? <WealthMapTab /> : null}
       {activeTab === "interactions" ? <PlaceholderTab title="Interactions" /> : null}
       {activeTab === "documents" ? <PlaceholderTab title="Documents" /> : null}
@@ -863,85 +906,82 @@ function ClientTabButton({
   );
 }
 
-function OverviewTab() {
+function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | null; isLoadingClient: boolean }) {
+  const clientName = client?.display_name || client?.legal_name || "PRTR Family Office";
+  const clientSubtitle = getClientSubtitle(client);
+  const moneyCurrency = client?.net_worth_currency ?? client?.base_currency;
+  const clientAum = formatClientMoney(client?.net_worth, moneyCurrency, "$20.1 M");
+  const clientTagValue = formatClientMoney(client?.net_worth, moneyCurrency, "$20 M");
+  const locationTag = client?.primary_tax_jurisdiction || client?.base_currency || "Singapore";
+  const clientSince = getYear(client?.created_at) ?? "2019";
+  const segment = client?.segment || (client?.party_type ? formatLabelText(client.party_type) : "UHNW");
+  const familyStatus = client?.family_status || (client?.party_type ? formatLabelText(client.party_type) : "Married, 2 kids");
+  const riskProfile = client?.risk_profile || "Moderate";
+
   return (
-      <div className="min-h-0 overflow-auto bg-[#f7f3ee] pb-[40px]">
-        <section className="relative overflow-visible bg-[#f7f3ee] px-[48px] pt-[48px] pb-[40px] max-[1180px]:px-[44px] max-[640px]:px-[16px] max-[640px]:pt-[36px]">
-          <div className="absolute inset-x-0 top-0 h-[470px] overflow-hidden h-[500px]">
-            <Image src="/overview.png" alt="" fill priority sizes="(max-width: 900px) 100vw, calc(100vw - 608px)" />
-          </div>
-          <div className="relative z-[1]">
-            <h1 className="whitespace-nowrap font-serif text-[42px] font-medium leading-[50.4px] tracking-normal text-[#4D2E0C] [overflow-wrap:break-word] max-[1380px]:whitespace-normal">The Ranganathan Family</h1>
-            <p className="m-0 max-w-[480px] font-satoshi text-[16px] font-normal leading-[20.8px] text-[#423d37] [overflow-wrap:break-word]">Singapore based entrepreneur with wealth distributed across India, USA, Australia</p>
-            <div className="mt-[16px] flex flex-wrap gap-[18px]" aria-label="Client tags">
-              <span className="inline-flex min-h-[44px] items-center rounded-full bg-[#eee9e1] px-[16px] py-[8px] font-satoshi text-[16px] font-normal leading-[19.2px] text-black [overflow-wrap:break-word]">$100M</span>
-              <span className="inline-flex min-h-[44px] items-center rounded-full bg-[#eee9e1] px-[16px] py-[8px] font-satoshi text-[16px] font-normal leading-[19.2px] text-black [overflow-wrap:break-word]">Singapore</span>
-              <span className="inline-flex min-h-[44px] items-center rounded-full bg-[#eee9e1] px-[16px] py-[8px] font-satoshi text-[16px] font-normal leading-[19.2px] text-black [overflow-wrap:break-word]">India</span>
-            </div>
-          </div>
-
-          <div className="relative z-[1] mt-[80px]" aria-labelledby="since-visit-title">
-            <h2 id="since-visit-title" className="m-0 mb-[14px] font-serif text-[24px] font-semibold leading-[28.8px] text-black [overflow-wrap:break-word]">Since your last visit</h2>
-            <div className="grid grid-cols-3 gap-[18px] max-[1180px]:grid-cols-1">
-              <MetricCard label="Net worth" value="$3.70B" change="$0.25B 7.14%" date="from Jan 1, 2025" />
-              <MetricCard label="Alternative assets" value="$926,874,585" change="$3.3M 3.54%" date="from Apr 1, 2024" />
-              <MetricCard label="Cash flow" value="$14.20M" change="$1.46M 11.03%" date="from Jan 1, 2025" />
-            </div>
-          </div>
-        </section>
-
-        <section className="relative mx-[64px] mt-[28px] mb-[26px] h-[380px] overflow-hidden rounded-[18px] border border-black/15 bg-[#fbfaf7] bg-[radial-gradient(circle_at_58%_48%,rgba(238,195,87,0.25),transparent_32%),radial-gradient(circle_at_86%_42%,rgba(70,190,205,0.20),transparent_30%),radial-gradient(circle_at_80%_78%,rgba(146,110,226,0.16),transparent_30%)] before:absolute before:inset-0 before:bg-[radial-gradient(rgba(70,56,38,0.22)_1.5px,transparent_1.5px)] before:bg-[length:34px_34px] before:opacity-45 max-[1180px]:mx-[44px] max-[640px]:mx-[18px]" aria-label="Wealth map preview">
-          <h2 className="relative z-[1] m-0 px-[30px] pt-[28px] font-satoshi text-[20px] font-extrabold text-[#111]">Wealth map</h2>
-          <button type="button" className="absolute bottom-[24px] left-[24px] z-[2] inline-grid h-[54px] w-[54px] place-items-center rounded-full border-0 bg-black/15 text-[#575757]" aria-label="Expand wealth map"><ExpandCornersIcon /></button>
-          <div className="absolute top-[166px] left-[78px] z-[2] grid min-w-[198px] grid-cols-[42px_minmax(0,1fr)] items-center gap-x-3 rounded-xl bg-white/85 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.18)]">
-            <span className="absolute -top-[17px] left-0 rounded bg-black px-[7px] py-[3px] font-satoshi text-[7px] font-extrabold text-white">CLIENT</span>
-            <AvatarSeed />
-            <strong className="truncate font-satoshi text-[11px] leading-tight text-black">Ranganathan family</strong>
-            <small className="font-satoshi text-[8px] leading-tight text-[#4f4a43]">Adjusted value: $378M</small>
-          </div>
-          <div className="absolute top-[205px] left-[260px] z-[1] h-px w-[200px] origin-left bg-[#9b651d]" />
-          <div className="absolute top-[78px] left-[39%] z-[2] grid min-h-60 w-[198px] grid-cols-1 rounded-xl border-2 border-[#b77b24] bg-[#251907] p-2.5 shadow-[0_4px_12px_rgba(0,0,0,0.18)] max-[640px]:left-[34%]">
-            <span className="absolute -top-[17px] left-0 rounded bg-black px-[7px] py-[3px] font-satoshi text-[7px] font-extrabold text-white">CLIENT</span>
-            <AvatarSeed wide />
-            <strong className="truncate font-satoshi text-[11px] leading-tight text-white">Prashanth Ranganathan</strong>
-            <small className="font-satoshi text-[8px] leading-tight text-white">Adjusted value: $378M</small>
-            <p className="m-0 mt-2 font-satoshi text-[8px] leading-[1.35] text-white/70">Prashanth's wealth spans businesses, investments, trusts and multiple geographies.</p>
-            <button type="button" className="mt-2 inline-flex w-fit items-center gap-2 rounded-full border-0 bg-[#f4af23] px-2.5 py-2 font-mono text-[9px] font-extrabold text-[#231908]">Expand details <ChevronRightIcon /></button>
-          </div>
-          <div className="absolute top-[205px] left-[calc(39%+198px)] z-[1] h-px w-[220px] origin-left -rotate-[29deg] bg-[#9b651d]" />
-          <div className="absolute top-[205px] left-[calc(39%+198px)] z-[1] h-px w-[230px] origin-left rotate-[24deg] bg-[#4bb7a1]" />
-          <div className="absolute top-[14px] right-[14%] z-[2] grid min-w-[198px] grid-cols-[42px_minmax(0,1fr)] items-center gap-x-3 rounded-xl bg-white/85 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.18)] max-[640px]:-right-[72px]">
-            <AvatarSeed /><strong className="truncate font-satoshi text-[11px] leading-tight text-black">Family Trust</strong><small className="font-satoshi text-[8px] leading-tight text-[#4f4a43]">Adjusted value: $378M</small>
-          </div>
-          <div className="absolute top-[162px] right-[14%] z-[2] grid min-w-[198px] grid-cols-[42px_minmax(0,1fr)] items-center gap-x-3 rounded-xl border border-[#9d5d21] bg-white/85 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.18)] max-[640px]:-right-[72px]">
-            <span className="absolute -top-[17px] left-0 rounded bg-black/25 px-[7px] py-[3px] font-satoshi text-[7px] font-extrabold text-white">CATEGORY</span>
-            <AvatarSeed /><strong className="truncate font-satoshi text-[11px] leading-tight text-black">Financials</strong><small className="font-satoshi text-[8px] leading-tight text-[#4f4a43]">Adjusted value: $378M</small>
-          </div>
-          <div className="absolute right-[14%] bottom-[42px] z-[2] grid min-w-[198px] grid-cols-[42px_minmax(0,1fr)] items-center gap-x-3 rounded-xl bg-white/85 p-3 shadow-[0_4px_12px_rgba(0,0,0,0.18)] max-[640px]:-right-[72px]">
-            <span className="absolute -top-[17px] left-0 rounded bg-black/25 px-[7px] py-[3px] font-satoshi text-[7px] font-extrabold text-white">CATEGORY</span>
-            <AvatarSeed /><strong className="truncate font-satoshi text-[11px] leading-tight text-black">Family</strong><small className="font-satoshi text-[8px] leading-tight text-[#4f4a43]">Adjusted value: $378M</small>
-          </div>
-        </section>
-
-        <div className="grid grid-cols-2 gap-[24px] px-[64px] max-[1180px]:grid-cols-1 max-[1180px]:px-[44px] max-[640px]:px-[16px]">
-          <section className="min-h-[220px] overflow-hidden rounded-[18px] bg-white px-[30px] py-[28px]">
-            <h2 className="m-0 font-satoshi text-[18px] font-extrabold text-[#111]">Asset allocation</h2>
-            <div className="mx-auto mt-[34px] grid h-[160px] w-[160px] place-items-center rounded-full bg-[conic-gradient(#2f9b62_0_34%,#d69b2b_34%_57%,#4b82c3_57%_77%,#9b63b7_77%_100%)]" aria-hidden="true">
-              <span className="h-[88px] w-[88px] rounded-full bg-white" />
-            </div>
-          </section>
-          <section className="min-h-[220px] overflow-hidden rounded-[18px] bg-white px-[30px] py-[28px]">
-            <h2 className="m-0 font-satoshi text-[18px] font-extrabold text-[#111]">Value (USD) grouped by asset class</h2>
-            <div className="mt-[38px] flex h-[168px] items-end gap-[20px] border-y border-[#e1e5ea] px-[14px]" aria-hidden="true">
-              <span className="w-[36px] rounded-t bg-[#2f9b62]" style={{ height: "42%" }} />
-              <span className="w-[36px] rounded-t bg-[#2f9b62]" style={{ height: "68%" }} />
-              <span className="w-[36px] rounded-t bg-[#2f9b62]" style={{ height: "28%" }} />
-              <span className="w-[36px] rounded-t bg-[#2f9b62]" style={{ height: "82%" }} />
-              <span className="w-[36px] rounded-t bg-[#2f9b62]" style={{ height: "52%" }} />
-            </div>
-          </section>
+    <div className="min-h-0 overflow-auto bg-[#f6f2ec] pb-[48px]">
+      <section className="relative h-[344px] overflow-hidden bg-[#f6f2ec] px-[44px] max-[1180px]:h-[318px] max-[1180px]:px-[30px] max-[640px]:h-[350px] max-[640px]:px-[18px]">
+        <div className="absolute inset-x-0 top-0 h-[344px] overflow-hidden max-[1180px]:h-[318px] max-[640px]:h-[300px]">
+          <Image
+            src="/overview.png"
+            alt=""
+            fill
+            priority
+            className="object-cover object-[center_top]"
+            sizes="(max-width: 900px) 100vw, calc(100vw - 460px)"
+          />
+          <div className="absolute inset-0" />
+          <div className="absolute inset-x-0 bottom-0 h-[72px] bg-gradient-to-b from-transparent to-[#f6f2ec]" />
         </div>
+
+        <div className="absolute top-[74px] left-[44px] z-[1] max-w-[670px] max-[1180px]:top-[58px] max-[1180px]:left-[30px] max-[640px]:top-[34px] max-[640px]:right-[18px] max-[640px]:left-[18px]">
+          <h1 className="m-0 font-serif text-[42px] font-semibold leading-[50.4px] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:text-[38px] max-[640px]:leading-[45.6px]">
+            {clientName}
+          </h1>
+          <p
+            className="mt-[16px] mb-0 max-w-[620px] font-satoshi text-[16px] font-normal leading-[20.8px] [overflow-wrap:break-word]"
+            style={{ color: "rgba(231.34, 218.66, 148.04, 0)" }}
+          >
+            {clientSubtitle}
+          </p>
+          <div className="mt-[24px] flex flex-wrap gap-[14px]" aria-label="Client tags">
+            <span className="inline-flex min-h-[46px] items-center rounded-full bg-[#ece7df]/90 px-[23px] font-satoshi text-[19px] font-bold text-black max-[640px]:min-h-[40px] max-[640px]:px-[18px] max-[640px]:text-[16px]">{clientTagValue}</span>
+            <span className="inline-flex min-h-[46px] items-center rounded-full bg-[#ece7df]/90 px-[23px] font-satoshi text-[19px] font-bold text-black max-[640px]:min-h-[40px] max-[640px]:px-[18px] max-[640px]:text-[16px]">{locationTag}</span>
+          </div>
+        </div>
+      </section>
+
+      <div className="-mt-[6px] grid grid-cols-[minmax(0,1.55fr)_minmax(320px,0.88fr)] gap-[24px] px-[44px] max-[1180px]:grid-cols-1 max-[1180px]:px-[30px] max-[640px]:mt-0 max-[640px]:px-[18px]">
+        <div className="grid gap-[24px]">
+          <section className="rounded-[18px] bg-white/82 px-[36px] py-[36px] shadow-[0_18px_50px_rgba(60,42,24,0.08)] backdrop-blur-xl max-[640px]:px-[22px] max-[640px]:py-[26px]">
+            <p className="m-0 font-satoshi text-[22px] font-medium text-[#3a2208] max-[640px]:text-[18px]">AUM{isLoadingClient ? " loading" : ""}</p>
+            <div className="mt-[24px] flex flex-wrap items-end gap-x-[18px] gap-y-[8px]">
+              <strong className="font-satoshi text-[50px] font-bold leading-none tracking-normal text-[#171d27] max-[640px]:text-[40px]">{clientAum}</strong>
+              <span className="inline-flex items-center gap-[8px] pb-[7px] font-satoshi text-[19px] font-bold text-[#10b981] max-[640px]:text-[15px]">
+                <TrendUpIcon />
+                $142K - 7.69% vs. last month
+              </span>
+            </div>
+
+            <h2 className="mt-[52px] mb-[24px] font-satoshi text-[18px] font-bold uppercase text-[#737b8b] max-[640px]:mt-[36px]">At a glance</h2>
+            <div className="grid">
+              <AumFact label="Net worth" value={formatClientMoney(client?.net_worth, moneyCurrency, "$142M")} />
+              <AumFact label="Client since" value={clientSince} />
+              <AumFact label="Segment" value={segment} />
+              <AumFact label="Family" value={familyStatus} />
+              <AumFact label="Risk profile" value={riskProfile} last />
+            </div>
+          </section>
+
+          <AssetAllocationCard totalLabel={clientAum.replace(/\s/g, "")} />
+        </div>
+
+        <aside className="grid content-start gap-[24px]">
+          <InsightPanel />
+          <RecentActivityPanel />
+        </aside>
       </div>
+    </div>
   );
 }
 
@@ -959,6 +999,266 @@ function PlaceholderTab({ title }: { title: string }) {
   return (
     <div className="grid min-h-0 flex-1 place-items-center bg-[#f7f3ee] p-[32px]">
       <p className="m-0 font-satoshi text-[14px] text-black/45">{title}</p>
+    </div>
+  );
+}
+
+function AumFact({ label, value, last = false }: { label: string; value: string; last?: boolean }) {
+  return (
+    <div className={`flex min-h-[75px] items-center justify-between gap-[20px] py-[12px] ${last ? "" : "border-b border-[#dfe2e7]"}`}>
+      <span className="font-satoshi text-[19px] font-normal text-[#707785] max-[640px]:text-[16px]">{label}</span>
+      <strong className="text-right font-satoshi text-[20px] font-bold text-[#121722] max-[640px]:text-[17px]">{value}</strong>
+    </div>
+  );
+}
+
+function getClientSubtitle(client: WealthCrmClient | null) {
+  if (!client) {
+    return "Singapore-based entrepreneur with wealth distributed across Singapore, USA, and Australia";
+  }
+
+  const location = client.primary_tax_jurisdiction || client.base_currency || "Singapore";
+  const partyType = client.party_type ? formatLabelText(client.party_type).toLowerCase() : "client";
+  const currency = client.net_worth_currency || client.base_currency;
+
+  return `${location}-based ${partyType}${currency ? ` with wealth reported in ${currency}` : ""}`;
+}
+
+function formatClientMoney(value: string | number | null | undefined, currency?: string | null, fallback = "-") {
+  const amount = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
+
+  if (!Number.isFinite(amount)) {
+    return fallback;
+  }
+
+  const absAmount = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  const symbol = getCurrencySymbol(currency);
+  const format = (scaled: number) => {
+    const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+    return scaled.toFixed(decimals).replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1");
+  };
+
+  if (absAmount >= 1_000_000_000) {
+    return `${sign}${symbol}${format(absAmount / 1_000_000_000)} B`;
+  }
+
+  if (absAmount >= 1_000_000) {
+    return `${sign}${symbol}${format(absAmount / 1_000_000)} M`;
+  }
+
+  if (absAmount >= 1_000) {
+    return `${sign}${symbol}${format(absAmount / 1_000)} K`;
+  }
+
+  return `${sign}${symbol}${format(absAmount)}`;
+}
+
+function getCurrencySymbol(currency?: string | null) {
+  switch (currency?.toUpperCase()) {
+    case "USD":
+      return "$";
+    case "EUR":
+      return "\u20ac";
+    case "GBP":
+      return "\u00a3";
+    case "INR":
+      return "\u20b9";
+    case "JPY":
+      return "\u00a5";
+    default:
+      return currency ? `${currency.toUpperCase()} ` : "$";
+  }
+}
+
+function getYear(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : String(date.getFullYear());
+}
+
+function formatLabelText(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function InsightPanel() {
+  return (
+    <section className="relative min-h-[600px] overflow-hidden rounded-[24px] bg-[#fff4e8] px-[36px] py-[34px] max-[1180px]:min-h-[420px] max-[640px]:rounded-[18px] max-[640px]:px-[24px]">
+      <Image
+        src="/insights.png"
+        alt=""
+        fill
+        className="object-cover"
+        sizes="(max-width: 1180px) 100vw, 420px"
+      />
+      <div className="absolute inset-0 bg-white/5" />
+      <div className="relative z-[1] flex items-start justify-between gap-[20px]">
+        <div>
+          <h2 className="m-0 font-satoshi text-[28px] font-semibold leading-none text-[#282420] max-[640px]:text-[23px]">Insights</h2>
+          <p className="mt-[6px] mb-0 font-satoshi text-[14px] text-[#6c625b]">Updated 10 min ago</p>
+        </div>
+        <div className="flex items-center gap-[8px]" aria-hidden="true">
+          <span className="h-[12px] w-[12px] rounded-full bg-black" />
+          <span className="h-[12px] w-[12px] rounded-full bg-black/18" />
+          <span className="h-[12px] w-[12px] rounded-full bg-black/18" />
+          <span className="h-[12px] w-[12px] rounded-full bg-black/18" />
+        </div>
+      </div>
+
+      <div className="relative z-[1] mt-[165px] max-w-[320px] max-[1180px]:mt-[92px] max-[640px]:mt-[70px]">
+        <p className="m-0 font-satoshi text-[40px] font-medium leading-[1.12] tracking-normal text-[#282420] max-[640px]:text-[32px]">
+          Technology concentration is worrying
+        </p>
+        <p className="mt-[18px] mb-0 font-satoshi text-[17px] font-normal leading-[1.45] text-[#675443]">
+          Diversification options for the NASDAQ position have not yet been discussed.
+        </p>
+      </div>
+
+      <div className="relative z-[1] mt-[58px] flex flex-wrap items-center justify-between gap-[16px] max-[640px]:mt-[40px]">
+        <button type="button" className="inline-flex min-h-[48px] items-center gap-[10px] rounded-full border border-[#b37f40]/20 bg-[#fff5d7]/35 px-[18px] font-satoshi text-[20px] font-semibold text-[#a87536]">
+          <SparkleIcon />
+          Ask AI
+        </button>
+        <button type="button" className="inline-flex min-h-[44px] items-center gap-[12px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[20px] font-medium text-[#443830]">
+          <span aria-hidden="true" className="text-[28px] leading-none">x</span>
+          Dismiss
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function RecentActivityPanel() {
+  const activities = [
+    {
+      icon: <PhoneActivityIcon />,
+      iconClass: "bg-[#f0efff] text-[#5856d6]",
+      title: "Portfolio review call",
+      date: "AUG 14",
+      copy: "Walked through Q2 performance. Wants to trim single-stock concentration in tech before year end.",
+    },
+    {
+      icon: <CheckActivityIcon />,
+      iconClass: "bg-[#e8fbf3] text-[#008e65]",
+      title: "Capital call funded",
+      date: "AUG 09",
+      copy: "$250K to Blue River Growth Fund III. Confirmed wire same day.",
+    },
+    {
+      icon: <MailActivityIcon />,
+      iconClass: "bg-[#fff3d8] text-[#b56a14]",
+      title: "Email from client",
+      date: "AUG 04",
+      copy: "Shared updated liquidity preferences for the next allocation review.",
+    },
+  ];
+
+  return (
+    <section className="rounded-[22px] border border-[#b36f2f] bg-white/74 px-[36px] py-[34px] shadow-[0_16px_44px_rgba(60,42,24,0.06)] max-[640px]:rounded-[18px] max-[640px]:px-[24px]">
+      <h2 className="m-0 font-satoshi text-[18px] font-bold uppercase text-[#707785]">Recent activity</h2>
+      <div className="mt-[26px] grid">
+        {activities.map((activity, index) => (
+          <article key={activity.title} className={`grid grid-cols-[48px_minmax(0,1fr)_auto] gap-[18px] py-[22px] ${index === 0 ? "pt-0" : ""} ${index === activities.length - 1 ? "" : "border-b border-[#dfe2e7]"}`}>
+            <span className={`inline-grid h-[48px] w-[48px] place-items-center rounded-[12px] ${activity.iconClass}`}>
+              {activity.icon}
+            </span>
+            <div className="min-w-0">
+              <h3 className="m-0 font-satoshi text-[22px] font-bold leading-tight text-[#121722] max-[640px]:text-[18px]">{activity.title}</h3>
+              <p className="mt-[8px] mb-0 font-satoshi text-[18px] font-normal leading-[1.35] text-[#6f7787] max-[640px]:text-[15px]">{activity.copy}</p>
+            </div>
+            <time className="pt-[4px] font-satoshi text-[16px] font-bold text-[#9aa1af] max-[640px]:text-[12px]">{activity.date}</time>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AssetAllocationCard({ totalLabel = "$20.1M" }: { totalLabel?: string }) {
+  const chartData: ChartData<"doughnut", number[], string> = {
+    labels: ["Equity", "Fixed income", "Hedge funds", "Real assets"],
+    datasets: [
+      {
+        data: [34.6, 47.6, 10.6, 7.2],
+        backgroundColor: ["#197B22", "#FFC14F", "#17BD86", "#C4EF4D"],
+        borderColor: "transparent",
+        borderWidth: 0,
+        hoverOffset: 4,
+        spacing: 0,
+      },
+    ],
+  };
+
+  const chartOptions: ChartOptions<"doughnut"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: "58%",
+    rotation: -90,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: "rgba(18, 23, 34, 0.92)",
+        bodyColor: "#fff",
+        displayColors: false,
+        padding: 10,
+        callbacks: {
+          label: (context) => `${context.label}: ${context.parsed}%`,
+        },
+      },
+    },
+  };
+
+  return (
+    <section className="min-h-[490px] overflow-hidden rounded-[18px] bg-[radial-gradient(circle_at_72%_92%,rgba(246,210,83,0.36),transparent_42%),linear-gradient(135deg,#fffdf9_0%,#fbf7ef_100%)] px-[36px] py-[34px] shadow-[0_18px_50px_rgba(60,42,24,0.08)] max-[640px]:min-h-[430px] max-[640px]:px-[22px]">
+      <h2 className="m-0 font-satoshi text-[24px] font-bold text-[#171d27] max-[640px]:text-[20px]">Asset allocation</h2>
+      <div className="relative mx-auto mt-[36px] h-[330px] max-w-[600px] max-[640px]:h-[290px]">
+        <div className="absolute top-[58px] left-1/2 h-[230px] w-[230px] -translate-x-1/2 max-[640px]:top-[64px] max-[640px]:h-[190px] max-[640px]:w-[190px]">
+          <Doughnut data={chartData} options={chartOptions} />
+          <span className="absolute inset-1/2 grid h-[132px] w-[132px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[#fffaf0] text-center max-[640px]:h-[110px] max-[640px]:w-[110px]">
+            <strong className="font-satoshi text-[40px] font-bold leading-none text-black max-[640px]:text-[28px]">{totalLabel}</strong>
+            <small className="mt-[-12px] font-satoshi text-[16px] font-normal text-black max-[640px]:text-[12px]">Managed assets</small>
+          </span>
+        </div>
+
+        <AllocationLabel className="left-[9%] top-[68px]" name="Hedge funds" value="10.6%" lineClass="left-[118px] top-[20px] h-px w-[78px] rotate-[39deg]" dotClass="left-[184px] top-[70px]" />
+        <AllocationLabel className="left-[31%] top-[14px]" name="Real assets" value="7.2%" lineClass="left-[120px] top-[12px] h-px w-[72px] rotate-[67deg]" dotClass="left-[172px] top-[92px]" />
+        <AllocationLabel className="right-[9%] top-[92px]" name="Equity" value="34.6%" lineClass="right-[116px] top-[8px] h-px w-[70px] -rotate-[42deg]" dotClass="right-[178px] top-[48px]" alignRight />
+      </div>
+    </section>
+  );
+}
+
+function AllocationLabel({
+  className,
+  name,
+  value,
+  lineClass,
+  dotClass,
+  alignRight = false,
+}: {
+  className: string;
+  name: string;
+  value: string;
+  lineClass: string;
+  dotClass: string;
+  alignRight?: boolean;
+}) {
+  return (
+    <div className={`absolute ${className} ${alignRight ? "text-left" : "text-right"} max-[640px]:hidden`}>
+      <span className="block font-satoshi text-[16px] leading-tight text-[#6e7683]">{name}</span>
+      <strong className="block font-satoshi text-[20px] leading-tight text-[#151923]">{value}</strong>
+      <span className={`absolute bg-black/20 ${lineClass}`} aria-hidden="true" />
+      <span className={`absolute h-[8px] w-[8px] rounded-full bg-black ${dotClass}`} aria-hidden="true" />
     </div>
   );
 }
@@ -1032,13 +1332,43 @@ function useComposerFormat() {
   return applyFormat;
 }
 
-function Composer({ placeholder, agent }: { placeholder: string; agent: string }) {
+function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder: string; agent: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: string) => void }) {
   const isRunning = useThread((t) => t.isRunning);
   const applyFormat = useComposerFormat();
+  const [promptsExpanded, setPromptsExpanded] = useState(false);
   void agent;
   void applyFormat;
+
+  const visiblePrompts = prompts && prompts.length > 0
+    ? (promptsExpanded ? prompts : prompts.slice(0, 3))
+    : [];
+
   return (
     <ComposerPrimitive.Root className={TW.composerWrap}>
+      {visiblePrompts.length > 0 && (
+        <div className={TW.promptChipsRow}>
+          {visiblePrompts.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={TW.promptChip}
+              onClick={() => onPromptSelect?.(p.user_message)}
+            >
+              /{p.title}
+            </button>
+          ))}
+          {prompts && prompts.length > 3 && (
+            <button
+              type="button"
+              className={TW.promptChipExpand}
+              aria-label={promptsExpanded ? "Show fewer" : "Show more"}
+              onClick={() => setPromptsExpanded((v) => !v)}
+            >
+              <ChevronDownIcon />
+            </button>
+          )}
+        </div>
+      )}
       <div className={`${TW.composer} ${isRunning ? TW.composerThinking : ""}`}>
         <div className={TW.composerInputRow}>
           <ComposerPrimitive.Input
@@ -1051,18 +1381,8 @@ function Composer({ placeholder, agent }: { placeholder: string; agent: string }
         </div>
         <div className={TW.composerFooter}>
           <div className={TW.composerFooterLeft}>
-            <button type="button" className={TW.composerIconBtn} aria-label="Attach file" title="Attach file">
-              <PaperclipIcon />
-            </button>
-            <button type="button" className={TW.composerModeBtn} aria-label="Explore workflows" title="Explore workflows">
-              <span className={TW.composerModeText}>Explore workflows</span>
-              <ChevronDownIcon />
-            </button>
           </div>
           <div className={TW.composerFooterRight}>
-            <button type="button" className={TW.composerIconBtn} aria-label="Use microphone" title="Use microphone">
-              <MicIcon />
-            </button>
             <ComposerPrimaryAction />
           </div>
         </div>
@@ -1755,6 +2075,41 @@ function TrendUpIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M4 11L11 4M7 4H11V8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3L13.7 8.3L19 10L13.7 11.7L12 17L10.3 11.7L5 10L10.3 8.3L12 3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M5 14L5.8 16.2L8 17L5.8 17.8L5 20L4.2 17.8L2 17L4.2 16.2L5 14Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M18 15L18.6 16.4L20 17L18.6 17.6L18 19L17.4 17.6L16 17L17.4 16.4L18 15Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PhoneActivityIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7.5 4.5L9.8 9.4L7.9 11.1C9.2 13.7 10.8 15.2 13.4 16.5L15.1 14.6L20 16.9V20.1C20 20.7 19.6 21.2 19 21.3C10.5 20.8 3.7 14 3.2 5.5C3.1 4.9 3.6 4.5 4.2 4.5H7.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckActivityIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M5 12.5L9.2 16.5L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MailActivityIcon() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4 6.5H20V18H4V6.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M5 7.5L12 13L19 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
