@@ -876,7 +876,7 @@ function ClientOverview() {
       </header>
 
       {activeTab === "overview" ? <OverviewTab client={client} isLoadingClient={isLoadingClient} /> : null}
-      {activeTab === "wealth-map" ? <WealthMapTab /> : null}
+      {activeTab === "wealth-map" ? <WealthMapTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
       {activeTab === "interactions" ? <PlaceholderTab title="Interactions" /> : null}
       {activeTab === "documents" ? <PlaceholderTab title="Documents" /> : null}
     </section>
@@ -984,11 +984,11 @@ function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | nu
   );
 }
 
-function WealthMapTab() {
+function WealthMapTab({ clientId }: { clientId: number | null }) {
   return (
     <div className="min-h-0 overflow-auto bg-white">
-      <section className="relative h-[calc(100vh-64px)] min-h-[640px] overflow-hidden bg-white">
-        <SourceWealthChart />
+      <section className="relative h-[calc(100vh-52px)] min-h-[640px] overflow-hidden bg-white">
+        <SourceWealthChart clientId={clientId} />
       </section>
     </div>
   );
