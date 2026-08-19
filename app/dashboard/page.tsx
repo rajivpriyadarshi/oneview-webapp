@@ -137,7 +137,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const hasReviewJobs = brokerJobs?.some(j => j.status === "needs_review");
     if (portfoliosLoaded && portfolios.length === 0 && !hasReviewJobs) {
-      router.replace("/onboarding/documents");
+      router.replace("/clients");
     }
   }, [portfoliosLoaded, portfolios.length, brokerJobs, router]);
 

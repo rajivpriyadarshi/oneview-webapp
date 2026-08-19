@@ -186,5 +186,5 @@ async function getPostProfileRoute(profile: Profile): Promise<string> {
   const portfoliosResult = await store.dispatch(api.endpoints.listPortfolios.initiate(undefined, { forceRefetch: true }));
   const portfolios = portfoliosResult.data ?? [];
 
-  return portfolios.length === 0 ? "/onboarding/documents" : "/dashboard";
+  return portfolios.length === 0 ? "/clients" : "/dashboard";
 }

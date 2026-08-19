@@ -11,5 +11,5 @@ export async function getPostProfileRoute(profile: Profile) {
 
   const portfolios = await listPortfolios();
 
-  return portfolios.length === 0 ? "/onboarding/documents" : "/dashboard";
+  return portfolios.length === 0 ? "/clients" : "/dashboard";
 }
