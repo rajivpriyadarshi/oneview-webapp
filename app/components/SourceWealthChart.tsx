@@ -270,6 +270,9 @@ function buildNodes(data: GraphResponse, expandedSection: string | null): Wealth
 let _hitZones: HitZone[] = [];
 let _expandedSection: string | null = null;
 let _hoveredItem: string | null = null;
+let _animProgress = 1;
+let _animSectionX = 50;
+let _animSectionY = 50;
 
 export function SourceWealthChart({ clientId, className = "" }: { clientId: number | null; className?: string }) {
   const [graphData, setGraphData] = useState<GraphResponse | null>(null);
@@ -283,6 +286,9 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
 
   _expandedSection = expandedSection;
   _hoveredItem = hoveredItem;
+
+  const animRef = useRef<number | null>(null);
+  const prevExpandedRef = useRef<string | null>(null);
 
   const handleMouseMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     const canvas = event.currentTarget.querySelector("canvas");
@@ -352,6 +358,34 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
     if (!graphData) return [];
     return buildNodes(graphData, expandedSection);
   }, [graphData, expandedSection]);
+
+  useEffect(() => {
+    if (expandedSection && expandedSection !== prevExpandedRef.current) {
+      const sectionNode = nodes.find((n) => n.kind === "section" && n.id === expandedSection);
+      if (sectionNode) {
+        _animSectionX = sectionNode.x;
+        _animSectionY = sectionNode.y;
+      }
+      _animProgress = 0;
+      const startTime = performance.now();
+      const duration = 350;
+
+      const animate = (now: number) => {
+        const elapsed = now - startTime;
+        _animProgress = Math.min(elapsed / duration, 1);
+        _animProgress = 1 - Math.pow(1 - _animProgress, 3);
+        if (chartRef.current) chartRef.current.draw();
+        if (elapsed < duration) {
+          animRef.current = requestAnimationFrame(animate);
+        }
+      };
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      animRef.current = requestAnimationFrame(animate);
+    } else if (!expandedSection) {
+      _animProgress = 1;
+    }
+    prevExpandedRef.current = expandedSection;
+  }, [expandedSection, nodes]);
 
   useEffect(() => {
     let el = containerRef.current?.parentElement;
@@ -470,9 +504,12 @@ function createWealthMapPlugin(): Plugin<"bubble"> {
       ctx.save();
       const zones: HitZone[] = [];
 
+      const originX = px(_animSectionX);
+      const originY = py(_animSectionY);
+
       for (const node of nodes) {
-        const nodeX = px(node.x);
-        const nodeY = py(node.y);
+        let nodeX = px(node.x);
+        let nodeY = py(node.y);
 
         if (node.kind === "client") {
           drawClientCard(ctx, nodeX, nodeY, node);
@@ -482,7 +519,14 @@ function createWealthMapPlugin(): Plugin<"bubble"> {
           drawSectionCard(ctx, nodeX, nodeY, node, isExpanded);
           zones.push({ id: node.id, left: nodeX - 26, top: nodeY - 22, right: nodeX + 114, bottom: nodeY + 22 });
         } else if (node.kind === "item") {
+          if (_animProgress < 1) {
+            const t = _animProgress;
+            nodeX = originX + (nodeX - originX) * t;
+            nodeY = originY + (nodeY - originY) * t;
+            ctx.globalAlpha = t;
+          }
           drawItemTile(ctx, nodeX, nodeY, node);
+          ctx.globalAlpha = 1;
           zones.push({ id: node.id, left: nodeX - 22, top: nodeY - 26, right: nodeX + 120, bottom: nodeY + 26 });
         }
       }
@@ -530,9 +574,16 @@ function drawConnections(
     if (expandedSection) {
       const sectionRight = px(expandedSection.x) - 26 + 140;
       const sectionY = py(expandedSection.y);
+      const t = _animProgress;
+      ctx.globalAlpha = t * 0.82;
       items.forEach((item) => {
-        drawCurve(ctx, sectionRight, sectionY, px(item.x) - 20, py(item.y), "#b88555", 1);
+        const targetX = px(item.x) - 20;
+        const targetY = py(item.y);
+        const endX = sectionRight + (targetX - sectionRight) * t;
+        const endY = sectionY + (targetY - sectionY) * t;
+        drawCurve(ctx, sectionRight, sectionY, endX, endY, "#b88555", 1);
       });
+      ctx.globalAlpha = 1;
     }
   }
 }
