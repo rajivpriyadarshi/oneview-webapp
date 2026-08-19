@@ -27,7 +27,7 @@ export default function DocumentSearchBar({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Search across all documents, entities, amounts, dates, or actions..."
-          className="w-full pl-12 pr-16 py-3 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+          className="w-full h-[32px] pl-12 pr-16 text-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
         />
         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
           <span className="text-xs text-gray-400 font-medium px-2 py-1 bg-gray-100 rounded">
@@ -39,7 +39,7 @@ export default function DocumentSearchBar({
       {/* Add document button */}
       <button
         onClick={onAddDocument}
-        className="flex items-center gap-2 px-4 py-3 bg-black text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors flex-shrink-0"
+        className="flex items-center gap-2 h-[32px] px-4 bg-black text-white text-sm font-medium rounded-xl hover:bg-gray-800 transition-colors flex-shrink-0"
       >
         <svg
           width="16"

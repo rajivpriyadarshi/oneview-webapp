@@ -84,19 +84,43 @@ export default function DocumentCard({
 
               {/* Actions */}
               <div className="flex items-center gap-2 flex-shrink-0">
+                {isExpanded && (
+                  <>
+                    <button
+                      className="px-4 h-[32px] text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDocument?.();
+                      }}
+                    >
+                      View document
+                    </button>
+                    <button
+                      className="w-8 h-8 flex items-center justify-center hover:bg-gray-50 transition-colors rounded-lg"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <circle cx="8" cy="3" r="1" fill="currentColor" />
+                        <circle cx="8" cy="8" r="1" fill="currentColor" />
+                        <circle cx="8" cy="13" r="1" fill="currentColor" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+                {/* Expand/Collapse chevron */}
                 <button
-                  className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center transition-transform"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onViewDocument?.();
-                  }}
-                >
-                  View document
-                </button>
-                <button
-                  className="w-9 h-9 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
+                    onToggleExpand();
                   }}
                 >
                   <svg
@@ -105,10 +129,15 @@ export default function DocumentCard({
                     viewBox="0 0 16 16"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
+                    className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}
                   >
-                    <circle cx="8" cy="3" r="1" fill="currentColor" />
-                    <circle cx="8" cy="8" r="1" fill="currentColor" />
-                    <circle cx="8" cy="13" r="1" fill="currentColor" />
+                    <path
+                      d="M4 6L8 10L12 6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </button>
               </div>
@@ -145,33 +174,69 @@ export default function DocumentCard({
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <img
-                    src="/icons/documents/check-circle.svg"
-                    alt="Check"
-                    className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">Maps to</p>
-                    <p className="text-sm text-gray-900 font-medium">
-                      {document.metadata.mapsTo}
-                    </p>
+                {document.metadata.identification && (
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="/icons/documents/check-circle.svg"
+                      alt="Check"
+                      className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 mb-1">Identification</p>
+                      <p className="text-sm text-gray-900 font-medium">
+                        {document.metadata.identification}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-start gap-3">
-                  <img
-                    src="/icons/documents/check-circle.svg"
-                    alt="Check"
-                    className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500 mb-1">Key dates</p>
-                    <p className="text-sm text-gray-900 font-medium">
-                      {document.metadata.keyDates}
-                    </p>
+                {document.metadata.mapsTo && (
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="/icons/documents/check-circle.svg"
+                      alt="Check"
+                      className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 mb-1">Maps to</p>
+                      <p className="text-sm text-gray-900 font-medium">
+                        {document.metadata.mapsTo}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {document.metadata.documentDate && (
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="/icons/documents/check-circle.svg"
+                      alt="Check"
+                      className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 mb-1">Document date</p>
+                      <p className="text-sm text-gray-900 font-medium">
+                        {document.metadata.documentDate}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {document.metadata.keyDates && (
+                  <div className="flex items-start gap-3">
+                    <img
+                      src="/icons/documents/check-circle.svg"
+                      alt="Check"
+                      className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-500 mb-1">Key dates</p>
+                      <p className="text-sm text-gray-900 font-medium">
+                        {document.metadata.keyDates}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

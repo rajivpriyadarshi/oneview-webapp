@@ -2,6 +2,21 @@ import type { UIDocument } from "../types/documentTypes";
 
 export const MOCK_DOCUMENTS: UIDocument[] = [
   {
+    id: "0",
+    title: "Fidelity Holdings Jul'26",
+    subtitle: "Fidelity Brokerage Account • Received on 18 Aug 2026",
+    documentType: "Brokerage Holding statement",
+    icon: "file-badge-2",
+    primaryTag: { label: "Brokerage Holding statement", variant: "default" },
+    metadata: {
+      documentType: "Brokerage Holding statement",
+      provider: "Fidelity",
+      identification: "23982309190290",
+      documentDate: "31 Jul 2026 - 30 Aug 2026",
+    },
+    createdAt: "2026-08-18T00:00:00Z",
+  },
+  {
     id: "1",
     title: "Capital Call Notice — Horizon Growth Fund III",
     subtitle: "Horizon Growth Fund III • RRT International Investments Ltd. • 14 Mar 2026",
