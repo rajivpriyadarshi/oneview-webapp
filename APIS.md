@@ -200,6 +200,7 @@ its inputs and execute it as soon as the arguments validate. Omit the intent to
 return the chat to normal behavior.
 
 ---
+
 ## Client Memory
 
 ### GET `/api/wealth/crm/memories/`
@@ -214,9 +215,85 @@ Retrieve or update a client memory.
 
 ## Interactions
 
+### GET `/api/wealth/crm/clients/<client_id>/interactions/`
+
+List interactions for a specific client, scoped to the authenticated RM. Designed for the interactions timeline UI with meeting-specific enrichments.
+
+**Headers:** `Authorization: Token <token>`
+
+**Query parameters:**
+
+| Param       | Type   | Description                                                        |
+|-------------|--------|--------------------------------------------------------------------|
+| source_type | string | Filter by type: `email`, `voice_note`, `text_note`, `meeting_note`, `call_summary`, `document` |
+| search      | string | Search across subject, body, and extracted_summary (icontains)     |
+| date_from   | date   | Filter interactions on or after this date (YYYY-MM-DD)             |
+| date_to     | date   | Filter interactions on or before this date (YYYY-MM-DD)            |
+| page        | int    | Page number (default: 1)                                           |
+
+**Success response (200):**
+
+```json
+{
+  "count": 6,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 163,
+      "occurred_at": "2026-07-30T06:38:58Z",
+      "source_type": "meeting_note",
+      "source_type_display": "Meeting Note",
+      "direction": "meeting",
+      "direction_display": "Meeting",
+      "subject": "Quarterly Review — PRTR Family Office",
+      "subtitle": "75 min • Meeting Note",
+      "extracted_summary": "Met with Prashanth and Tara for quarterly portfolio review...",
+      "memory_delta": {
+        "identity": {"name": "Prashanth and Tara"},
+        "next_actions": ["Follow up on $500K reallocation..."],
+        "key_takeaways": ["Portfolio up 14% YTD...", "Considering $500K reallocation..."]
+      },
+      "memory_updated": true,
+      "key_takeaways": [
+        "Portfolio up 14% YTD with LGT discretionary outperforming by 200bps",
+        "Considering $500K reallocation from GS treasuries to direct lending",
+        "Trust setup with Withers needs completion before year-end"
+      ],
+      "next_steps": [
+        "Review LGT discretionary mandate performance vs benchmark",
+        "Explore direct lending allocation via Goldman Sachs"
+      ],
+      "meeting_duration_minutes": 75,
+      "attendees": ["Prashanth Ranganathan", "Tara Ranganathan", "Arjun Mehta"],
+      "created_at": "2026-08-19T06:38:58Z"
+    }
+  ]
+}
+```
+
+**Field notes:**
+
+| Field              | Description                                                                 |
+|--------------------|-----------------------------------------------------------------------------|
+| subtitle           | Computed display string (e.g. "90 min • Meeting Note" or "From: name • Email") |
+| key_takeaways      | LLM-extracted bullet points for meetings; empty array for non-meetings      |
+| next_steps         | From `action_items` field for meetings; empty array for non-meetings        |
+| memory_delta       | Full JSON memory delta (what changed in client memory from this interaction) |
+| memory_updated     | Whether this interaction has been applied to client memory                   |
+
+**Error responses:**
+
+| Status | Body                                                                      |
+|--------|---------------------------------------------------------------------------|
+| 403    | `{"detail": "An active Relationship Manager profile is required."}`       |
+| 404    | Client not found or not assigned to this RM                               |
+
+---
+
 ### GET `/api/wealth/crm/interactions/`
 
-List interactions. Filter with `?client_id=<id>`.
+List interactions (unscoped). Filter with `?client_id=<id>`.
 
 ### POST `/api/wealth/crm/interactions/`
 
@@ -411,6 +488,116 @@ When an entity (e.g. a trust) is related to multiple clients, the response inclu
 Navigating to an entity's own graph (`/api/wealth/clients/<entity_id>/graph/`) returns its assets broken down in the same 4-section structure.
 
 ---
+
+## Alerts
+
+### GET `/api/wealth/crm/alerts/`
+
+List unread alerts for the authenticated relationship manager (read-only). Only returns alerts where `mark_read` is `false`.
+
+**Headers:** `Authorization: Token <token>`
+
+**Query parameters:**
+
+| Param | Type | Description          |
+|-------|------|----------------------|
+| page  | int  | Page number (default: 1) |
+
+**Success response (200):**
+
+```json
+{
+  "count": 3,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "relationship_manager": 1,
+      "client": 42,
+      "client_name": "Rajesh Kumar",
+      "title": "Portfolio rebalancing needed",
+      "cta_url": "https://app.zinclabs.dev/wealth/clients/42/rebalance",
+      "cta_text": "Review now",
+      "mark_read": false,
+      "created_at": "2026-08-19T09:00:00Z"
+    },
+    {
+      "id": 2,
+      "relationship_manager": 1,
+      "client": null,
+      "client_name": null,
+      "title": "Portfolio review app added",
+      "cta_url": "https://app.zinclabs.dev/wealth/portfolio-review",
+      "cta_text": "Check now",
+      "mark_read": false,
+      "created_at": "2026-08-19T08:00:00Z"
+    }
+  ]
+}
+```
+
+### GET `/api/wealth/crm/alerts/<id>/`
+
+Retrieve a single alert.
+
+### POST `/api/wealth/crm/alerts/<id>/read/`
+
+Mark an alert as read. Once marked, it no longer appears in the list endpoint.
+
+**Headers:** `Authorization: Token <token>`
+
+**Success response (200):**
+
+```json
+{"status": "ok"}
+```
+
+---
+
+## Meetings
+
+### GET `/api/wealth/crm/meetings/`
+
+List meetings for the authenticated relationship manager (read-only).
+
+**Headers:** `Authorization: Token <token>`
+
+**Query parameters:**
+
+| Param    | Type   | Description                              |
+|----------|--------|------------------------------------------|
+| upcoming | string | `true` to show only future meetings      |
+| page     | int    | Page number (default: 1)                 |
+
+**Success response (200):**
+
+```json
+{
+  "count": 5,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 1,
+      "relationship_manager": 1,
+      "client": 42,
+      "client_name": "Rajesh Kumar",
+      "title": "Quarterly portfolio review",
+      "scheduled_at": "2026-08-25T10:00:00Z",
+      "duration_minutes": 60,
+      "created_at": "2026-08-18T14:00:00Z"
+    }
+  ]
+}
+```
+
+### GET `/api/wealth/crm/meetings/<id>/`
+
+Retrieve a single meeting.
+
+---
+
 ## Dropbox Analysis
 
 ### POST `/api/wealth/crm/my-clients/<client_id>/analyze-dropbox/` *(UI endpoint)*

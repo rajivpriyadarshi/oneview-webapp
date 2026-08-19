@@ -9,8 +9,10 @@ export interface UIDocument {
   metadata?: {
     documentType: string;
     provider: string;
-    mapsTo: string;
-    keyDates: string;
+    mapsTo?: string;
+    identification?: string;
+    documentDate?: string;
+    keyDates?: string;
   };
   expiryDate?: string;
   fileUrl?: string;
@@ -26,7 +28,8 @@ export type DocumentType =
   | "KYC"
   | "Tax"
   | "Valuation"
-  | "Agreement";
+  | "Agreement"
+  | "Brokerage Holding statement";
 
 export type DocumentIconType =
   | "file-badge-2"
