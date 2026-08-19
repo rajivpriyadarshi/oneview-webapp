@@ -55,6 +55,24 @@ export type CrmAlertsResponse = {
   results: CrmAlert[];
 };
 
+export type CrmMeeting = {
+  id: number;
+  relationship_manager: number;
+  client: number | null;
+  client_name: string | null;
+  title: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  created_at: string;
+};
+
+export type CrmMeetingsResponse = {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: CrmMeeting[];
+};
+
 export type CrmClientsResponse = {
   count: number;
   next: string | null;
@@ -290,6 +308,17 @@ export const api = createApi({
       transformResponse: (response: { currencies: { currency_code: string; name: string | null; symbol: string | null; decimals: number }[] }) => response.currencies,
     }),
 
+    // CRM Meetings
+    getCrmMeetings: builder.query<CrmMeetingsResponse, { upcoming?: boolean; page?: number } | void>({
+      query: (params) => {
+        const searchParams = new URLSearchParams();
+        if (params?.upcoming) searchParams.set("upcoming", "true");
+        if (params?.page) searchParams.set("page", String(params.page));
+        const qs = searchParams.toString();
+        return `/crm/meetings/${qs ? `?${qs}` : ""}`;
+      },
+    }),
+
     // CRM Alerts
     getCrmAlerts: builder.query<CrmAlertsResponse, { page?: number } | void>({
       query: (params) => {
@@ -342,6 +371,7 @@ export const {
   useLazyGetBrokerStatementJobStatusQuery,
   useListBrokerStatementJobsQuery,
   useListCurrenciesQuery,
+  useGetCrmMeetingsQuery,
   useGetCrmAlertsQuery,
   useGetCrmClientsQuery,
 } = api;

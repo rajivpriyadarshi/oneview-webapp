@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
-import { useGetCrmClientsQuery, useGetCrmAlertsQuery, type CrmClient, type CrmAlert } from "../store/api";
+import { useGetCrmClientsQuery, useGetCrmAlertsQuery, useGetCrmMeetingsQuery, type CrmClient, type CrmAlert, type CrmMeeting } from "../store/api";
 import { getStoredAuthToken, getStoredAdvisorProfile } from "../lib/session";
 
 export default function ClientsPage() {
@@ -23,10 +23,12 @@ export default function ClientsPage() {
 
   const { data, isLoading, isError } = useGetCrmClientsQuery();
   const { data: alertsData } = useGetCrmAlertsQuery();
+  const { data: meetingsData } = useGetCrmMeetingsQuery({ upcoming: true });
 
   const clients = data?.results ?? [];
   const totalCount = data?.count ?? 0;
   const alerts = alertsData?.results ?? [];
+  const meetings = meetingsData?.results ?? [];
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
@@ -126,7 +128,7 @@ export default function ClientsPage() {
             {/* Right panels */}
             <div style={{ flex: "0 0 360px", display: "flex", flexDirection: "column", gap: 16 }}>
               <AlertsPanel alerts={alerts} />
-              <MeetingsPanel clients={clients} />
+              <MeetingsPanel meetings={meetings} />
             </div>
           </div>
         </div>
@@ -316,12 +318,7 @@ function AlertsPanel({ alerts }: { alerts: CrmAlert[] }) {
   );
 }
 
-function MeetingsPanel({ clients }: { clients: CrmClient[] }) {
-  const meetings = clients
-    .filter((c) => c.upcoming_meeting_at)
-    .sort((a, b) => new Date(a.upcoming_meeting_at!).getTime() - new Date(b.upcoming_meeting_at!).getTime())
-    .slice(0, 3);
-
+function MeetingsPanel({ meetings }: { meetings: CrmMeeting[] }) {
   return (
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -332,29 +329,35 @@ function MeetingsPanel({ clients }: { clients: CrmClient[] }) {
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No upcoming meetings</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {meetings.map((client, i) => {
-            const d = new Date(client.upcoming_meeting_at!);
+          {meetings.slice(0, 3).map((meeting, i) => {
+            const d = new Date(meeting.scheduled_at);
             const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
             const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+            const isFirst = i === 0;
             return (
-              <div key={client.id} style={{
+              <div key={meeting.id} style={{
                 borderRadius: 16, padding: 16,
-                background: i === 0 ? "linear-gradient(135deg, #c9a84c 0%, #8a5a1e 100%)" : "rgba(0,0,0,0.03)",
+                background: isFirst ? "linear-gradient(135deg, #c9a84c 0%, #8a5a1e 100%)" : "rgba(0,0,0,0.03)",
                 display: "flex", alignItems: "center", gap: 12,
               }}>
                 <div style={{
                   width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: i === 0 ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.06)",
+                  background: isFirst ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.06)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                    <path d="M3 13.5V9M7 13.5V6M11 13.5V10.5M15 13.5V4.5" stroke={i === 0 ? "white" : "#475569"} strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M3 13.5V9M7 13.5V6M11 13.5V10.5M15 13.5V4.5"
+                      stroke={isFirst ? "white" : "#475569"} strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: i === 0 ? "white" : "#0F172A" }}>Meeting</div>
-                  <div style={{ fontSize: 12, color: i === 0 ? "rgba(255,255,255,0.80)" : "#475569", marginTop: 2 }}>{client.display_name}</div>
-                  <div style={{ fontSize: 12, color: i === 0 ? "rgba(255,255,255,0.80)" : "#475569", marginTop: 2 }}>{dateStr} • {timeStr}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: isFirst ? "white" : "#0F172A" }}>{meeting.title}</div>
+                  {meeting.client_name && (
+                    <div style={{ fontSize: 12, color: isFirst ? "rgba(255,255,255,0.80)" : "#475569", marginTop: 2 }}>{meeting.client_name}</div>
+                  )}
+                  <div style={{ fontSize: 12, color: isFirst ? "rgba(255,255,255,0.80)" : "#475569", marginTop: 2 }}>
+                    {dateStr} • {timeStr} • {meeting.duration_minutes} min
+                  </div>
                 </div>
               </div>
             );
