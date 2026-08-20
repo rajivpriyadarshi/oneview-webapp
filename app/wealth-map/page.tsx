@@ -3,6 +3,8 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import {
+  BubbleController,
+  CategoryScale,
   Chart as ChartJS,
   Filler,
   Legend,
@@ -19,7 +21,7 @@ import { Chart } from "react-chartjs-2";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import "./wealth-map.css";
 
-ChartJS.register(LinearScale, PointElement, LineElement, Tooltip, Legend, Filler, ChartDataLabels);
+ChartJS.register(BubbleController, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler, ChartDataLabels);
 
 type WealthPoint = {
   x: number;
@@ -250,11 +252,13 @@ function WealthMapChart() {
       },
       scales: {
         x: {
+          type: "linear",
           min: 0,
           max: 100,
           display: false,
         },
         y: {
+          type: "linear",
           min: 0,
           max: 90,
           display: false,
