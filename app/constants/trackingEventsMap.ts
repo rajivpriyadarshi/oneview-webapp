@@ -39,6 +39,8 @@ export const trackingEventsMap = {
     CLICK_PRIVACY_POLICY: "privacy_policy",
     API_SEND_OTP_SUCCESS: "send_otp_success",
     API_SEND_OTP_FAILURE: "send_otp_failure",
+    API_LOGIN_SUCCESS: "login_success",
+    API_LOGIN_FAILURE: "login_failure",
   },
   otpPage: {
     PAGE: "otp_verification_page",

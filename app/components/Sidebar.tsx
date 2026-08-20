@@ -9,7 +9,12 @@ import { useCrmLogoutMutation } from "../store/api";
 const ACTIVE_COLOR = "#804D13";
 const INACTIVE_COLOR = "rgba(0,0,0,0.70)";
 
-export default function Sidebar() {
+type SidebarProps = {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
+export default function Sidebar(_props: SidebarProps = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const [initial, setInitial] = useState("N");
