@@ -35,6 +35,7 @@ export default function Sidebar() {
   const nav = [
     { href: "/clients", label: "Home", icon: <HomeIcon /> },
     { href: "/clients/list", label: "Clients", icon: <UserIcon /> },
+    { href: "/apps", label: "Apps", icon: <TerminalIcon /> },
   ];
 
   return (

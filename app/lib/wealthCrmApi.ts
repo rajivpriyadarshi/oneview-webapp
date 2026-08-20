@@ -51,7 +51,14 @@ export async function listWealthCrmClients(params?: { search?: string; isActive?
 }
 
 export async function getWealthCrmClient(clientId: number | string) {
-  return apiRequest<WealthCrmClient>(`/crm/clients/${encodeURIComponent(String(clientId))}/`);
+  try {
+    return await apiRequest<WealthCrmClient>(`/crm/clients/${encodeURIComponent(String(clientId))}/`);
+  } catch {
+    const clients = await listWealthCrmClients();
+    const match = clients.find((c) => String(c.id) === String(clientId));
+    if (match) return match;
+    throw new Error(`Client ${clientId} not found`);
+  }
 }
 
 export async function listClientInteractions(
