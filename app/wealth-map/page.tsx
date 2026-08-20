@@ -165,7 +165,7 @@ export default function WealthMapPage() {
                 <PeopleIcon />
                 Wealth map
               </Link>
-              <Link href="/chat">
+              <Link href="/client">
                 <ChatIcon />
                 Interactions
               </Link>

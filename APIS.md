@@ -201,6 +201,74 @@ return the chat to normal behavior.
 
 ---
 
+### GET `/api/wealth/crm/clients/<client_id>/`
+
+Composite client detail for the RM client page. Returns header info, AUM with monthly change, at-a-glance facts, and asset allocation breakdown.
+
+**Headers:** `Authorization: Token <token>`
+
+**Success response (200):**
+
+```json
+{
+  "header": {
+    "display_name": "Vikram Agarwal",
+    "summary": "Singapore-based entrepreneur with wealth distributed across Singapore, USA, and India",
+    "tags": ["$2.1 M", "SG"],
+    "party_type": "person"
+  },
+  "aum": {
+    "total": "2111000.00",
+    "currency": "USD",
+    "change_1m": "92423.35",
+    "change_1m_pct": "4.58"
+  },
+  "at_a_glance": {
+    "net_worth": "2111000.00",
+    "net_worth_currency": "USD",
+    "client_since": "2019",
+    "segment": "HNW",
+    "family": "Married, 2 kids",
+    "risk_profile": "Moderate"
+  },
+  "asset_allocation": {
+    "total_managed": "2111000.00",
+    "currency": "USD",
+    "buckets": [
+      {"label": "ETF", "value": "1474000.0", "pct": "69.82"},
+      {"label": "EQUITY", "value": "637000.0", "pct": "30.18"}
+    ]
+  },
+  "insights": [],
+  "recent_activity": []
+}
+```
+
+**Field notes:**
+
+| Field | Description |
+|-------|-------------|
+| header.summary | From `ClientMemory.memory.profile.summary` |
+| header.tags | Derived from AUM (compact format) + primary tax jurisdiction |
+| aum.total | Sum of `DailyValuation.total_market_value` across all accounts (managed investments only) |
+| aum.change_1m / change_1m_pct | Absolute and percentage change vs. 30 days ago |
+| at_a_glance.segment | Display label for client segment (`HNW`, `UHNW`, `Institutional`) or null |
+| at_a_glance.client_since | Year string from `Client.client_since` or null |
+| at_a_glance.family | From `ClientMemory.memory.financial_context.dependant_or_family_obligations` |
+| at_a_glance.risk_profile | From `ClientMemory.memory.financial_preferences.risk_tolerance.stated_level` |
+| asset_allocation.buckets | Exposure breakdown by asset class from `PortfolioAnalyticsService` |
+| insights | Placeholder (empty array) — to be implemented |
+| recent_activity | Placeholder (empty array) — to be implemented |
+
+**Error responses:**
+
+| Status | Body |
+|--------|------|
+| 403 | `{"error": "This account is not linked to a Relationship Manager profile."}` |
+| 404 | Client not found or not assigned to this RM |
+
+---
+
 ## Client Memory
 
 ### GET `/api/wealth/crm/memories/`

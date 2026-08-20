@@ -120,7 +120,7 @@ export default function ClientsPage() {
                   key={client.id}
                   client={client}
                   isLast={i === clients.length - 1}
-                  onNavigate={(id) => router.push(`/chat?clientId=${id}`)}
+                  onNavigate={(id) => router.push(`/client?clientId=${id}`)}
                 />
               ))}
             </div>

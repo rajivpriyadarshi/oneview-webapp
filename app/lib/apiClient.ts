@@ -33,6 +33,8 @@ export async function apiRequest<T>(
     const authToken = getStoredAuthToken();
 
     if (!authToken) {
+      clearAuthToken();
+      notifyUnauthorized();
       throw new ApiError(401, "Authentication required.");
     }
 
