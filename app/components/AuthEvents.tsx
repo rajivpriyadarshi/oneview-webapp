@@ -9,7 +9,7 @@ export function AuthEvents() {
 
   useEffect(() => {
     function handleUnauthorized() {
-      router.replace("/");
+      router.replace("/auth");
     }
 
     window.addEventListener(UNAUTHORIZED_EVENT, handleUnauthorized);

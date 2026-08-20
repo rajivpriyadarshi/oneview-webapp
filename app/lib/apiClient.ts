@@ -45,11 +45,18 @@ export async function apiRequest<T>(
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(buildApiUrl(path), {
-    ...requestOptions,
-    body: serializeBody(body, isFormData),
-    headers: requestHeaders,
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl(path), {
+      ...requestOptions,
+      body: serializeBody(body, isFormData),
+      headers: requestHeaders,
+    });
+  } catch (err) {
+    clearAuthToken();
+    notifyUnauthorized();
+    throw new ApiError(0, "Network error. Please check your connection.", null);
+  }
 
   if (response.status === 204) {
     return undefined as T;
@@ -60,7 +67,7 @@ export async function apiRequest<T>(
   const isValidResponse = validateStatus?.(response, payload) ?? response.ok;
 
   if (!isValidResponse) {
-    if (response.status === 401) {
+    if (response.status === 401 || response.status === 403) {
       clearAuthToken();
       notifyUnauthorized();
     }
