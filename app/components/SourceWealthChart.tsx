@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  BubbleController,
+  CategoryScale,
   Chart as ChartJS,
   Legend,
   LinearScale,
@@ -16,7 +18,7 @@ import ChartDataLabels from "chartjs-plugin-datalabels";
 import { Chart } from "react-chartjs-2";
 import { apiRequest } from "../lib/apiClient";
 
-ChartJS.register(LinearScale, PointElement, Tooltip, Legend, ChartDataLabels);
+ChartJS.register(BubbleController, CategoryScale, LinearScale, PointElement, Tooltip, Legend, ChartDataLabels);
 
 // --- API Types ---
 
@@ -511,8 +513,8 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
       animation: false,
       layout: { padding: { top: 24, right: 140, bottom: 22, left: 18 } },
       scales: {
-        x: { min: 0, max: 100, display: false },
-        y: { min: 0, max: 100, reverse: true, display: false },
+        x: { type: "linear", min: 0, max: 100, display: false },
+        y: { type: "linear", min: 0, max: 100, reverse: true, display: false },
       },
       plugins: {
         legend: { display: false },

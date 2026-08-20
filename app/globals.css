@@ -31,6 +31,8 @@
   --card: rgba(255, 255, 255, 0.96);
   --green: #12322d;
   --link-brown: #875000;
+  --font-inter: var(--font-satoshi), Inter, sans-serif;
+  --font-geist: var(--font-satoshi), Arial, sans-serif;
 }
 
 @media (min-width: 1024px) {

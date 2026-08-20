@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Inter } from "next/font/google";
 import localFont from "next/font/local";
 import { Suspense } from "react";
 import StoreProvider from "./store/StoreProvider";

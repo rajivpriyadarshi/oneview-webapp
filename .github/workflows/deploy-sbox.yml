@@ -3,7 +3,7 @@ name: Deploy dev.z.inc
 on:
   push:
     branches:
-      - dev
+      - new-oneview
   workflow_dispatch:
     inputs:
       commit_sha:

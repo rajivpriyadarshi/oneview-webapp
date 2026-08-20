@@ -148,7 +148,7 @@ export function AuthFlow() {
         trackAPI({
           pageName: trackingEventsMap.authPage.PAGE,
           params: {
-            event_name: "CRM_LOGIN_SUCCESS",
+            event_name: trackingEventsMap.authPage.API_LOGIN_SUCCESS,
             email: normalizedEmail,
           },
         });
