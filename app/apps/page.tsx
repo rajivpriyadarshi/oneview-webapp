@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
 import { apiRequest } from "../lib/apiClient";
+import { useGetCrmClientsQuery, type CrmClient } from "../store/api";
 
 type WorkflowCommand = {
   command: string;
@@ -30,8 +32,32 @@ const ICON_GRADIENTS = [
 const ICONS = [<SearchIcon />, <CalendarIcon />, <ShieldIcon />, <HomeIcon />, <SearchIcon />, <CalendarIcon />];
 
 export default function AppsPage() {
+  const router = useRouter();
   const [commands, setCommands] = useState<WorkflowCommand[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCommand, setSelectedCommand] = useState<WorkflowCommand | null>(null);
+  const [searchText, setSearchText] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const { data: clientsData } = useGetCrmClientsQuery();
+
+  const filteredClients = (clientsData?.results ?? []).filter((c) =>
+    c.display_name.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  function handleRunClick(cmd: WorkflowCommand) {
+    setSelectedCommand(cmd);
+    setSearchText("");
+  }
+
+  function handleClientSelect(client: CrmClient) {
+    if (!selectedCommand) return;
+    setSelectedCommand(null);
+    router.push(
+      `/chat?clientId=${client.id}&prompt=${encodeURIComponent(selectedCommand.command)}&workflow_tool=${encodeURIComponent(selectedCommand.tool_name)}`
+    );
+  }
 
   useEffect(() => {
     async function fetchWorkflows() {
@@ -240,20 +266,23 @@ export default function AppsPage() {
                   </div>
 
                   {/* Run button */}
-                  <button style={{
-                    paddingLeft: 16,
-                    paddingRight: 16,
-                    paddingTop: 12,
-                    paddingBottom: 12,
-                    background: "black",
-                    borderRadius: 28,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    gap: 10,
-                    display: "flex",
-                    border: "none",
-                    cursor: "pointer",
-                  }}>
+                  <button
+                    onClick={() => handleRunClick(cmd)}
+                    style={{
+                      paddingLeft: 16,
+                      paddingRight: 16,
+                      paddingTop: 12,
+                      paddingBottom: 12,
+                      background: "black",
+                      borderRadius: 28,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      gap: 10,
+                      display: "flex",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
                     <span style={{
                       color: "white",
                       fontSize: 12,
@@ -272,25 +301,28 @@ export default function AppsPage() {
           </div>
 
           {/* Request a new App button */}
-          <button style={{
-            position: "relative",
-            zIndex: 1,
-            marginTop: 32,
-            paddingLeft: 24,
-            paddingRight: 24,
-            paddingTop: 16,
-            paddingBottom: 16,
-            background: "transparent",
-            borderRadius: 30,
-            outline: "1px rgba(0, 0, 0, 0.08) solid",
-            outlineOffset: "-1px",
-            border: "none",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 10,
-            display: "inline-flex",
-            cursor: "pointer",
-          }}>
+          <button
+            onClick={() => { setShowFeedback(true); setFeedbackSubmitted(false); setFeedbackText(""); }}
+            style={{
+              position: "relative",
+              zIndex: 1,
+              marginTop: 32,
+              paddingLeft: 24,
+              paddingRight: 24,
+              paddingTop: 16,
+              paddingBottom: 16,
+              background: "transparent",
+              borderRadius: 30,
+              outline: "1px rgba(0, 0, 0, 0.08) solid",
+              outlineOffset: "-1px",
+              border: "none",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 10,
+              display: "inline-flex",
+              cursor: "pointer",
+            }}
+          >
             <span style={{
               textAlign: "center",
               color: "black",
@@ -303,6 +335,348 @@ export default function AppsPage() {
               Request a new App
             </span>
           </button>
+          {/* Feedback modal */}
+          {showFeedback && (
+            <div
+              onClick={() => setShowFeedback(false)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 500,
+                background: "rgba(0,0,0,0.30)",
+                backdropFilter: "blur(4px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: "100%",
+                  maxWidth: 440,
+                  padding: 32,
+                  background: "rgba(255, 255, 255, 0.95)",
+                  boxShadow: "0px 4px 34px rgba(0, 0, 0, 0.16)",
+                  borderRadius: 24,
+                  flexDirection: "column",
+                  gap: 20,
+                  display: "flex",
+                  backdropFilter: "blur(20px)",
+                }}
+              >
+                {feedbackSubmitted ? (
+                  <div style={{ textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "20px 0" }}>
+                    <div style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: "50%",
+                      background: "#E8F5E9",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 13L9 17L19 7" stroke="#2E7D32" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    <div style={{
+                      color: "black",
+                      fontSize: 20,
+                      fontFamily: "ButlerPro, serif",
+                      fontWeight: 400,
+                    }}>
+                      Thank you!
+                    </div>
+                    <div style={{
+                      color: "rgba(0,0,0,0.50)",
+                      fontSize: 14,
+                      fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                      fontWeight: 400,
+                      lineHeight: "20px",
+                    }}>
+                      We&apos;ve received your request and will review it shortly.
+                    </div>
+                    <button
+                      onClick={() => setShowFeedback(false)}
+                      style={{
+                        marginTop: 8,
+                        padding: "12px 32px",
+                        background: "black",
+                        borderRadius: 28,
+                        border: "none",
+                        color: "white",
+                        fontSize: 14,
+                        fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{
+                      textAlign: "center",
+                      color: "black",
+                      fontSize: 24,
+                      fontFamily: "ButlerPro, serif",
+                      fontWeight: 400,
+                      lineHeight: "28.80px",
+                    }}>
+                      Request a new App
+                    </div>
+                    <div style={{
+                      textAlign: "center",
+                      color: "rgba(0,0,0,0.50)",
+                      fontSize: 14,
+                      fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                      fontWeight: 400,
+                      lineHeight: "20px",
+                    }}>
+                      Tell us what workflow you&apos;d like automated and we&apos;ll look into building it.
+                    </div>
+                    <textarea
+                      value={feedbackText}
+                      onChange={(e) => setFeedbackText(e.target.value)}
+                      placeholder="Describe the app you'd like to see..."
+                      autoFocus
+                      style={{
+                        width: "100%",
+                        minHeight: 120,
+                        padding: 16,
+                        borderRadius: 16,
+                        border: "1px solid #E5E7EB",
+                        outline: "none",
+                        resize: "vertical",
+                        fontSize: 15,
+                        fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                        fontWeight: 400,
+                        color: "black",
+                        background: "white",
+                      }}
+                    />
+                    <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
+                      <button
+                        onClick={() => setShowFeedback(false)}
+                        style={{
+                          padding: "12px 24px",
+                          borderRadius: 28,
+                          border: "1px solid rgba(0,0,0,0.10)",
+                          background: "white",
+                          color: "#374151",
+                          fontSize: 14,
+                          fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => setFeedbackSubmitted(true)}
+                        disabled={!feedbackText.trim()}
+                        style={{
+                          padding: "12px 24px",
+                          borderRadius: 28,
+                          border: "none",
+                          background: feedbackText.trim() ? "black" : "rgba(0,0,0,0.20)",
+                          color: "white",
+                          fontSize: 14,
+                          fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                          fontWeight: 500,
+                          cursor: feedbackText.trim() ? "pointer" : "default",
+                        }}
+                      >
+                        Submit
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Client selection modal */}
+          {selectedCommand && (
+            <div
+              onClick={() => setSelectedCommand(null)}
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 500,
+                background: "rgba(0,0,0,0.30)",
+                backdropFilter: "blur(4px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: "100%",
+                  maxWidth: 400,
+                  paddingLeft: 16,
+                  paddingRight: 16,
+                  paddingTop: 32,
+                  paddingBottom: 32,
+                  background: "rgba(255, 255, 255, 0.80)",
+                  boxShadow: "0px 4px 34px rgba(0, 0, 0, 0.16)",
+                  overflow: "hidden",
+                  borderRadius: 24,
+                  flexDirection: "column",
+                  justifyContent: "flex-start",
+                  alignItems: "center",
+                  gap: 20,
+                  display: "inline-flex",
+                  backdropFilter: "blur(20px)",
+                }}
+              >
+                <div style={{
+                  alignSelf: "stretch",
+                  textAlign: "center",
+                  color: "black",
+                  fontSize: 24,
+                  fontFamily: "ButlerPro, serif",
+                  fontWeight: 400,
+                  lineHeight: "28.80px",
+                  wordWrap: "break-word",
+                }}>
+                  Which client do you<br />want to review?
+                </div>
+
+                <div style={{
+                  alignSelf: "stretch",
+                  flexDirection: "column",
+                  justifyContent: "flex-start",
+                  alignItems: "center",
+                  gap: 8,
+                  display: "flex",
+                }}>
+                  {/* Search input */}
+                  <div style={{
+                    alignSelf: "stretch",
+                    padding: 16,
+                    borderRadius: 16,
+                    outline: "1px #E5E7EB solid",
+                    outlineOffset: "-1px",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    gap: 12,
+                    display: "flex",
+                  }}>
+                    <input
+                      type="text"
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      placeholder="Search clients..."
+                      autoFocus
+                      style={{
+                        flex: "1 1 0",
+                        color: "black",
+                        fontSize: 15,
+                        fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                        fontWeight: 500,
+                        border: "none",
+                        outline: "none",
+                        background: "transparent",
+                      }}
+                    />
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <circle cx="9" cy="9" r="6" stroke="#4B5563" strokeWidth="2" />
+                      <path d="M14 14L18 18" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </div>
+
+                  {/* Client list */}
+                  <div style={{
+                    alignSelf: "stretch",
+                    maxHeight: 300,
+                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  }}>
+                    {filteredClients.map((client) => (
+                      <button
+                        key={client.id}
+                        onClick={() => handleClientSelect(client)}
+                        style={{
+                          alignSelf: "stretch",
+                          height: 64,
+                          paddingLeft: 12,
+                          paddingRight: 12,
+                          paddingTop: 16,
+                          paddingBottom: 16,
+                          background: "white",
+                          boxShadow: "0px 2px 10px rgba(0, 0, 0, 0.13)",
+                          borderRadius: 13,
+                          justifyContent: "flex-start",
+                          alignItems: "center",
+                          gap: 10,
+                          display: "flex",
+                          border: "none",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div style={{ flex: "1 1 0", justifyContent: "space-between", alignItems: "center", display: "flex" }}>
+                          <div style={{ flex: "1 1 0", justifyContent: "flex-start", alignItems: "center", gap: 8, display: "flex" }}>
+                            {/* Avatar */}
+                            <div style={{
+                              width: 32,
+                              height: 32,
+                              background: "linear-gradient(0deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.70) 100%), #E1DEF8",
+                              borderRadius: "50%",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              flexShrink: 0,
+                            }}>
+                              <span style={{
+                                color: "#4C2D08",
+                                fontSize: 10,
+                                fontFamily: "Inter, sans-serif",
+                                fontWeight: 700,
+                              }}>
+                                {client.display_name.slice(0, 2).toUpperCase()}
+                              </span>
+                            </div>
+                            {/* Name */}
+                            <div style={{
+                              color: "#111827",
+                              fontSize: 14,
+                              fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                              fontWeight: 500,
+                              wordWrap: "break-word",
+                            }}>
+                              {client.display_name}
+                            </div>
+                          </div>
+                          {/* Chevron */}
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 6L15 12L9 18" stroke="rgba(0, 0, 0, 0.40)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      </button>
+                    ))}
+                    {filteredClients.length === 0 && (
+                      <div style={{
+                        padding: 24,
+                        textAlign: "center",
+                        color: "rgba(0,0,0,0.4)",
+                        fontSize: 14,
+                        fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                      }}>
+                        No clients found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </ProtectedRoute>

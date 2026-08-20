@@ -247,6 +247,7 @@ export default function ChatPage() {
   const searchParams = useSearchParams();
   const requestedClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
   const [initialPromptParam, setInitialPromptParam] = useState(() => searchParams.get("prompt") ?? null);
+  const [initialWorkflowTool] = useState(() => searchParams.get("workflow_tool") ?? null);
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [mobileRailOpen, setMobileRailOpen] = useState(false);
   const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
@@ -787,6 +788,7 @@ export default function ChatPage() {
                 onPromptSubmitted={updateSessionFromPrompt}
                 onAssistantFinished={handleAssistantFinished}
                 initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
+                initialWorkflowTool={isDraftChat && !selectedSession ? initialWorkflowTool : null}
               />
             )}
           </div>
@@ -880,9 +882,10 @@ type ChatThreadProps = {
     messages: ChatUiMessage[];
   }) => void;
   initialPrompt?: string | null;
+  initialWorkflowTool?: string | null;
 };
 
-function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt }: ChatThreadProps) {
+function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt, initialWorkflowTool }: ChatThreadProps) {
   const agent = getAiAgentSlug();
   const lastPromptRef = useRef<string | null>(null);
   const initialPromptFiredRef = useRef(false);
@@ -952,6 +955,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
                 ...latestUserMetadata,
                 ...getRecord(body.metadata),
                 agent,
+                client_id: clientId,
               },
             },
           };
@@ -993,8 +997,13 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current || !clientId) return;
     initialPromptFiredRef.current = true;
-    void chat.sendMessage({ text: initialPrompt });
-  }, [chat, clientId, initialPrompt]);
+    void chat.sendMessage({
+      text: initialPrompt,
+      metadata: initialWorkflowTool
+        ? { workflow_intent: { tool_name: initialWorkflowTool, mode: "run" } }
+        : undefined,
+    });
+  }, [chat, clientId, initialPrompt, initialWorkflowTool]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
