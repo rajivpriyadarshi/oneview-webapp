@@ -415,7 +415,7 @@ function DashboardBottomBar({
       {/* Ask AI button */}
       <button
         type="button"
-        onClick={() => router.push("/chat")}
+        onClick={() => router.push("/client")}
         className="flex-shrink-0 inline-flex items-center gap-[8px] rounded-full cursor-pointer transition-colors px-[16px] py-[12px] hover:bg-[#e8e0d0]"
         style={{
           border: "1px solid rgba(128, 77, 19, 0.18)",
@@ -452,7 +452,7 @@ function DashboardBottomBar({
                 <button
                   key={s}
                   type="button"
-                  onClick={() => router.push(`/chat?prompt=${encodeURIComponent(s)}`)}
+                  onClick={() => router.push(`/client?prompt=${encodeURIComponent(s)}`)}
                   className="inline-flex items-center gap-[8px] flex-shrink-0 rounded-full cursor-pointer transition-all hover:bg-white/60 px-[16px] py-[12px]"
                   style={{
                     border: "1px solid rgba(23, 22, 21, 0.12)",

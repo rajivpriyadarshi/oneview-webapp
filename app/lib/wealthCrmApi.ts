@@ -54,6 +54,44 @@ export async function getWealthCrmClient(clientId: number | string) {
   return apiRequest<WealthCrmClient>(`/crm/clients/${encodeURIComponent(String(clientId))}/`);
 }
 
+export type ClientDetailResponse = {
+  header: {
+    display_name: string;
+    summary: string;
+    tags: string[];
+    party_type: string;
+  };
+  aum: {
+    total: string;
+    currency: string;
+    change_1m: string;
+    change_1m_pct: string;
+  };
+  at_a_glance: {
+    net_worth: string;
+    net_worth_currency: string;
+    client_since: string | null;
+    segment: string | null;
+    family: string | null;
+    risk_profile: string | null;
+  };
+  asset_allocation: {
+    total_managed: string;
+    currency: string;
+    buckets: Array<{
+      label: string;
+      value: string;
+      pct: string;
+    }>;
+  };
+  insights: unknown[];
+  recent_activity: unknown[];
+};
+
+export async function getClientDetail(clientId: number | string) {
+  return apiRequest<ClientDetailResponse>(`/crm/clients/${encodeURIComponent(String(clientId))}/`);
+}
+
 export async function listClientInteractions(
   clientId: number | string,
   params?: {

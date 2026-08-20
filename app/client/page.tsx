@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { Lottie } from "lottie-react";
 import { useChat } from "@ai-sdk/react";
 import {
   ArcElement,
@@ -63,8 +64,10 @@ import {
 import { appConfig } from "../lib/config";
 import {
   getWealthCrmClient,
+  getClientDetail,
   listWealthCrmClients,
   type WealthCrmClient,
+  type ClientDetailResponse,
 } from "../lib/wealthCrmApi";
 
 ChartJS.register(ArcElement, Tooltip);
@@ -268,7 +271,7 @@ export default function ChatPage() {
   const sessionsRefreshRef = useRef(0);
   const conversationMenuRef = useRef<HTMLDivElement | null>(null);
   const chatClientId = client?.id ?? requestedClientId ?? null;
-  const chatRoute = chatClientId ? `/chat?clientId=${encodeURIComponent(String(chatClientId))}` : "/chat";
+  const chatRoute = chatClientId ? `/client?clientId=${encodeURIComponent(String(chatClientId))}` : "/client";
 
   const resolveChatClient = useCallback(async () => {
     if (client || requestedClientId) {
@@ -314,6 +317,7 @@ export default function ChatPage() {
         }
 
         if (!cancelled) {
+          console.log("ChatPage: Loaded client:", nextClient);
           setClient(nextClient);
         }
       } catch (error) {
@@ -1094,10 +1098,10 @@ function ClientOverview({
   const [activeTab, setActiveTab] = useState<ClientTab>("overview");
 
   return (
-    <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-gradient-to-b from-white to-[#f6f1eb] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
-      <header className="flex h-[52px] min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
+    <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
+      <header className="flex min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
-          <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] p-0">
+          <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] pt-[10px] pb-[10px] px-0">
             <ClientTabButton active={activeTab === "overview"} icon={<OverviewIcon />} label="Overview" onClick={() => setActiveTab("overview")} />
             <ClientTabButton active={activeTab === "wealth-map"} icon={<WealthMapIcon />} label="Wealth map" onClick={() => setActiveTab("wealth-map")} />
             <ClientTabButton active={activeTab === "interactions"} icon={<InteractionsIcon />} label="Interactions" onClick={() => setActiveTab("interactions")} />
@@ -1106,7 +1110,7 @@ function ClientOverview({
         </nav>
       </header>
 
-      {activeTab === "overview" ? <OverviewTab client={client} isLoadingClient={isLoadingClient} /> : null}
+      {activeTab === "overview" ? <OverviewTab client={client} clientId={client?.id ?? requestedClientId} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "wealth-map" ? <WealthMapTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
       {activeTab === "interactions" ? <InteractionsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "documents" ? <DocumentsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
@@ -1147,40 +1151,126 @@ function ClientTabButton({
   );
 }
 
-function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | null; isLoadingClient: boolean }) {
-  const clientName = client?.display_name || client?.legal_name || "PRTR Family Office";
-  const clientSubtitle = getClientSubtitle(client);
-  const moneyCurrency = client?.net_worth_currency ?? client?.base_currency;
-  const clientAum = formatClientMoney(client?.net_worth, moneyCurrency, "$20.1 M");
-  const clientTagValue = formatClientMoney(client?.net_worth, moneyCurrency, "$20 M");
-  const locationTag = client?.primary_tax_jurisdiction || client?.base_currency || "Singapore";
-  const clientSince = getYear(client?.created_at) ?? "2019";
-  const segment = client?.segment || (client?.party_type ? formatLabelText(client.party_type) : "UHNW");
-  const familyStatus = client?.family_status || (client?.party_type ? formatLabelText(client.party_type) : "Married, 2 kids");
-  const riskProfile = client?.risk_profile || "Moderate";
+function OverviewTab({
+  client,
+  clientId,
+  isLoadingClient,
+}: {
+  client: WealthCrmClient | null;
+  clientId: number | string | null;
+  isLoadingClient: boolean;
+}) {
+  const [clientDetail, setClientDetail] = useState<ClientDetailResponse | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+
+  useEffect(() => {
+    if (!clientId) {
+      console.log("OverviewTab: No client ID, skipping API call");
+      setClientDetail(null);
+      setIsLoadingDetail(false);
+      return;
+    }
+
+    console.log("OverviewTab: Fetching client detail for ID:", clientId);
+    let cancelled = false;
+    setClientDetail(null);
+    setIsLoadingDetail(true);
+
+    getClientDetail(clientId)
+      .then((detail) => {
+        if (!cancelled) {
+          console.log("OverviewTab: Client detail loaded successfully:", detail);
+          console.log("OverviewTab: AUM Change:", detail.aum?.change_1m, detail.aum?.change_1m_pct);
+          console.log("OverviewTab: Asset Allocation Buckets:", detail.asset_allocation?.buckets);
+          setClientDetail(detail);
+        }
+      })
+      .catch((error) => {
+        console.error("OverviewTab: Failed to load client detail:", error);
+        if (!cancelled) {
+          setClientDetail(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingDetail(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId]);
+
+  // Show loading state only while a request is actively in flight.
+  if (isLoadingClient || isLoadingDetail) {
+    return (
+      <div className="relative min-h-0 overflow-auto bg-[#F9F8F7] pb-[48px]">
+        <div className="flex min-h-[calc(100vh-120px)] flex-col items-center justify-center">
+          <Lottie src="/loader.json" autoplay loop style={{ width: 200, height: 200 }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!client && !clientDetail) {
+    return (
+      <div className="relative min-h-0 overflow-auto bg-[#F9F8F7] pb-[48px]">
+        <div className="flex min-h-[calc(100vh-120px)] flex-col items-center justify-center px-[32px] text-center">
+          <p className="m-0 font-satoshi text-[14px] text-black/50">No client details found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Use API data if available, otherwise fallback to client props
+  const clientName = clientDetail?.header?.display_name || client?.display_name || client?.legal_name || "Client";
+  const clientSubtitle = clientDetail?.header?.summary?.trim() || null;
+  const moneyCurrency = clientDetail?.aum?.currency || client?.net_worth_currency || client?.base_currency;
+  const clientAum = clientDetail?.aum?.total
+    ? formatClientMoney(clientDetail.aum.total, clientDetail.aum.currency)
+    : formatClientMoney(client?.net_worth, moneyCurrency);
+  const clientTagValue = clientDetail?.header?.tags?.[0] || formatClientMoney(client?.net_worth, moneyCurrency);
+  const locationTag = clientDetail?.header?.tags?.[1] || client?.primary_tax_jurisdiction || client?.base_currency || "-";
+  const clientSince = clientDetail?.at_a_glance?.client_since || getYear(client?.created_at) || "-";
+  const segment = clientDetail?.at_a_glance?.segment || client?.segment || (client?.party_type ? formatLabelText(client.party_type) : "-");
+  const familyStatus = clientDetail?.at_a_glance?.family?.trim() || client?.family_status || "-";
+  const riskProfile = clientDetail?.at_a_glance?.risk_profile?.trim() || client?.risk_profile || "-";
+
+  // AUM change data
+  const aumChange = clientDetail?.aum?.change_1m
+    ? formatClientMoney(clientDetail.aum.change_1m, clientDetail.aum.currency)
+    : null;
+  const aumChangePct = clientDetail?.aum?.change_1m_pct || null;
+  const hasAumChange = Boolean(aumChange || aumChangePct);
+
+  // Asset allocation data
+  const assetAllocationData = clientDetail?.asset_allocation?.buckets || [];
+  const assetAllocationTotal = clientDetail?.asset_allocation?.total_managed
+    ? formatClientMoney(clientDetail.asset_allocation.total_managed, clientDetail.asset_allocation.currency)
+    : clientAum;
+  const hasInsights = (clientDetail?.insights ?? []).some((insight) => Boolean(normalizeInsight(insight)));
+  const hasRecentActivity = (clientDetail?.recent_activity ?? []).some((activity) => Boolean(normalizeActivity(activity)));
+  const hasSidePanels = hasInsights || hasRecentActivity;
 
   return (
-    <div className="min-h-0 overflow-auto bg-[#f6f2ec] pb-[48px]">
-      <section className="relative h-[210px] overflow-hidden bg-[#f6f2ec] px-[36px] max-[1180px]:h-[195px] max-[1180px]:px-[24px] max-[640px]:h-[180px] max-[640px]:px-[16px]">
-        <div className="absolute inset-x-0 top-0 h-[210px] overflow-hidden max-[1180px]:h-[195px] max-[640px]:h-[180px]">
-          <Image
-            src="/overview.png"
-            alt=""
-            fill
-            priority
-            className="object-cover object-[center_top]"
-            sizes="(max-width: 900px) 100vw, calc(100vw - 460px)"
-          />
-          <div className="absolute inset-x-0 bottom-0 h-[80px] bg-gradient-to-b from-transparent to-[#f6f2ec]" />
-        </div>
+    <div className="relative min-h-0 overflow-auto bg-[#00000000] pb-[48px]">
+      <div
+        className="absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#00000000] bg-cover bg-center bg-no-repeat mix-blend-multiply"
+        style={{ backgroundImage: "url('/overview.png')" }}
+        aria-hidden="true"
+      />
 
+      <section className="relative h-[210px] bg-transparent px-[36px] max-[1180px]:h-[195px] max-[1180px]:px-[24px] max-[640px]:h-[180px] max-[640px]:px-[16px]">
         <div className="relative z-[1] pt-[48px] max-[640px]:pt-[32px]">
           <h1 className="m-0 font-serif text-[38px] font-bold leading-[1.15] tracking-normal text-[#3d2208] [overflow-wrap:break-word] max-[640px]:text-[32px]">
             {clientName}
           </h1>
-          <p className="mt-[10px] mb-0 max-w-[480px] font-satoshi text-[15px] font-normal leading-[1.4] text-[#4a4038] [overflow-wrap:break-word]">
-            {clientSubtitle}
-          </p>
+          {clientSubtitle ? (
+            <p className="mt-[10px] mb-0 max-w-[480px] font-satoshi text-[15px] font-normal leading-[1.4] text-[#4a4038] [overflow-wrap:break-word]">
+              {clientSubtitle}
+            </p>
+          ) : null}
           <div className="mt-[18px] flex flex-wrap gap-[10px]" aria-label="Client tags">
             <span className="inline-flex min-h-[38px] items-center rounded-full bg-[#ece7df]/90 px-[18px] font-satoshi text-[15px] font-bold text-black">{clientTagValue}</span>
             <span className="inline-flex min-h-[38px] items-center rounded-full bg-[#ece7df]/90 px-[18px] font-satoshi text-[15px] font-bold text-black">{locationTag}</span>
@@ -1188,35 +1278,44 @@ function OverviewTab({ client, isLoadingClient }: { client: WealthCrmClient | nu
         </div>
       </section>
 
-      <div className="grid grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)] gap-[16px] px-[48px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px]">
+      <div className={`grid gap-[16px] px-[48px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px] ${hasSidePanels ? "grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)]" : "grid-cols-1"}`}>
         <div className="grid gap-[24px]">
-          <section className="rounded-[16px] bg-[linear-gradient(135deg,rgba(0,0,0,0)_0%,rgba(255,255,255,0)_50%,rgba(255,255,255,0.40)_75%,rgba(255,255,255,0)_100%),rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:px-[22px] max-[640px]:py-[26px]">
-            <p className="m-0 font-satoshi text-[16px] font-medium text-[#4D2E0C] max-[640px]:text-[14px]">AUM</p>
-            <div className="mt-[12px] flex flex-wrap items-center gap-x-[12px] gap-y-[8px]">
-              <strong className="font-satoshi text-[32px] font-bold leading-none tracking-normal text-[#1A2229] max-[640px]:text-[28px]">{clientAum}</strong>
-              <span className="inline-flex items-center gap-[6px] font-[Inter] text-[13px] font-semibold text-[#10B981] max-[640px]:text-[12px]">
-                <TrendUpIcon />
-                $142K &middot; 7.69% vs. last month
-              </span>
-            </div>
+          <div className="flex w-[567px] flex-col items-start gap-[32px] rounded-[16px] bg-[rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:w-full max-[640px]:px-[22px] max-[640px]:py-[26px]">
+            <section className="w-full">
+              <p className="m-0 font-satoshi text-[16px] font-medium text-[#4D2E0C] max-[640px]:text-[14px]">AUM</p>
+              <div className="mt-[12px] flex flex-wrap items-center gap-x-[12px] gap-y-[8px]">
+                <strong className="font-satoshi text-[32px] font-bold leading-none tracking-normal text-[#1A2229] max-[640px]:text-[28px]">{clientAum}</strong>
+                {hasAumChange ? (
+                  <span className="inline-flex items-center gap-[6px] font-satoshi text-[13px] font-semibold text-[#10B981] max-[640px]:text-[12px]">
+                    <TrendUpIcon />
+                    {[aumChange, aumChangePct ? `${aumChangePct}% vs. last month` : null].filter(Boolean).join(" · ")}
+                  </span>
+                ) : null}
+              </div>
 
-            <h2 className="mt-[32px] mb-[24px] font-[Inter] text-[12px] font-bold uppercase tracking-[0.06em] text-[#6B7280] max-[640px]:mt-[24px]">At a Glance</h2>
-            <div className="grid">
-              <AumFact label="Net worth" value={formatClientMoney(client?.net_worth, moneyCurrency, "$142M")} />
-              <AumFact label="Client since" value={clientSince} />
-              <AumFact label="Segment" value={segment} />
-              <AumFact label="Family" value={familyStatus} />
-              <AumFact label="Risk profile" value={riskProfile} last />
-            </div>
+              <h2 className="mt-[32px] mb-[24px] font-satoshi text-[12px] font-bold uppercase tracking-[0.06em] text-[#6B7280] max-[640px]:mt-[24px]">At a Glance</h2>
+              <div className="grid">
+                <AumFact label="Net worth" value={clientDetail?.at_a_glance?.net_worth ? formatClientMoney(clientDetail.at_a_glance.net_worth, clientDetail.at_a_glance.net_worth_currency) : formatClientMoney(client?.net_worth, moneyCurrency)} />
+                <AumFact label="Client since" value={clientSince} />
+                <AumFact label="Segment" value={segment} />
+                <AumFact label="Family" value={familyStatus} />
+                <AumFact label="Risk profile" value={riskProfile} last />
+              </div>
+            </section>
 
-            <AssetAllocationChart totalLabel={clientAum.replace(/\s/g, "")} />
-          </section>
+            <AssetAllocationChart
+              totalLabel={assetAllocationTotal.replace(/\s/g, "")}
+              buckets={assetAllocationData}
+            />
+          </div>
         </div>
 
-        <aside className="grid content-start gap-[16px]">
-          <InsightPanel />
-          <RecentActivityPanel />
-        </aside>
+        {hasSidePanels ? (
+          <aside className="grid content-start gap-[16px]">
+            {hasInsights ? <InsightPanel insights={clientDetail?.insights ?? []} /> : null}
+            {hasRecentActivity ? <RecentActivityPanel activities={clientDetail?.recent_activity ?? []} /> : null}
+          </aside>
+        ) : null}
       </div>
     </div>
   );
@@ -1285,7 +1384,7 @@ function AumFact({ label, value, last = false }: { label: string; value: string;
 
 function getClientSubtitle(client: WealthCrmClient | null) {
   if (!client) {
-    return "Singapore-based entrepreneur with wealth distributed across Singapore, USA, and Australia";
+    return "-";
   }
 
   const location = client.primary_tax_jurisdiction || client.base_currency || "Singapore";
@@ -1325,6 +1424,16 @@ function formatClientMoney(value: string | number | null | undefined, currency?:
   return `${sign}${symbol}${format(absAmount)}`;
 }
 
+function formatPercent(value: string | number | null | undefined, fallback = "-") {
+  const amount = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
+
+  if (!Number.isFinite(amount)) {
+    return fallback;
+  }
+
+  return `${amount.toFixed(2).replace(/\.0+$/, "").replace(/(\.\d*[1-9])0+$/, "$1")}%`;
+}
+
 function getCurrencySymbol(currency?: string | null) {
   switch (currency?.toUpperCase()) {
     case "USD":
@@ -1351,6 +1460,16 @@ function getYear(value?: string | null) {
   return Number.isNaN(date.getTime()) ? null : String(date.getFullYear());
 }
 
+function formatActivityDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" }).toUpperCase();
+}
+
 function formatLabelText(value: string) {
   return value
     .replace(/[_-]+/g, " ")
@@ -1359,7 +1478,13 @@ function formatLabelText(value: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function InsightPanel() {
+function InsightPanel({ insights }: { insights: unknown[] }) {
+  const firstInsight = insights.map(normalizeInsight).find(Boolean);
+
+  if (!firstInsight) {
+    return null;
+  }
+
   return (
     <section className="relative min-h-[409px] overflow-hidden rounded-[16px] bg-[#fff4e8] p-[24px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:p-[20px]">
       <Image
@@ -1373,23 +1498,28 @@ function InsightPanel() {
       <div className="relative z-[1] flex items-start justify-between gap-[16px]">
         <div>
           <h2 className="m-0 font-satoshi text-[18px] font-semibold leading-none text-[#282420] max-[640px]:text-[16px]">Insights</h2>
-          <p className="mt-[4px] mb-0 font-satoshi text-[12px] text-[#6c625b]">Updated 10 min ago</p>
+          {firstInsight?.timestamp ? (
+            <p className="mt-[4px] mb-0 font-satoshi text-[12px] text-[#6c625b]">{firstInsight.timestamp}</p>
+          ) : null}
         </div>
-        <div className="flex items-center gap-[6px]" aria-hidden="true">
-          <span className="h-[8px] w-[8px] rounded-full bg-black" />
-          <span className="h-[8px] w-[8px] rounded-full bg-black/20" />
-          <span className="h-[8px] w-[8px] rounded-full bg-black/20" />
-          <span className="h-[8px] w-[8px] rounded-full bg-black/20" />
-        </div>
+        {insights.length > 1 ? (
+          <div className="flex items-center gap-[6px]" aria-hidden="true">
+            {insights.slice(0, 4).map((_, index) => (
+              <span key={index} className={`h-[8px] w-[8px] rounded-full ${index === 0 ? "bg-black" : "bg-black/20"}`} />
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="relative z-[1] mt-[80px] max-w-[280px] max-[1180px]:mt-[60px] max-[640px]:mt-[50px]">
         <p className="m-0 font-satoshi text-[28px] font-medium leading-[1.15] tracking-normal text-[#282420] max-[640px]:text-[24px]">
-          Technology concentration is worrying
+          {firstInsight.title}
         </p>
-        <p className="mt-[14px] mb-0 font-satoshi text-[14px] font-normal leading-[1.45] text-[#675443]">
-          Diversification options for the NASDAQ position have not yet been discussed.
-        </p>
+        {firstInsight.body ? (
+          <p className="mt-[14px] mb-0 font-satoshi text-[14px] font-normal leading-[1.45] text-[#675443]">
+            {firstInsight.body}
+          </p>
+        ) : null}
       </div>
 
       <div className="relative z-[1] mt-[32px] flex flex-wrap items-center justify-between gap-[12px] max-[640px]:mt-[24px]">
@@ -1406,37 +1536,17 @@ function InsightPanel() {
   );
 }
 
-function RecentActivityPanel() {
-  const activities = [
-    {
-      icon: <PhoneActivityIcon />,
-      iconClass: "bg-[#f0efff] text-[#5856d6]",
-      title: "Portfolio review call",
-      date: "AUG 14",
-      copy: "Walked through Q2 performance. Wants to trim single-stock concentration in tech before year end.",
-    },
-    {
-      icon: <CheckActivityIcon />,
-      iconClass: "bg-[#e8fbf3] text-[#008e65]",
-      title: "Capital call funded",
-      date: "AUG 09",
-      copy: "$250K to Blue River Growth Fund III. Confirmed wire same day.",
-    },
-    {
-      icon: <MailActivityIcon />,
-      iconClass: "bg-[#fff3d8] text-[#b56a14]",
-      title: "Email from client",
-      date: "AUG 04",
-      copy: "Shared updated liquidity preferences for the next allocation review.",
-    },
-  ];
+function RecentActivityPanel({ activities }: { activities: unknown[] }) {
+  const normalizedActivities = activities
+    .map(normalizeActivity)
+    .filter((activity): activity is OverviewActivity => Boolean(activity));
 
   return (
     <section className="rounded-[20px] border border-[#e5e7eb] bg-white px-[28px] py-[26px] max-[640px]:rounded-[16px] max-[640px]:px-[20px]">
       <h2 className="m-0 font-satoshi text-[13px] font-bold uppercase tracking-[0.06em] text-[#6b7280]">Recent activity</h2>
       <div className="mt-[20px] grid">
-        {activities.map((activity, index) => (
-          <article key={activity.title} className={`grid grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] py-[18px] ${index === 0 ? "pt-0" : ""} ${index === activities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}>
+        {normalizedActivities.map((activity, index) => (
+          <article key={`${activity.title}-${index}`} className={`grid grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] py-[18px] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}>
             <span className={`inline-grid h-[40px] w-[40px] place-items-center rounded-[10px] ${activity.iconClass}`}>
               {activity.icon}
             </span>
@@ -1452,17 +1562,157 @@ function RecentActivityPanel() {
   );
 }
 
-function AssetAllocationCard({ totalLabel = "$20.1M" }: { totalLabel?: string }) {
+type OverviewInsight = {
+  title: string;
+  body?: string;
+  timestamp?: string;
+};
+
+type OverviewActivity = {
+  icon: ReactNode;
+  iconClass: string;
+  title: string;
+  date: string;
+  copy: string;
+};
+
+function normalizeInsight(value: unknown): OverviewInsight | null {
+  if (typeof value === "string") {
+    return value.trim() ? { title: value.trim() } : null;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const title = getStringField(value, ["title", "headline", "name", "summary", "message", "text"]);
+  const body = getStringField(value, ["body", "description", "detail", "details", "copy", "recommendation"]);
+  const timestamp = getStringField(value, ["updated_at", "created_at", "timestamp", "date"]);
+
+  if (!title && !body) {
+    return null;
+  }
+
+  return {
+    title: title || body || "Insight",
+    body: body && body !== title ? body : undefined,
+    timestamp: timestamp ? formatActivityDate(timestamp) : undefined,
+  };
+}
+
+function normalizeActivity(value: unknown): OverviewActivity | null {
+  if (typeof value === "string") {
+    return value.trim()
+      ? {
+          icon: <CheckActivityIcon />,
+          iconClass: "bg-[#e8fbf3] text-[#008e65]",
+          title: value.trim(),
+          date: "",
+          copy: "",
+        }
+      : null;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const type = getStringField(value, ["type", "source_type", "channel", "kind"]);
+  const title = getStringField(value, ["title", "subject", "name", "summary"]) || (type ? formatLabelText(type) : null);
+  const copy = getStringField(value, ["copy", "description", "body", "note", "notes", "message", "text"]) || "";
+  const dateValue = getStringField(value, ["date", "occurred_at", "created_at", "updated_at", "timestamp"]);
+
+  if (!title && !copy) {
+    return null;
+  }
+
+  return {
+    ...getActivityIcon(type || title || copy),
+    title: title || "Activity",
+    date: dateValue ? formatActivityDate(dateValue) : "",
+    copy,
+  };
+}
+
+function getActivityIcon(value: string) {
+  const normalized = value.toLowerCase();
+
+  if (normalized.includes("call") || normalized.includes("phone")) {
+    return { icon: <PhoneActivityIcon />, iconClass: "bg-[#f0efff] text-[#5856d6]" };
+  }
+
+  if (normalized.includes("mail") || normalized.includes("email")) {
+    return { icon: <MailActivityIcon />, iconClass: "bg-[#fff3d8] text-[#b56a14]" };
+  }
+
+  return { icon: <CheckActivityIcon />, iconClass: "bg-[#e8fbf3] text-[#008e65]" };
+}
+
+function getStringField(record: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+
+  return null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function AssetAllocationCard({ totalLabel = "-" }: { totalLabel?: string }) {
   return <AssetAllocationChart totalLabel={totalLabel} />;
 }
 
-function AssetAllocationChart({ totalLabel = "$20.1M" }: { totalLabel?: string }) {
+function AssetAllocationChart({
+  totalLabel = "-",
+  buckets = [],
+}: {
+  totalLabel?: string;
+  buckets?: Array<{ label: string; value: string; pct: string }>;
+}) {
+  const allocationColors = ["#1D761F", "#1E8A4B", "#FFC14E", "#10B981", "#C8F65C", "#14B8A6", "#8B5CF6", "#F97316"];
+  const slices = buckets
+    .map((bucket, index) => ({
+      label: bucket.label || "Uncategorized",
+      value: Number.parseFloat(String(bucket.pct ?? "")),
+      color: allocationColors[index % allocationColors.length],
+    }))
+    .filter((bucket) => Number.isFinite(bucket.value));
+  const labels = slices.map((bucket) => bucket.label);
+  const data = slices.map((bucket) => bucket.value);
+  const colors = slices.map((bucket) => bucket.color);
+  const hasAllocationData = data.length > 0;
+  const visibleSlices = slices.slice(0, 5);
+  const connectorMarks = [
+    { circle: { cx: 258, cy: 108 }, line: { x1: 258, y1: 108, x2: 282, y2: 88 } },
+    { circle: { cx: 258, cy: 228 }, line: { x1: 258, y1: 228, x2: 280, y2: 245 } },
+    { circle: { cx: 100, cy: 245 }, line: { x1: 100, y1: 245, x2: 78, y2: 258 } },
+    { circle: { cx: 62, cy: 140 }, line: { x1: 62, y1: 140, x2: 38, y2: 118 } },
+    { circle: { cx: 145, cy: 50 }, line: { x1: 145, y1: 50, x2: 130, y2: 30 } },
+  ];
+  const labelPositions = [
+    "right-[-10px] top-[16%] max-[640px]:right-[-4px]",
+    "bottom-[14%] right-[-10px] max-[640px]:right-[-4px]",
+    "bottom-[8%] left-[0px] max-[640px]:left-[4px]",
+    "left-[-16px] top-[28%] max-[640px]:left-[-4px]",
+    "left-[22%] top-[0%]",
+  ];
+
   const chartData: ChartData<"doughnut", number[], string> = {
-    labels: ["Equity", "Venture Capital", "Fixed income", "Hedge funds", "Real assets"],
+    labels,
     datasets: [
       {
-        data: [34.6, 24.1, 23.5, 10.6, 7.2],
-        backgroundColor: ["#1D761F", "#1E8A4B", "#FFC14E", "#10B981", "#C8F65C"],
+        data,
+        backgroundColor: colors,
         borderColor: "transparent",
         borderWidth: 0,
         hoverOffset: 4,
@@ -1490,84 +1740,64 @@ function AssetAllocationChart({ totalLabel = "$20.1M" }: { totalLabel?: string }
   };
 
   return (
-    <div className="relative mt-[40px] overflow-hidden rounded-[16px] bg-[#FCF9F4] px-[24px] pt-[32px] pb-[32px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] max-[640px]:mt-[28px] max-[640px]:px-[16px] max-[640px]:pt-[24px] max-[640px]:pb-[24px]">
+    <div className="relative w-full overflow-hidden rounded-[16px] bg-[#FCF9F4] px-[24px] pt-[32px] pb-[32px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] max-[640px]:px-[16px] max-[640px]:pt-[24px] max-[640px]:pb-[24px]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[16px] opacity-70" aria-hidden="true">
         <div className="absolute -left-[60px] top-0 h-[320px] w-[600px] opacity-40 blur-[135px]" style={{ background: "linear-gradient(180deg, rgba(255,241,163,0.8) 0%, rgba(255,241,163,0.8) 50%, rgba(255,179,134,0.8) 75%, rgba(255,111,50,0.8) 100%)" }} />
         <div className="absolute -right-[60px] bottom-0 h-[320px] w-[600px] rotate-180 opacity-40 blur-[135px]" style={{ background: "linear-gradient(180deg, rgba(255,241,163,0.8) 0%, rgba(255,241,163,0.8) 50%, rgba(255,179,134,0.8) 75%, rgba(255,111,50,0.8) 100%)" }} />
       </div>
 
-      <h2 className="relative z-[1] m-0 font-[Inter] text-[16px] font-semibold text-[#1A2229]">Asset allocation</h2>
+      <h2 className="relative z-[1] m-0 self-stretch font-satoshi text-[16px] leading-normal text-[#1A2229]" style={{ fontSize: '16px', fontStyle: 'normal', fontWeight: 600, lineHeight: 'normal', color: '#1A2229' }}>Asset allocation</h2>
 
       <div className="relative z-[1] mx-auto mt-[24px] aspect-square max-w-[320px] max-[640px]:max-w-[260px]">
         <div className="absolute inset-[12%]">
-          <Doughnut data={chartData} options={chartOptions} />
+          {hasAllocationData ? (
+            <Doughnut data={chartData} options={chartOptions} />
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-full border border-black/10 bg-white/45 text-center font-satoshi text-[13px] text-black/45">
+              No allocation data
+            </div>
+          )}
           <span className="absolute inset-0 flex flex-col items-center justify-center text-center">
             <strong className="font-satoshi text-[28px] font-[900] leading-[1.2] text-black max-[640px]:text-[22px]">{totalLabel}</strong>
-            <small className="mt-[2px] font-satoshi text-[12px] font-normal text-black/60">Managed assets</small>
+            <small className="mt-[2px] self-stretch text-center font-satoshi text-[12px] font-normal leading-[150%] tracking-[-0.24px] text-[#000]" style={{ fontFeatureSettings: "'ss02' on, 'ss03' on, 'liga' off", fontStyle: 'normal' }}>Managed assets</small>
           </span>
         </div>
 
-        <svg className="absolute inset-0 h-full w-full" viewBox="0 0 320 320" fill="none" aria-hidden="true">
-          <circle cx="258" cy="108" r="4" fill="#1A2229" />
-          <line x1="258" y1="108" x2="282" y2="88" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
-          <circle cx="258" cy="228" r="4" fill="#1A2229" />
-          <line x1="258" y1="228" x2="280" y2="245" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
-          <circle cx="100" cy="245" r="4" fill="#1A2229" />
-          <line x1="100" y1="245" x2="78" y2="258" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
-          <circle cx="62" cy="140" r="4" fill="#1A2229" />
-          <line x1="62" y1="140" x2="38" y2="118" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
-          <circle cx="145" cy="50" r="4" fill="#1A2229" />
-          <line x1="145" y1="50" x2="130" y2="30" stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
-        </svg>
+        {hasAllocationData ? (
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 320 320" fill="none" aria-hidden="true">
+            {visibleSlices.map((slice, index) => {
+              const mark = connectorMarks[index];
 
-        <div className="absolute right-[-10px] top-[16%] text-left max-[640px]:right-[-4px]">
-          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Equity</span>
-          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">34.6%</strong>
-        </div>
-        <div className="absolute bottom-[14%] right-[-10px] text-left max-[640px]:right-[-4px]">
-          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Venture Capital</span>
-          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">24.1%</strong>
-        </div>
-        <div className="absolute bottom-[8%] left-[0px] text-right max-[640px]:left-[4px]">
-          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Fixed income</span>
-          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">23.5%</strong>
-        </div>
-        <div className="absolute left-[-16px] top-[28%] text-right max-[640px]:left-[-4px]">
-          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Hedge funds</span>
-          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">10.6%</strong>
-        </div>
-        <div className="absolute left-[22%] top-[0%] text-right">
-          <span className="block font-[Inter] text-[11px] font-normal text-[#5C6A72]">Real assets</span>
-          <strong className="block font-[Sora,_sans-serif] text-[13px] font-bold text-[#1A2229]">7.2%</strong>
-        </div>
+              return (
+                <g key={`${slice.label}-${index}`}>
+                  <circle cx={mark.circle.cx} cy={mark.circle.cy} r="4" fill="#1A2229" />
+                  <line x1={mark.line.x1} y1={mark.line.y1} x2={mark.line.x2} y2={mark.line.y2} stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
+                </g>
+              );
+            })}
+          </svg>
+        ) : null}
+
+        {visibleSlices.map((slice, index) => {
+          return (
+            <div key={`${slice.label}-${index}`} className={`absolute ${labelPositions[index]} text-right`}>
+              <span className="block self-stretch font-satoshi text-[11px] font-normal leading-normal text-[#5C6A72]" style={{ fontStyle: 'normal' }}>{slice.label}</span>
+              <strong className="block self-stretch font-satoshi text-[13px] font-bold leading-normal text-[#1A2229]" style={{ fontStyle: 'normal', fontWeight: 700 }}>{formatPercent(slice.value)}</strong>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="relative z-[1] mt-[16px] flex flex-col items-center gap-[4px]">
-        <div className="flex flex-wrap items-center justify-center gap-[4px]">
-          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
-            <span className="h-[8px] w-[8px] rounded-full bg-[#1D761F]" />
-            <span className="font-satoshi text-[12px] font-medium text-black/80">Equity</span>
-          </span>
-          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
-            <span className="h-[8px] w-[8px] rounded-full bg-[#C8F65C]" />
-            <span className="font-satoshi text-[12px] font-medium text-black/80">Real assets</span>
-          </span>
-          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
-            <span className="h-[8px] w-[8px] rounded-full bg-[#10B981]" />
-            <span className="font-satoshi text-[12px] font-medium text-black/80">Hedge funds</span>
-          </span>
+      {hasAllocationData ? (
+        <div className="relative z-[1] mt-[16px] flex flex-wrap items-center justify-center gap-[4px]">
+          {labels.map((label, index) => (
+            <span key={label} className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
+              <span className="h-[8px] w-[8px] rounded-full" style={{ backgroundColor: colors[index] }} />
+              <span className="font-satoshi text-[12px] font-medium text-black/80">{label}</span>
+            </span>
+          ))}
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-[4px]">
-          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
-            <span className="h-[8px] w-[8px] rounded-full bg-[#FFC14E]" />
-            <span className="font-satoshi text-[12px] font-medium text-black/80">Fixed income</span>
-          </span>
-          <span className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
-            <span className="h-[8px] w-[8px] rounded-full bg-[#1E8A4B]" />
-            <span className="font-satoshi text-[12px] font-medium text-black/80">Venture Capital</span>
-          </span>
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }

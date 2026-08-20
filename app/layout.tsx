@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import StoreProvider from "./store/StoreProvider";
 import Analytics from "./analytics";
 import { UploadTray } from "./components/UploadTray";
+import { AuthEvents } from "./components/AuthEvents";
 import "./globals.css";
 
 const butlerPro = localFont({
@@ -78,6 +79,7 @@ export default function RootLayout({
     >
       <body>
         <StoreProvider>
+          <AuthEvents />
           <Suspense fallback={null}>
             <Analytics>
               {children}
