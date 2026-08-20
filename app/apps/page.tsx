@@ -29,7 +29,14 @@ const ICON_GRADIENTS = [
   "linear-gradient(180deg, rgba(255, 230, 180, 0.80) 0%, rgba(255, 230, 180, 0.80) 50%, rgba(255, 200, 130, 0.80) 75%, rgba(255, 160, 50, 0.80) 100%)",
 ];
 
-const ICONS = [<SearchIcon />, <CalendarIcon />, <ShieldIcon />, <HomeIcon />, <SearchIcon />, <CalendarIcon />];
+const ICONS = [
+  <SearchIcon key="search-primary" />,
+  <CalendarIcon key="calendar-primary" />,
+  <ShieldIcon key="shield" />,
+  <HomeIcon key="home" />,
+  <SearchIcon key="search-secondary" />,
+  <CalendarIcon key="calendar-secondary" />,
+];
 
 export default function AppsPage() {
   const router = useRouter();
