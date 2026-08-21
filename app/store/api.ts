@@ -14,11 +14,13 @@ import type {
   BrokerStatementUploadResponse,
   BrokerStatementJob,
   DocumentStatusResponse,
+  DocumentJobStatusResponse,
   DeleteDocumentResponse,
 } from "../lib/documentsApi";
 import {
   isBrokerStatementJobStatusValid,
   isBrokerStatementUploadStatusValid,
+  isDocumentJobStatusValid,
 } from "../lib/documentsApi";
 import type { AuthSession, PasswordlessAuthSession, Profile, CRMAuthSession } from "../lib/realAuthApi";
 
@@ -267,6 +269,12 @@ export const api = createApi({
       },
       providesTags: (_result, _error, { id }) => [{ type: "Documents", id }],
     }),
+    getDocumentJobStatus: builder.query<DocumentJobStatusResponse, string>({
+      query: (jobId) => ({
+        url: `/oneview/document/jobs/${encodeURIComponent(jobId)}/status/`,
+        validateStatus: isDocumentJobStatusValid,
+      }),
+    }),
     deleteDocument: builder.mutation<
       DeleteDocumentResponse,
       string | { id: string; clientId?: number | string | null; deactivateEmptyAccounts?: boolean }
@@ -404,6 +412,7 @@ export const {
   useListDocumentsQuery,
   useGetDocumentQuery,
   useGetDocumentStatusQuery,
+  useLazyGetDocumentJobStatusQuery,
   useGetDocumentPositionsQuery,
   useUploadDocumentMutation,
   useUpdateDocumentMutation,

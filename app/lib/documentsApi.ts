@@ -110,6 +110,39 @@ export type DocumentStatusResponse = {
   failure_details?: unknown;
 };
 
+export type DocumentJobStatusResponse =
+  | {
+      status: "processing";
+      document_id?: string | number;
+      document_type?: string;
+      message?: string;
+      progress?: BrokerStatementJobProgress;
+      job_id?: string;
+    }
+  | {
+      status: "needs_review";
+      document_id?: string | number;
+      document_type?: string;
+      message?: string;
+      progress?: BrokerStatementJobProgress;
+      job_id?: string;
+    }
+  | {
+      status: "success";
+      document_id: string | number;
+      document_type?: string;
+      message?: string;
+    }
+  | {
+      status: "error";
+      document_id?: string | number;
+      document_type?: string;
+      message?: string;
+      error?: string;
+      failure_details?: unknown;
+      job_id?: string;
+    };
+
 export type DeleteDocumentResponse = {
   status: "deleted";
   deactivate_empty_accounts: boolean;
@@ -141,6 +174,10 @@ export function isBrokerStatementUploadStatusValid(response: { status: number })
 
 export function isBrokerStatementJobStatusValid(response: { status: number }) {
   return [200, 202, 400].includes(response.status);
+}
+
+export function isDocumentJobStatusValid(response: { status: number }) {
+  return [200, 202, 400, 404, 502].includes(response.status);
 }
 
 export async function pollBrokerStatementJobStatus(input: {
@@ -262,6 +299,15 @@ export function getDocument(id: string, clientId?: number | string | null) {
 export function getDocumentStatus(id: string, clientId: number | string) {
   return apiRequest<DocumentStatusResponse>(
     `/oneview/documents/${id}/status/${getClientQueryString(clientId)}`,
+  );
+}
+
+export function getDocumentJobStatus(jobId: string) {
+  return apiRequest<DocumentJobStatusResponse>(
+    `/oneview/document/jobs/${encodeURIComponent(jobId)}/status/`,
+    {
+      validateStatus: isDocumentJobStatusValid,
+    },
   );
 }
 

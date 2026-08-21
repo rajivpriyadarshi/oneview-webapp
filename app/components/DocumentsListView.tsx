@@ -7,11 +7,18 @@ import { ClientLottie } from "./ClientLottie";
 import { api, useDeleteDocumentMutation, useGetDocumentQuery, useListDocumentsQuery, useUploadBrokerStatementMutation } from "../store/api";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { addTrayItems, patchTrayItem } from "../store/uploadTraySlice";
-import { getDocumentStatus, type BrokerStatementUploadResponse, type DocumentRecord, type DocumentStatusResponse } from "../lib/documentsApi";
+import {
+  getDocumentJobStatus,
+  getDocumentStatus,
+  type BrokerStatementUploadResponse,
+  type DocumentJobStatusResponse,
+  type DocumentRecord,
+  type DocumentStatusResponse,
+} from "../lib/documentsApi";
 import { getRequestErrorMessage } from "../lib/apiClient";
 
 const DOCUMENT_ACCEPT = ".pdf,.csv,.xls,.xlsx,.doc,.docx,.png,.jpg,.jpeg";
-const DOCUMENT_STATUS_POLL_INTERVAL_MS = 5000;
+const DOCUMENT_STATUS_POLL_INTERVAL_MS = 15000;
 const DOCUMENT_STATUS_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 type SortOption = "Most recent" | "Oldest first" | "A-Z" | "Z-A";
@@ -346,21 +353,31 @@ async function pollDocumentProcessingStatus({
 }: {
   documentId: string;
   clientId: number | string;
-  onStatusChange: (status: DocumentStatusResponse) => void;
+  onStatusChange: (status: DocumentJobStatusResponse | DocumentStatusResponse) => void;
 }) {
-  const startedAt = Date.now();
+  const initialStatus = await getDocumentStatus(documentId, clientId);
+  onStatusChange(initialStatus);
+
+  if (!initialStatus.job_id) {
+    if (!isProcessing(initialStatus.processing_status)) {
+      return initialStatus;
+    }
+    throw new Error("Document is processing, but no job id was returned.");
+  }
+
   let previousStatus: string | undefined;
+  const startedAt = Date.now();
 
   while (Date.now() - startedAt <= DOCUMENT_STATUS_POLL_TIMEOUT_MS) {
-    const status = await getDocumentStatus(documentId, clientId);
-    const nextStatus = status.processing_status || "";
+    const status = await getDocumentJobStatus(initialStatus.job_id);
+    const nextStatus = status.status || "";
 
     if (nextStatus !== previousStatus) {
       previousStatus = nextStatus;
       onStatusChange(status);
     }
 
-    if (!isProcessing(status.processing_status)) {
+    if (status.status !== "processing") {
       return status;
     }
 
@@ -370,9 +387,17 @@ async function pollDocumentProcessingStatus({
   throw new Error("Document processing timed out. It may still finish shortly.");
 }
 
+function getDocumentProcessingStatusFromJob(status?: DocumentJobStatusResponse["status"]) {
+  if (status === "success") return "processed";
+  if (status === "error") return "failed";
+  if (status === "needs_review") return "needs_review";
+  return "processing";
+}
+
 export default function DocumentsListView({ clientId }: { clientId?: number | string | null }) {
   const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const activeProcessingPollsRef = useRef<Set<string>>(new Set());
   const trayItems = useAppSelector((state) => state.uploadTray.items);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("Most recent");
@@ -380,7 +405,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
   const [openMenuDocId, setOpenMenuDocId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
 
-  const { data: documents = [], isLoading, isFetching, refetch: refetchDocuments } = useListDocumentsQuery(clientId || undefined, {
+  const { data: documents = [], isLoading, refetch: refetchDocuments } = useListDocumentsQuery(clientId || undefined, {
     refetchOnMountOrArgChange: true,
   });
   const { data: expandedDocument, isFetching: isFetchingDetail } = useGetDocumentQuery({
@@ -419,6 +444,15 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
     if (!expandedDocId || documents.some((document) => String(document.id) === expandedDocId)) return;
     setExpandedDocId(null);
   }, [documents, expandedDocId]);
+
+  useEffect(() => {
+    if (!clientId) return;
+
+    for (const document of documents) {
+      if (!isProcessing(document.processing_status)) continue;
+      void pollDocumentToTerminal(String(document.id));
+    }
+  }, [clientId, documents]);
 
   const filteredDocuments = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -462,51 +496,94 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
     }
   }
 
-  function patchTrayItemFromDocument(trayItemId: string, document: Pick<DocumentRecord, "processing_status"> | DocumentStatusResponse) {
-    if (isProcessing(document.processing_status)) {
+  function patchTrayItemFromDocument(
+    trayItemId: string,
+    document: Pick<DocumentRecord, "processing_status"> | DocumentStatusResponse | DocumentJobStatusResponse,
+  ) {
+    const status = "status" in document ? document.status : document.processing_status;
+
+    if (status === "processing" || isProcessing(status)) {
       dispatch(patchTrayItem({
         id: trayItemId,
         status: "uploading",
         detail: "progress" in document && document.progress?.label ? document.progress.label : "Processing document.",
         error: undefined,
       }));
-    } else if (isError(document.processing_status)) {
+    } else if (status === "error" || isError(status)) {
       dispatch(patchTrayItem({
         id: trayItemId,
         status: "error",
         detail: undefined,
-        error: "error" in document && document.error ? document.error : "Document processing failed.",
+        error: "error" in document && document.error
+          ? document.error
+          : "message" in document && document.message
+            ? document.message
+            : "Document processing failed.",
       }));
-    } else if (isReview(document.processing_status)) {
+    } else if (status === "needs_review" || isReview(status)) {
       dispatch(patchTrayItem({ id: trayItemId, status: "review", detail: undefined, error: "Document needs review." }));
     } else {
       dispatch(patchTrayItem({ id: trayItemId, status: "complete", detail: "Document ready.", error: undefined }));
     }
   }
 
-  async function pollUploadedDocument(documentId: string, trayItemId: string) {
+  function patchDocumentInList(documentId: string, status: DocumentJobStatusResponse | DocumentStatusResponse) {
     if (!clientId) return;
 
+    dispatch(api.util.updateQueryData("listDocuments", clientId, (draft) => {
+      const document = draft.find((item) => String(item.id) === documentId);
+      if (!document) return;
+
+      if ("status" in status) {
+        document.processing_status = getDocumentProcessingStatusFromJob(status.status);
+        if (status.document_type) {
+          document.document_type = status.document_type;
+        }
+        return;
+      }
+
+      if (status.processing_status) {
+        document.processing_status = status.processing_status;
+      }
+    }));
+  }
+
+  async function pollDocumentToTerminal(documentId: string, trayItemId?: string) {
+    if (!clientId) return;
+
+    const pollKey = `${clientId}:${documentId}`;
+    if (activeProcessingPollsRef.current.has(pollKey)) return;
+    activeProcessingPollsRef.current.add(pollKey);
+
     try {
-      const finalDocument = await pollDocumentProcessingStatus({
+      const finalStatus = await pollDocumentProcessingStatus({
         documentId,
         clientId,
-        onStatusChange: (document) => {
-          patchTrayItemFromDocument(trayItemId, document);
-          void refetchDocuments();
+        onStatusChange: (status) => {
+          patchDocumentInList(documentId, status);
+          if (trayItemId) {
+            patchTrayItemFromDocument(trayItemId, status);
+          }
         },
       });
 
-      patchTrayItemFromDocument(trayItemId, finalDocument);
+      patchDocumentInList(documentId, finalStatus);
+      if (trayItemId) {
+        patchTrayItemFromDocument(trayItemId, finalStatus);
+      }
       void refetchDocuments();
     } catch (error) {
-      dispatch(patchTrayItem({
-        id: trayItemId,
-        status: "error",
-        detail: undefined,
-        error: getRequestErrorMessage(error, "Document status polling failed."),
-      }));
+      if (trayItemId) {
+        dispatch(patchTrayItem({
+          id: trayItemId,
+          status: "error",
+          detail: undefined,
+          error: getRequestErrorMessage(error, "Document status polling failed."),
+        }));
+      }
       void refetchDocuments();
+    } finally {
+      activeProcessingPollsRef.current.delete(pollKey);
     }
   }
 
@@ -556,7 +633,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
         }));
 
         void refetchDocuments();
-        void pollUploadedDocument(documentId, trayItem.id);
+        void pollDocumentToTerminal(documentId, trayItem.id);
       } catch (error) {
         dispatch(patchTrayItem({
           id: trayItem.id,
@@ -610,7 +687,6 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
         <div className="mb-6 flex items-center justify-between">
           <p className="text-sm text-gray-600">
             {isLoading ? "" : `${filteredDocuments.length} document${filteredDocuments.length !== 1 ? "s" : ""}`}
-            {isFetching && !isLoading && filteredDocuments.length > 0 ? " · Refreshing" : ""}
           </p>
           <div className="relative">
             <button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50">
