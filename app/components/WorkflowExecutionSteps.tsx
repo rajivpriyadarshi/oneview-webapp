@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 
-
 type ExecutionPlanStep = {
   position: number;
   node_id: string;
@@ -30,25 +29,24 @@ const STEP_COLORS = [
 
 export function WorkflowExecutionSteps({
   executionPlan,
-  isRunning,
+  onAnimationComplete,
 }: {
   executionPlan: ExecutionPlan;
-  isRunning: boolean;
+  isRunning?: boolean;
+  onAnimationComplete?: () => void;
 }) {
   const [visibleCount, setVisibleCount] = useState(0);
-  const animatingRef = useRef(false);
+  const completedRef = useRef(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const onCompleteRef = useRef(onAnimationComplete);
+  onCompleteRef.current = onAnimationComplete;
 
   useEffect(() => {
-    if (executionPlan.steps.length === 0) return;
-
-    if (!isRunning) {
-      setVisibleCount(executionPlan.steps.length);
-      animatingRef.current = false;
+    if (executionPlan.steps.length === 0) {
+      onCompleteRef.current?.();
       return;
     }
-
-    if (animatingRef.current) return;
-    animatingRef.current = true;
+    if (completedRef.current) return;
 
     let cancelled = false;
     let currentStep = 0;
@@ -62,18 +60,36 @@ export function WorkflowExecutionSteps({
         const delay = 3000 + Math.random() * 2000;
         setTimeout(advance, delay);
       } else {
-        animatingRef.current = false;
+        completedRef.current = true;
+        setTimeout(() => {
+          if (!cancelled) onCompleteRef.current?.();
+        }, 800);
       }
     };
 
-    const initialDelay = setTimeout(advance, 800);
+    const initialDelay = setTimeout(advance, 1200);
 
     return () => {
       cancelled = true;
       clearTimeout(initialDelay);
-      animatingRef.current = false;
     };
-  }, [isRunning, executionPlan]);
+  }, []);
+
+  useEffect(() => {
+    if (visibleCount > 0 && bottomRef.current) {
+      setTimeout(() => {
+        let el: HTMLElement | null = bottomRef.current;
+        while (el) {
+          const style = getComputedStyle(el);
+          if (style.overflowY === "auto" || style.overflowY === "scroll") {
+            el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+            return;
+          }
+          el = el.parentElement;
+        }
+      }, 150);
+    }
+  }, [visibleCount]);
 
   if (executionPlan.steps.length === 0) return null;
 
@@ -91,7 +107,7 @@ export function WorkflowExecutionSteps({
 
       {executionPlan.steps.map((step, i) => {
         const isVisible = i < visibleCount;
-        const isActive = isRunning && i === visibleCount - 1 && visibleCount < executionPlan.steps.length;
+        const isActive = i === visibleCount - 1 && visibleCount < executionPlan.steps.length;
         const isCompleted = isVisible && !isActive;
         const color = STEP_COLORS[i % STEP_COLORS.length];
 
@@ -102,9 +118,9 @@ export function WorkflowExecutionSteps({
               display: "flex",
               flexDirection: "column",
               opacity: isVisible ? 1 : 0,
-              maxHeight: isVisible ? 200 : 0,
+              maxHeight: isVisible ? 600 : 0,
               overflow: "hidden",
-              transition: "opacity 0.6s ease, max-height 0.6s ease",
+              transition: "opacity 0.8s ease, max-height 0.8s ease",
             }}
           >
             {/* Step header */}
@@ -131,7 +147,7 @@ export function WorkflowExecutionSteps({
                     width: 10,
                     height: 10,
                     borderRadius: "50%",
-                    border: `2px solid white`,
+                    border: "2px solid white",
                     borderTopColor: "transparent",
                     animation: "wf-spin 0.8s linear infinite",
                   }} />
@@ -204,6 +220,7 @@ export function WorkflowExecutionSteps({
         );
       })}
 
+      <div ref={bottomRef} />
       <style>{`
         @keyframes wf-spin {
           from { transform: rotate(0deg); }

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
+import { type ReactNode, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Lottie } from "lottie-react";
@@ -246,7 +246,8 @@ const TW = {
   loadingDot: "h-1 w-1 rounded-full bg-current",
 };
 
-let _activeExecutionPlan: { schema_version: number; flow_hash: string; steps: { position: number; node_id: string; component_type: string; label: string; description: string[]; group_id?: string; group_label?: string }[] } | null = null;
+type ExecutionPlanData = { schema_version: number; flow_hash: string; steps: { position: number; node_id: string; component_type: string; label: string; description: string[]; group_id?: string; group_label?: string }[] };
+const WorkflowPlanContext = createContext<ExecutionPlanData | null>(null);
 
 export default function ChatPage() {
   const router = useRouter();
@@ -507,6 +508,16 @@ export default function ChatPage() {
     [selectedSessionId, sessions, archivedSessions],
   );
   const isChatActive = hasStartedChat || Boolean(selectedSessionId) || Boolean(initialPromptParam) || initialMessages.length > 0;
+  const chatThreadKeyRef = useRef<string | null>(null);
+  const chatThreadKey = useMemo(() => {
+    const baseKey = `${chatClientId ?? "pending-client"}:${chatResetId}`;
+    if (selectedSession && !initialPromptParam) {
+      chatThreadKeyRef.current = `${baseKey}:${selectedSession.id}`;
+    } else if (!chatThreadKeyRef.current || chatResetId > 0) {
+      chatThreadKeyRef.current = `${baseKey}:${initialPromptParam ?? "draft"}`;
+    }
+    return chatThreadKeyRef.current;
+  }, [chatClientId, chatResetId, selectedSession, initialPromptParam]);
 
   const selectSession = async (session: AiChatSession) => {
     setIsDraftChat(false);
@@ -788,7 +799,7 @@ export default function ChatPage() {
               <div className={TW.loading}>Loading chat...</div>
             ) : (
               <ChatThread
-                key={`${chatClientId ?? "pending-client"}:${selectedSession?.id ?? initialPromptParam ?? "draft"}:${chatResetId}`}
+                key={chatThreadKey}
                 session={selectedSession}
                 initialMessages={initialMessages}
                 prompts={prompts}
@@ -797,7 +808,7 @@ export default function ChatPage() {
                 onAssistantFinished={handleAssistantFinished}
                 initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
                 initialWorkflowTool={isDraftChat && !selectedSession ? initialWorkflowTool : null}
-                executionPlan={isDraftChat && !selectedSession ? workflowExecutionPlan : null}
+                executionPlan={workflowExecutionPlan}
               />
             )}
           </div>
@@ -892,7 +903,7 @@ type ChatThreadProps = {
   }) => void;
   initialPrompt?: string | null;
   initialWorkflowTool?: string | null;
-  executionPlan?: { schema_version: number; flow_hash: string; steps: { position: number; node_id: string; component_type: string; label: string; description: string[]; group_id?: string; group_label?: string }[] } | null;
+  executionPlan?: ExecutionPlanData | null;
 };
 
 function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt, initialWorkflowTool, executionPlan }: ChatThreadProps) {
@@ -1007,9 +1018,6 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current || !clientId) return;
     initialPromptFiredRef.current = true;
-    if (executionPlan) {
-      _activeExecutionPlan = executionPlan;
-    }
     void chat.sendMessage({
       text: initialPrompt,
       metadata: initialWorkflowTool
@@ -1019,6 +1027,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
   }, [chat, clientId, initialPrompt, initialWorkflowTool, executionPlan]);
 
   return (
+    <WorkflowPlanContext.Provider value={executionPlan ?? null}>
     <AssistantRuntimeProvider runtime={runtime}>
       <div className={TW.thread}>
         <ThreadPrimitive.Root className={TW.assistantThread}>
@@ -1101,6 +1110,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
         </AuiIf>
       </div>
     </AssistantRuntimeProvider>
+    </WorkflowPlanContext.Provider>
   );
 }
 
@@ -2071,26 +2081,50 @@ function AssistantMessage({
   showReplySuggestions: boolean;
 }) {
   const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
-  const [executionPlan] = useState(() => {
-    if (_activeExecutionPlan) {
-      const plan = _activeExecutionPlan;
-      _activeExecutionPlan = null;
-      return plan;
-    }
-    return null;
-  });
+  const workflowPlan = useContext(WorkflowPlanContext);
+  const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
   const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
+  const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
+  const showContent = !hasSteps || stepsAnimationDone;
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasSteps) {
+      setStepsAnimationDone(true);
+      return;
+    }
+    const fallback = setTimeout(() => setStepsAnimationDone(true), 45000);
+    return () => clearTimeout(fallback);
+  }, [hasSteps]);
+
+  useEffect(() => {
+    if (showContent && hasSteps && stepsAnimationDone && contentRef.current) {
+      setTimeout(() => {
+        let el: HTMLElement | null = contentRef.current;
+        while (el) {
+          const style = getComputedStyle(el);
+          if (style.overflowY === "auto" || style.overflowY === "scroll") {
+            el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+            return;
+          }
+          el = el.parentElement;
+        }
+      }, 200);
+    }
+  }, [showContent, hasSteps, stepsAnimationDone]);
 
   return (
     <MessagePrimitive.Root className={TW.messageAssistant}>
       <div className={TW.messageStack}>
         <div className={`${TW.messageContent} ${TW.assistantMessageContent}`}>
-          {executionPlan && (
+          {workflowPlan && (
             <WorkflowExecutionSteps
-              executionPlan={executionPlan}
+              executionPlan={workflowPlan}
               isRunning={isStreaming}
+              onAnimationComplete={() => setStepsAnimationDone(true)}
             />
           )}
+          <div ref={contentRef} style={{ opacity: showContent ? 1 : 0, maxHeight: showContent ? "none" : 0, overflow: "hidden", transition: "opacity 0.6s ease" }}>
           <MessagePrimitive.GroupedParts
             groupBy={groupPartByType({
               "tool-call": ["group-tools"],
@@ -2113,12 +2147,13 @@ function AssistantMessage({
                 case "tool-call":
                   return part.toolUI ?? <ToolCallPart {...part} />;
                 case "indicator":
-                  return executionPlan ? null : <AssistantLoadingState />;
+                  return workflowPlan ? null : <AssistantLoadingState />;
                 default:
                   return null;
               }
             }}
           </MessagePrimitive.GroupedParts>
+          </div>
         </div>
         {replySuggestions.length > 0 ? (
           <div className={TW.replySuggestions} aria-label="Reply suggestions">
