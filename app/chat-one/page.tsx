@@ -165,6 +165,18 @@ export default function ChatOnePage() {
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [prompts, setPrompts] = useState<ChatPrompt[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredClients = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter((client) => {
+      if (client.display_name?.toLowerCase().includes(q)) return true;
+      const group = clientGroups.get(client.id);
+      if (group?.sessions.some((s) => s.title?.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }, [clients, clientGroups, searchQuery]);
 
   const chatClientId = selectedClientId ?? requestedClientId ?? clients[0]?.id ?? null;
 
@@ -313,7 +325,7 @@ export default function ChatOnePage() {
       {/* Top Header Bar */}
       <header className="fixed left-[80px] right-0 top-0 z-50 flex items-center justify-between border-b border-black/10 bg-white/20 px-6 py-2.5 backdrop-blur-[32px]">
         <h1 className="m-0 text-[22px] font-medium leading-[26.4px] text-black" style={{ fontFamily: "var(--font-butler)" }}>AI assistant</h1>
-        <button type="button" onClick={startNewChat} className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-3 font-satoshi text-[12px] font-medium leading-[18px] text-white shadow-[0_3px_4px_rgba(0,0,0,0.04)] transition hover:bg-[#2d2926]">
+        <button type="button" onClick={startNewChat} className="inline-flex items-center gap-2 rounded-full bg-black p-[12px] font-satoshi font-medium leading-[18px] text-white shadow-[0_3px_4px_rgba(0,0,0,0.04)] transition hover:bg-[#2d2926]" style={{ fontSize: "12px" }}>
           New chat
         </button>
       </header>
@@ -325,7 +337,14 @@ export default function ChatOnePage() {
           {/* Search input */}
           <div className="px-3 pt-6 pb-4">
             <div className="flex items-center justify-between rounded-full bg-white px-[14px] py-3" style={{ outline: "1px solid rgba(0,0,0,0.10)", outlineOffset: "-1px" }}>
-              <span className="font-satoshi text-[14px] leading-[18px] text-black/60">Search your chat</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search your chat"
+                className="min-w-0 flex-1 border-0 bg-transparent outline-none"
+                style={{ color: "rgba(0, 0, 0, 0.60)", fontSize: 12, fontFamily: "var(--font-satoshi)", fontWeight: 400, lineHeight: "18px", wordWrap: "break-word" }}
+              />
               <SearchIcon />
             </div>
           </div>
@@ -333,9 +352,10 @@ export default function ChatOnePage() {
             {isLoadingClients ? (
               <div className="py-6 text-center font-satoshi text-[12px] text-black/40">Loading clients...</div>
             ) : (
-              clients.map((client) => {
+              filteredClients.map((client) => {
                 const group = clientGroups.get(client.id);
-                const isExpanded = group?.isExpanded ?? false;
+                const hasSearchQuery = searchQuery.trim().length > 0;
+                const isExpanded = hasSearchQuery ? true : (group?.isExpanded ?? false);
                 const initial = (client.display_name || "?").trim()[0].toUpperCase();
                 return (
                   <div key={client.id} className="mb-2">
@@ -359,7 +379,7 @@ export default function ChatOnePage() {
                         {group?.isLoading ? (
                           <div className="py-2 pl-3 font-satoshi text-[12px] text-black/40">Loading...</div>
                         ) : group?.sessions.length ? (
-                          group.sessions.map((session) => (
+                          (searchQuery.trim() ? group.sessions.filter((s) => s.title?.toLowerCase().includes(searchQuery.trim().toLowerCase())) : group.sessions).map((session) => (
                             <div
                               key={session.id}
                               style={session.id === selectedSessionId ? { backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center" } : undefined}
@@ -469,7 +489,8 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
           onPromptSubmitted(prompt);
         }
         if (!sessionId) pendingSessionIdRef.current = null;
-        return { ...options, api, body: { ...body, message: prompt || latestUserMessage, messages, metadata: { ...getRecord(body.metadata), agent, client_id: clientId } } };
+        const latestUserMetadata = getMessageCustomMetadata(latestUserMessage?.metadata);
+        return { ...options, api, body: { ...body, message: prompt || latestUserMessage, messages, metadata: { ...latestUserMetadata, ...getRecord(body.metadata), agent, client_id: clientId } } };
       },
     }),
     [agent, clientId, onPromptSubmitted, sessionId],
@@ -675,7 +696,7 @@ function AssistantMessage({ message, showReplySuggestions }: { message: MessageS
           <div className={TW.replySuggestions} aria-label="Reply suggestions">
             <p className="mb-1 font-satoshi text-[14px] font-medium leading-[20px] text-black/80">If you want to know more</p>
             {replySuggestions.map((suggestion) => (
-              <ReplySuggestionButton key={suggestion} suggestion={suggestion} autoSubmit={appConfig.replySuggestionsAutoSubmit} />
+              <ReplySuggestionButton key={suggestion} suggestion={suggestion} autoSubmit={true} />
             ))}
           </div>
         ) : null}
@@ -698,11 +719,14 @@ function ReplySuggestionButton({ suggestion, autoSubmit }: { suggestion: string;
     const composer = threadRuntime?.composer;
     if (!composer) return;
     composer.setText(suggestion);
-    if (autoSubmit) { composer.send(); return; }
+    if (autoSubmit) {
+      window.requestAnimationFrame(() => { composer.send(); });
+      return;
+    }
     window.requestAnimationFrame(() => { document.querySelector<HTMLTextAreaElement>("[data-chat-composer-input]")?.focus(); });
   };
   return (
-    <div className={TW.replyPill} style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace", cursor: "pointer" }} onClick={handleClick}>
+    <div className={TW.replyPill} style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace", cursor: "pointer" }} onClick={handleClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}>
       <span className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
       <span>{suggestion}</span>
     </div>
@@ -782,6 +806,11 @@ function getSessionIdFromMetadata(metadata: AiChatMessageMetadata | undefined) {
 
 function getRecord(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function getMessageCustomMetadata(metadata: unknown) {
+  const record = getRecord(metadata);
+  return { ...record, ...getRecord(record.custom) };
 }
 
 function getReplySuggestions(parts: readonly unknown[]) {
