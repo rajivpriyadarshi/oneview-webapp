@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
+import { type ReactNode, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Lottie } from "lottie-react";
@@ -41,6 +41,7 @@ import { MobileHeader } from "../components/MobileHeader";
 import { SourceWealthChart } from "../components/SourceWealthChart";
 import DocumentsListView from "../components/DocumentsListView";
 import InteractionsTabContent from "../components/InteractionsTabContent";
+import { WorkflowExecutionSteps, useWorkflowExecutionPlan } from "../components/WorkflowExecutionSteps";
 import {
   type AiChatSession,
   type ChatPrompt,
@@ -245,12 +246,16 @@ const TW = {
   loadingDot: "h-1 w-1 rounded-full bg-current",
 };
 
+type ExecutionPlanData = { schema_version: number; flow_hash: string; steps: { position: number; node_id: string; component_type: string; label: string; description: string[]; group_id?: string; group_label?: string }[] };
+const WorkflowPlanContext = createContext<ExecutionPlanData | null>(null);
+
 export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
   const [initialPromptParam, setInitialPromptParam] = useState(() => searchParams.get("prompt") ?? null);
   const [initialWorkflowTool] = useState(() => searchParams.get("workflow_tool") ?? null);
+  const workflowExecutionPlan = useWorkflowExecutionPlan();
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [mobileRailOpen, setMobileRailOpen] = useState(false);
   const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
@@ -503,6 +508,16 @@ export default function ChatPage() {
     [selectedSessionId, sessions, archivedSessions],
   );
   const isChatActive = hasStartedChat || Boolean(selectedSessionId) || Boolean(initialPromptParam) || initialMessages.length > 0;
+  const chatThreadKeyRef = useRef<string | null>(null);
+  const chatThreadKey = useMemo(() => {
+    const baseKey = `${chatClientId ?? "pending-client"}:${chatResetId}`;
+    if (selectedSession && !initialPromptParam) {
+      chatThreadKeyRef.current = `${baseKey}:${selectedSession.id}`;
+    } else if (!chatThreadKeyRef.current || chatResetId > 0) {
+      chatThreadKeyRef.current = `${baseKey}:${initialPromptParam ?? "draft"}`;
+    }
+    return chatThreadKeyRef.current;
+  }, [chatClientId, chatResetId, selectedSession, initialPromptParam]);
 
   const selectSession = async (session: AiChatSession) => {
     setIsDraftChat(false);
@@ -784,7 +799,7 @@ export default function ChatPage() {
               <div className={TW.loading}>Loading chat...</div>
             ) : (
               <ChatThread
-                key={`${chatClientId ?? "pending-client"}:${selectedSession?.id ?? initialPromptParam ?? "draft"}:${chatResetId}`}
+                key={chatThreadKey}
                 session={selectedSession}
                 initialMessages={initialMessages}
                 prompts={prompts}
@@ -793,6 +808,7 @@ export default function ChatPage() {
                 onAssistantFinished={handleAssistantFinished}
                 initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
                 initialWorkflowTool={isDraftChat && !selectedSession ? initialWorkflowTool : null}
+                executionPlan={workflowExecutionPlan}
               />
             )}
           </div>
@@ -887,9 +903,10 @@ type ChatThreadProps = {
   }) => void;
   initialPrompt?: string | null;
   initialWorkflowTool?: string | null;
+  executionPlan?: ExecutionPlanData | null;
 };
 
-function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt, initialWorkflowTool }: ChatThreadProps) {
+function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt, initialWorkflowTool, executionPlan }: ChatThreadProps) {
   const agent = getAiAgentSlug();
   const lastPromptRef = useRef<string | null>(null);
   const initialPromptFiredRef = useRef(false);
@@ -1007,9 +1024,10 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
         ? { workflow_intent: { tool_name: initialWorkflowTool, mode: "run" } }
         : undefined,
     });
-  }, [chat, clientId, initialPrompt, initialWorkflowTool]);
+  }, [chat, clientId, initialPrompt, initialWorkflowTool, executionPlan]);
 
   return (
+    <WorkflowPlanContext.Provider value={executionPlan ?? null}>
     <AssistantRuntimeProvider runtime={runtime}>
       <div className={TW.thread}>
         <ThreadPrimitive.Root className={TW.assistantThread}>
@@ -1092,6 +1110,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
         </AuiIf>
       </div>
     </AssistantRuntimeProvider>
+    </WorkflowPlanContext.Provider>
   );
 }
 
@@ -1258,8 +1277,8 @@ function OverviewTab({
   const assetAllocationTotal = clientDetail?.asset_allocation?.total_managed
     ? formatClientMoney(clientDetail.asset_allocation.total_managed, clientDetail.asset_allocation.currency)
     : clientAum;
-  const hasInsights = (clientDetail?.insights ?? []).some((insight) => Boolean(normalizeInsight(insight)));
-  const hasRecentActivity = (clientDetail?.recent_activity ?? []).some((activity) => Boolean(normalizeActivity(activity)));
+  const hasInsights = (Array.isArray(clientDetail?.insights) ? clientDetail.insights : []).some((insight) => Boolean(normalizeInsight(insight)));
+  const hasRecentActivity = (Array.isArray(clientDetail?.recent_activity) ? clientDetail.recent_activity : []).some((activity) => Boolean(normalizeActivity(activity)));
   const hasSidePanels = hasInsights || hasRecentActivity;
 
   return (
@@ -2062,11 +2081,50 @@ function AssistantMessage({
   showReplySuggestions: boolean;
 }) {
   const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
+  const workflowPlan = useContext(WorkflowPlanContext);
+  const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
+  const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
+  const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
+  const showContent = !hasSteps || stepsAnimationDone;
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasSteps) {
+      setStepsAnimationDone(true);
+      return;
+    }
+    const fallback = setTimeout(() => setStepsAnimationDone(true), 45000);
+    return () => clearTimeout(fallback);
+  }, [hasSteps]);
+
+  useEffect(() => {
+    if (showContent && hasSteps && stepsAnimationDone && contentRef.current) {
+      setTimeout(() => {
+        let el: HTMLElement | null = contentRef.current;
+        while (el) {
+          const style = getComputedStyle(el);
+          if (style.overflowY === "auto" || style.overflowY === "scroll") {
+            el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+            return;
+          }
+          el = el.parentElement;
+        }
+      }, 200);
+    }
+  }, [showContent, hasSteps, stepsAnimationDone]);
 
   return (
     <MessagePrimitive.Root className={TW.messageAssistant}>
       <div className={TW.messageStack}>
         <div className={`${TW.messageContent} ${TW.assistantMessageContent}`}>
+          {workflowPlan && (
+            <WorkflowExecutionSteps
+              executionPlan={workflowPlan}
+              isRunning={isStreaming}
+              onAnimationComplete={() => setStepsAnimationDone(true)}
+            />
+          )}
+          <div ref={contentRef} style={{ opacity: showContent ? 1 : 0, maxHeight: showContent ? "none" : 0, overflow: "hidden", transition: "opacity 0.6s ease" }}>
           <MessagePrimitive.GroupedParts
             groupBy={groupPartByType({
               "tool-call": ["group-tools"],
@@ -2089,12 +2147,13 @@ function AssistantMessage({
                 case "tool-call":
                   return part.toolUI ?? <ToolCallPart {...part} />;
                 case "indicator":
-                  return <AssistantLoadingState />;
+                  return workflowPlan ? null : <AssistantLoadingState />;
                 default:
                   return null;
               }
             }}
           </MessagePrimitive.GroupedParts>
+          </div>
         </div>
         {replySuggestions.length > 0 ? (
           <div className={TW.replySuggestions} aria-label="Reply suggestions">
