@@ -13,6 +13,8 @@ import type {
   BrokerStatementJobStatusResponse,
   BrokerStatementUploadResponse,
   BrokerStatementJob,
+  DocumentStatusResponse,
+  DeleteDocumentResponse,
 } from "../lib/documentsApi";
 import {
   isBrokerStatementJobStatusValid,
@@ -229,15 +231,21 @@ export const api = createApi({
       query: (id) => `/oneview/documents/${id}/positions/`,
     }),
     uploadDocument: builder.mutation<
-      DocumentRecord,
-      { file: File; name?: string; description?: string }
+      BrokerStatementUploadResponse,
+      { file: File; clientId?: number | string | null; name?: string; description?: string }
     >({
-      query: ({ file, name, description }) => {
+      query: ({ file, clientId, name, description }) => {
         const formData = new FormData();
         formData.set("file", file);
+        if (clientId) formData.set("client_id", String(clientId));
         if (name) formData.set("name", name);
         if (description) formData.set("description", description);
-        return { url: "/oneview/documents/", method: "POST", body: formData };
+        return {
+          url: "/oneview/document/upload/",
+          method: "POST",
+          body: formData,
+          validateStatus: isBrokerStatementUploadStatusValid,
+        };
       },
       invalidatesTags: ["Documents"],
     }),
@@ -252,8 +260,27 @@ export const api = createApi({
       }),
       invalidatesTags: ["Documents"],
     }),
-    deleteDocument: builder.mutation<void, string>({
-      query: (id) => ({ url: `/oneview/documents/${id}/`, method: "DELETE" }),
+    getDocumentStatus: builder.query<DocumentStatusResponse, { id: string; clientId: number | string }>({
+      query: ({ id, clientId }) => {
+        const searchParams = new URLSearchParams({ client_id: String(clientId) });
+        return `/oneview/documents/${id}/status/?${searchParams.toString()}`;
+      },
+      providesTags: (_result, _error, { id }) => [{ type: "Documents", id }],
+    }),
+    deleteDocument: builder.mutation<
+      DeleteDocumentResponse,
+      string | { id: string; clientId?: number | string | null; deactivateEmptyAccounts?: boolean }
+    >({
+      query: (arg) => {
+        const id = typeof arg === "string" ? arg : arg.id;
+        const searchParams = new URLSearchParams();
+        if (typeof arg !== "string" && arg.clientId) searchParams.set("client_id", String(arg.clientId));
+        if (typeof arg !== "string" && typeof arg.deactivateEmptyAccounts === "boolean") {
+          searchParams.set("deactivate_empty_accounts", String(arg.deactivateEmptyAccounts));
+        }
+        const qs = searchParams.toString();
+        return { url: `/oneview/documents/${id}/${qs ? `?${qs}` : ""}`, method: "DELETE" };
+      },
       invalidatesTags: ["Documents"],
     }),
     uploadBrokerStatement: builder.mutation<
@@ -263,22 +290,26 @@ export const api = createApi({
         name?: string;
         description?: string;
         password?: string;
+        clientId?: number | string | null;
         storeData?: boolean;
         portfolioName?: string;
+        portfolioId?: number | string;
         useLlmFallback?: boolean;
       }
     >({
-      query: ({ file, name, description, password, storeData, portfolioName, useLlmFallback }) => {
+      query: ({ file, name, description, password, clientId, storeData, portfolioName, portfolioId, useLlmFallback }) => {
         const formData = new FormData();
         formData.set("file", file);
         if (name) formData.set("name", name);
         if (description) formData.set("description", description);
         if (password) formData.set("password", password);
+        if (clientId) formData.set("client_id", String(clientId));
         if (typeof storeData === "boolean") formData.set("store_data", String(storeData));
         if (portfolioName) formData.set("portfolio_name", portfolioName);
+        if (portfolioId) formData.set("portfolio_id", String(portfolioId));
         if (typeof useLlmFallback === "boolean") formData.set("use_llm_fallback", String(useLlmFallback));
         return {
-          url: "/oneview/broker-statements/upload/",
+          url: "/oneview/document/upload/",
           method: "POST",
           body: formData,
           validateStatus: isBrokerStatementUploadStatusValid,
@@ -372,6 +403,7 @@ export const {
   useGetValuationsViewQuery,
   useListDocumentsQuery,
   useGetDocumentQuery,
+  useGetDocumentStatusQuery,
   useGetDocumentPositionsQuery,
   useUploadDocumentMutation,
   useUpdateDocumentMutation,

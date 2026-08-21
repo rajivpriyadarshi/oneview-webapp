@@ -20,7 +20,7 @@ type UploadTrayState = {
 
 const STORAGE_KEY = "uploadTray";
 
-function loadPersistedState(): UploadTrayState | null {
+export function loadPersistedUploadTrayState(): UploadTrayState | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -58,7 +58,7 @@ function persistState(state: UploadTrayState) {
   }
 }
 
-const initialState: UploadTrayState = loadPersistedState() || {
+const initialState: UploadTrayState = {
   items: [],
   dismissed: false,
 };
@@ -78,6 +78,11 @@ export const uploadTraySlice = createSlice({
       state.dismissed = false;
       persistState(state);
     },
+    hydrateUploadTray(state, action: PayloadAction<UploadTrayState | null>) {
+      if (!action.payload) return;
+      state.items = action.payload.items;
+      state.dismissed = action.payload.dismissed;
+    },
     patchTrayItem(state, action: PayloadAction<{ id: string } & Partial<TrayItem>>) {
       const { id, ...patch } = action.payload;
       const item = state.items.find((i) => i.id === id);
@@ -96,6 +101,6 @@ export const uploadTraySlice = createSlice({
   },
 });
 
-export const { addTrayItems, patchTrayItem, removeTrayItem, dismissTray } =
+export const { addTrayItems, hydrateUploadTray, patchTrayItem, removeTrayItem, dismissTray } =
   uploadTraySlice.actions;
 export default uploadTraySlice.reducer;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useGetProfileQuery } from "../store/api";
 
@@ -22,15 +23,20 @@ function formatLastUpdated(dateStr?: string) {
 
 export default function HomeHeader() {
   const { data: profile } = useGetProfileQuery();
+  const [greeting, setGreeting] = useState("Welcome");
 
   const firstName = profile?.display_name?.trim().split(/\s+/)[0] || "";
   const lastUpdated = "";
+
+  useEffect(() => {
+    setGreeting(getGreeting());
+  }, []);
 
   return (
     <header className="home-header">
       <div className="home-header-left">
         <h1 className="home-title">
-          {getGreeting()}{firstName ? `, ${firstName}` : ""}!
+          {greeting}{firstName ? `, ${firstName}` : ""}!
         </h1>
         {lastUpdated && <p className="home-subtitle">{lastUpdated}</p>}
       </div>

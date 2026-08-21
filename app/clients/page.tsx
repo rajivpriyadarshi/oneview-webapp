@@ -9,6 +9,7 @@ import { getStoredAuthToken, getStoredAdvisorProfile } from "../lib/session";
 export default function ClientsPage() {
   const router = useRouter();
   const [advisorName, setAdvisorName] = useState("");
+  const [today, setToday] = useState("");
 
   useEffect(() => {
     if (!getStoredAuthToken()) {
@@ -19,6 +20,9 @@ export default function ClientsPage() {
     if (advisor?.name) {
       setAdvisorName(advisor.name.split(" ")[0]);
     }
+    setToday(new Date().toLocaleDateString("en-US", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric",
+    }));
   }, [router]);
 
   const { data, isLoading, isError } = useGetCrmClientsQuery();
@@ -29,10 +33,6 @@ export default function ClientsPage() {
   const totalCount = data?.count ?? 0;
   const alerts = alertsData?.results ?? [];
   const meetings = meetingsData?.results ?? [];
-
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f7f6f3" }}>
@@ -54,7 +54,9 @@ export default function ClientsPage() {
         <div style={{ position: "relative", zIndex: 1 }}>
           {/* Header */}
           <div style={{ marginBottom: 32 }}>
-            <p style={{ color: "rgba(0,0,0,0.45)", fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{today}</p>
+            {today ? (
+              <p style={{ color: "rgba(0,0,0,0.45)", fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{today}</p>
+            ) : null}
             <h1 style={{ fontSize: 38, fontWeight: 500, color: "#0a0a0a", lineHeight: 1.2, margin: 0 }}>
               Welcome{advisorName ? ` ${advisorName}` : ""}
             </h1>

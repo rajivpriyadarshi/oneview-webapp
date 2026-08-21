@@ -3,13 +3,16 @@
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import DocumentSearchBar from "./DocumentSearchBar";
+import { ClientLottie } from "./ClientLottie";
 import { api, useDeleteDocumentMutation, useGetDocumentQuery, useListDocumentsQuery, useUploadBrokerStatementMutation } from "../store/api";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { addTrayItems, patchTrayItem } from "../store/uploadTraySlice";
-import type { BrokerStatementUploadResponse, DocumentRecord } from "../lib/documentsApi";
+import { getDocumentStatus, type BrokerStatementUploadResponse, type DocumentRecord, type DocumentStatusResponse } from "../lib/documentsApi";
 import { getRequestErrorMessage } from "../lib/apiClient";
 
 const DOCUMENT_ACCEPT = ".pdf,.csv,.xls,.xlsx,.doc,.docx,.png,.jpg,.jpeg";
+const DOCUMENT_STATUS_POLL_INTERVAL_MS = 5000;
+const DOCUMENT_STATUS_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 type SortOption = "Most recent" | "Oldest first" | "A-Z" | "Z-A";
 
@@ -38,7 +41,9 @@ function getDisplayName(document: DocumentRecord) {
 }
 
 function getDocumentType(document: DocumentRecord) {
-  return formatLabel(document.document_type || document.content_type || "Document");
+  const rawType = document.document_type || document.content_type || "Document";
+  const mimeSubtype = rawType.includes("/") ? rawType.split("/").pop() : rawType;
+  return formatLabel(mimeSubtype || "Document");
 }
 
 function getStatusLabel(status?: string | null) {
@@ -131,6 +136,240 @@ function getUploadResponseError(response: BrokerStatementUploadResponse) {
   return "";
 }
 
+type MetadataRecord = Record<string, unknown>;
+
+function isMetadataRecord(value: unknown): value is MetadataRecord {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function normalizeMetadataKey(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function getStringValue(value: unknown) {
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return "";
+}
+
+function walkMetadata(value: unknown, visit: (key: string, child: unknown, parent: MetadataRecord) => void) {
+  const seen = new WeakSet<object>();
+
+  function walk(current: unknown) {
+    if (!current || typeof current !== "object") return;
+    if (seen.has(current)) return;
+    seen.add(current);
+
+    if (Array.isArray(current)) {
+      current.forEach(walk);
+      return;
+    }
+
+    const record = current as MetadataRecord;
+    for (const [key, child] of Object.entries(record)) {
+      visit(key, child, record);
+      walk(child);
+    }
+  }
+
+  walk(value);
+}
+
+function findRecordByKey(root: unknown, keyName: string) {
+  const targetKey = normalizeMetadataKey(keyName);
+  let match: MetadataRecord | null = null;
+
+  walkMetadata(root, (key, value) => {
+    if (match || normalizeMetadataKey(key) !== targetKey || !isMetadataRecord(value)) return;
+    match = value;
+  });
+
+  return match;
+}
+
+function pickStringFromRecord(record: MetadataRecord | null, keys: string[]) {
+  if (!record) return "";
+
+  for (const key of keys) {
+    const directValue = getStringValue(record[key]);
+    if (directValue) return directValue;
+
+    const normalizedKey = normalizeMetadataKey(key);
+    const matchingEntry = Object.entries(record).find(([entryKey]) => normalizeMetadataKey(entryKey) === normalizedKey);
+    const matchingValue = getStringValue(matchingEntry?.[1]);
+    if (matchingValue) return matchingValue;
+  }
+
+  return "";
+}
+
+function findStringByKeys(root: unknown, keys: string[]) {
+  const normalizedKeys = new Set(keys.map(normalizeMetadataKey));
+  let match = "";
+
+  walkMetadata(root, (key, value) => {
+    if (match || !normalizedKeys.has(normalizeMetadataKey(key))) return;
+    match = getStringValue(value);
+  });
+
+  return match;
+}
+
+function extractDocumentType(document: DocumentRecord) {
+  const classification = findRecordByKey(document.metadata, "classification");
+  const classifiedType = pickStringFromRecord(classification, ["category_label", "document_type", "category"]);
+  return classifiedType ? formatLabel(classifiedType) : getDocumentType(document);
+}
+
+function extractProvider(document: DocumentRecord) {
+  const classification = findRecordByKey(document.metadata, "classification");
+  const classifiedProvider = pickStringFromRecord(classification, ["issuer_name", "provider", "provider_name", "institution_name"]);
+  if (classifiedProvider) return classifiedProvider;
+
+  const metadataProvider = findStringByKeys(document.metadata, ["issuer_name", "provider", "provider_name", "broker_name", "institution_name"]);
+  if (metadataProvider) return metadataProvider;
+
+  if (document.broker) return formatLabel(document.broker);
+  return "-";
+}
+
+function extractIdentification(document: DocumentRecord) {
+  const identifierTypePriority = [
+    "policy_number",
+    "account_number",
+    "document_number",
+    "certificate_number",
+    "contract_number",
+    "reference_number",
+    "client_code",
+    "vehicle_registration_number",
+    "registration_number",
+  ];
+  const normalizedPriority = identifierTypePriority.map(normalizeMetadataKey);
+  const identifiers: { type: string; value: string }[] = [];
+
+  walkMetadata(document.metadata, (key, value) => {
+    if (normalizeMetadataKey(key) !== "identifiers" || !Array.isArray(value)) return;
+
+    for (const item of value) {
+      if (!isMetadataRecord(item)) continue;
+      const type = pickStringFromRecord(item, ["type", "name", "label"]);
+      const identifierValue = pickStringFromRecord(item, ["value", "identifier", "number"]);
+      if (type && identifierValue) {
+        identifiers.push({ type, value: identifierValue });
+      }
+    }
+  });
+
+  if (identifiers.length > 0) {
+    const rankedIdentifier = identifiers
+      .map((identifier, index) => {
+        const priorityIndex = normalizedPriority.indexOf(normalizeMetadataKey(identifier.type));
+        return { ...identifier, index, rank: priorityIndex === -1 ? normalizedPriority.length : priorityIndex };
+      })
+      .sort((a, b) => a.rank - b.rank || a.index - b.index)[0];
+
+    if (rankedIdentifier?.value) return rankedIdentifier.value;
+  }
+
+  let typedValueMatch = "";
+  walkMetadata(document.metadata, (_key, _value, parent) => {
+    if (typedValueMatch) return;
+    const type = pickStringFromRecord(parent, ["type", "name", "label"]);
+    if (!type || !normalizedPriority.includes(normalizeMetadataKey(type))) return;
+    typedValueMatch = pickStringFromRecord(parent, ["value", "identifier", "number"]);
+  });
+  if (typedValueMatch) return typedValueMatch;
+
+  const directIdentifier = findStringByKeys(document.metadata, identifierTypePriority);
+  return directIdentifier || "-";
+}
+
+function extractDocumentDate(document: DocumentRecord) {
+  const dateRangePairs = [
+    ["document_period_start", "document_period_end"],
+    ["statement_period_start", "statement_period_end"],
+    ["period_start", "period_end"],
+    ["coverage_start", "coverage_end"],
+    ["start_date", "end_date"],
+    ["from_date", "to_date"],
+    ["effective_date", "expiry_date"],
+    ["commencement_date", "expiry_date"],
+  ];
+
+  for (const [startKey, endKey] of dateRangePairs) {
+    const start = findStringByKeys(document.metadata, [startKey]);
+    const end = findStringByKeys(document.metadata, [endKey]);
+    if (start && end) return formatDocumentDateRange(start, end);
+  }
+
+  const singleDate = findStringByKeys(document.metadata, [
+    "document_date",
+    "statement_date",
+    "as_of_date",
+    "issue_date",
+    "issued_date",
+    "generation_date",
+    "created_date",
+  ]);
+
+  return singleDate ? formatDocumentDate(singleDate) : "-";
+}
+
+function formatDocumentDateRange(start: string, end: string) {
+  const formattedStart = formatDocumentDate(start);
+  const formattedEnd = formatDocumentDate(end);
+  if (!formattedStart) return formattedEnd || "-";
+  if (!formattedEnd || formattedStart === formattedEnd) return formattedStart;
+  return `${formattedStart} - ${formattedEnd}`;
+}
+
+function formatDocumentDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function pollDocumentProcessingStatus({
+  documentId,
+  clientId,
+  onStatusChange,
+}: {
+  documentId: string;
+  clientId: number | string;
+  onStatusChange: (status: DocumentStatusResponse) => void;
+}) {
+  const startedAt = Date.now();
+  let previousStatus: string | undefined;
+
+  while (Date.now() - startedAt <= DOCUMENT_STATUS_POLL_TIMEOUT_MS) {
+    const status = await getDocumentStatus(documentId, clientId);
+    const nextStatus = status.processing_status || "";
+
+    if (nextStatus !== previousStatus) {
+      previousStatus = nextStatus;
+      onStatusChange(status);
+    }
+
+    if (!isProcessing(status.processing_status)) {
+      return status;
+    }
+
+    await wait(DOCUMENT_STATUS_POLL_INTERVAL_MS);
+  }
+
+  throw new Error("Document processing timed out. It may still finish shortly.");
+}
+
 export default function DocumentsListView({ clientId }: { clientId?: number | string | null }) {
   const dispatch = useAppDispatch();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -140,12 +379,9 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
   const [openMenuDocId, setOpenMenuDocId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
-  const [hasApiProcessing, setHasApiProcessing] = useState(false);
 
-  const hasActiveUpload = trayItems.some((item) => item.status === "queued" || item.status === "uploading");
-  const { data: documents = [], isLoading, isFetching } = useListDocumentsQuery(clientId || undefined, {
+  const { data: documents = [], isLoading, isFetching, refetch: refetchDocuments } = useListDocumentsQuery(clientId || undefined, {
     refetchOnMountOrArgChange: true,
-    pollingInterval: hasActiveUpload || hasApiProcessing ? 5000 : 0,
   });
   const { data: expandedDocument, isFetching: isFetchingDetail } = useGetDocumentQuery({
     id: expandedDocId ?? "",
@@ -155,10 +391,6 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
   });
   const [uploadBrokerStatement] = useUploadBrokerStatementMutation();
   const [deleteDocument, { isLoading: isDeleting }] = useDeleteDocumentMutation();
-
-  useEffect(() => {
-    setHasApiProcessing(documentsHaveProcessingStatus(documents));
-  }, [documents]);
 
   useEffect(() => {
     const documentsById = new Map(documents.map((document) => [String(document.id), document]));
@@ -230,8 +462,61 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
     }
   }
 
+  function patchTrayItemFromDocument(trayItemId: string, document: Pick<DocumentRecord, "processing_status"> | DocumentStatusResponse) {
+    if (isProcessing(document.processing_status)) {
+      dispatch(patchTrayItem({
+        id: trayItemId,
+        status: "uploading",
+        detail: "progress" in document && document.progress?.label ? document.progress.label : "Processing document.",
+        error: undefined,
+      }));
+    } else if (isError(document.processing_status)) {
+      dispatch(patchTrayItem({
+        id: trayItemId,
+        status: "error",
+        detail: undefined,
+        error: "error" in document && document.error ? document.error : "Document processing failed.",
+      }));
+    } else if (isReview(document.processing_status)) {
+      dispatch(patchTrayItem({ id: trayItemId, status: "review", detail: undefined, error: "Document needs review." }));
+    } else {
+      dispatch(patchTrayItem({ id: trayItemId, status: "complete", detail: "Document ready.", error: undefined }));
+    }
+  }
+
+  async function pollUploadedDocument(documentId: string, trayItemId: string) {
+    if (!clientId) return;
+
+    try {
+      const finalDocument = await pollDocumentProcessingStatus({
+        documentId,
+        clientId,
+        onStatusChange: (document) => {
+          patchTrayItemFromDocument(trayItemId, document);
+          void refetchDocuments();
+        },
+      });
+
+      patchTrayItemFromDocument(trayItemId, finalDocument);
+      void refetchDocuments();
+    } catch (error) {
+      dispatch(patchTrayItem({
+        id: trayItemId,
+        status: "error",
+        detail: undefined,
+        error: getRequestErrorMessage(error, "Document status polling failed."),
+      }));
+      void refetchDocuments();
+    }
+  }
+
   async function handleUploadFiles(files: File[]) {
     setUploadError("");
+
+    if (!clientId) {
+      setUploadError("Select a client before uploading documents.");
+      return;
+    }
 
     const preparedItems = files.map((file, index) => ({
       file,
@@ -250,7 +535,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
       dispatch(patchTrayItem({ id: trayItem.id, status: "uploading", detail: "Uploading document." }));
 
       try {
-        const uploadResponse = await uploadBrokerStatement({ file, name: file.name }).unwrap();
+        const uploadResponse = await uploadBrokerStatement({ file, name: file.name, clientId }).unwrap();
         const responseError = getUploadResponseError(uploadResponse);
 
         if (responseError) {
@@ -270,7 +555,8 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
           detail: "Checking document status.",
         }));
 
-        dispatch(api.util.invalidateTags(["Documents"]));
+        void refetchDocuments();
+        void pollUploadedDocument(documentId, trayItem.id);
       } catch (error) {
         dispatch(patchTrayItem({
           id: trayItem.id,
@@ -287,7 +573,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
     setOpenMenuDocId(null);
 
     try {
-      await deleteDocument(documentId).unwrap();
+      await deleteDocument(clientId ? { id: documentId, clientId } : documentId).unwrap();
       if (expandedDocId === documentId) {
         setExpandedDocId(null);
       }
@@ -323,8 +609,8 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
 
         <div className="mb-6 flex items-center justify-between">
           <p className="text-sm text-gray-600">
-            {isLoading ? "Loading documents..." : `${filteredDocuments.length} document${filteredDocuments.length !== 1 ? "s" : ""}`}
-            {isFetching && !isLoading ? " · Refreshing" : ""}
+            {isLoading ? "" : `${filteredDocuments.length} document${filteredDocuments.length !== 1 ? "s" : ""}`}
+            {isFetching && !isLoading && filteredDocuments.length > 0 ? " · Refreshing" : ""}
           </p>
           <div className="relative">
             <button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50">
@@ -346,7 +632,9 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
 
         <div className="space-y-4">
           {isLoading ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">Loading documents...</div>
+            <div className="grid min-h-[220px] place-items-center rounded-2xl border border-gray-200 bg-white p-8">
+              <ClientLottie src="/loader.json" style={{ width: 120, height: 120 }} />
+            </div>
           ) : filteredDocuments.length === 0 ? (
             <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">No documents found</div>
           ) : (
@@ -507,43 +795,24 @@ function DocumentRow({
 
 function DocumentDetails({ document, isLoading }: { document: DocumentRecord; isLoading: boolean }) {
   const fields = [
-    ["Document type", getDocumentType(document)],
-    ["Provider", document.broker ? formatLabel(document.broker) : document.uploaded_by_username || "-"],
-    ["Status", getStatusLabel(document.processing_status)],
-    ["Uploaded by", document.uploaded_by_username || "-"],
-    ["Uploaded on", formatDate(document.created_at)],
-    ["Updated on", formatDate(document.updated_at)],
-    ["File size", formatFileSize(document.file_size)],
-    ["Content type", document.content_type || "-"],
-    ["Accounts", document.accounts?.map((account) => account.name).join(", ") || "-"],
-    ["Positions", typeof document.positions_count === "number" ? String(document.positions_count) : "-"],
-    ["Holdings value", typeof document.holdings_value === "number" ? String(document.holdings_value) : "-"],
+    ["Document type", extractDocumentType(document)],
+    ["Provider", extractProvider(document)],
+    ["Identification", extractIdentification(document)],
+    ["Document date", extractDocumentDate(document)],
   ];
 
   return (
     <div className="mt-6 border-t border-gray-200 pt-6">
       {isLoading ? <p className="mb-4 text-sm text-gray-500">Loading document details...</p> : null}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="divide-y divide-gray-100">
         {fields.map(([label, value]) => (
-          <div key={label} className="flex items-start gap-3">
-            <img src="/icons/documents/check-circle.svg" alt="" className="mt-0.5 h-5 w-5 flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <p className="mb-1 text-xs text-gray-500">{label}</p>
-              <p className="break-words text-sm font-medium text-gray-900">{value}</p>
-            </div>
+          <div key={label} className="grid grid-cols-[180px_minmax(0,1fr)_24px] items-center gap-4 py-4 max-sm:grid-cols-[1fr_24px]">
+            <p className="m-0 text-sm text-gray-500 max-sm:col-span-2">{label}</p>
+            <p className="m-0 break-words text-sm font-medium text-gray-900">{value}</p>
+            <img src="/icons/documents/check-circle.svg" alt="" className="h-5 w-5 justify-self-end" />
           </div>
         ))}
       </div>
-      {document.description ? (
-        <div className="mt-4 rounded-xl bg-gray-50 p-4">
-          <p className="mb-1 text-xs text-gray-500">Description</p>
-          <p className="text-sm text-gray-900">{document.description}</p>
-        </div>
-      ) : null}
     </div>
   );
-}
-
-function documentsHaveProcessingStatus(documents: DocumentRecord[]) {
-  return documents.some((document) => isProcessing(document.processing_status));
 }

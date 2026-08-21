@@ -3,7 +3,6 @@
 import { type ReactNode, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { Lottie } from "lottie-react";
 import { useChat } from "@ai-sdk/react";
 import {
   ArcElement,
@@ -41,6 +40,7 @@ import { MobileHeader } from "../components/MobileHeader";
 import { SourceWealthChart } from "../components/SourceWealthChart";
 import DocumentsListView from "../components/DocumentsListView";
 import InteractionsTabContent from "../components/InteractionsTabContent";
+import { ClientLottie } from "../components/ClientLottie";
 import { WorkflowExecutionSteps, useWorkflowExecutionPlan } from "../components/WorkflowExecutionSteps";
 import {
   type AiChatSession,
@@ -1236,7 +1236,7 @@ function OverviewTab({
     return (
       <div className="relative min-h-0 overflow-auto bg-[#F9F8F7] pb-[48px]">
         <div className="flex min-h-[calc(100vh-120px)] flex-col items-center justify-center">
-          <Lottie src="/loader.json" autoplay loop style={{ width: 200, height: 200 }} />
+          <ClientLottie src="/loader.json" style={{ width: 200, height: 200 }} />
         </div>
       </div>
     );
@@ -1372,7 +1372,7 @@ function InteractionsTab({ clientId, isLoadingClient }: { clientId?: number | nu
   if (isLoadingClient) {
     return (
       <div className="grid min-h-0 flex-1 place-items-center bg-white p-[32px]">
-        <Lottie src="/loader.json" autoplay loop style={{ width: 120, height: 120 }} />
+        <ClientLottie src="/loader.json" style={{ width: 120, height: 120 }} />
       </div>
     );
   }
