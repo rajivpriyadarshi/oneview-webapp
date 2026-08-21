@@ -166,7 +166,7 @@ const TW = {
   conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
   conversationBtn: "inline-flex w-full min-w-0 max-w-full items-center justify-start gap-[8px] overflow-hidden border-0 bg-transparent py-[6px] text-left font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [&_svg]:shrink-0",
   conversationText: "block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
-  conversationDropdown: "absolute top-[43px] left-[-7px] z-[60] w-[238px] overflow-hidden rounded-[22px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] max-[640px]:left-[-4px] max-[640px]:w-[calc(100vw-64px)]",
+  conversationDropdown: "absolute top-[43px] left-[-7px] z-[60] w-[238px] max-h-[50vh] overflow-y-auto rounded-[22px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] max-[640px]:left-[-4px] max-[640px]:w-[calc(100vw-64px)]",
   conversationDropdownItem: "flex min-h-[46px] w-full cursor-pointer items-center border-0 border-b border-black/10 bg-white px-[24px] text-left font-satoshi text-[13px] font-normal leading-[1.15] text-black transition last:border-b-0 hover:bg-black/[0.025]",
   conversationDropdownEmpty: "flex min-h-[46px] items-center px-[24px] font-satoshi text-[13px] font-normal text-black/40",
   advisorAddBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
