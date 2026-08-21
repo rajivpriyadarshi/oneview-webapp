@@ -16,18 +16,9 @@ export default function InteractionsTabContent({ clientId }: InteractionsTabCont
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
-  const [loaderAnimation, setLoaderAnimation] = useState<any>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const requestIdRef = useRef(0);
-
-  // Load Lottie animation
-  useEffect(() => {
-    fetch("/loader.json")
-      .then((res) => res.json())
-      .then((data) => setLoaderAnimation(data))
-      .catch((err) => console.error("Failed to load animation:", err));
-  }, []);
 
   // Debounce search query with 1000ms delay to show loader
   useEffect(() => {
@@ -149,7 +140,7 @@ export default function InteractionsTabContent({ clientId }: InteractionsTabCont
 
       {loading ? (
         <div className="loading-state-lottie">
-          {loaderAnimation && <Lottie src={loaderAnimation} autoplay loop style={{ width: 120, height: 120 }} />}
+          <Lottie src="/loader.json" autoplay loop style={{ width: 120, height: 120 }} />
           <p>Loading interactions...</p>
         </div>
       ) : (

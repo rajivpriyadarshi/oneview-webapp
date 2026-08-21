@@ -1,6 +1,32 @@
 "use client";
 
+import Image from "next/image";
 import type { UIDocument } from "../types/documentTypes";
+
+function getDocumentTypeIconPath(documentType: string): string {
+  const documentTypeToIcon: Record<string, string> = {
+    "capital call": "/icons/documents/ic-capital-calls.png",
+    "insurance": "/icons/documents/ic-insurance.png",
+    "trust": "/icons/documents/ic-trust-wills.png",
+    "property": "/icons/documents/ic-real-estate.png",
+    "statement": "/icons/documents/ic-statements.png",
+    "brokerage holding statement": "/icons/documents/ic-statements.png",
+    "kyc": "/icons/documents/ic-identity-kyc.png",
+    "tax": "/icons/documents/ic-tax-documents.png",
+    "valuation": "/icons/documents/ic-fund-documents.png",
+    "agreement": "/icons/documents/ic-investment-agreements.png",
+    "banking": "/icons/documents/ic-banking.png",
+    "legal": "/icons/documents/ic-legal.png",
+    "compliance": "/icons/documents/ic-compliance.png",
+    "real estate": "/icons/documents/ic-real-estate.png",
+    "corporate": "/icons/documents/ic-corporate-entity.png",
+    "loans": "/icons/documents/ic-loans-credit.png",
+    "distributions": "/icons/documents/ic-distribution-notices.png",
+  };
+
+  const normalizedType = documentType.toLowerCase().trim();
+  return documentTypeToIcon[normalizedType] || "/icons/documents/ic-statements.png";
+}
 
 interface DocumentCardProps {
   document: UIDocument;
@@ -39,11 +65,14 @@ export default function DocumentCard({
       <div className="p-6">
         <div className="flex items-start gap-4">
           {/* Icon */}
-          <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center">
-            <img
-              src={`/icons/documents/${document.icon}.svg`}
+          <div className="flex-shrink-0 w-[52px] h-[52px] flex items-center justify-center">
+            <Image
+              src={getDocumentTypeIconPath(document.documentType)}
               alt={document.documentType}
-              className="w-6 h-6"
+              width={52}
+              height={52}
+              className="document-card-icon"
+              style={{ objectFit: 'contain' }}
             />
           </div>
 

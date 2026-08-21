@@ -1374,7 +1374,7 @@ function InteractionsTab({ clientId, isLoadingClient }: { clientId?: number | nu
   if (isLoadingClient) {
     return (
       <div className="grid min-h-0 flex-1 place-items-center bg-white p-[32px]">
-        <p className="m-0 font-satoshi text-[14px] text-black/45">Loading client...</p>
+        <Lottie src="/loader.json" autoplay loop style={{ width: 120, height: 120 }} />
       </div>
     );
   }
