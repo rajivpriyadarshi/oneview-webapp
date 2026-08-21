@@ -41,6 +41,7 @@ import { MobileHeader } from "../components/MobileHeader";
 import { SourceWealthChart } from "../components/SourceWealthChart";
 import DocumentsListView from "../components/DocumentsListView";
 import InteractionsTabContent from "../components/InteractionsTabContent";
+import { WorkflowExecutionSteps, useWorkflowExecutionPlan } from "../components/WorkflowExecutionSteps";
 import {
   type AiChatSession,
   type ChatPrompt,
@@ -245,12 +246,15 @@ const TW = {
   loadingDot: "h-1 w-1 rounded-full bg-current",
 };
 
+let _activeExecutionPlan: { schema_version: number; flow_hash: string; steps: { position: number; node_id: string; component_type: string; label: string; description: string[]; group_id?: string; group_label?: string }[] } | null = null;
+
 export default function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestedClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
   const [initialPromptParam, setInitialPromptParam] = useState(() => searchParams.get("prompt") ?? null);
   const [initialWorkflowTool] = useState(() => searchParams.get("workflow_tool") ?? null);
+  const workflowExecutionPlan = useWorkflowExecutionPlan();
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [mobileRailOpen, setMobileRailOpen] = useState(false);
   const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
@@ -793,6 +797,7 @@ export default function ChatPage() {
                 onAssistantFinished={handleAssistantFinished}
                 initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
                 initialWorkflowTool={isDraftChat && !selectedSession ? initialWorkflowTool : null}
+                executionPlan={isDraftChat && !selectedSession ? workflowExecutionPlan : null}
               />
             )}
           </div>
@@ -887,9 +892,10 @@ type ChatThreadProps = {
   }) => void;
   initialPrompt?: string | null;
   initialWorkflowTool?: string | null;
+  executionPlan?: { schema_version: number; flow_hash: string; steps: { position: number; node_id: string; component_type: string; label: string; description: string[]; group_id?: string; group_label?: string }[] } | null;
 };
 
-function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt, initialWorkflowTool }: ChatThreadProps) {
+function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt, initialWorkflowTool, executionPlan }: ChatThreadProps) {
   const agent = getAiAgentSlug();
   const lastPromptRef = useRef<string | null>(null);
   const initialPromptFiredRef = useRef(false);
@@ -1001,13 +1007,16 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current || !clientId) return;
     initialPromptFiredRef.current = true;
+    if (executionPlan) {
+      _activeExecutionPlan = executionPlan;
+    }
     void chat.sendMessage({
       text: initialPrompt,
       metadata: initialWorkflowTool
         ? { workflow_intent: { tool_name: initialWorkflowTool, mode: "run" } }
         : undefined,
     });
-  }, [chat, clientId, initialPrompt, initialWorkflowTool]);
+  }, [chat, clientId, initialPrompt, initialWorkflowTool, executionPlan]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -1258,8 +1267,8 @@ function OverviewTab({
   const assetAllocationTotal = clientDetail?.asset_allocation?.total_managed
     ? formatClientMoney(clientDetail.asset_allocation.total_managed, clientDetail.asset_allocation.currency)
     : clientAum;
-  const hasInsights = (clientDetail?.insights ?? []).some((insight) => Boolean(normalizeInsight(insight)));
-  const hasRecentActivity = (clientDetail?.recent_activity ?? []).some((activity) => Boolean(normalizeActivity(activity)));
+  const hasInsights = (Array.isArray(clientDetail?.insights) ? clientDetail.insights : []).some((insight) => Boolean(normalizeInsight(insight)));
+  const hasRecentActivity = (Array.isArray(clientDetail?.recent_activity) ? clientDetail.recent_activity : []).some((activity) => Boolean(normalizeActivity(activity)));
   const hasSidePanels = hasInsights || hasRecentActivity;
 
   return (
@@ -2062,11 +2071,26 @@ function AssistantMessage({
   showReplySuggestions: boolean;
 }) {
   const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
+  const [executionPlan] = useState(() => {
+    if (_activeExecutionPlan) {
+      const plan = _activeExecutionPlan;
+      _activeExecutionPlan = null;
+      return plan;
+    }
+    return null;
+  });
+  const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
 
   return (
     <MessagePrimitive.Root className={TW.messageAssistant}>
       <div className={TW.messageStack}>
         <div className={`${TW.messageContent} ${TW.assistantMessageContent}`}>
+          {executionPlan && (
+            <WorkflowExecutionSteps
+              executionPlan={executionPlan}
+              isRunning={isStreaming}
+            />
+          )}
           <MessagePrimitive.GroupedParts
             groupBy={groupPartByType({
               "tool-call": ["group-tools"],
@@ -2089,7 +2113,7 @@ function AssistantMessage({
                 case "tool-call":
                   return part.toolUI ?? <ToolCallPart {...part} />;
                 case "indicator":
-                  return <AssistantLoadingState />;
+                  return executionPlan ? null : <AssistantLoadingState />;
                 default:
                   return null;
               }

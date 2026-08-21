@@ -7,12 +7,29 @@ import Sidebar from "../components/Sidebar";
 import { apiRequest } from "../lib/apiClient";
 import { useGetCrmClientsQuery, type CrmClient } from "../store/api";
 
+type ExecutionPlanStep = {
+  position: number;
+  node_id: string;
+  component_type: string;
+  label: string;
+  description: string[];
+  group_id?: string;
+  group_label?: string;
+};
+
+type ExecutionPlan = {
+  schema_version: number;
+  flow_hash: string;
+  steps: ExecutionPlanStep[];
+};
+
 type WorkflowCommand = {
   command: string;
   tool_name: string;
   name: string;
   description: string;
   input_schema: Record<string, unknown>;
+  execution_plan?: ExecutionPlan;
 };
 
 type WorkflowCommandsResponse = {
@@ -60,9 +77,12 @@ export default function AppsPage() {
 
   function handleClientSelect(client: CrmClient) {
     if (!selectedCommand) return;
+    if (selectedCommand.execution_plan) {
+      sessionStorage.setItem("workflow_execution_plan", JSON.stringify(selectedCommand.execution_plan));
+    }
     setSelectedCommand(null);
     router.push(
-      `/chat?clientId=${client.id}&prompt=${encodeURIComponent(selectedCommand.command)}&workflow_tool=${encodeURIComponent(selectedCommand.tool_name)}`
+      `/client?clientId=${client.id}&prompt=${encodeURIComponent(selectedCommand.command)}&workflow_tool=${encodeURIComponent(selectedCommand.tool_name)}`
     );
   }
 
