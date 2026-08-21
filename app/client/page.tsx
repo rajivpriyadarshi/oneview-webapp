@@ -1283,14 +1283,14 @@ function OverviewTab({
   const hasSidePanels = hasInsights || hasRecentActivity;
 
   return (
-    <div className="relative min-h-0 overflow-auto bg-[#00000000] pb-[48px]">
+    <div className="relative isolate min-h-0 overflow-auto bg-[#F9F8F7] pb-[48px]">
       <div
-        className="absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#00000000] bg-cover bg-center bg-no-repeat mix-blend-multiply"
+        className="pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat mix-blend-multiply"
         style={{ backgroundImage: "url('/overview.png')" }}
         aria-hidden="true"
       />
 
-      <section className="relative h-[210px] bg-transparent px-[36px] max-[1180px]:h-[195px] max-[1180px]:px-[24px] max-[640px]:h-[180px] max-[640px]:px-[16px]">
+      <section className="relative z-[1] h-[210px] bg-transparent px-[36px] max-[1180px]:h-[195px] max-[1180px]:px-[24px] max-[640px]:h-[180px] max-[640px]:px-[16px]">
         <div className="relative z-[1] pt-[48px] max-[640px]:pt-[32px]">
           <h1 className="m-0 font-serif text-[38px] font-bold leading-[1.15] tracking-normal text-[#3d2208] [overflow-wrap:break-word] max-[640px]:text-[32px]">
             {clientName}
@@ -1307,7 +1307,7 @@ function OverviewTab({
         </div>
       </section>
 
-      <div className={`grid gap-[16px] px-[48px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px] ${hasSidePanels ? "grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)]" : "grid-cols-1"}`}>
+      <div className={`relative z-[2] grid gap-[16px] px-[48px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px] ${hasSidePanels ? "grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)]" : "grid-cols-1"}`}>
         <div className="grid gap-[24px]">
           <div className="flex w-[567px] flex-col items-start gap-[32px] rounded-[16px] bg-[rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:w-full max-[640px]:px-[22px] max-[640px]:py-[26px]">
             <section className="w-full">
@@ -1340,7 +1340,7 @@ function OverviewTab({
         </div>
 
         {hasSidePanels ? (
-          <aside className="grid content-start gap-[16px]">
+          <aside className="relative z-[3] grid content-start gap-[16px]">
             {hasInsights ? <InsightPanel insights={clientDetail?.insights ?? []} /> : null}
             {hasRecentActivity ? <RecentActivityPanel activities={clientDetail?.recent_activity ?? []} /> : null}
           </aside>
@@ -1571,7 +1571,7 @@ function RecentActivityPanel({ activities }: { activities: unknown[] }) {
     .filter((activity): activity is OverviewActivity => Boolean(activity));
 
   return (
-    <section className="rounded-[20px] border border-[#e5e7eb] bg-white px-[28px] py-[26px] max-[640px]:rounded-[16px] max-[640px]:px-[20px]">
+    <section className="relative z-[4] rounded-[20px] border border-[#e5e7eb] bg-white px-[28px] py-[26px] max-[640px]:rounded-[16px] max-[640px]:px-[20px]">
       <h2 className="m-0 font-satoshi text-[13px] font-bold uppercase tracking-[0.06em] text-[#6b7280]">Recent activity</h2>
       <div className="mt-[20px] grid">
         {normalizedActivities.map((activity, index) => (
@@ -1633,8 +1633,8 @@ function normalizeActivity(value: unknown): OverviewActivity | null {
   if (typeof value === "string") {
     return value.trim()
       ? {
-          icon: <CheckActivityIcon />,
-          iconClass: "bg-[#e8fbf3] text-[#008e65]",
+          icon: <Image src="/icons/documents/ic-statements.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+          iconClass: "bg-transparent",
           title: value.trim(),
           date: "",
           copy: "",
@@ -1646,6 +1646,7 @@ function normalizeActivity(value: unknown): OverviewActivity | null {
     return null;
   }
 
+  const iconField = getStringField(value, ["icon", "icon_type"]);
   const type = getStringField(value, ["type", "source_type", "channel", "kind"]);
   const title = getStringField(value, ["title", "subject", "name", "summary"]) || (type ? formatLabelText(type) : null);
   const copy = getStringField(value, ["copy", "description", "body", "note", "notes", "message", "text"]) || "";
@@ -1655,26 +1656,125 @@ function normalizeActivity(value: unknown): OverviewActivity | null {
     return null;
   }
 
+  // Use explicit icon field if provided, otherwise infer from type/title/copy
+  const iconData = iconField ? getActivityIconByName(iconField) : getActivityIcon(type || title || copy);
+
   return {
-    ...getActivityIcon(type || title || copy),
+    ...iconData,
     title: title || "Activity",
     date: dateValue ? formatActivityDate(dateValue) : "",
     copy,
   };
 }
 
+function getActivityIconByName(iconName: string) {
+  const iconMap: Record<string, string> = {
+    // Meeting & Communication
+    "meeting": "/icons/interaction/ic-meeting.png",
+    "meeting_note": "/icons/interaction/ic-meeting.png",
+    "phone": "/icons/interaction/ic-meeting.png",
+    "call": "/icons/interaction/ic-meeting.png",
+    "email": "/icons/interaction/ic-email.png",
+    "message": "/icons/interaction/ic-message.png",
+
+    // Financial & Documents
+    "capital": "/icons/documents/ic-capital-calls.png",
+    "capital_call": "/icons/documents/ic-capital-calls.png",
+    "distribution": "/icons/documents/ic-distribution-notices.png",
+    "payment": "/icons/documents/ic-banking.png",
+    "transfer": "/icons/documents/ic-banking.png",
+    "banking": "/icons/documents/ic-banking.png",
+    "statement": "/icons/documents/ic-statements.png",
+    "document": "/icons/interaction/ic-document.png",
+
+    // Legal & Compliance
+    "legal": "/icons/documents/ic-legal.png",
+    "compliance": "/icons/documents/ic-compliance.png",
+    "tax": "/icons/documents/ic-tax-documents.png",
+
+    // Investment & Property
+    "investment": "/icons/documents/ic-investment-agreements.png",
+    "real_estate": "/icons/documents/ic-real-estate.png",
+    "property": "/icons/documents/ic-real-estate.png",
+
+    // Other
+    "insurance": "/icons/documents/ic-insurance.png",
+    "trust": "/icons/documents/ic-trust-wills.png",
+  };
+
+  const normalized = iconName.toLowerCase().trim();
+  const iconPath = iconMap[normalized] || "/icons/documents/ic-statements.png";
+
+  return {
+    icon: <Image src={iconPath} alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+    iconClass: "bg-transparent"
+  };
+}
+
 function getActivityIcon(value: string) {
   const normalized = value.toLowerCase();
 
-  if (normalized.includes("call") || normalized.includes("phone")) {
-    return { icon: <PhoneActivityIcon />, iconClass: "bg-[#f0efff] text-[#5856d6]" };
+  // Meeting activities
+  if (normalized.includes("meeting") || normalized.includes("meet")) {
+    return {
+      icon: <Image src="/icons/interaction/ic-meeting.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+      iconClass: "bg-transparent"
+    };
   }
 
+  // Email activities
   if (normalized.includes("mail") || normalized.includes("email")) {
-    return { icon: <MailActivityIcon />, iconClass: "bg-[#fff3d8] text-[#b56a14]" };
+    return {
+      icon: <Image src="/icons/interaction/ic-email.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+      iconClass: "bg-transparent"
+    };
   }
 
-  return { icon: <CheckActivityIcon />, iconClass: "bg-[#e8fbf3] text-[#008e65]" };
+  // Phone calls
+  if (normalized.includes("phone") || normalized.includes("call")) {
+    return {
+      icon: <Image src="/icons/interaction/ic-meeting.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+      iconClass: "bg-transparent"
+    };
+  }
+
+  // Distribution activities
+  if (normalized.includes("distribution")) {
+    return {
+      icon: <Image src="/icons/documents/ic-distribution-notices.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+      iconClass: "bg-transparent"
+    };
+  }
+
+  // Capital calls
+  if (normalized.includes("capital")) {
+    return {
+      icon: <Image src="/icons/documents/ic-capital-calls.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+      iconClass: "bg-transparent"
+    };
+  }
+
+  // Banking/Payment/Transfer activities
+  if (normalized.includes("payment") || normalized.includes("transfer") || normalized.includes("bank")) {
+    return {
+      icon: <Image src="/icons/documents/ic-banking.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+      iconClass: "bg-transparent"
+    };
+  }
+
+  // Document activities
+  if (normalized.includes("document") || normalized.includes("file")) {
+    return {
+      icon: <Image src="/icons/interaction/ic-document.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+      iconClass: "bg-transparent"
+    };
+  }
+
+  // Default to statements icon for other activities
+  return {
+    icon: <Image src="/icons/documents/ic-statements.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+    iconClass: "bg-transparent"
+  };
 }
 
 function getStringField(record: Record<string, unknown>, keys: string[]) {
@@ -2786,31 +2886,6 @@ function SparkleIcon() {
       <path d="M12 3L13.7 8.3L19 10L13.7 11.7L12 17L10.3 11.7L5 10L10.3 8.3L12 3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
       <path d="M5 14L5.8 16.2L8 17L5.8 17.8L5 20L4.2 17.8L2 17L4.2 16.2L5 14Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
       <path d="M18 15L18.6 16.4L20 17L18.6 17.6L18 19L17.4 17.6L16 17L17.4 16.4L18 15Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PhoneActivityIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M7.5 4.5L9.8 9.4L7.9 11.1C9.2 13.7 10.8 15.2 13.4 16.5L15.1 14.6L20 16.9V20.1C20 20.7 19.6 21.2 19 21.3C10.5 20.8 3.7 14 3.2 5.5C3.1 4.9 3.6 4.5 4.2 4.5H7.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CheckActivityIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M5 12.5L9.2 16.5L19 7" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function MailActivityIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M4 6.5H20V18H4V6.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M5 7.5L12 13L19 7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
