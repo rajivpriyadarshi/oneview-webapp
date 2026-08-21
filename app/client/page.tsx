@@ -217,8 +217,8 @@ const TW = {
   userMessageContent: "rounded-[18px_18px_4px_18px] border border-white/50 bg-[#ede8df] px-[14px] py-[12px] text-black",
   assistantMessageContent: "py-1",
   messageStack: "max-w-full",
-  replySuggestions: "mt-2 mb-1.5 flex max-w-full flex-wrap gap-2",
-  replyPill: "inline-flex min-h-[34px] max-w-full items-center [overflow-wrap:anywhere] rounded-full border border-[#171615]/10 bg-white/40 px-[12px] py-[8px] text-left font-satoshi text-[13px] font-medium leading-[17px] text-[#171615] transition hover:-translate-y-px hover:border-[#7f4e0b]/30 hover:bg-white/70",
+  replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
+  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[12px] py-[10px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   messageControls: "mt-2 inline-flex items-center gap-1.5",
   inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
   actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
@@ -2157,6 +2157,7 @@ function AssistantMessage({
         </div>
         {replySuggestions.length > 0 ? (
           <div className={TW.replySuggestions} aria-label="Reply suggestions">
+            <p className="mb-1 font-satoshi text-[14px] font-medium leading-[20px] text-black/80">If you want to know more</p>
             {replySuggestions.map((suggestion) => (
               <ReplySuggestionButton
                 key={suggestion}
@@ -2213,9 +2214,10 @@ function ReplySuggestionButton({
   };
 
   return (
-    <button type="button" className={TW.replyPill} onClick={handleClick}>
-      {suggestion}
-    </button>
+    <div className={TW.replyPill} style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace", cursor: "pointer" }} onClick={handleClick}>
+      <span className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
+      <span>{suggestion}</span>
+    </div>
   );
 }
 
