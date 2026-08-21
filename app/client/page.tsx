@@ -255,7 +255,7 @@ export default function ChatPage() {
   const requestedClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
   const [initialPromptParam, setInitialPromptParam] = useState(() => searchParams.get("prompt") ?? null);
   const [initialWorkflowTool] = useState(() => searchParams.get("workflow_tool") ?? null);
-  const workflowExecutionPlan = useWorkflowExecutionPlan();
+  const [workflowExecutionPlan, setWorkflowExecutionPlan] = useWorkflowExecutionPlan();
   const [railCollapsed, setRailCollapsed] = useState(false);
   const [mobileRailOpen, setMobileRailOpen] = useState(false);
   const [conversationMenuOpen, setConversationMenuOpen] = useState(false);
@@ -527,6 +527,7 @@ export default function ChatPage() {
     setMobileRailOpen(false);
     setIsLoadingMessages(true);
     setNotice(null);
+    setWorkflowExecutionPlan(null);
 
     try {
       const messages = (await loadAiChatMessages(session.id, { clientId: chatClientId })) as ChatUiMessage[];

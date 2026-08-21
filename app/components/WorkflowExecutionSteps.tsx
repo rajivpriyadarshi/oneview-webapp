@@ -244,5 +244,5 @@ export function useWorkflowExecutionPlan() {
     }
   }, []);
 
-  return plan;
+  return [plan, setPlan] as const;
 }
