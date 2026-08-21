@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useRef } from "react";
+import Image from "next/image";
 import {
   useReactTable,
   getCoreRowModel,
@@ -227,7 +228,7 @@ export default function DocumentsTable({
           const hasExtractedData = doc.holdingsCount || doc.holdingsValue;
           return (
             <div className="flex min-w-0 items-center gap-3">
-              <FileIcon type={doc.fileType} />
+              <FileIcon type={doc.fileType} documentType={doc.type} />
               <div className="min-w-0 flex flex-col justify-center">
                 <span
                   className="block min-w-0 truncate whitespace-nowrap font-satoshi text-[16px] font-medium tracking-[-0.64px] text-black"
@@ -592,7 +593,60 @@ function DocumentsIcon() {
   );
 }
 
-function FileIcon({ type }: { type: string }) {
+function getDocumentTypeIcon(documentType: string): string | null {
+  const documentTypeToIcon: Record<string, string> = {
+    "investments": "/icons/documents/ic-statements.png",
+    "banking": "/icons/documents/ic-banking.png",
+    "insurance": "/icons/documents/ic-insurance.png",
+    "loans": "/icons/documents/ic-loans-credit.png",
+    "credit": "/icons/documents/ic-loans-credit.png",
+    "legal": "/icons/documents/ic-legal.png",
+    "compliance": "/icons/documents/ic-compliance.png",
+    "identity": "/icons/documents/ic-identity-kyc.png",
+    "kyc": "/icons/documents/ic-identity-kyc.png",
+    "tax": "/icons/documents/ic-tax-documents.png",
+    "tax documents": "/icons/documents/ic-tax-documents.png",
+    "real estate": "/icons/documents/ic-real-estate.png",
+    "property": "/icons/documents/ic-real-estate.png",
+    "ownership": "/icons/documents/ic-ownership-titles.png",
+    "titles": "/icons/documents/ic-ownership-titles.png",
+    "corporate": "/icons/documents/ic-corporate-entity.png",
+    "entity": "/icons/documents/ic-corporate-entity.png",
+    "trust": "/icons/documents/ic-trust-wills.png",
+    "wills": "/icons/documents/ic-trust-wills.png",
+    "estate": "/icons/documents/ic-trust-wills.png",
+    "fund documents": "/icons/documents/ic-fund-documents.png",
+    "investment agreements": "/icons/documents/ic-investment-agreements.png",
+    "capital calls": "/icons/documents/ic-capital-calls.png",
+    "distributions": "/icons/documents/ic-distribution-notices.png",
+    "distribution notices": "/icons/documents/ic-distribution-notices.png",
+  };
+
+  const normalizedType = documentType.toLowerCase().trim();
+  return documentTypeToIcon[normalizedType] || "/icons/documents/ic-statements.png";
+}
+
+function FileIcon({ type, documentType }: { type: string; documentType?: string }) {
+  // If documentType is provided and has a matching icon, use it
+  if (documentType) {
+    const iconPath = getDocumentTypeIcon(documentType);
+    if (iconPath) {
+      return (
+        <div className="relative flex-shrink-0">
+          <Image
+            src={iconPath}
+            alt=""
+            width={28}
+            height={34}
+            className="document-type-icon"
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
+      );
+    }
+  }
+
+  // Fallback to existing file extension icon
   const colors: Record<
     string,
     { bg: string; text: string; docBg?: string; docFold?: string }
@@ -1060,7 +1114,7 @@ function FolderView({
                     onClick={() => onToggleRow(doc.id)}
                   >
                     <div className="relative">
-                      <FileIconLarge type={doc.fileType} />
+                      <FileIconLarge type={doc.fileType} documentType={doc.type} />
                       {selectedRows.has(doc.id) && (
                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                           <svg
@@ -1246,7 +1300,7 @@ function TimelineView({
                   onClick={() => onToggleRow(doc.id)}
                 >
                   <div className="relative flex-shrink-0">
-                    <FileIcon type={doc.fileType} />
+                    <FileIcon type={doc.fileType} documentType={doc.type} />
                     {selectedRows.has(doc.id) && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                         <svg
@@ -1363,7 +1417,27 @@ function TimelineView({
   );
 }
 
-function FileIconLarge({ type }: { type: string }) {
+function FileIconLarge({ type, documentType }: { type: string; documentType?: string }) {
+  // If documentType is provided and has a matching icon, use it
+  if (documentType) {
+    const iconPath = getDocumentTypeIcon(documentType);
+    if (iconPath) {
+      return (
+        <div className="relative flex-shrink-0">
+          <Image
+            src={iconPath}
+            alt=""
+            width={40}
+            height={50}
+            className="document-type-icon-large"
+            style={{ objectFit: 'contain' }}
+          />
+        </div>
+      );
+    }
+  }
+
+  // Fallback to existing file extension icon
   const colors: Record<
     string,
     { bg: string; text: string; docBg?: string; docFold?: string }

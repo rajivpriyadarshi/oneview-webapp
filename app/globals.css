@@ -2949,8 +2949,25 @@ button:disabled {
 .icon-wrapper {
   flex-shrink: 0;
   position: relative;
+  width: 64px;
+  height: 64px;
 }
 
+.icon-wrapper .interaction-icon {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+/* Document type icons */
+.document-type-icon,
+.document-type-icon-large,
+.document-card-icon {
+  display: block;
+  object-fit: contain;
+}
+
+/* Legacy styles - kept for backward compatibility if needed elsewhere */
 .icon-background {
   display: flex;
   padding: 20px;
