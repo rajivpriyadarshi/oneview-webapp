@@ -75,8 +75,9 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${butlerPro.variable} ${butlerProRoman.variable} ${butlerProRomanDisplay.variable} ${butlerProMedium.variable} ${butlerProSemiBold.variable} ${satoshi.variable}`}
+      suppressHydrationWarning
     >
-      <body>
+      <body suppressHydrationWarning>
         <StoreProvider>
           <AuthEvents />
           <Suspense fallback={null}>

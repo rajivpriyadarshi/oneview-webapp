@@ -239,8 +239,29 @@ Composite client detail for the RM client page. Returns header info, AUM with mo
       {"label": "EQUITY", "value": "637000.0", "pct": "30.18"}
     ]
   },
-  "insights": [],
-  "recent_activity": []
+  "insights": {
+    "generated_at": "2026-08-20T08:52:09.746782+00:00",
+    "items": [
+      {
+        "id": 1,
+        "title": "NVDA rebalancing still pending at 12.79%",
+        "body": "Client agreed to reduce NVIDIA position to 12% but current weight is 12.79%. Need to execute remaining trim.",
+        "chat_prompt": "Prepare a trade order to trim NVDA from 12.79% to 12%",
+        "is_dismissed": false,
+        "generated_at": "2026-08-20T08:52:09Z",
+        "created_at": "2026-08-20T08:52:09Z"
+      }
+    ]
+  },
+  "recent_activity": [
+    {
+      "id": "147",
+      "icon": "email",
+      "title": "Mortgage Refinancing Update + LGT Call Confirmed",
+      "description": "Advisor confirmed LGT fund manager call and provided mortgage refinancing options from DBS and OCBC.",
+      "date": "2026-08-04"
+    }
+  ]
 }
 ```
 
@@ -257,8 +278,11 @@ Composite client detail for the RM client page. Returns header info, AUM with mo
 | at_a_glance.family | From `ClientMemory.memory.financial_context.dependant_or_family_obligations` |
 | at_a_glance.risk_profile | From `ClientMemory.memory.financial_preferences.risk_tolerance.stated_level` |
 | asset_allocation.buckets | Exposure breakdown by asset class from `PortfolioAnalyticsService` |
-| insights | Placeholder (empty array) — to be implemented |
-| recent_activity | Placeholder (empty array) — to be implemented |
+| insights.generated_at | ISO timestamp of when insights were last computed (null if never) |
+| insights.items | Array of active (non-dismissed) insight cards |
+| insights.items[].chat_prompt | Pre-filled message for "Ask AI" button |
+| recent_activity | 3 most recent `ActivityEvent` records for the client |
+| recent_activity[].icon | One of: `phone`, `email`, `meeting`, `check`, `document`, `portfolio`, `alert`, `note` |
 
 **Error responses:**
 
@@ -266,6 +290,256 @@ Composite client detail for the RM client page. Returns header info, AUM with mo
 |--------|------|
 | 403 | `{"error": "This account is not linked to a Relationship Manager profile."}` |
 | 404 | Client not found or not assigned to this RM |
+
+---
+
+## Client Insights
+
+### POST `/api/wealth/crm/clients/<client_id>/insights/refresh/`
+
+Regenerate insights for a client using LLM. Deletes previous non-dismissed insights and creates a fresh batch.
+
+**Headers:** `Authorization: Token <token>`
+
+**Success response (200):**
+
+```json
+{
+  "generated_at": "2026-08-20T08:52:09.746782+00:00",
+  "items": [
+    {
+      "id": 1,
+      "title": "NVDA rebalancing still pending at 12.79%",
+      "body": "Client agreed to reduce NVIDIA position to 12% but current weight is 12.79%.",
+      "chat_prompt": "Prepare a trade order to trim NVDA from 12.79% to 12%",
+      "is_dismissed": false,
+      "generated_at": "2026-08-20T08:52:09Z",
+      "created_at": "2026-08-20T08:52:09Z"
+    }
+  ]
+}
+```
+
+### POST `/api/wealth/crm/clients/<client_id>/insights/<insight_id>/dismiss/`
+
+Mark an insight as dismissed. Dismissed insights no longer appear in the client detail response.
+
+**Headers:** `Authorization: Token <token>`
+
+**Success response (200):**
+
+```json
+{"status": "ok"}
+```
+
+---
+
+## Client Documents
+
+Base URL: `/api/wealth/oneview/`
+
+All document endpoints require `client_id` to scope access. The authenticated RM can only access documents for clients in their book.
+
+### GET `/api/wealth/oneview/documents/?client_id=<id>`
+
+List documents for a client. Paginated (PAGE_SIZE=50).
+
+**Headers:** `Authorization: Token <token>`
+
+**Query parameters:**
+
+| Param     | Type | Required | Description         |
+|-----------|------|----------|---------------------|
+| client_id | int  | yes      | Client ID to scope  |
+| page      | int  | no       | Page number         |
+
+**Success response (200):**
+
+```json
+{
+  "count": 2,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "id": 117,
+      "name": "Fidelity Q2 Statement",
+      "display_name": "",
+      "description": "",
+      "file_url": "https://...",
+      "file_size": 245000,
+      "content_type": "application/pdf",
+      "broker": "fidelity",
+      "document_type": "investments",
+      "processing_status": "processed",
+      "as_of_date": "2026-06-30",
+      "is_active": true,
+      "uploaded_by": 207,
+      "uploaded_by_username": "arjun_mehta",
+      "client_id": 300,
+      "accounts": [
+        {"id": 5, "name": "Fidelity Brokerage", "institution_name": "Fidelity", "account_type": "brokerage", "external_account_id": "X12345"}
+      ],
+      "positions_count": 12,
+      "holdings_value": 1450000.0,
+      "currency": "$",
+      "metadata": {},
+      "created_at": "2026-08-15T10:00:00Z",
+      "updated_at": "2026-08-15T10:02:00Z"
+    }
+  ]
+}
+```
+
+---
+
+### GET `/api/wealth/oneview/documents/<id>/?client_id=<id>`
+
+Retrieve document detail including extracted metadata and read-only file URL.
+
+**Headers:** `Authorization: Token <token>`
+
+**Query parameters:**
+
+| Param     | Type | Required | Description        |
+|-----------|------|----------|--------------------|
+| client_id | int  | yes      | Client ID to scope |
+
+**Success response (200):** Same shape as list item above.
+
+---
+
+### GET `/api/wealth/oneview/documents/<id>/status/?client_id=<id>`
+
+Poll the processing status of a document.
+
+**Headers:** `Authorization: Token <token>`
+
+**Query parameters:**
+
+| Param     | Type | Required | Description        |
+|-----------|------|----------|--------------------|
+| client_id | int  | yes      | Client ID to scope |
+
+**Success response (200):**
+
+```json
+{
+  "id": 117,
+  "processing_status": "processing",
+  "progress": {
+    "label": "Extracting positions...",
+    "current": 3,
+    "total": 10
+  },
+  "job_id": "abc123def456"
+}
+```
+
+When status is `"failed"`:
+
+```json
+{
+  "id": 117,
+  "processing_status": "failed",
+  "error": "Unsupported broker format",
+  "failure_details": {"stage": "parse", "trace_available": true}
+}
+```
+
+---
+
+### POST `/api/wealth/oneview/document/upload/`
+
+Upload and parse a broker statement for a client.
+
+**Headers:** `Authorization: Token <token>`
+
+**Request body (multipart/form-data):**
+
+| Field            | Type    | Required | Description                                    |
+|------------------|---------|----------|------------------------------------------------|
+| file             | file    | yes      | Broker statement (CSV, XLSX, PDF)              |
+| client_id        | int     | yes      | Client ID to upload for                        |
+| name             | string  | no       | Document name (defaults to filename)           |
+| description      | string  | no       | Optional description                           |
+| store_data       | boolean | no       | Store parsed holdings in DB (default: true)    |
+| portfolio_name   | string  | no       | Portfolio name to use/create (default: "Main Portfolio") |
+| portfolio_id     | int     | no       | Target existing portfolio by ID                |
+| use_llm_fallback | boolean | no       | Use LLM fallback if no parser matches (default: true) |
+| password         | string  | no       | Password for encrypted PDFs                    |
+
+**Success response (200):**
+
+```json
+{
+  "status": "success",
+  "document_id": 117,
+  "broker": "fidelity",
+  "statement_date": "2026-06-30",
+  "positions_count": 12,
+  "total_invested": "1200000.00",
+  "total_current": "1450000.00",
+  "currency": "USD",
+  "storage": {
+    "portfolio": "Main Portfolio",
+    "portfolio_id": 5,
+    "account": "Fidelity Brokerage",
+    "account_id": 10,
+    "positions_created": 12,
+    "positions_updated": 0
+  }
+}
+```
+
+**Async response (202):** When processing requires LLM extraction.
+
+```json
+{
+  "status": "processing",
+  "job_id": "abc123def456",
+  "document_id": 117,
+  "message": "Document sent for AI extraction. Poll for status."
+}
+```
+
+---
+
+### DELETE `/api/wealth/oneview/documents/<id>/?client_id=<id>`
+
+Delete a document and cascade-remove associated positions.
+
+**Headers:** `Authorization: Token <token>`
+
+**Query parameters:**
+
+| Param                     | Type   | Required | Description                              |
+|---------------------------|--------|----------|------------------------------------------|
+| client_id                 | int    | yes      | Client ID to scope                       |
+| deactivate_empty_accounts | string | no       | Deactivate accounts with no remaining positions (default: true) |
+
+**Success response (200):**
+
+```json
+{
+  "status": "deleted",
+  "deactivate_empty_accounts": true,
+  "document_id": 117,
+  "deleted_positions": 12,
+  "deactivated_accounts": 1
+}
+```
+
+---
+
+### Access Control
+
+All document APIs enforce RM-client ownership:
+
+- An RM can only access documents for clients where `client.relationship_manager` matches their RM profile
+- A client's own user can access their own documents
+- Accessing another RM's client returns `403 {"detail": "You do not have access to this client."}`
+- Missing `client_id` returns `403 {"detail": "client_id is required."}`
 
 ---
 

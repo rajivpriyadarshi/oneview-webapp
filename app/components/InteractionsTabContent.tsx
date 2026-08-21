@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Lottie } from "lottie-react";
 import InteractionCard from "./InteractionCard";
+import { ClientLottie } from "./ClientLottie";
 import { listClientInteractions } from "../lib/wealthCrmApi";
 import type { Interaction } from "../types/interactionTypes";
 
@@ -140,7 +140,7 @@ export default function InteractionsTabContent({ clientId }: InteractionsTabCont
 
       {loading ? (
         <div className="loading-state-lottie">
-          <Lottie src="/loader.json" autoplay loop style={{ width: 120, height: 120 }} />
+          <ClientLottie src="/loader.json" style={{ width: 120, height: 120 }} />
           <p>Loading interactions...</p>
         </div>
       ) : (

@@ -18,6 +18,7 @@ export type DocumentRecord = {
   accounts?: { id: number; name: string; institution_name: string; account_type: string }[];
   positions_count?: number;
   holdings_value?: number;
+  metadata?: unknown;
   created_at: string;
   updated_at?: string;
 };
@@ -100,6 +101,56 @@ export type BrokerStatementJobProgress = {
   total?: number;
 };
 
+export type DocumentStatusResponse = {
+  id: string | number;
+  processing_status?: string;
+  progress?: BrokerStatementJobProgress;
+  job_id?: string;
+  error?: string;
+  failure_details?: unknown;
+};
+
+export type DocumentJobStatusResponse =
+  | {
+      status: "processing";
+      document_id?: string | number;
+      document_type?: string;
+      message?: string;
+      progress?: BrokerStatementJobProgress;
+      job_id?: string;
+    }
+  | {
+      status: "needs_review";
+      document_id?: string | number;
+      document_type?: string;
+      message?: string;
+      progress?: BrokerStatementJobProgress;
+      job_id?: string;
+    }
+  | {
+      status: "success";
+      document_id: string | number;
+      document_type?: string;
+      message?: string;
+    }
+  | {
+      status: "error";
+      document_id?: string | number;
+      document_type?: string;
+      message?: string;
+      error?: string;
+      failure_details?: unknown;
+      job_id?: string;
+    };
+
+export type DeleteDocumentResponse = {
+  status: "deleted";
+  deactivate_empty_accounts: boolean;
+  document_id: string | number;
+  deleted_positions: number;
+  deactivated_accounts: number;
+};
+
 export type BrokerStatementJobStatusResponse =
   | BrokerStatementUploadSuccessResponse
   | {
@@ -123,6 +174,10 @@ export function isBrokerStatementUploadStatusValid(response: { status: number })
 
 export function isBrokerStatementJobStatusValid(response: { status: number }) {
   return [200, 202, 400].includes(response.status);
+}
+
+export function isDocumentJobStatusValid(response: { status: number }) {
+  return [200, 202, 400, 404, 502].includes(response.status);
 }
 
 export async function pollBrokerStatementJobStatus(input: {
@@ -196,20 +251,31 @@ function createAbortError() {
   return error;
 }
 
-export async function listDocuments() {
+function getClientQueryString(clientId?: number | string | null) {
+  if (!clientId) return "";
+  const searchParams = new URLSearchParams({ client_id: String(clientId) });
+  return `?${searchParams.toString()}`;
+}
+
+export async function listDocuments(clientId?: number | string | null) {
   const response = await apiRequest<DocumentRecord[] | { results: DocumentRecord[] }>(
-    "/oneview/documents/",
+    `/oneview/documents/${getClientQueryString(clientId)}`,
   );
   return Array.isArray(response) ? response : response.results;
 }
 
 export function uploadDocument(input: {
   file: File;
+  clientId?: number | string | null;
   name?: string;
   description?: string;
 }) {
   const formData = new FormData();
   formData.set("file", input.file);
+
+  if (input.clientId) {
+    formData.set("client_id", String(input.clientId));
+  }
 
   if (input.name) {
     formData.set("name", input.name);
@@ -219,14 +285,30 @@ export function uploadDocument(input: {
     formData.set("description", input.description);
   }
 
-  return apiRequest<DocumentRecord>("/oneview/documents/", {
+  return apiRequest<BrokerStatementUploadResponse>("/oneview/document/upload/", {
     method: "POST",
     body: formData,
+    validateStatus: isBrokerStatementUploadStatusValid,
   });
 }
 
-export function getDocument(id: string) {
-  return apiRequest<DocumentRecord>(`/oneview/documents/${id}/`);
+export function getDocument(id: string, clientId?: number | string | null) {
+  return apiRequest<DocumentRecord>(`/oneview/documents/${id}/${getClientQueryString(clientId)}`);
+}
+
+export function getDocumentStatus(id: string, clientId: number | string) {
+  return apiRequest<DocumentStatusResponse>(
+    `/oneview/documents/${id}/status/${getClientQueryString(clientId)}`,
+  );
+}
+
+export function getDocumentJobStatus(jobId: string) {
+  return apiRequest<DocumentJobStatusResponse>(
+    `/oneview/document/jobs/${encodeURIComponent(jobId)}/status/`,
+    {
+      validateStatus: isDocumentJobStatusValid,
+    },
+  );
 }
 
 export function updateDocument(
@@ -239,8 +321,19 @@ export function updateDocument(
   });
 }
 
-export function deleteDocument(id: string) {
-  return apiRequest<void>(`/oneview/documents/${id}/`, {
+export function deleteDocument(
+  id: string,
+  clientId?: number | string | null,
+  options?: { deactivateEmptyAccounts?: boolean },
+) {
+  const searchParams = new URLSearchParams();
+  if (clientId) searchParams.set("client_id", String(clientId));
+  if (typeof options?.deactivateEmptyAccounts === "boolean") {
+    searchParams.set("deactivate_empty_accounts", String(options.deactivateEmptyAccounts));
+  }
+  const qs = searchParams.toString();
+
+  return apiRequest<DeleteDocumentResponse>(`/oneview/documents/${id}/${qs ? `?${qs}` : ""}`, {
     method: "DELETE",
   });
 }
@@ -256,8 +349,10 @@ export function uploadBrokerStatement(input: {
   name?: string;
   description?: string;
   password?: string;
+  clientId?: number | string | null;
   storeData?: boolean;
   portfolioName?: string;
+  portfolioId?: number | string;
   useLlmFallback?: boolean;
 }) {
   const formData = new FormData();
@@ -275,6 +370,10 @@ export function uploadBrokerStatement(input: {
     formData.set("password", input.password);
   }
 
+  if (input.clientId) {
+    formData.set("client_id", String(input.clientId));
+  }
+
   if (typeof input.storeData === "boolean") {
     formData.set("store_data", String(input.storeData));
   }
@@ -283,12 +382,16 @@ export function uploadBrokerStatement(input: {
     formData.set("portfolio_name", input.portfolioName);
   }
 
+  if (input.portfolioId) {
+    formData.set("portfolio_id", String(input.portfolioId));
+  }
+
   if (typeof input.useLlmFallback === "boolean") {
     formData.set("use_llm_fallback", String(input.useLlmFallback));
   }
 
   return apiRequest<BrokerStatementUploadResponse>(
-    "/oneview/broker-statements/upload/",
+    "/oneview/document/upload/",
     {
       method: "POST",
       body: formData,
