@@ -204,16 +204,26 @@ export const api = createApi({
     }),
 
     // Documents
-    listDocuments: builder.query<DocumentRecord[], void>({
-      query: () => "/oneview/documents/",
+    listDocuments: builder.query<DocumentRecord[], number | string | void>({
+      query: (clientId) => {
+        const searchParams = new URLSearchParams();
+        if (clientId) searchParams.set("client_id", String(clientId));
+        const qs = searchParams.toString();
+        return `/oneview/documents/${qs ? `?${qs}` : ""}`;
+      },
       transformResponse: (response: DocumentRecord[] | { results: DocumentRecord[] }) =>
         Array.isArray(response) ? response : response.results,
       keepUnusedDataFor: 0,
       providesTags: ["Documents"],
     }),
-    getDocument: builder.query<DocumentRecord, string>({
-      query: (id) => `/oneview/documents/${id}/`,
-      providesTags: (_result, _error, id) => [{ type: "Documents", id }],
+    getDocument: builder.query<DocumentRecord, { id: string; clientId?: number | string | null }>({
+      query: ({ id, clientId }) => {
+        const searchParams = new URLSearchParams();
+        if (clientId) searchParams.set("client_id", String(clientId));
+        const qs = searchParams.toString();
+        return `/oneview/documents/${id}/${qs ? `?${qs}` : ""}`;
+      },
+      providesTags: (_result, _error, { id }) => [{ type: "Documents", id }],
     }),
     getDocumentPositions: builder.query<{ count: number; positions: DocumentPosition[] }, string>({
       query: (id) => `/oneview/documents/${id}/positions/`,

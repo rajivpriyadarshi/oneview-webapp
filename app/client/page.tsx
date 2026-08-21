@@ -1361,11 +1361,9 @@ function WealthMapTab({ clientId }: { clientId: number | null }) {
 }
 
 function DocumentsTab({ clientId }: { clientId?: number | null }) {
-  void clientId;
-
   return (
     <div className="min-h-0 overflow-auto bg-white px-[32px] py-[24px]">
-      <DocumentsListView />
+      <DocumentsListView clientId={clientId} />
     </div>
   );
 }

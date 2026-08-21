@@ -196,9 +196,15 @@ function createAbortError() {
   return error;
 }
 
-export async function listDocuments() {
+function getClientQueryString(clientId?: number | string | null) {
+  if (!clientId) return "";
+  const searchParams = new URLSearchParams({ client_id: String(clientId) });
+  return `?${searchParams.toString()}`;
+}
+
+export async function listDocuments(clientId?: number | string | null) {
   const response = await apiRequest<DocumentRecord[] | { results: DocumentRecord[] }>(
-    "/oneview/documents/",
+    `/oneview/documents/${getClientQueryString(clientId)}`,
   );
   return Array.isArray(response) ? response : response.results;
 }
@@ -225,8 +231,8 @@ export function uploadDocument(input: {
   });
 }
 
-export function getDocument(id: string) {
-  return apiRequest<DocumentRecord>(`/oneview/documents/${id}/`);
+export function getDocument(id: string, clientId?: number | string | null) {
+  return apiRequest<DocumentRecord>(`/oneview/documents/${id}/${getClientQueryString(clientId)}`);
 }
 
 export function updateDocument(
