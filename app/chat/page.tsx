@@ -309,8 +309,16 @@ export default function ChatOnePage() {
       setClientGroups((prev) => {
         const existing = prev.get(clientId);
         if (!existing) return prev;
+        const oldByIdMap = new Map(existing.sessions.map((s) => [s.id, s]));
+        const merged = sessions.map((s) => {
+          if ((!s.title || s.title === "New chat") && oldByIdMap.has(s.id)) {
+            const old = oldByIdMap.get(s.id)!;
+            if (old.title && old.title !== "New chat") return { ...s, title: old.title };
+          }
+          return s;
+        });
         const next = new Map(prev);
-        next.set(clientId, { ...existing, sessions, isLoading: false });
+        next.set(clientId, { ...existing, sessions: merged, isLoading: false });
         return next;
       });
     } catch { /* keep existing */ }
@@ -351,9 +359,10 @@ export default function ChatOnePage() {
     setHasStartedChat(true);
     if (!sessionId) return;
     const existingSession = selectedSession;
+    const title = existingSession?.title && existingSession.title !== "New chat" ? existingSession.title : createTitleFromPrompt(prompt ?? "");
     const nextSession: AiChatSession = {
       id: sessionId,
-      title: existingSession?.title && existingSession.title !== "New chat" ? existingSession.title : createTitleFromPrompt(prompt ?? ""),
+      title,
       agent: existingSession?.agent ?? getAiAgentSlug(),
       client_id: existingSession?.client_id ?? chatClientId ?? undefined,
       created_at: existingSession?.created_at,
@@ -364,7 +373,18 @@ export default function ChatOnePage() {
     setInitialMessages(messages.map(normalizeAiChatMessage));
     setSelectedSessionId(sessionId);
     if (chatClientId) {
-      window.setTimeout(() => void refreshClientSessions(chatClientId), 500);
+      setClientGroups((prev) => {
+        const existing = prev.get(chatClientId);
+        if (!existing) return prev;
+        const alreadyExists = existing.sessions.some((s) => s.id === sessionId);
+        const updatedSessions = alreadyExists
+          ? existing.sessions.map((s) => s.id === sessionId ? { ...s, title } : s)
+          : [nextSession, ...existing.sessions];
+        const next = new Map(prev);
+        next.set(chatClientId, { ...existing, sessions: updatedSessions, isExpanded: true });
+        return next;
+      });
+      window.setTimeout(() => void refreshClientSessions(chatClientId), 2000);
     }
   };
 
@@ -379,9 +399,6 @@ export default function ChatOnePage() {
       {/* Top Header Bar */}
       <header className="fixed left-[80px] right-0 top-0 z-50 flex items-center justify-between border-b border-black/10 bg-white/20 px-6 py-2.5 backdrop-blur-[32px]">
         <h1 className="m-0 text-[22px] font-medium leading-[26.4px] text-black" style={{ fontFamily: "var(--font-butler)" }}>AI assistant</h1>
-        <button type="button" onClick={startNewChat} className="inline-flex items-center gap-2 rounded-full bg-black p-[12px] font-satoshi font-medium leading-[18px] text-white shadow-[0_3px_4px_rgba(0,0,0,0.04)] transition hover:bg-[#2d2926]" style={{ fontSize: "12px" }}>
-          New chat
-        </button>
       </header>
 
       {/* Main layout */}
@@ -422,14 +439,24 @@ export default function ChatOnePage() {
                         <span className="font-satoshi text-[14px] font-medium leading-[21px] text-black">{client.display_name}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button type="button" className="flex h-6 w-6 items-center justify-center rounded-full text-black/30 hover:text-black/60" onClick={(e) => { e.stopPropagation(); }}>
-                          <MoreDotsIcon />
+                        <button type="button" className="flex h-6 w-6 items-center justify-center rounded-full text-black/30 hover:text-black/60" onClick={(e) => { e.stopPropagation(); if (!isExpanded) void toggleClientGroup(client); setSelectedClientId(client.id); startNewChat(); }} aria-label="New chat">
+                          <PlusIcon />
                         </button>
                         <ChevronIcon expanded={isExpanded} />
                       </div>
                     </div>
                     {isExpanded && (
                       <div className="ml-1 mb-2 flex flex-col gap-[6px]">
+                        {/* New chat item - only show when active for this client */}
+                        {selectedClientId === client.id && !selectedSessionId && (
+                          <div
+                            style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center" }}
+                            className="cursor-pointer rounded-2xl px-3 py-2.5 font-satoshi text-[13px] font-medium leading-[18px] text-black transition"
+                            onClick={() => { setSelectedClientId(client.id); startNewChat(); }}
+                          >
+                            New chat
+                          </div>
+                        )}
                         {group?.isLoading ? (
                           <div className="py-2 pl-3 font-satoshi text-[12px] text-black/40">Loading...</div>
                         ) : group?.sessions.length ? (
@@ -443,9 +470,7 @@ export default function ChatOnePage() {
                               {session.title}
                             </div>
                           ))
-                        ) : (
-                          <div className="py-2 pl-3 font-satoshi text-[12px] text-black/40">No chats yet</div>
-                        )}
+                        ) : null}
                       </div>
                     )}
                   </div>
@@ -1025,8 +1050,8 @@ function CollapseIcon() {
   return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.72" y="1.72" width="16.56" height="16.56" rx="2" stroke="#262C31" strokeWidth="1.4" /><path d="M7.5 18.2812V1.71875" stroke="#262C31" strokeWidth="1.4" /><path d="M13.3594 11.9922L11.0156 9.64844L13.3594 7.30469" stroke="#262C31" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
-function MoreDotsIcon() {
-  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="3" cy="8" r="1.2" fill="currentColor" /><circle cx="8" cy="8" r="1.2" fill="currentColor" /><circle cx="13" cy="8" r="1.2" fill="currentColor" /></svg>;
+function PlusIcon() {
+  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>;
 }
 
 function ArrowUpIcon() {
