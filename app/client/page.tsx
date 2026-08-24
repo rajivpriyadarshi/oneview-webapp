@@ -450,7 +450,16 @@ export default function ChatPage() {
         });
         const nextSessions = mergeAiChatSessions(serverSessions, pendingLocalSessions);
 
-        setSessions(nextSessions);
+        setSessions((current) => {
+          const currentById = new Map(current.map((s) => [s.id, s]));
+          return nextSessions.map((s) => {
+            const local = currentById.get(s.id);
+            if (local && local.title && local.title !== "New chat" && (!s.title || s.title === "New chat")) {
+              return { ...s, title: local.title };
+            }
+            return s;
+          });
+        });
         writeStoredAiChatSessions(serverSessions);
         setNotice(null);
       } catch (error) {
@@ -510,12 +519,20 @@ export default function ChatPage() {
   );
   const isChatActive = hasStartedChat || Boolean(selectedSessionId) || Boolean(initialPromptParam) || initialMessages.length > 0;
   const chatThreadKeyRef = useRef<string | null>(null);
+  const prevResetIdRef = useRef(chatResetId);
+  const prevClientIdRef = useRef(chatClientId);
   const chatThreadKey = useMemo(() => {
+    const resetChanged = chatResetId !== prevResetIdRef.current;
+    const clientChanged = chatClientId !== prevClientIdRef.current;
+    prevResetIdRef.current = chatResetId;
+    prevClientIdRef.current = chatClientId;
     const baseKey = `${chatClientId ?? "pending-client"}:${chatResetId}`;
-    if (selectedSession && !initialPromptParam) {
-      chatThreadKeyRef.current = `${baseKey}:${selectedSession.id}`;
-    } else if (!chatThreadKeyRef.current || chatResetId > 0) {
-      chatThreadKeyRef.current = `${baseKey}:${initialPromptParam ?? "draft"}`;
+    if (resetChanged || clientChanged || !chatThreadKeyRef.current) {
+      if (selectedSession && !initialPromptParam) {
+        chatThreadKeyRef.current = `${baseKey}:${selectedSession.id}`;
+      } else {
+        chatThreadKeyRef.current = `${baseKey}:${initialPromptParam ?? "draft"}`;
+      }
     }
     return chatThreadKeyRef.current;
   }, [chatClientId, chatResetId, selectedSession, initialPromptParam]);
@@ -688,7 +705,7 @@ export default function ChatPage() {
       title:
         existingSession?.title && existingSession.title !== "New chat"
           ? existingSession.title
-          : createTitleFromPrompt(prompt ?? ""),
+          : "New chat",
       agent: existingSession?.agent ?? getAiAgentSlug(),
       client_id: existingSession?.client_id ?? chatClientId ?? undefined,
       created_at: existingSession?.created_at,
@@ -975,10 +992,8 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
           if (pendingWorkflow) {
             selectedPromptRef.current = null;
             setSelectedPromptId(null);
-            if (pendingWorkflow.execution_plan) {
-              onExecutionPlanChange?.(pendingWorkflow.execution_plan);
-            }
-          } else {
+            onExecutionPlanChange?.(pendingWorkflow.execution_plan ?? null);
+          } else if (!executionPlan) {
             onExecutionPlanChange?.(null);
           }
 
@@ -1038,7 +1053,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
     if (!initialPrompt || initialPromptFiredRef.current || !clientId) return;
     initialPromptFiredRef.current = true;
     if (initialWorkflowTool) {
-      selectedPromptRef.current = { id: -9999, title: "", description: "", user_message: initialPrompt, workflow_intent: { tool_name: initialWorkflowTool, mode: "run" } };
+      selectedPromptRef.current = { id: -9999, title: "", description: "", user_message: initialPrompt, workflow_intent: { tool_name: initialWorkflowTool, mode: "run" }, execution_plan: executionPlan ?? undefined };
     }
     void chat.sendMessage({
       text: initialPrompt,
