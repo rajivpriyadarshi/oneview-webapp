@@ -10,6 +10,8 @@ export default function ClientsPage() {
   const router = useRouter();
   const [advisorName, setAdvisorName] = useState("");
   const [today, setToday] = useState("");
+  const [showAlertsModal, setShowAlertsModal] = useState(false);
+  const [showMeetingsModal, setShowMeetingsModal] = useState(false);
 
   useEffect(() => {
     if (!getStoredAuthToken()) {
@@ -129,12 +131,92 @@ export default function ClientsPage() {
 
             {/* Right panels */}
             <div style={{ flex: "0 0 360px", display: "flex", flexDirection: "column", gap: 16 }}>
-              <AlertsPanel alerts={alerts} />
-              <MeetingsPanel meetings={meetings} />
+              <AlertsPanel alerts={alerts} onViewAll={() => setShowAlertsModal(true)} />
+              <MeetingsPanel meetings={meetings} onViewAll={() => setShowMeetingsModal(true)} />
             </div>
           </div>
         </div>
       </main>
+
+      {showAlertsModal && (
+        <ModalOverlay onClose={() => setShowAlertsModal(false)}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>All Alerts</h2>
+          {alerts.length === 0 ? (
+            <p style={{ fontSize: 14, color: "#6B7280", margin: 0 }}>No alerts</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, maxHeight: 400, overflowY: "auto" }}>
+              {alerts.map((alert) => (
+                <div key={alert.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <div style={{
+                    width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
+                    background: alert.client ? "#39952D" : "#3B82F6",
+                  }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
+                    <div style={{ fontSize: 12, color: "rgba(33,37,37,0.70)", marginTop: 2 }}>
+                      {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
+                    </div>
+                    {alert.cta_url && alert.cta_text && (
+                      <a
+                        href={alert.cta_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", textDecoration: "none", marginTop: 4, display: "inline-block" }}
+                      >
+                        {alert.cta_text}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </ModalOverlay>
+      )}
+
+      {showMeetingsModal && (
+        <ModalOverlay onClose={() => setShowMeetingsModal(false)}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>All Upcoming Meetings</h2>
+          {meetings.length === 0 ? (
+            <p style={{ fontSize: 14, color: "#6B7280", margin: 0 }}>No upcoming meetings</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 400, overflowY: "auto" }}>
+              {meetings.map((meeting, i) => {
+                const d = new Date(meeting.scheduled_at);
+                const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+                const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                const isFirst = i === 0;
+                return (
+                  <div key={meeting.id} style={{
+                    borderRadius: 16, padding: 16,
+                    backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')",
+                    backgroundSize: "cover", backgroundPosition: "center",
+                    backgroundColor: isFirst ? undefined : "#CA8C4626",
+                    display: "flex", alignItems: "center", gap: 12,
+                  }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                      background: isFirst ? "#FDE5C3" : "#CA8C4626",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <MeetingIcon title={meeting.title} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A" }}>{meeting.title}</div>
+                      {meeting.client_name && (
+                        <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>{meeting.client_name}</div>
+                      )}
+                      <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>
+                        {dateStr} • {timeStr} • {meeting.duration_minutes} min
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ModalOverlay>
+      )}
     </div>
   );
 }
@@ -278,19 +360,19 @@ function timeAgo(isoDate: string): string {
   return `${Math.floor(diff / 86400)} days ago`;
 }
 
-function AlertsPanel({ alerts }: { alerts: CrmAlert[] }) {
+function AlertsPanel({ alerts, onViewAll }: { alerts: CrmAlert[]; onViewAll: () => void }) {
   return (
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Alerts</h3>
-        <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
+        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
       </div>
 
       {alerts.length === 0 ? (
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No alerts</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {alerts.map((alert) => (
+          {alerts.slice(0, 3).map((alert) => (
             <div key={alert.id} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
               <div style={{
                 width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
@@ -320,12 +402,12 @@ function AlertsPanel({ alerts }: { alerts: CrmAlert[] }) {
   );
 }
 
-function MeetingsPanel({ meetings }: { meetings: CrmMeeting[] }) {
+function MeetingsPanel({ meetings, onViewAll }: { meetings: CrmMeeting[]; onViewAll: () => void }) {
   return (
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Upcoming meetings</h3>
-        <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
+        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
       </div>
       {meetings.length === 0 ? (
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No upcoming meetings</p>
@@ -389,6 +471,31 @@ function MeetingIcon({ title }: { title: string }) {
     <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
       <path d="M1 19V13M8.0008 19V1M15.0016 19V7" stroke="black" strokeWidth="2" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function ModalOverlay({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 500,
+        background: "rgba(0,0,0,0.30)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "white", borderRadius: 24, padding: 32,
+          width: 480, maxWidth: "90vw", maxHeight: "80vh",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+          display: "flex", flexDirection: "column",
+        }}
+      >
+        {children}
+      </div>
+    </div>
   );
 }
 
