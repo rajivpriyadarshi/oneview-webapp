@@ -29,11 +29,6 @@ export default function PortfolioReviewContent({ payload }: { payload: WealthFam
 
   return (
     <>
-      {/* Header */}
-      <h1 className="mb-[8px] font-serif text-[28px] font-normal leading-[1.1] text-black">
-        Meeting Preparation
-      </h1>
-
       {payload.subject && (
         <div className="mb-[24px] font-satoshi">
           {payload.subject.name ? (

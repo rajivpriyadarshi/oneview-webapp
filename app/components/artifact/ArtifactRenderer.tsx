@@ -5,13 +5,17 @@ import PortfolioReviewContent from "./PortfolioReviewContent";
 export default function ArtifactRenderer({ artifact }: { artifact: ArtifactData }) {
   const { artifact_type, artifact_version, name, payload } = artifact;
   const messageText = artifact.message_text?.trim();
+  const title = name?.trim() || "Artifact";
+  const titleNode = (
+    <h1 className="mb-[20px] font-serif text-[28px] font-normal leading-[1.1] text-black">
+      {title}
+    </h1>
+  );
 
   if (messageText) {
     return (
       <>
-        <h1 className="mb-[20px] font-serif text-[28px] font-normal leading-[1.1] text-black">
-          Meeting Preparation
-        </h1>
+        {titleNode}
         <section className="rounded-[16px] border border-black/10 bg-white/70 p-[18px]">
           <MarkdownContent>{messageText}</MarkdownContent>
         </section>
@@ -21,15 +25,18 @@ export default function ArtifactRenderer({ artifact }: { artifact: ArtifactData 
 
   // Registry pattern for extensibility
   if (artifact_type === "wealth.family_snapshot" && artifact_version === 1) {
-    return <PortfolioReviewContent payload={payload as WealthFamilySnapshotPayload} />;
+    return (
+      <>
+        {titleNode}
+        <PortfolioReviewContent payload={payload as WealthFamilySnapshotPayload} />
+      </>
+    );
   }
 
   // Fallback for unknown types
   return (
     <>
-      <h1 className="mb-[20px] font-serif text-[28px] font-normal leading-[1.1] text-black">
-        {name || "Artifact"}
-      </h1>
+      {titleNode}
       <div className="rounded-[12px] border border-[#973022]/20 bg-white/90 p-[16px]">
         <p className="mb-[12px] font-satoshi text-[14px] font-semibold text-[#8f2415]">
           Unknown artifact type: {artifact_type}@{artifact_version}
