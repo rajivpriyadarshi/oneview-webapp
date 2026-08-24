@@ -2247,10 +2247,11 @@ function AssistantMessage({
   const workflowPlan = showReplySuggestions ? workflowPlanCtx : null;
   const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
   const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
+  const shouldShowArtifact = Boolean(messageArtifact && message.status?.type === "complete" && !isStreaming);
   const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
   const showContent = !hasSteps || stepsAnimationDone;
   const contentRef = useRef<HTMLDivElement>(null);
-  const { openArtifact, autoOpenEnabled } = useArtifactContext();
+  const { autoOpenArtifact, autoOpenEnabled } = useArtifactContext();
   const artifactRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -2281,14 +2282,13 @@ function AssistantMessage({
   // Auto-open artifact popup on client detail page
   useEffect(() => {
     if (!autoOpenEnabled || !message.isLast) return;
+    if (!shouldShowArtifact || !messageArtifact) return;
 
-    const artifact = getArtifactFromParts(message.content);
-
-    if (artifact && artifact.id !== artifactRef.current) {
-      artifactRef.current = artifact.id;
-      openArtifact(artifact);
+    if (messageArtifact.id !== artifactRef.current) {
+      artifactRef.current = messageArtifact.id;
+      autoOpenArtifact(messageArtifact);
     }
-  }, [message.content, message.isLast, autoOpenEnabled, openArtifact]);
+  }, [messageArtifact, message.isLast, shouldShowArtifact, autoOpenEnabled, autoOpenArtifact]);
 
   return (
     <MessagePrimitive.Root className={TW.messageAssistant}>
@@ -2310,7 +2310,7 @@ function AssistantMessage({
             {({ part, children }) => {
               const artifact = getArtifactFromPart(part);
               if (artifact) {
-                return <ArtifactMessage artifact={messageArtifact ?? artifact} />;
+                return shouldShowArtifact ? <ArtifactMessage artifact={messageArtifact ?? artifact} /> : null;
               }
 
               switch (part.type) {
@@ -2329,7 +2329,7 @@ function AssistantMessage({
                   // Render artifact as clickable message
                   if (part.name === "artifact" || part.name === "data-artifact") {
                     const artifactData = part.data as ArtifactData;
-                    return <ArtifactMessage artifact={messageArtifact ?? artifactData} />;
+                    return shouldShowArtifact ? <ArtifactMessage artifact={messageArtifact ?? artifactData} /> : null;
                   }
 
                   return part.dataRendererUI ?? <DataStatusPart name={part.name} status={part.status?.type} />;
