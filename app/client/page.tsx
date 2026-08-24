@@ -42,6 +42,16 @@ import DocumentsListView from "../components/DocumentsListView";
 import InteractionsTabContent from "../components/InteractionsTabContent";
 import { ClientLottie } from "../components/ClientLottie";
 import { WorkflowExecutionSteps, useWorkflowExecutionPlan } from "../components/WorkflowExecutionSteps";
+import { ArtifactPopupProvider } from "../contexts/ArtifactContext";
+import { useArtifactContext } from "../hooks/useArtifactContext";
+import ArtifactMessage from "../components/ArtifactMessage";
+import ArtifactPopup from "../components/ArtifactPopup";
+import {
+  getArtifactFromPart,
+  getArtifactFromParts,
+  normalizeAiChatMessage,
+  transformAiChatSseResponse,
+} from "../utils/aiChatParts";
 import {
   type AiChatSession,
   type ChatPrompt,
@@ -145,8 +155,17 @@ type ReplySuggestionsData = {
   suggestions: string[];
 };
 
+type ArtifactData = {
+  id: string;
+  artifact_type: string;
+  artifact_version: number;
+  name: string;
+  payload: unknown;
+};
+
 type AiChatDataParts = {
   "reply-suggestions": ReplySuggestionsData;
+  artifact: ArtifactData;
 };
 
 type ChatUiMessage = UIMessage<AiChatMessageMetadata, AiChatDataParts>;
@@ -160,7 +179,7 @@ const TW = {
   mobileHistoryBtn: "hidden h-[36px] w-[36px] items-center justify-center rounded-full border-0 bg-transparent text-[#7f4e0b] max-md:inline-flex hover:bg-[#7f4e0b]/10",
   mobileHeaderBtn: "inline-flex shrink-0 items-center gap-[8px] rounded-full border border-[#804d13]/20 bg-[#f0ebe0] py-[8px] pr-[12px] pl-[8px] font-satoshi text-[13px] text-[#804d13] hover:bg-[#e8e0d0]",
   mobileHeaderBtnIcon: "inline-grid place-items-center rounded-full bg-gradient-to-b from-[#b37f40] to-[#432411] p-[6px] text-white",
-  workspace: "ml-[80px] grid h-screen grid-cols-[minmax(300px,380px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(292px,350px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
+  workspace: "relative ml-[80px] grid h-screen grid-cols-[minmax(300px,380px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(292px,350px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
   advisorHeader: "relative z-[40] flex h-[52px] min-w-0 items-center justify-between gap-[10px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
@@ -549,7 +568,8 @@ export default function ChatPage() {
 
     try {
       const messages = (await loadAiChatMessages(session.id, { clientId: chatClientId })) as ChatUiMessage[];
-      setInitialMessages(messages);
+      const normalizedMessages = messages.map(normalizeAiChatMessage);
+      setInitialMessages(normalizedMessages);
     } catch (error) {
       console.error("Failed to load AI chat messages:", error);
       setInitialMessages([]);
@@ -715,7 +735,7 @@ export default function ChatPage() {
 
     upsertStoredAiChatSession(nextSession);
     setSessions((current) => mergeAiChatSessions([nextSession], current));
-    setInitialMessages(messages);
+    setInitialMessages(messages.map(normalizeAiChatMessage));
     setSelectedSessionId(sessionId);
     setIsDraftChat(false);
     window.setTimeout(() => void refreshSessions(), 300);
@@ -739,8 +759,9 @@ export default function ChatPage() {
           </button>
         }
       />
-      <main className={TW.workspace}>
-        <aside className={TW.advisorPanel} aria-label="Advisor chat">
+      <ArtifactPopupProvider autoOpenEnabled={true} positioning="client-panel">
+        <main className={TW.workspace}>
+          <aside className={TW.advisorPanel} aria-label="Advisor chat">
           <div className={TW.advisorHeader}>
             <div className={TW.conversationMenuWrap} ref={conversationMenuRef}>
               <button
@@ -838,6 +859,7 @@ export default function ChatPage() {
 
         <ClientOverview client={client} isLoadingClient={isLoadingClient} requestedClientId={requestedClientId} />
       </main>
+      </ArtifactPopupProvider>
     </div>
   );
 }
@@ -959,7 +981,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
             pendingSessionIdRef.current = responseSessionId;
           }
 
-          return response;
+          return transformAiChatSseResponse(response);
         },
         body: {
           metadata: {
@@ -1026,11 +1048,13 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
     messages: initialMessages,
     transport: transport as unknown as ChatTransport<ChatUiMessage>,
     onFinish({ message, messages }) {
-      onAssistantFinished({
-        sessionId: sessionId ?? pendingSessionIdRef.current ?? getSessionIdFromMetadata(message.metadata),
-        prompt: lastPromptRef.current,
-        messages,
-      });
+      window.setTimeout(() => {
+        onAssistantFinished({
+          sessionId: sessionId ?? pendingSessionIdRef.current ?? getSessionIdFromMetadata(message.metadata),
+          prompt: lastPromptRef.current,
+          messages,
+        });
+      }, 0);
     },
     onError(error) {
       console.error("AI chat stream failed:", error);
@@ -1163,7 +1187,7 @@ function ClientOverview({
   const [activeTab, setActiveTab] = useState<ClientTab>("overview");
 
   return (
-    <section className="grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
+    <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
       <header className="flex min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
           <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] pt-[10px] pb-[10px] px-0">
@@ -1179,6 +1203,7 @@ function ClientOverview({
       {activeTab === "wealth-map" ? <WealthMapTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
       {activeTab === "interactions" ? <InteractionsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "documents" ? <DocumentsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
+      <ArtifactPopup />
     </section>
   );
 }
@@ -2217,6 +2242,7 @@ function AssistantMessage({
   showReplySuggestions: boolean;
 }) {
   const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
+  const messageArtifact = getArtifactFromParts(message.content);
   const workflowPlanCtx = useContext(WorkflowPlanContext);
   const workflowPlan = showReplySuggestions ? workflowPlanCtx : null;
   const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
@@ -2224,6 +2250,8 @@ function AssistantMessage({
   const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
   const showContent = !hasSteps || stepsAnimationDone;
   const contentRef = useRef<HTMLDivElement>(null);
+  const { openArtifact, autoOpenEnabled } = useArtifactContext();
+  const artifactRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!hasSteps) {
@@ -2250,6 +2278,18 @@ function AssistantMessage({
     }
   }, [showContent, hasSteps, stepsAnimationDone]);
 
+  // Auto-open artifact popup on client detail page
+  useEffect(() => {
+    if (!autoOpenEnabled || !message.isLast) return;
+
+    const artifact = getArtifactFromParts(message.content);
+
+    if (artifact && artifact.id !== artifactRef.current) {
+      artifactRef.current = artifact.id;
+      openArtifact(artifact);
+    }
+  }, [message.content, message.isLast, autoOpenEnabled, openArtifact]);
+
   return (
     <MessagePrimitive.Root className={TW.messageAssistant}>
       <div className={TW.messageStack}>
@@ -2268,6 +2308,11 @@ function AssistantMessage({
             })}
           >
             {({ part, children }) => {
+              const artifact = getArtifactFromPart(part);
+              if (artifact) {
+                return <ArtifactMessage artifact={messageArtifact ?? artifact} />;
+              }
+
               switch (part.type) {
                 case "group-tools":
                   return (
@@ -2276,11 +2321,18 @@ function AssistantMessage({
                     </ToolCallGroup>
                   );
                 case "text":
+                  if (messageArtifact) return null;
                   return <MarkdownText />;
                 case "data":
-                  return shouldHideDataPart(part.name)
-                    ? null
-                    : part.dataRendererUI ?? <DataStatusPart name={part.name} status={part.status?.type} />;
+                  if (shouldHideDataPart(part.name)) return null;
+
+                  // Render artifact as clickable message
+                  if (part.name === "artifact" || part.name === "data-artifact") {
+                    const artifactData = part.data as ArtifactData;
+                    return <ArtifactMessage artifact={messageArtifact ?? artifactData} />;
+                  }
+
+                  return part.dataRendererUI ?? <DataStatusPart name={part.name} status={part.status?.type} />;
                 case "tool-call":
                   return part.toolUI ?? <ToolCallPart {...part} />;
                 case "indicator":
@@ -2658,6 +2710,11 @@ function formatToolPayload(value: unknown) {
 
 function shouldHideDataPart(name?: string) {
   if (!name) {
+    return false;
+  }
+
+  // Don't hide artifacts - render as clickable message
+  if (name === "artifact" || name === "data-artifact") {
     return false;
   }
 

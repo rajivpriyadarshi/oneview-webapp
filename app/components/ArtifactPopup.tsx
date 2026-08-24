@@ -1,0 +1,127 @@
+"use client";
+
+import { useEffect } from "react";
+import { useArtifactContext } from "../hooks/useArtifactContext";
+import ArtifactRenderer from "./artifact/ArtifactRenderer";
+
+function CloseIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export default function ArtifactPopup() {
+  const { artifact, isOpen, closeArtifact, positioning } = useArtifactContext();
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeArtifact();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, closeArtifact]);
+
+  if (!isOpen || !artifact) {
+    return null;
+  }
+
+  if (positioning === "client-panel") {
+    return (
+      <div
+        className="absolute inset-0 z-[80] overflow-y-auto"
+        style={{
+          backgroundImage: "linear-gradient(125deg, rgba(255,244,216,0.94) 0%, rgba(255,207,92,0.78) 32%, rgba(246,155,205,0.72) 64%, rgba(227,212,248,0.82) 100%), url('/insights.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <button
+          type="button"
+          className="absolute right-[24px] top-[20px] z-[2] flex h-[40px] w-[40px] items-center justify-center rounded-full border border-black/10 bg-white text-black/80 shadow-[0_6px_22px_rgba(0,0,0,0.10)] transition hover:bg-white/90 hover:text-black"
+          onClick={closeArtifact}
+          aria-label="Close"
+        >
+          <CloseIcon />
+        </button>
+
+        <div className="mx-auto flex min-h-full w-full max-w-[900px] items-start px-[32px] py-[96px] max-[900px]:px-[20px] max-[900px]:py-[78px]">
+          <div className="w-full rounded-[28px] bg-white px-[32px] py-[28px] shadow-[0_24px_80px_rgba(58,35,9,0.16)] max-[640px]:rounded-[22px] max-[640px]:px-[22px]">
+            <ArtifactRenderer artifact={artifact} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (positioning === "fixed") {
+    return (
+      <div
+        className="fixed inset-0 z-[600] overflow-y-auto p-[24px] backdrop-blur-[2px]"
+        style={{
+          background: "linear-gradient(125deg, rgba(255,244,216,0.80) 0%, rgba(255,203,48,0.78) 30%, rgba(246,155,205,0.80) 64%, rgba(224,211,247,0.80) 100%)",
+        }}
+        onClick={closeArtifact}
+      >
+        <button
+          type="button"
+          className="fixed right-[24px] top-[20px] z-[2] flex h-[40px] w-[40px] items-center justify-center rounded-full border border-black/10 bg-white text-black/80 shadow-[0_6px_22px_rgba(0,0,0,0.10)] transition hover:bg-white/90 hover:text-black"
+          onClick={closeArtifact}
+          aria-label="Close"
+        >
+          <CloseIcon />
+        </button>
+
+        <div className="mx-auto flex min-h-full w-full max-w-[760px] items-center py-[72px] max-[720px]:py-[56px]">
+          <div
+            className="w-full rounded-[28px] bg-white px-[28px] py-[24px] shadow-[0_24px_90px_rgba(79,45,8,0.16)] max-[640px]:rounded-[22px] max-[640px]:px-[22px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ArtifactRenderer artifact={artifact} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const positionClass = positioning === "absolute" ? "absolute" : "fixed";
+
+  return (
+    <div
+      className={`${positionClass} inset-0 z-[80] flex items-center justify-center bg-black/40 p-[24px] backdrop-blur-[4px]`}
+      onClick={closeArtifact}
+    >
+      <div
+        className="relative max-h-[90vh] w-full max-w-[720px] overflow-hidden rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.18)]"
+        style={{
+          backgroundImage: "linear-gradient(#FFFFFFDD, #FFFFFFDD), url('/insights.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          type="button"
+          className="absolute right-[20px] top-[20px] z-[1] flex h-[32px] w-[32px] items-center justify-center rounded-full border border-black/10 bg-white/80 text-black/60 transition hover:bg-white hover:text-black"
+          onClick={closeArtifact}
+          aria-label="Close"
+        >
+          <CloseIcon />
+        </button>
+
+        {/* Scrollable content */}
+        <div className="max-h-[90vh] overflow-y-auto px-[32px] py-[32px]">
+          <ArtifactRenderer artifact={artifact} />
+        </div>
+      </div>
+    </div>
+  );
+}
