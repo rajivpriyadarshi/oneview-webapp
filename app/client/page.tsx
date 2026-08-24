@@ -199,7 +199,7 @@ const TW = {
   scrollToBottom: "hidden data-[state=visible]:inline-grid absolute left-1/2 top-[-16px] h-9 w-9 -translate-x-1/2 -translate-y-full place-items-center rounded-full border border-white/60 bg-white/85 text-[#171615] shadow-[0_2px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl",
   errorBanner: "mx-auto mb-[10px] w-full rounded-lg border border-[#973022]/20 bg-white/70 px-[12px] py-[10px] font-satoshi text-[13px] text-[#8f2415]",
   composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent px-[22px] max-[1180px]:px-[20px] max-[900px]:px-[20px] max-[640px]:px-[14px]",
-  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] pt-[10px]",
+  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] p-[1px] pt-[10px]",
   composer: "relative mx-auto flex min-h-[80px] w-full items-center rounded-[28px] border border-black/[0.06] bg-white py-[8px] transition rounded-[24px] ",
   composerThinking: "ring-1 ring-[#b37f40]/40",
   composerInputRow: "flex-1 min-w-0 px-[14px] max-[1180px]:px-[18px] max-[640px]:px-[14px]",
@@ -703,9 +703,9 @@ export default function ChatPage() {
     const nextSession: AiChatSession = {
       id: sessionId,
       title:
-        existingSession?.title && existingSession.title !== "New chat"
+        existingSession?.title && existingSession.title !== "New conversation"
           ? existingSession.title
-          : "New chat",
+          : "New conversation",
       agent: existingSession?.agent ?? getAiAgentSlug(),
       client_id: existingSession?.client_id ?? chatClientId ?? undefined,
       created_at: existingSession?.created_at,
@@ -718,7 +718,8 @@ export default function ChatPage() {
     setInitialMessages(messages);
     setSelectedSessionId(sessionId);
     setIsDraftChat(false);
-    window.setTimeout(() => void refreshSessions(), 500);
+    window.setTimeout(() => void refreshSessions(), 300);
+    window.setTimeout(() => void refreshSessions(), 2000);
   };
 
   return (

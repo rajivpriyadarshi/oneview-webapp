@@ -423,7 +423,7 @@ export function mergeAiChatSessions(...groups: AiChatSession[][]) {
 export function createTitleFromPrompt(prompt: string) {
   const normalized = prompt.replace(/\s+/g, " ").trim();
   if (!normalized) {
-    return "New chat";
+    return "New conversation";
   }
 
   return normalized.length > 48 ? `${normalized.slice(0, 45)}...` : normalized;
