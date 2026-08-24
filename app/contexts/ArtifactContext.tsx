@@ -7,6 +7,7 @@ type ArtifactContextValue = {
   artifact: ArtifactData | null;
   isOpen: boolean;
   openArtifact: (artifact: ArtifactData) => void;
+  autoOpenArtifact: (artifact: ArtifactData) => void;
   closeArtifact: () => void;
   autoOpenEnabled: boolean;
   positioning: "fixed" | "absolute" | "client-panel";
@@ -31,6 +32,12 @@ export function ArtifactPopupProvider({
     setIsOpen(true);
   }, []);
 
+  const autoOpenArtifact = useCallback((newArtifact: ArtifactData) => {
+    if (!autoOpenEnabled) return;
+    setArtifact(newArtifact);
+    setIsOpen(true);
+  }, [autoOpenEnabled]);
+
   const closeArtifact = useCallback(() => {
     setIsOpen(false);
   }, []);
@@ -41,6 +48,7 @@ export function ArtifactPopupProvider({
         artifact,
         isOpen,
         openArtifact,
+        autoOpenArtifact,
         closeArtifact,
         autoOpenEnabled,
         positioning,

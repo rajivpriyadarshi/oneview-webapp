@@ -799,6 +799,7 @@ function AssistantMessage({ message, showReplySuggestions }: { message: MessageS
   const workflowPlan = showReplySuggestions ? workflowPlanCtx : null;
   const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
   const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
+  const shouldShowArtifact = Boolean(messageArtifact && message.status?.type === "complete" && !isStreaming);
   const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
   const showContent = !hasSteps || stepsAnimationDone;
 
@@ -824,7 +825,7 @@ function AssistantMessage({ message, showReplySuggestions }: { message: MessageS
             {({ part, children }) => {
               const artifact = getArtifactFromPart(part);
               if (artifact) {
-                return <ArtifactMessage artifact={messageArtifact ?? artifact} />;
+                return shouldShowArtifact ? <ArtifactMessage artifact={messageArtifact ?? artifact} /> : null;
               }
 
               switch (part.type) {
@@ -839,7 +840,7 @@ function AssistantMessage({ message, showReplySuggestions }: { message: MessageS
                   // Render artifact as clickable message
                   if (part.name === "artifact" || part.name === "data-artifact") {
                     const artifactData = part.data as ArtifactData;
-                    return <ArtifactMessage artifact={messageArtifact ?? artifactData} />;
+                    return shouldShowArtifact ? <ArtifactMessage artifact={messageArtifact ?? artifactData} /> : null;
                   }
 
                   return <DataStatusPart name={part.name} status={part.status?.type} />;
