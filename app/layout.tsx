@@ -62,8 +62,8 @@ const butlerProSemiBold = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Meridian",
-  description: "Meridian login",
+  title: "Zinc Wealth",
+  description: "Zinc Wealth",
 };
 
 export default function RootLayout({
