@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import {
@@ -50,6 +50,7 @@ import {
   listWealthCrmClients,
   type WealthCrmClient,
 } from "../lib/wealthCrmApi";
+import { WorkflowExecutionSteps } from "../components/WorkflowExecutionSteps";
 
 type ClientGroup = {
   client: WealthCrmClient;
@@ -57,6 +58,32 @@ type ClientGroup = {
   isLoading: boolean;
   isExpanded: boolean;
 };
+
+type ExecutionPlanData = { schema_version: number; flow_hash: string; steps: { position: number; node_id: string; component_type: string; label: string; description: string[]; group_id?: string; group_label?: string }[] };
+const WorkflowPlanContext = createContext<ExecutionPlanData | null>(null);
+
+const ATTENTION_ITEMS = [
+  {
+    action: "Find alternatives to reduce tech exposure",
+    prompt: "Find alternatives to reduce tech exposure",
+    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_48%,#f4edf4_100%)]",
+  },
+  {
+    action: "Evaluation options about selling property",
+    prompt: "Evaluate options for funding a property sale versus taking a loan.",
+    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
+  },
+  {
+    action: "Draft an email to ask for insurance document",
+    prompt: "Draft an email asking for the updated insurance document.",
+    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
+  },
+  {
+    action: "Compare ways to fund property purchase",
+    prompt: "Compare ways to fund the upcoming $42,000 education payment.",
+    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
+  },
+];
 
 const DEFAULT_COMPOSER_PROMPTS: ChatPrompt[] = [
   {
@@ -106,7 +133,7 @@ const TW = {
   promptChipsRow: "mb-[10px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] p-[10px] pt-[8px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
-  promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-[url('/insights.png')] bg-cover bg-center px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:brightness-95 max-[640px]:max-w-[145px] max-[640px]:truncate",
+  promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-[#0000000A] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:brightness-95 max-[640px]:max-w-[145px] max-[640px]:truncate",
   promptChipExpand: "inline-flex h-[32px] w-[40px] shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-black transition hover:bg-white/85 [&_svg]:h-[13px] [&_svg]:w-[13px]",
   promptMeasure: "pointer-events-none invisible absolute -z-10 flex items-center gap-[12px] whitespace-nowrap max-[640px]:gap-[8px]",
   promptMeasureChip: "inline-flex shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77]",
@@ -148,6 +175,11 @@ const TW = {
   inlineStatusActive: "mt-[10px] inline-flex items-center gap-[6px] bg-transparent px-0 py-[4px] font-satoshi text-[12px] font-normal text-black/50",
   loadingDots: "ml-0.5 inline-flex items-center gap-[3px]",
   loadingDot: "h-1 w-1 rounded-full bg-current",
+  attentionContent: "flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto px-6",
+  attentionInner: "flex flex-col items-start",
+  attentionTitle: "m-0 mb-[28px] max-w-[350px] text-[32px] font-normal leading-[1.1] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
+  attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
+  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
 };
 
 export default function ChatOnePage() {
@@ -165,6 +197,19 @@ export default function ChatOnePage() {
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [prompts, setPrompts] = useState<ChatPrompt[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [workflowExecutionPlan, setWorkflowExecutionPlan] = useState<ExecutionPlanData | null>(null);
+
+  const filteredClients = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter((client) => {
+      if (client.display_name?.toLowerCase().includes(q)) return true;
+      const group = clientGroups.get(client.id);
+      if (group?.sessions.some((s) => s.title?.toLowerCase().includes(q))) return true;
+      return false;
+    });
+  }, [clients, clientGroups, searchQuery]);
 
   const chatClientId = selectedClientId ?? requestedClientId ?? clients[0]?.id ?? null;
 
@@ -196,6 +241,7 @@ export default function ChatOnePage() {
         description: command.description || command.command,
         user_message: command.command,
         workflow_intent: { tool_name: command.tool_name, mode: "run" },
+        execution_plan: command.execution_plan,
       })));
     }).catch(() => { if (!cancelled) setPrompts([]); });
     return () => { cancelled = true; };
@@ -313,7 +359,7 @@ export default function ChatOnePage() {
       {/* Top Header Bar */}
       <header className="fixed left-[80px] right-0 top-0 z-50 flex items-center justify-between border-b border-black/10 bg-white/20 px-6 py-2.5 backdrop-blur-[32px]">
         <h1 className="m-0 text-[22px] font-medium leading-[26.4px] text-black" style={{ fontFamily: "var(--font-butler)" }}>AI assistant</h1>
-        <button type="button" onClick={startNewChat} className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-3 font-satoshi text-[12px] font-medium leading-[18px] text-white shadow-[0_3px_4px_rgba(0,0,0,0.04)] transition hover:bg-[#2d2926]">
+        <button type="button" onClick={startNewChat} className="inline-flex items-center gap-2 rounded-full bg-black p-[12px] font-satoshi font-medium leading-[18px] text-white shadow-[0_3px_4px_rgba(0,0,0,0.04)] transition hover:bg-[#2d2926]" style={{ fontSize: "12px" }}>
           New chat
         </button>
       </header>
@@ -325,7 +371,14 @@ export default function ChatOnePage() {
           {/* Search input */}
           <div className="px-3 pt-6 pb-4">
             <div className="flex items-center justify-between rounded-full bg-white px-[14px] py-3" style={{ outline: "1px solid rgba(0,0,0,0.10)", outlineOffset: "-1px" }}>
-              <span className="font-satoshi text-[14px] leading-[18px] text-black/60">Search your chat</span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search your chat"
+                className="min-w-0 flex-1 border-0 bg-transparent outline-none"
+                style={{ color: "rgba(0, 0, 0, 0.60)", fontSize: 12, fontFamily: "var(--font-satoshi)", fontWeight: 400, lineHeight: "18px", wordWrap: "break-word" }}
+              />
               <SearchIcon />
             </div>
           </div>
@@ -333,9 +386,10 @@ export default function ChatOnePage() {
             {isLoadingClients ? (
               <div className="py-6 text-center font-satoshi text-[12px] text-black/40">Loading clients...</div>
             ) : (
-              clients.map((client) => {
+              filteredClients.map((client) => {
                 const group = clientGroups.get(client.id);
-                const isExpanded = group?.isExpanded ?? false;
+                const hasSearchQuery = searchQuery.trim().length > 0;
+                const isExpanded = hasSearchQuery ? true : (group?.isExpanded ?? false);
                 const initial = (client.display_name || "?").trim()[0].toUpperCase();
                 return (
                   <div key={client.id} className="mb-2">
@@ -359,7 +413,7 @@ export default function ChatOnePage() {
                         {group?.isLoading ? (
                           <div className="py-2 pl-3 font-satoshi text-[12px] text-black/40">Loading...</div>
                         ) : group?.sessions.length ? (
-                          group.sessions.map((session) => (
+                          (searchQuery.trim() ? group.sessions.filter((s) => s.title?.toLowerCase().includes(searchQuery.trim().toLowerCase())) : group.sessions).map((session) => (
                             <div
                               key={session.id}
                               style={session.id === selectedSessionId ? { backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center" } : undefined}
@@ -405,6 +459,8 @@ export default function ChatOnePage() {
               clientId={chatClientId}
               onPromptSubmitted={() => setHasStartedChat(true)}
               onAssistantFinished={handleAssistantFinished}
+              onExecutionPlanChange={setWorkflowExecutionPlan}
+              executionPlan={workflowExecutionPlan}
             />
           )}
         </section>
@@ -433,12 +489,16 @@ type ChatThreadProps = {
   clientId: number | string | null;
   onPromptSubmitted: (prompt: string) => void;
   onAssistantFinished: (details: { sessionId: string | null; prompt: string | null; messages: ChatUiMessage[] }) => void;
+  onExecutionPlanChange?: (plan: ExecutionPlanData | null) => void;
+  executionPlan?: ExecutionPlanData | null;
 };
 
-function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished }: ChatThreadProps) {
+function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, onExecutionPlanChange, executionPlan }: ChatThreadProps) {
   const agent = getAiAgentSlug();
   const lastPromptRef = useRef<string | null>(null);
   const pendingSessionIdRef = useRef<string | null>(session?.id ?? null);
+  const selectedPromptRef = useRef<ChatPrompt | null>(null);
+  const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null);
   const sessionId = session?.id ?? null;
 
   useEffect(() => { pendingSessionIdRef.current = sessionId; }, [sessionId]);
@@ -469,7 +529,19 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
           onPromptSubmitted(prompt);
         }
         if (!sessionId) pendingSessionIdRef.current = null;
-        return { ...options, api, body: { ...body, message: prompt || latestUserMessage, messages, metadata: { ...getRecord(body.metadata), agent, client_id: clientId } } };
+        const latestUserMetadata = getMessageCustomMetadata(latestUserMessage?.metadata);
+        const pendingWorkflow = selectedPromptRef.current;
+        if (pendingWorkflow) {
+          selectedPromptRef.current = null;
+          setSelectedPromptId(null);
+          if (pendingWorkflow.execution_plan) {
+            onExecutionPlanChange?.(pendingWorkflow.execution_plan);
+          }
+        } else {
+          onExecutionPlanChange?.(null);
+        }
+        const { workflow_intent: _stripWf, ...safeUserMetadata } = latestUserMetadata as Record<string, unknown>;
+        return { ...options, api, body: { ...body, message: prompt || latestUserMessage, messages, metadata: { ...safeUserMetadata, ...(pendingWorkflow?.workflow_intent ? { workflow_intent: pendingWorkflow.workflow_intent } : {}), ...getRecord(body.metadata), agent, client_id: clientId } } };
       },
     }),
     [agent, clientId, onPromptSubmitted, sessionId],
@@ -492,22 +564,45 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
   const runtime = useAISDKRuntime(chat);
   const handlePromptSelect = useCallback(
     (prompt: ChatPrompt) => {
-      void chat.sendMessage({
-        text: prompt.user_message,
-        metadata: prompt.workflow_intent ? { workflow_intent: prompt.workflow_intent } : undefined,
-      });
+      if (selectedPromptId === prompt.id) {
+        selectedPromptRef.current = null;
+        setSelectedPromptId(null);
+        return;
+      }
+      selectedPromptRef.current = prompt;
+      setSelectedPromptId(prompt.id);
     },
-    [chat],
+    [selectedPromptId],
   );
 
   return (
+    <WorkflowPlanContext.Provider value={executionPlan ?? null}>
     <AssistantRuntimeProvider runtime={runtime}>
       <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
         <ThreadPrimitive.Root className="flex h-full min-h-0 flex-1 flex-col">
           <AuiIf condition={(state) => state.thread.isEmpty}>
-            <div className="flex flex-1 flex-col items-center justify-center px-6">
-              <div className="w-full max-w-[720px]">
-                <Composer placeholder="What can I help you with?" prompts={prompts} onPromptSelect={handlePromptSelect} />
+            <div className="flex flex-1 flex-col">
+              <div className={TW.attentionContent}>
+                <div className={TW.attentionInner}>
+                  <h1 className={TW.attentionTitle} style={{ fontFamily: "var(--font-butler)" }}>What can I help you with?</h1>
+                  <div className={TW.attentionList}>
+                    {ATTENTION_ITEMS.map((item) => (
+                      <ThreadPrimitive.Suggestion
+                        key={item.action}
+                        prompt={item.prompt}
+                        send
+                        className={`${TW.attentionSuggestion} ${item.bg}`}
+                        style={{ fontFamily: "'Cascadia Code', monospace", fontSize: 12 }}
+                      >
+                        <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
+                        {item.action}
+                      </ThreadPrimitive.Suggestion>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 pb-[24px]">
+                <Composer placeholder="What can I help you with?" prompts={prompts} onPromptSelect={handlePromptSelect} selectedPromptId={selectedPromptId} />
               </div>
             </div>
           </AuiIf>
@@ -538,15 +633,16 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
 
         <AuiIf condition={(state) => !state.thread.isEmpty}>
           <div className="absolute right-0 bottom-0 left-0 z-10 bg-transparent px-[22px] pb-[24px] max-[640px]:px-[14px]">
-            <Composer placeholder="Ask a follow-up..." prompts={prompts} onPromptSelect={handlePromptSelect} />
+            <Composer placeholder="Ask a follow-up..." prompts={prompts} onPromptSelect={handlePromptSelect} selectedPromptId={selectedPromptId} />
           </div>
         </AuiIf>
       </div>
     </AssistantRuntimeProvider>
+    </WorkflowPlanContext.Provider>
   );
 }
 
-function Composer({ placeholder, prompts, onPromptSelect }: { placeholder: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: ChatPrompt) => void }) {
+function Composer({ placeholder, prompts, onPromptSelect, selectedPromptId }: { placeholder: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: ChatPrompt) => void; selectedPromptId?: number | null }) {
   const isRunning = useThread((t) => t.isRunning);
   const [promptsExpanded, setPromptsExpanded] = useState(false);
   const [collapsedPromptCount, setCollapsedPromptCount] = useState(2);
@@ -596,7 +692,7 @@ function Composer({ placeholder, prompts, onPromptSelect }: { placeholder: strin
         <div className={TW.promptChipsRow}>
           <div className={`${TW.promptChipsLeft} ${promptsExpanded ? TW.promptChipsLeftExpanded : ""}`} ref={promptListRef}>
             {visiblePrompts.map((p) => (
-              <div key={p.id} className={TW.promptChip} role="button" tabIndex={0} onClick={() => onPromptSelect?.(p)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPromptSelect?.(p); } }}>
+              <div key={p.id} className={TW.promptChip} style={selectedPromptId === p.id ? { backgroundImage: "url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid transparent" } : undefined} role="button" tabIndex={0} onClick={() => onPromptSelect?.(p)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPromptSelect?.(p); } }}>
                 /{p.title}
               </div>
             ))}
@@ -648,10 +744,31 @@ function UserMessage() {
 
 function AssistantMessage({ message, showReplySuggestions }: { message: MessageState; showReplySuggestions: boolean }) {
   const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
+  const workflowPlanCtx = useContext(WorkflowPlanContext);
+  const workflowPlan = showReplySuggestions ? workflowPlanCtx : null;
+  const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
+  const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
+  const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
+  const showContent = !hasSteps || stepsAnimationDone;
+
+  useEffect(() => {
+    if (!hasSteps) { setStepsAnimationDone(true); return; }
+    const fallback = setTimeout(() => setStepsAnimationDone(true), 45000);
+    return () => clearTimeout(fallback);
+  }, [hasSteps]);
+
   return (
     <MessagePrimitive.Root className={TW.messageAssistant}>
       <div className={TW.messageStack}>
         <div className={`${TW.messageContent} ${TW.assistantMessageContent}`}>
+          {workflowPlan && (
+            <WorkflowExecutionSteps
+              executionPlan={workflowPlan}
+              isRunning={isStreaming}
+              onAnimationComplete={() => setStepsAnimationDone(true)}
+            />
+          )}
+          <div style={{ opacity: showContent ? 1 : 0, maxHeight: showContent ? "none" : 0, overflow: "hidden", transition: "opacity 0.6s ease" }}>
           <MessagePrimitive.GroupedParts groupBy={groupPartByType({ "tool-call": ["group-tools"] })}>
             {({ part, children }) => {
               switch (part.type) {
@@ -664,29 +781,30 @@ function AssistantMessage({ message, showReplySuggestions }: { message: MessageS
                 case "tool-call":
                   return part.toolUI ?? <ToolCallPart {...part} />;
                 case "indicator":
-                  return <AssistantLoadingState />;
+                  return workflowPlan ? null : <AssistantLoadingState />;
                 default:
                   return null;
               }
             }}
           </MessagePrimitive.GroupedParts>
+          </div>
         </div>
-        {replySuggestions.length > 0 ? (
+        {replySuggestions.length > 0 && showContent ? (
           <div className={TW.replySuggestions} aria-label="Reply suggestions">
             <p className="mb-1 font-satoshi text-[14px] font-medium leading-[20px] text-black/80">If you want to know more</p>
             {replySuggestions.map((suggestion) => (
-              <ReplySuggestionButton key={suggestion} suggestion={suggestion} autoSubmit={appConfig.replySuggestionsAutoSubmit} />
+              <ReplySuggestionButton key={suggestion} suggestion={suggestion} autoSubmit={true} />
             ))}
           </div>
         ) : null}
-        <div className={TW.messageControls}>
+        {showContent && <div className={TW.messageControls}>
           <AssistantActionBar />
           <BranchPickerPrimitive.Root className={TW.inlineControls} hideWhenSingleBranch>
             <BranchPickerPrimitive.Previous className={TW.actionBtn} aria-label="Previous response"><ChevronLeftIcon /></BranchPickerPrimitive.Previous>
             <span className={TW.branchCount}><BranchPickerPrimitive.Number /> / <BranchPickerPrimitive.Count /></span>
             <BranchPickerPrimitive.Next className={TW.actionBtn} aria-label="Next response"><ChevronRightIcon /></BranchPickerPrimitive.Next>
           </BranchPickerPrimitive.Root>
-        </div>
+        </div>}
       </div>
     </MessagePrimitive.Root>
   );
@@ -698,11 +816,14 @@ function ReplySuggestionButton({ suggestion, autoSubmit }: { suggestion: string;
     const composer = threadRuntime?.composer;
     if (!composer) return;
     composer.setText(suggestion);
-    if (autoSubmit) { composer.send(); return; }
+    if (autoSubmit) {
+      composer.send();
+      return;
+    }
     window.requestAnimationFrame(() => { document.querySelector<HTMLTextAreaElement>("[data-chat-composer-input]")?.focus(); });
   };
   return (
-    <div className={TW.replyPill} style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace", cursor: "pointer" }} onClick={handleClick}>
+    <div className={TW.replyPill} style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace", cursor: "pointer" }} onClick={handleClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}>
       <span className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
       <span>{suggestion}</span>
     </div>
@@ -782,6 +903,11 @@ function getSessionIdFromMetadata(metadata: AiChatMessageMetadata | undefined) {
 
 function getRecord(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+}
+
+function getMessageCustomMetadata(metadata: unknown) {
+  const record = getRecord(metadata);
+  return { ...record, ...getRecord(record.custom) };
 }
 
 function getReplySuggestions(parts: readonly unknown[]) {

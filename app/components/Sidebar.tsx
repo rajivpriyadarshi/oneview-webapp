@@ -41,7 +41,7 @@ export default function Sidebar(_props: SidebarProps = {}) {
     { href: "/clients", label: "Home", icon: <HomeIcon /> },
     { href: "/clients/list", label: "Clients", icon: <UserIcon /> },
     { href: "/apps", label: "Apps", icon: <TerminalIcon /> },
-    { href: "/chat-one", label: "Chat", icon: <ChatBubbleIcon /> },
+    { href: "/chat", label: "Chat", icon: <ChatBubbleIcon /> },
   ];
 
   return (

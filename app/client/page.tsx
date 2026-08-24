@@ -177,7 +177,7 @@ const TW = {
   promptChipsRow: "mb-[10px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] p-[10px] pt-[8px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
-  promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07] max-[640px]:max-w-[145px] max-[640px]:truncate",
+  promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-[#0000000A] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07] max-[640px]:max-w-[145px] max-[640px]:truncate",
   promptChipExpand: "inline-flex h-[32px] w-[40px] shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-black transition hover:bg-white/85 [&_svg]:h-[13px] [&_svg]:w-[13px] max-[640px]:h-[32px] max-[640px]:w-[40px] max-[640px]:[&_svg]:h-[13px] max-[640px]:[&_svg]:w-[13px]",
   promptMeasure: "pointer-events-none invisible absolute -z-10 flex items-center gap-[12px] whitespace-nowrap max-[640px]:gap-[8px]",
   promptMeasureChip: "inline-flex shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77]",
@@ -365,10 +365,11 @@ export default function ChatPage() {
                   tool_name: command.tool_name,
                   mode: "run",
                 },
+                execution_plan: command.execution_plan,
               }))
             : [];
 
-          setPrompts(mergeChatPrompts(workflowPrompts, staticPrompts));
+          setPrompts(workflowPrompts.length > 0 ? workflowPrompts : mergeChatPrompts(workflowPrompts, staticPrompts));
         }
       })
       .catch(() => {
@@ -810,6 +811,7 @@ export default function ChatPage() {
                 initialPrompt={isDraftChat && !selectedSession ? initialPromptParam : null}
                 initialWorkflowTool={isDraftChat && !selectedSession ? initialWorkflowTool : null}
                 executionPlan={workflowExecutionPlan}
+                onExecutionPlanChange={setWorkflowExecutionPlan}
               />
             )}
           </div>
@@ -905,13 +907,16 @@ type ChatThreadProps = {
   initialPrompt?: string | null;
   initialWorkflowTool?: string | null;
   executionPlan?: ExecutionPlanData | null;
+  onExecutionPlanChange?: (plan: ExecutionPlanData | null) => void;
 };
 
-function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt, initialWorkflowTool, executionPlan }: ChatThreadProps) {
+function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmitted, onAssistantFinished, initialPrompt, initialWorkflowTool, executionPlan, onExecutionPlanChange }: ChatThreadProps) {
   const agent = getAiAgentSlug();
   const lastPromptRef = useRef<string | null>(null);
   const initialPromptFiredRef = useRef(false);
   const pendingSessionIdRef = useRef<string | null>(session?.id ?? null);
+  const selectedPromptRef = useRef<ChatPrompt | null>(null);
+  const [selectedPromptId, setSelectedPromptId] = useState<number | null>(null);
   const sessionId = session?.id ?? null;
 
   useEffect(() => {
@@ -966,6 +971,19 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
             pendingSessionIdRef.current = null;
           }
 
+          const pendingWorkflow = selectedPromptRef.current;
+          if (pendingWorkflow) {
+            selectedPromptRef.current = null;
+            setSelectedPromptId(null);
+            if (pendingWorkflow.execution_plan) {
+              onExecutionPlanChange?.(pendingWorkflow.execution_plan);
+            }
+          } else {
+            onExecutionPlanChange?.(null);
+          }
+
+          const { workflow_intent: _stripWf, ...safeUserMetadata } = latestUserMetadata as Record<string, unknown>;
+
           return {
             ...options,
             api,
@@ -974,7 +992,8 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
               message: prompt || latestUserMessage,
               messages,
               metadata: {
-                ...latestUserMetadata,
+                ...safeUserMetadata,
+                ...(pendingWorkflow?.workflow_intent ? { workflow_intent: pendingWorkflow.workflow_intent } : {}),
                 ...getRecord(body.metadata),
                 agent,
                 client_id: clientId,
@@ -1004,26 +1023,25 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
   const runtime = useAISDKRuntime(chat);
   const handlePromptSelect = useCallback(
     (prompt: ChatPrompt) => {
-      void chat.sendMessage({
-        text: prompt.user_message,
-        metadata: prompt.workflow_intent
-          ? {
-              workflow_intent: prompt.workflow_intent,
-            }
-          : undefined,
-      });
+      if (selectedPromptId === prompt.id) {
+        selectedPromptRef.current = null;
+        setSelectedPromptId(null);
+        return;
+      }
+      selectedPromptRef.current = prompt;
+      setSelectedPromptId(prompt.id);
     },
-    [chat],
+    [selectedPromptId],
   );
 
   useEffect(() => {
     if (!initialPrompt || initialPromptFiredRef.current || !clientId) return;
     initialPromptFiredRef.current = true;
+    if (initialWorkflowTool) {
+      selectedPromptRef.current = { id: -9999, title: "", description: "", user_message: initialPrompt, workflow_intent: { tool_name: initialWorkflowTool, mode: "run" } };
+    }
     void chat.sendMessage({
       text: initialPrompt,
-      metadata: initialWorkflowTool
-        ? { workflow_intent: { tool_name: initialWorkflowTool, mode: "run" } }
-        : undefined,
     });
   }, [chat, clientId, initialPrompt, initialWorkflowTool, executionPlan]);
 
@@ -1041,6 +1059,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
                   agent={agent}
                   prompts={prompts}
                   onPromptSelect={handlePromptSelect}
+                  selectedPromptId={selectedPromptId}
                 />
               </div>
               <div className={TW.suggestionsWrap}>
@@ -1106,6 +1125,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
               agent={agent}
               prompts={prompts}
               onPromptSelect={handlePromptSelect}
+              selectedPromptId={selectedPromptId}
             />
           </div>
         </AuiIf>
@@ -2023,7 +2043,7 @@ function useComposerFormat() {
   return applyFormat;
 }
 
-function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder: string; agent: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: ChatPrompt) => void }) {
+function Composer({ placeholder, agent, prompts, onPromptSelect, selectedPromptId }: { placeholder: string; agent: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: ChatPrompt) => void; selectedPromptId?: number | null }) {
   const isRunning = useThread((t) => t.isRunning);
   const applyFormat = useComposerFormat();
   const [promptsExpanded, setPromptsExpanded] = useState(false);
@@ -2095,6 +2115,7 @@ function Composer({ placeholder, agent, prompts, onPromptSelect }: { placeholder
               <div
                 key={p.id}
                 className={TW.promptChip}
+                style={selectedPromptId === p.id ? { backgroundImage: "url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid transparent" } : undefined}
                 role="button"
                 tabIndex={0}
                 onClick={() => onPromptSelect?.(p)}
@@ -2180,7 +2201,8 @@ function AssistantMessage({
   showReplySuggestions: boolean;
 }) {
   const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
-  const workflowPlan = useContext(WorkflowPlanContext);
+  const workflowPlanCtx = useContext(WorkflowPlanContext);
+  const workflowPlan = showReplySuggestions ? workflowPlanCtx : null;
   const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
   const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
   const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
@@ -2254,19 +2276,19 @@ function AssistantMessage({
           </MessagePrimitive.GroupedParts>
           </div>
         </div>
-        {replySuggestions.length > 0 ? (
+        {replySuggestions.length > 0 && showContent ? (
           <div className={TW.replySuggestions} aria-label="Reply suggestions">
             <p className="mb-1 font-satoshi text-[14px] font-medium leading-[20px] text-black/80">If you want to know more</p>
             {replySuggestions.map((suggestion) => (
               <ReplySuggestionButton
                 key={suggestion}
                 suggestion={suggestion}
-                autoSubmit={appConfig.replySuggestionsAutoSubmit}
+                autoSubmit={true}
               />
             ))}
           </div>
         ) : null}
-        <div className={TW.messageControls}>
+        {showContent && <div className={TW.messageControls}>
         <AssistantActionBar />
         <BranchPickerPrimitive.Root className={TW.inlineControls} hideWhenSingleBranch>
           <BranchPickerPrimitive.Previous className={TW.actionBtn} aria-label="Previous response">
@@ -2279,7 +2301,7 @@ function AssistantMessage({
             <ChevronRightIcon />
           </BranchPickerPrimitive.Next>
         </BranchPickerPrimitive.Root>
-        </div>
+        </div>}
       </div>
     </MessagePrimitive.Root>
   );
