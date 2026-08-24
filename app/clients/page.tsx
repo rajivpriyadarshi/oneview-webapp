@@ -131,7 +131,7 @@ export default function ClientsPage() {
 
             {/* Right panels */}
             <div style={{ flex: "0 0 360px", display: "flex", flexDirection: "column", gap: 16 }}>
-              <AlertsPanel alerts={alerts} onViewAll={() => setShowAlertsModal(true)} />
+              <AlertsPanel alerts={alerts} onViewAll={() => setShowAlertsModal(true)} onCheckNow={() => router.push("/apps")} />
               <MeetingsPanel meetings={meetings} onViewAll={() => setShowMeetingsModal(true)} />
             </div>
           </div>
@@ -157,14 +157,12 @@ export default function ClientsPage() {
                       {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
                     </div>
                     {alert.cta_url && alert.cta_text && (
-                      <a
-                        href={alert.cta_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", textDecoration: "none", marginTop: 4, display: "inline-block" }}
+                      <button
+                        onClick={() => { setShowAlertsModal(false); router.push("/apps"); }}
+                        style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", textDecoration: "none", marginTop: 4, display: "inline-block", background: "none", border: "none", padding: 0, cursor: "pointer" }}
                       >
                         {alert.cta_text}
-                      </a>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -284,7 +282,8 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
       <div style={{ flex: "0 0 260px", display: "flex", alignItems: "center", gap: 16 }}>
         <div style={{
           width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
-          background: "linear-gradient(0deg, rgba(255,255,255,0.70), rgba(255,255,255,0.70)), #E1DEF8",
+          backgroundImage: "linear-gradient(#FFFFFFB2, #FFFFFFB2), url('/insights.png')",
+          backgroundSize: "cover", backgroundPosition: "center",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: "#4C2D08" }}>{initials}</span>
@@ -360,7 +359,7 @@ function timeAgo(isoDate: string): string {
   return `${Math.floor(diff / 86400)} days ago`;
 }
 
-function AlertsPanel({ alerts, onViewAll }: { alerts: CrmAlert[]; onViewAll: () => void }) {
+function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; onViewAll: () => void; onCheckNow: () => void }) {
   return (
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -384,14 +383,12 @@ function AlertsPanel({ alerts, onViewAll }: { alerts: CrmAlert[]; onViewAll: () 
                   {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
                 </div>
                 {alert.cta_url && alert.cta_text && (
-                  <a
-                    href={alert.cta_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", textDecoration: "none", marginTop: 4, display: "inline-block" }}
+                  <button
+                    onClick={() => onCheckNow()}
+                    style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", textDecoration: "none", marginTop: 4, display: "inline-block", background: "none", border: "none", padding: 0, cursor: "pointer" }}
                   >
                     {alert.cta_text}
-                  </a>
+                  </button>
                 )}
               </div>
             </div>
