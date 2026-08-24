@@ -1321,7 +1321,7 @@ function OverviewTab({
   return (
     <div className="relative isolate min-h-0 overflow-auto bg-[#F9F8F7] pb-[48px]">
       <div
-        className="pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat mix-blend-multiply"
+        className="pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/overview.png')" }}
         aria-hidden="true"
       />

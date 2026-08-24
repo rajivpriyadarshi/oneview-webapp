@@ -603,6 +603,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
         size: file.size,
         status: "queued" as const,
         progress: 0,
+        clientId,
       },
     }));
 

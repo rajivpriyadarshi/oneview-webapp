@@ -11,6 +11,7 @@ export type TrayItem = {
   detail?: string;
   error?: string;
   documentId?: string;
+  clientId?: string | number;
 };
 
 type UploadTrayState = {
