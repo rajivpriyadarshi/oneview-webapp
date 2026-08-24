@@ -51,6 +51,15 @@ import {
   type WealthCrmClient,
 } from "../lib/wealthCrmApi";
 import { WorkflowExecutionSteps } from "../components/WorkflowExecutionSteps";
+import { ArtifactPopupProvider } from "../contexts/ArtifactContext";
+import ArtifactMessage from "../components/ArtifactMessage";
+import ArtifactPopup from "../components/ArtifactPopup";
+import {
+  getArtifactFromPart,
+  getArtifactFromParts,
+  normalizeAiChatMessage,
+  transformAiChatSseResponse,
+} from "../utils/aiChatParts";
 
 type ClientGroup = {
   client: WealthCrmClient;
@@ -120,8 +129,17 @@ type ReplySuggestionsData = {
   suggestions: string[];
 };
 
+type ArtifactData = {
+  id: string;
+  artifact_type: string;
+  artifact_version: number;
+  name: string;
+  payload: unknown;
+};
+
 type AiChatDataParts = {
   "reply-suggestions": ReplySuggestionsData;
+  artifact: ArtifactData;
 };
 
 type ChatUiMessage = UIMessage<AiChatMessageMetadata, AiChatDataParts>;
@@ -321,7 +339,8 @@ export default function ChatOnePage() {
     setIsLoadingMessages(true);
     try {
       const messages = (await loadAiChatMessages(session.id, { clientId })) as ChatUiMessage[];
-      setInitialMessages(messages);
+      const normalizedMessages = messages.map(normalizeAiChatMessage);
+      setInitialMessages(normalizedMessages);
     } catch {
       setInitialMessages([]);
     } finally {
@@ -351,7 +370,7 @@ export default function ChatOnePage() {
       source: existingSession?.source ?? "local",
     };
     upsertStoredAiChatSession(nextSession);
-    setInitialMessages(messages);
+    setInitialMessages(messages.map(normalizeAiChatMessage));
     setSelectedSessionId(sessionId);
     if (chatClientId) {
       setClientGroups((prev) => {
@@ -370,11 +389,12 @@ export default function ChatOnePage() {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-white">
-      {/* Background */}
-      <img src="/chat-vector-bg.png" alt="" className="pointer-events-none absolute bottom-0 left-0 w-full" />
+    <ArtifactPopupProvider autoOpenEnabled={false} positioning="fixed">
+      <div className="relative h-screen w-full overflow-hidden bg-white">
+        {/* Background */}
+        <img src="/chat-vector-bg.png" alt="" className="pointer-events-none absolute bottom-0 left-0 w-full" />
 
-      <Sidebar />
+        <Sidebar />
 
       {/* Top Header Bar */}
       <header className="fixed left-[80px] right-0 top-0 z-50 flex items-center justify-between border-b border-black/10 bg-white/20 px-6 py-2.5 backdrop-blur-[32px]">
@@ -490,7 +510,9 @@ export default function ChatOnePage() {
           )}
         </section>
       </div>
-    </div>
+        <ArtifactPopup />
+      </div>
+    </ArtifactPopupProvider>
   );
 }
 
@@ -539,7 +561,8 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
         const response = await aiChatFetch(input, init);
         const responseSessionId = response.headers.get("X-Session-Id");
         if (responseSessionId) pendingSessionIdRef.current = responseSessionId;
-        return response;
+
+        return transformAiChatSseResponse(response);
       },
       body: { metadata: { agent } },
       prepareSendMessagesRequest(options) {
@@ -577,11 +600,13 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
     messages: initialMessages,
     transport: transport as unknown as ChatTransport<ChatUiMessage>,
     onFinish({ message, messages }) {
-      onAssistantFinished({
-        sessionId: sessionId ?? pendingSessionIdRef.current ?? getSessionIdFromMetadata(message.metadata),
-        prompt: lastPromptRef.current,
-        messages,
-      });
+      window.setTimeout(() => {
+        onAssistantFinished({
+          sessionId: sessionId ?? pendingSessionIdRef.current ?? getSessionIdFromMetadata(message.metadata),
+          prompt: lastPromptRef.current,
+          messages,
+        });
+      }, 0);
     },
     onError(error) { console.error("AI chat stream failed:", error); },
   });
@@ -769,6 +794,7 @@ function UserMessage() {
 
 function AssistantMessage({ message, showReplySuggestions }: { message: MessageState; showReplySuggestions: boolean }) {
   const replySuggestions = showReplySuggestions ? getReplySuggestions(message.content) : [];
+  const messageArtifact = getArtifactFromParts(message.content);
   const workflowPlanCtx = useContext(WorkflowPlanContext);
   const workflowPlan = showReplySuggestions ? workflowPlanCtx : null;
   const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
@@ -796,13 +822,27 @@ function AssistantMessage({ message, showReplySuggestions }: { message: MessageS
           <div style={{ opacity: showContent ? 1 : 0, maxHeight: showContent ? "none" : 0, overflow: "hidden", transition: "opacity 0.6s ease" }}>
           <MessagePrimitive.GroupedParts groupBy={groupPartByType({ "tool-call": ["group-tools"] })}>
             {({ part, children }) => {
+              const artifact = getArtifactFromPart(part);
+              if (artifact) {
+                return <ArtifactMessage artifact={messageArtifact ?? artifact} />;
+              }
+
               switch (part.type) {
                 case "group-tools":
                   return <ToolCallGroup status={part.status.type} count={part.indices.length}>{children}</ToolCallGroup>;
                 case "text":
+                  if (messageArtifact) return null;
                   return <MarkdownText />;
                 case "data":
-                  return shouldHideDataPart(part.name) ? null : <DataStatusPart name={part.name} status={part.status?.type} />;
+                  if (shouldHideDataPart(part.name)) return null;
+
+                  // Render artifact as clickable message
+                  if (part.name === "artifact" || part.name === "data-artifact") {
+                    const artifactData = part.data as ArtifactData;
+                    return <ArtifactMessage artifact={messageArtifact ?? artifactData} />;
+                  }
+
+                  return <DataStatusPart name={part.name} status={part.status?.type} />;
                 case "tool-call":
                   return part.toolUI ?? <ToolCallPart {...part} />;
                 case "indicator":
@@ -950,6 +990,12 @@ function getReplySuggestions(parts: readonly unknown[]) {
 
 function shouldHideDataPart(name?: string) {
   if (!name) return false;
+
+  // Don't hide artifacts - render as clickable message
+  if (name === "artifact" || name === "data-artifact") {
+    return false;
+  }
+
   return name === "reply-suggestions" || /tool[-_\s]?status/i.test(name);
 }
 
