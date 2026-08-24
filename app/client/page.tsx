@@ -369,7 +369,7 @@ export default function ChatPage() {
               }))
             : [];
 
-          setPrompts(mergeChatPrompts(workflowPrompts, staticPrompts));
+          setPrompts(workflowPrompts.length > 0 ? workflowPrompts : mergeChatPrompts(workflowPrompts, staticPrompts));
         }
       })
       .catch(() => {
