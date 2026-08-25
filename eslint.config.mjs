@@ -8,6 +8,7 @@ export default defineConfig([
       "react-hooks/globals": "off",
       "react-hooks/immutability": "off",
       "react-hooks/incompatible-library": "off",
+      "react-hooks/preserve-manual-memoization": "off",
       "react-hooks/refs": "off",
       "react-hooks/set-state-in-effect": "off",
       "react/no-unescaped-entities": "off",
