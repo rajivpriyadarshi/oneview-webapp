@@ -1,47 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
-import { useGetCrmClientsQuery, useGetCrmAlertsQuery, useGetCrmMeetingsQuery, type CrmClient, type CrmAlert, type CrmMeeting } from "../store/api";
-import { getStoredAuthToken, getStoredAdvisorProfile } from "../lib/session";
+import { useGetCrmClientsQuery, type CrmClient } from "../store/api";
+import { getStoredAuthToken } from "../lib/session";
 
 export default function ClientsPage() {
   const router = useRouter();
-  const [advisorName, setAdvisorName] = useState("");
-  const [today, setToday] = useState("");
-  const [showAlertsModal, setShowAlertsModal] = useState(false);
-  const [showMeetingsModal, setShowMeetingsModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!getStoredAuthToken()) {
       router.replace("/auth");
-      return;
     }
-    const advisor = getStoredAdvisorProfile();
-    if (advisor?.name) {
-      setAdvisorName(advisor.name.split(" ")[0]);
-    }
-    setToday(new Date().toLocaleDateString("en-US", {
-      weekday: "long", day: "numeric", month: "long", year: "numeric",
-    }));
   }, [router]);
 
   const { data, isLoading, isError } = useGetCrmClientsQuery();
-  const { data: alertsData } = useGetCrmAlertsQuery();
-  const { data: meetingsData } = useGetCrmMeetingsQuery({ upcoming: true });
 
-  const clients = data?.results ?? [];
+  const allClients = data?.results ?? [];
+  const clients = useMemo(() => {
+    if (!searchQuery.trim()) return allClients;
+    const q = searchQuery.toLowerCase();
+    return allClients.filter((c) => c.display_name.toLowerCase().includes(q));
+  }, [allClients, searchQuery]);
   const totalCount = data?.count ?? 0;
-  const alerts = alertsData?.results ?? [];
-  const meetings = meetingsData?.results ?? [];
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f7f6f3" }}>
       <Sidebar />
 
       <main style={{ flex: 1, position: "relative", overflow: "hidden", padding: "48px 40px", marginLeft: 80 }}>
-        {/* Warm gradient blobs */}
         <div style={{
           position: "absolute", top: -115, left: 0, width: "80%", height: 561,
           background: "linear-gradient(180deg, rgba(255,241,163,0.80) 0%, rgba(255,241,163,0.80) 50%, rgba(255,178,134,0.80) 75%, rgba(255,111,50,0.80) 100%)",
@@ -54,195 +43,84 @@ export default function ClientsPage() {
         }} />
 
         <div style={{ position: "relative", zIndex: 1 }}>
-          {/* Header */}
-          <div style={{ marginBottom: 32 }}>
-            {today ? (
-              <p style={{ color: "rgba(0,0,0,0.45)", fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{today}</p>
-            ) : null}
-            <h1 style={{ fontSize: 38, fontWeight: 500, color: "#0a0a0a", lineHeight: 1.2, margin: 0 }}>
-              Welcome{advisorName ? ` ${advisorName}` : ""}
-            </h1>
-          </div>
-
-          {/* Two-column layout */}
-          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-            {/* Client queue */}
-            <div style={{
-              flex: 1, background: "white",
-              borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", overflow: "hidden",
-            }}>
-              <div style={{ padding: "24px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0 }}>Client queue</h2>
-                  <p style={{ fontSize: 14, color: "#475569", margin: "4px 0 0" }}>
-                    {isLoading ? "Loading..." : `${totalCount} clients need your attention`}
-                  </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 14, color: "#4B5563" }}>Sort:</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>All priorities</span>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M3 4.5L6 7.5L9 4.5" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Column headers */}
-              <div style={{
-                display: "flex", gap: 16, padding: "4px 24px",
-                background: "rgba(229,231,235,0.16)", borderBottom: "1px solid rgba(0,0,0,0.08)",
-              }}>
-                <div style={{ flex: "0 0 260px" }}>
-                  <span style={colHeaderStyle}>Client</span>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <span style={colHeaderStyle}>Needs attention</span>
-                </div>
-                <div style={{ flex: "0 0 100px", textAlign: "center" as const }}>
-                  <span style={colHeaderStyle}>Priority</span>
-                </div>
-                <div style={{ flex: "0 0 40px" }} />
-              </div>
-
-              {isError && (
-                <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
-                  Failed to load clients. Please try again.
-                </div>
-              )}
-              {isLoading && (
-                <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
-                  Loading clients...
-                </div>
-              )}
-              {!isLoading && !isError && clients.length === 0 && (
-                <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
-                  No clients need attention right now.
-                </div>
-              )}
-              {clients.map((client, i) => (
-                <ClientRow
-                  key={client.id}
-                  client={client}
-                  isLast={i === clients.length - 1}
-                  onNavigate={(id) => router.push(`/client?clientId=${id}`)}
-                />
-              ))}
-            </div>
-
-            {/* Right panels */}
-            <div style={{ flex: "0 0 360px", display: "flex", flexDirection: "column", gap: 16 }}>
-              <AlertsPanel alerts={alerts} onViewAll={() => setShowAlertsModal(true)} onCheckNow={(alert) => {
-                const type = alert.type?.toLowerCase();
-                if (type === "document" || type === "documents" && alert.client) {
-                  router.push(`/client?clientId=${alert.client}&tab=documents`);
-                } else if ((type === "chat" || type === "chats" || type === "message") && alert.client) {
-                  router.push(`/chat?clientId=${alert.client}`);
-                } else {
-                  router.push("/apps");
-                }
-              }} />
-              <MeetingsPanel meetings={meetings} onViewAll={() => setShowMeetingsModal(true)} />
-            </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+          <h1 style={{ fontSize: 42, fontWeight: 600, color: "#000000", lineHeight: "50.4px", margin: 0, fontFamily: "ButlerPro, serif" }}>Client list</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "white", border: "1px solid rgba(0,0,0,0.10)", borderRadius: 14, padding: "14px 20px" }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M17.5 17.5L13.125 13.125M15 8.75C15 12.2018 12.2018 15 8.75 15C5.29822 15 2.5 12.2018 2.5 8.75C2.5 5.29822 5.29822 2.5 8.75 2.5C12.2018 2.5 15 5.29822 15 8.75Z" stroke="rgba(0,0,0,0.40)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search a client"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ border: "none", outline: "none", fontSize: 16, color: "#111827", background: "transparent", width: 300 }}
+            />
           </div>
         </div>
+
+        <div style={{
+          background: "white",
+          borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", overflow: "hidden",
+        }}>
+          <div style={{ padding: "24px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0 }}>Client list</h2>
+              <p style={{ fontSize: 14, color: "#475569", margin: "4px 0 0" }}>
+                {isLoading ? "Loading..." : `${totalCount} clients need your attention`}
+              </p>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 14, color: "#4B5563" }}>Sort:</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>All priorities</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </div>
+
+          <div style={{
+            display: "flex", gap: 16, padding: "4px 24px",
+            background: "rgba(229,231,235,0.16)", borderBottom: "1px solid rgba(0,0,0,0.08)",
+          }}>
+            <div style={{ flex: "0 0 260px" }}>
+              <span style={colHeaderStyle}>Client</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={colHeaderStyle}>Needs attention</span>
+            </div>
+            <div style={{ flex: "0 0 100px", textAlign: "center" as const }}>
+              <span style={colHeaderStyle}>Priority</span>
+            </div>
+            <div style={{ flex: "0 0 40px" }} />
+          </div>
+
+          {isError && (
+            <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
+              Failed to load clients. Please try again.
+            </div>
+          )}
+          {isLoading && (
+            <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
+              Loading clients...
+            </div>
+          )}
+          {!isLoading && !isError && clients.length === 0 && (
+            <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
+              No clients need attention right now.
+            </div>
+          )}
+          {clients.map((client, i) => (
+            <ClientRow
+              key={client.id}
+              client={client}
+              isLast={i === clients.length - 1}
+              onNavigate={(id) => router.push(`/client?clientId=${id}`)}
+            />
+          ))}
+        </div>
+        </div>
       </main>
-
-      {showAlertsModal && (
-        <ModalOverlay onClose={() => setShowAlertsModal(false)}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>All Alerts</h2>
-          {alerts.length === 0 ? (
-            <p style={{ fontSize: 14, color: "#6B7280", margin: 0 }}>No alerts</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, maxHeight: 400, overflowY: "auto" }}>
-              {alerts.map((alert) => {
-                const type = alert.type?.toLowerCase();
-                const isDocType = type === "document" || type === "documents";
-                const isChatType = type === "chat" || type === "chats" || type === "message";
-                const isClickable = (isDocType || isChatType) && alert.client;
-                const hasAction = isClickable || (alert.cta_url && alert.cta_text);
-                const handleClick = () => {
-                  setShowAlertsModal(false);
-                  if (isDocType && alert.client) {
-                    router.push(`/client?clientId=${alert.client}&tab=documents`);
-                  } else if (isChatType && alert.client) {
-                    router.push(`/chat?clientId=${alert.client}`);
-                  } else {
-                    router.push("/apps");
-                  }
-                };
-                return (
-                <div
-                  key={alert.id}
-                  onClick={hasAction ? handleClick : undefined}
-                  style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: 8, transition: "background 0.15s" }}
-                  onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
-                  onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
-                >
-                  <div style={{
-                    width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
-                    background: alert.client ? "#39952D" : "#3B82F6",
-                  }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
-                    <div style={{ fontSize: 12, color: "rgba(33,37,37,0.70)", marginTop: 2 }}>
-                      {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
-                    </div>
-                    {alert.cta_url && alert.cta_text && !isClickable && (
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", marginTop: 4, display: "inline-block" }}>
-                        {alert.cta_text}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                );})}
-            </div>
-          )}
-        </ModalOverlay>
-      )}
-
-      {showMeetingsModal && (
-        <ModalOverlay onClose={() => setShowMeetingsModal(false)}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 20px" }}>All Upcoming Meetings</h2>
-          {meetings.length === 0 ? (
-            <p style={{ fontSize: 14, color: "#6B7280", margin: 0 }}>No upcoming meetings</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 400, overflowY: "auto" }}>
-              {meetings.map((meeting, i) => {
-                const d = new Date(meeting.scheduled_at);
-                const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-                const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                const isFirst = i === 0;
-                return (
-                  <div key={meeting.id} style={{
-                    borderRadius: 16, padding: 16,
-                    backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')",
-                    backgroundSize: "cover", backgroundPosition: "center",
-                    backgroundColor: isFirst ? undefined : "#CA8C4626",
-                    display: "flex", alignItems: "center", gap: 12,
-                  }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                      background: isFirst ? "#FDE5C3" : "#CA8C4626",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <MeetingIcon title={meeting.title} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A" }}>{meeting.title}</div>
-                      {meeting.client_name && (
-                        <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>{meeting.client_name}</div>
-                      )}
-                      <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>
-                        {dateStr} • {timeStr} • {meeting.duration_minutes} min
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </ModalOverlay>
-      )}
     </div>
   );
 }
@@ -375,161 +253,6 @@ function AttentionIcon({ type }: { type: "meeting" | "message" }) {
           <path d="M1.5 2.5L7 7L12.5 2.5" stroke={s.stroke} strokeWidth="1.2" strokeLinecap="round" />
         </svg>
       )}
-    </div>
-  );
-}
-
-function timeAgo(isoDate: string): string {
-  const diff = (Date.now() - new Date(isoDate).getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
-  return `${Math.floor(diff / 86400)} days ago`;
-}
-
-function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; onViewAll: () => void; onCheckNow: (alert: CrmAlert) => void }) {
-  return (
-    <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Alerts</h3>
-        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
-      </div>
-
-      {alerts.length === 0 ? (
-        <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No alerts</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {alerts.slice(0, 3).map((alert) => {
-            const type = alert.type?.toLowerCase();
-            const isDocType = type === "document" || type === "documents";
-            const isChatType = type === "chat" || type === "chats" || type === "message";
-            const isClickable = (isDocType || isChatType) && alert.client;
-            const hasAction = isClickable || (alert.cta_url && alert.cta_text);
-            return (
-              <div
-                key={alert.id}
-                onClick={hasAction ? () => onCheckNow(alert) : undefined}
-                style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: 8, transition: "background 0.15s" }}
-                onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
-                onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
-              >
-                <div style={{
-                  width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
-                  background: alert.client ? "#39952D" : "#3B82F6",
-                }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
-                  <div style={{ fontSize: 12, color: "rgba(33,37,37,0.70)", marginTop: 2 }}>
-                    {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
-                  </div>
-                  {alert.cta_url && alert.cta_text && !isClickable && (
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", marginTop: 4, display: "inline-block" }}>
-                      {alert.cta_text}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MeetingsPanel({ meetings, onViewAll }: { meetings: CrmMeeting[]; onViewAll: () => void }) {
-  return (
-    <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Upcoming meetings</h3>
-        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
-      </div>
-      {meetings.length === 0 ? (
-        <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No upcoming meetings</p>
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {meetings.slice(0, 3).map((meeting, i) => {
-            const d = new Date(meeting.scheduled_at);
-            const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-            const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            const isFirst = i === 0;
-            return (
-              <div key={meeting.id} style={{
-                borderRadius: 16, padding: 16,
-                backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')",
-                backgroundSize: "cover", backgroundPosition: "center",
-                backgroundColor: isFirst ? undefined : "#CA8C4626",
-                display: "flex", alignItems: "center", gap: 12,
-              }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: isFirst ? "#FDE5C3" : "#CA8C4626",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <MeetingIcon title={meeting.title} />
-                </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A" }}>{meeting.title}</div>
-                  {meeting.client_name && (
-                    <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>{meeting.client_name}</div>
-                  )}
-                  <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>
-                    {dateStr} • {timeStr} • {meeting.duration_minutes} min
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MeetingIcon({ title }: { title: string }) {
-  const t = title.toLowerCase();
-  if (t.includes("portfolio")) {
-    return (
-      <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
-        <path d="M15.0011 19V3C15.0011 2.46957 14.7904 1.96086 14.4153 1.58579C14.0402 1.21071 13.5314 1 13.001 1H9.00064C8.47016 1 7.96142 1.21071 7.58631 1.58579C7.21121 1.96086 7.00048 2.46957 7.00048 3V19M3.00016 5H19.0014C20.1061 5 21.0016 5.89543 21.0016 7V17C21.0016 18.1046 20.1061 19 19.0014 19H3.00016C1.8955 19 1 18.1046 1 17V7C1 5.89543 1.8955 5 3.00016 5Z" stroke="black" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (t.includes("onboard") || t.includes("new client")) {
-    return (
-      <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
-        <path d="M15.0011 19V17C15.0011 15.9391 14.5797 14.9217 13.8295 14.1716C13.0792 13.4214 12.0618 13 11.0008 13H5.00032C3.93937 13 2.92187 13.4214 2.17167 14.1716C1.42146 14.9217 1 15.9391 1 17V19M18.0014 6V12M21.0016 9H15.0011M12.0009 5C12.0009 7.20914 10.2099 9 8.00056 9C5.79124 9 4.00024 7.20914 4.00024 5C4.00024 2.79086 5.79124 1 8.00056 1C10.2099 1 12.0009 2.79086 12.0009 5Z" stroke="black" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-      <path d="M1 19V13M8.0008 19V1M15.0016 19V7" stroke="black" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function ModalOverlay({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, zIndex: 500,
-        background: "rgba(0,0,0,0.30)", backdropFilter: "blur(4px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "white", borderRadius: 24, padding: 32,
-          width: 480, maxWidth: "90vw", maxHeight: "80vh",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
-          display: "flex", flexDirection: "column",
-        }}
-      >
-        {children}
-      </div>
     </div>
   );
 }

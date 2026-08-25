@@ -37,22 +37,11 @@ type WorkflowCommandsResponse = {
   commands: WorkflowCommand[];
 };
 
-const ICON_GRADIENTS = [
-  "linear-gradient(180deg, rgba(255, 241, 163, 0.80) 0%, rgba(255, 241, 163, 0.80) 50%, rgba(255, 179, 134, 0.80) 75%, rgba(255, 111, 50, 0.80) 100%)",
-  "linear-gradient(180deg, rgba(163, 255, 200, 0.80) 0%, rgba(163, 255, 200, 0.80) 50%, rgba(134, 220, 255, 0.80) 75%, rgba(50, 180, 255, 0.80) 100%)",
-  "linear-gradient(180deg, rgba(163, 200, 255, 0.80) 0%, rgba(163, 200, 255, 0.80) 50%, rgba(134, 170, 255, 0.80) 75%, rgba(80, 130, 255, 0.80) 100%)",
-  "linear-gradient(180deg, rgba(255, 200, 200, 0.80) 0%, rgba(255, 200, 200, 0.80) 50%, rgba(255, 160, 160, 0.80) 75%, rgba(255, 100, 100, 0.80) 100%)",
-  "linear-gradient(180deg, rgba(220, 200, 255, 0.80) 0%, rgba(220, 200, 255, 0.80) 50%, rgba(190, 160, 255, 0.80) 75%, rgba(140, 80, 255, 0.80) 100%)",
-  "linear-gradient(180deg, rgba(255, 230, 180, 0.80) 0%, rgba(255, 230, 180, 0.80) 50%, rgba(255, 200, 130, 0.80) 75%, rgba(255, 160, 50, 0.80) 100%)",
-];
-
-const ICONS = [
-  <SearchIcon key="search-primary" />,
-  <CalendarIcon key="calendar-primary" />,
-  <ShieldIcon key="shield" />,
-  <HomeIcon key="home" />,
-  <SearchIcon key="search-secondary" />,
-  <CalendarIcon key="calendar-secondary" />,
+const WORKFLOW_ICONS = [
+  "/portfolio-review.png",
+  "/meeting-preparation.png",
+  "/opportunity-finder.png",
+  "/real-estate-value.png",
 ];
 
 export default function AppsPage() {
@@ -114,27 +103,14 @@ export default function AppsPage() {
           alignItems: "center",
           minHeight: "100vh",
         }}>
-          {/* Top gradient blob */}
+          {/* Background image */}
           <div style={{
-            width: 1283,
-            height: 561,
             position: "absolute",
-            left: 0,
-            top: -115,
-            opacity: 0.40,
-            background: "linear-gradient(180deg, rgba(255, 241, 163, 0.80) 0%, rgba(255, 241, 163, 0.80) 50%, rgba(255, 179, 134, 0.80) 75%, rgba(255, 111, 50, 0.80) 100%)",
-            filter: "blur(82px)",
-          }} />
-          {/* Bottom gradient blob */}
-          <div style={{
-            width: 1283,
-            height: 561,
-            position: "absolute",
-            right: 0,
-            bottom: -115,
-            opacity: 0.40,
-            background: "linear-gradient(0deg, rgba(255, 241, 163, 0.80) 0%, rgba(255, 241, 163, 0.80) 50%, rgba(255, 179, 134, 0.80) 75%, rgba(255, 111, 50, 0.80) 100%)",
-            filter: "blur(82px)",
+            inset: 0,
+            backgroundImage: "url('/bg-app-workflow.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
           }} />
 
           {/* Title */}
@@ -142,11 +118,11 @@ export default function AppsPage() {
             position: "relative",
             zIndex: 1,
             textAlign: "center",
-            color: "#361F05",
-            fontSize: 38,
+            color: "black",
+            fontSize: 48,
             fontFamily: "ButlerPro, serif",
-            fontWeight: 600,
-            lineHeight: "45.6px",
+            fontWeight: 400,
+            lineHeight: "57.6px",
             wordWrap: "break-word",
             marginTop: 60,
             marginBottom: 28,
@@ -205,38 +181,15 @@ export default function AppsPage() {
                     <div style={{
                       width: 96,
                       height: 96,
-                      position: "relative",
-                      background: "white",
-                      overflow: "hidden",
                       borderRadius: 32,
-                      outline: "1px rgba(0, 0, 0, 0.02) solid",
-                      outlineOffset: "-1px",
+                      overflow: "hidden",
                       flexShrink: 0,
                     }}>
-                      <div style={{
-                        width: 432,
-                        height: 182,
-                        left: -111,
-                        top: -22,
-                        position: "absolute",
-                        background: ICON_GRADIENTS[i % ICON_GRADIENTS.length],
-                        boxShadow: "64px 64px 64px",
-                        filter: "blur(32px)",
-                      }} />
-                      <div style={{
-                        width: 60,
-                        height: 60,
-                        left: 18,
-                        top: 18,
-                        position: "absolute",
-                        mixBlendMode: "overlay",
-                        overflow: "hidden",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}>
-                        {ICONS[i % ICONS.length]}
-                      </div>
+                      <img
+                        src={WORKFLOW_ICONS[i % WORKFLOW_ICONS.length]}
+                        alt={cmd.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
                     </div>
 
                     {/* Text content */}
@@ -334,6 +287,7 @@ export default function AppsPage() {
               position: "relative",
               zIndex: 1,
               marginTop: 32,
+              marginBottom: 48,
               paddingLeft: 24,
               paddingRight: 24,
               paddingTop: 16,

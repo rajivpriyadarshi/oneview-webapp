@@ -64,8 +64,8 @@ export default function CRMAuthFlow() {
       storeAuthToken(session.token);
       storeAdvisorProfile(session.advisor);
 
-      // Redirect to clients page
-      router.replace("/clients");
+      // Redirect to dashboard page
+      router.replace("/dashboard");
     } catch (requestError) {
       trackAPI({
         pageName: "CRM Login Page",

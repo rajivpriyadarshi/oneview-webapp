@@ -38,8 +38,8 @@ export default function Sidebar(_props: SidebarProps = {}) {
   }
 
   const nav = [
-    { href: "/clients", label: "Home", icon: <HomeIcon /> },
-    { href: "/clients/list", label: "Clients", icon: <UserIcon /> },
+    { href: "/dashboard", label: "Home", icon: <HomeIcon /> },
+    { href: "/clients", label: "Clients", icon: <UserIcon /> },
     { href: "/apps", label: "Apps", icon: <TerminalIcon /> },
     { href: "/chat", label: "Chat", icon: <ChatBubbleIcon /> },
   ];
