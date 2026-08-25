@@ -250,6 +250,16 @@ export default function ChatOnePage() {
   }, []);
 
   useEffect(() => {
+    if (!requestedClientId || isLoadingClients || clients.length === 0) return;
+    const clientId = Number(requestedClientId) || requestedClientId;
+    const client = clients.find((c) => c.id === clientId || String(c.id) === String(requestedClientId));
+    if (client) {
+      setSelectedClientId(client.id);
+      void toggleClientGroup(client);
+    }
+  }, [requestedClientId, isLoadingClients, clients]);
+
+  useEffect(() => {
     let cancelled = false;
     listChatWorkflowCommands({ agent: getAiAgentSlug() }).then((commands) => {
       if (cancelled) return;

@@ -46,6 +46,7 @@ export type CrmAlert = {
   client: number | null;
   client_name: string | null;
   title: string;
+  type: string | null;
   cta_url: string | null;
   cta_text: string | null;
   mark_read: boolean;

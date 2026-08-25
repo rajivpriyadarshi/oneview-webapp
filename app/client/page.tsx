@@ -1184,7 +1184,12 @@ function ClientOverview({
   isLoadingClient: boolean;
   requestedClientId: string | null;
 }) {
-  const [activeTab, setActiveTab] = useState<ClientTab>("overview");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const validTabs: ClientTab[] = ["overview", "wealth-map", "interactions", "documents"];
+  const [activeTab, setActiveTab] = useState<ClientTab>(
+    validTabs.includes(tabParam as ClientTab) ? (tabParam as ClientTab) : "overview"
+  );
 
   return (
     <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
