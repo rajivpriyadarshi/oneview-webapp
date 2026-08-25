@@ -102,6 +102,7 @@ export type ChatWorkflowCommand = {
   tool_name: string;
   name: string;
   description?: string;
+  invocation_prompt?: string;
   input_schema?: Record<string, unknown>;
   execution_plan?: { schema_version: number; flow_hash: string; steps: { position: number; node_id: string; component_type: string; label: string; description: string[]; group_id?: string; group_label?: string }[] };
 };

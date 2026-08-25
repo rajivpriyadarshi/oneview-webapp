@@ -267,7 +267,7 @@ export default function ChatOnePage() {
         id: -index - 1,
         title: command.name || command.command.replace(/^\//, ""),
         description: command.description || command.command,
-        user_message: command.command,
+        user_message: command.invocation_prompt || command.command,
         workflow_intent: { tool_name: command.tool_name, mode: "run" },
         execution_plan: command.execution_plan,
       })));
@@ -704,6 +704,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
 
 function Composer({ placeholder, prompts, onPromptSelect, selectedPromptId }: { placeholder: string; prompts?: ChatPrompt[]; onPromptSelect?: (prompt: ChatPrompt) => void; selectedPromptId?: number | null }) {
   const isRunning = useThread((t) => t.isRunning);
+  const threadRuntime = useThreadRuntime({ optional: true });
   const [promptsExpanded, setPromptsExpanded] = useState(false);
   const [collapsedPromptCount, setCollapsedPromptCount] = useState(2);
   const promptListRef = useRef<HTMLDivElement | null>(null);
@@ -752,7 +753,7 @@ function Composer({ placeholder, prompts, onPromptSelect, selectedPromptId }: { 
         <div className={TW.promptChipsRow}>
           <div className={`${TW.promptChipsLeft} ${promptsExpanded ? TW.promptChipsLeftExpanded : ""}`} ref={promptListRef}>
             {visiblePrompts.map((p) => (
-              <div key={p.id} className={TW.promptChip} style={selectedPromptId === p.id ? { backgroundImage: "url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid transparent" } : undefined} role="button" tabIndex={0} onClick={() => onPromptSelect?.(p)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPromptSelect?.(p); } }}>
+              <div key={p.id} className={TW.promptChip} style={selectedPromptId === p.id ? { backgroundImage: "url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid transparent" } : undefined} role="button" tabIndex={0} onClick={() => { onPromptSelect?.(p); if (selectedPromptId !== p.id && p.user_message && threadRuntime?.composer) { threadRuntime.composer.setText(p.user_message); window.requestAnimationFrame(() => { document.querySelector<HTMLTextAreaElement>("[data-chat-composer-input]")?.focus(); }); } else if (selectedPromptId === p.id && threadRuntime?.composer) { threadRuntime.composer.setText(""); } }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPromptSelect?.(p); if (selectedPromptId !== p.id && p.user_message && threadRuntime?.composer) { threadRuntime.composer.setText(p.user_message); } else if (selectedPromptId === p.id && threadRuntime?.composer) { threadRuntime.composer.setText(""); } } }}>
                 /{p.title}
               </div>
             ))}
