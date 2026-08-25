@@ -159,6 +159,7 @@ export default function ClientsPage() {
                 const isDocType = type === "document" || type === "documents";
                 const isChatType = type === "chat" || type === "chats" || type === "message";
                 const isClickable = (isDocType || isChatType) && alert.client;
+                const hasAction = isClickable || (alert.cta_url && alert.cta_text);
                 const handleClick = () => {
                   setShowAlertsModal(false);
                   if (isDocType && alert.client) {
@@ -172,10 +173,10 @@ export default function ClientsPage() {
                 return (
                 <div
                   key={alert.id}
-                  onClick={isClickable ? handleClick : undefined}
-                  style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: isClickable ? "pointer" : undefined, borderRadius: 8, padding: "4px 0", transition: "background 0.15s" }}
-                  onMouseEnter={isClickable ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
-                  onMouseLeave={isClickable ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
+                  onClick={hasAction ? handleClick : undefined}
+                  style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: 8, transition: "background 0.15s" }}
+                  onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
+                  onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
                 >
                   <div style={{
                     width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
@@ -187,12 +188,9 @@ export default function ClientsPage() {
                       {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
                     </div>
                     {alert.cta_url && alert.cta_text && !isClickable && (
-                      <button
-                        onClick={handleClick}
-                        style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", textDecoration: "none", marginTop: 4, display: "inline-block", background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                      >
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", marginTop: 4, display: "inline-block" }}>
                         {alert.cta_text}
-                      </button>
+                      </span>
                     )}
                   </div>
                 </div>
@@ -406,13 +404,14 @@ function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; on
             const isDocType = type === "document" || type === "documents";
             const isChatType = type === "chat" || type === "chats" || type === "message";
             const isClickable = (isDocType || isChatType) && alert.client;
+            const hasAction = isClickable || (alert.cta_url && alert.cta_text);
             return (
               <div
                 key={alert.id}
-                onClick={isClickable ? () => onCheckNow(alert) : undefined}
-                style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: isClickable ? "pointer" : undefined, borderRadius: 8, padding: "4px 0", transition: "background 0.15s" }}
-                onMouseEnter={isClickable ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
-                onMouseLeave={isClickable ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
+                onClick={hasAction ? () => onCheckNow(alert) : undefined}
+                style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: 8, transition: "background 0.15s" }}
+                onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
+                onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
               >
                 <div style={{
                   width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
@@ -424,12 +423,9 @@ function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; on
                     {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
                   </div>
                   {alert.cta_url && alert.cta_text && !isClickable && (
-                    <button
-                      onClick={() => onCheckNow(alert)}
-                      style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", textDecoration: "none", marginTop: 4, display: "inline-block", background: "none", border: "none", padding: 0, cursor: "pointer" }}
-                    >
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", marginTop: 4, display: "inline-block" }}>
                       {alert.cta_text}
-                    </button>
+                    </span>
                   )}
                 </div>
               </div>

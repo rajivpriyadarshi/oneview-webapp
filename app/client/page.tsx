@@ -181,7 +181,7 @@ const TW = {
   mobileHeaderBtnIcon: "inline-grid place-items-center rounded-full bg-gradient-to-b from-[#b37f40] to-[#432411] p-[6px] text-white",
   workspace: "relative ml-[80px] grid h-screen grid-cols-[minmax(300px,380px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(292px,350px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
-  advisorHeader: "relative z-[40] flex h-[52px] min-w-0 items-center justify-between gap-[10px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
+  advisorHeader: "relative z-[40] flex min-w-0 items-center justify-between gap-[10px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] py-[14px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
   conversationBtn: "inline-flex w-full min-w-0 max-w-full items-center justify-start gap-[8px] overflow-hidden border-0 bg-transparent py-[6px] text-left font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [&_svg]:shrink-0",
   conversationText: "block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
