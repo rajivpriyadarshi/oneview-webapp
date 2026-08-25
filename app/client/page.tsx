@@ -1347,12 +1347,13 @@ function OverviewTab({
   const hasInsights = (Array.isArray(clientDetail?.insights) ? clientDetail.insights : []).some((insight) => Boolean(normalizeInsight(insight)));
   const hasRecentActivity = (Array.isArray(clientDetail?.recent_activity) ? clientDetail.recent_activity : []).some((activity) => Boolean(normalizeActivity(activity)));
   const hasSidePanels = hasInsights || hasRecentActivity;
+  const overviewImageSrc = getOverviewImageSrc(clientDetail, client);
 
   return (
     <div className="relative isolate min-h-0 overflow-auto bg-[#F9F8F7] pb-[48px]">
       <div
         className="pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/overview.png')" }}
+        style={{ backgroundImage: `url('${overviewImageSrc}')` }}
         aria-hidden="true"
       />
 
@@ -1473,6 +1474,67 @@ function AumFact({ label, value, last = false }: { label: string; value: string;
       <strong className="text-right font-satoshi text-[14px] font-bold text-[#111827]">{value}</strong>
     </div>
   );
+}
+
+function getOverviewImageSrc(clientDetail: ClientDetailResponse | null, client: WealthCrmClient | null) {
+  const detailRecord = getRecord(clientDetail);
+  const header = getRecord(clientDetail?.header);
+  const atAGlance = getRecord(clientDetail?.at_a_glance);
+  const tags = Array.isArray(clientDetail?.header?.tags) ? clientDetail.header.tags : [];
+  const candidates = [
+    header.country,
+    header.country_code,
+    header.primary_tax_jurisdiction,
+    detailRecord.country,
+    detailRecord.country_code,
+    detailRecord.primary_tax_jurisdiction,
+    atAGlance.country,
+    atAGlance.country_code,
+    atAGlance.primary_tax_jurisdiction,
+    tags[1],
+    client?.primary_tax_jurisdiction,
+    header.summary,
+  ];
+
+  for (const candidate of candidates) {
+    const image = getOverviewImageFromCountry(candidate);
+    if (image) return image;
+  }
+
+  return "/overview/others.png";
+}
+
+function getOverviewImageFromCountry(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+  if (!normalized) return null;
+
+  const compact = normalized.replace(/\s+/g, "");
+  const aliases: Array<[string[], string]> = [
+    [["sg", "sgp", "singapore"], "/overview/singapore.png"],
+    [["au", "aus", "australia"], "/overview/australia.png"],
+    [["us", "usa", "unitedstates", "unitedstatesofamerica", "america"], "/overview/usa.png"],
+    [["cn", "chn", "china", "prc", "peoplesrepublicofchina"], "/overview/china.png"],
+    [["in", "ind", "india"], "/overview/india.png"],
+    [["ch", "che", "switzerland", "swiss"], "/overview/switzerland.png"],
+  ];
+
+  for (const [keys, image] of aliases) {
+    if (keys.includes(compact)) return image;
+  }
+
+  const tokens = normalized.split(" ");
+  for (const [keys, image] of aliases) {
+    if (keys.some((key) => tokens.includes(key) || (key.length > 2 && compact.includes(key)))) return image;
+  }
+
+  return null;
 }
 
 function getClientSubtitle(client: WealthCrmClient | null) {
