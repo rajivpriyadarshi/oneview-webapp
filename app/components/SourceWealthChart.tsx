@@ -71,11 +71,17 @@ type GraphFamilyMember = {
   adjustedValue: number;
 };
 
+type GraphOwnershipItem = {
+  title: string;
+  points: string[];
+};
+
 type GraphCategory = {
   slug: string;
   label: string;
-  adjustedValue: number;
-  items: (GraphAssetItem | GraphAccountItem | GraphLiabilityItem)[];
+  adjustedValue?: number;
+  items?: (GraphAssetItem | GraphAccountItem | GraphLiabilityItem | GraphClientItem | GraphOwnershipItem)[];
+  members?: GraphFamilyMember[];
 };
 
 type GraphFinancials = {
@@ -93,13 +99,8 @@ type GraphLiabilities = {
   categories: GraphCategory[];
 };
 
-type GraphFamily = {
-  members: GraphFamilyMember[];
-};
-
-type GraphEntities = {
-  adjustedValue: number;
-  items: GraphClientItem[];
+type GraphFamilyAndOwnership = {
+  categories: GraphCategory[];
 };
 
 type GraphResponse = {
@@ -114,8 +115,7 @@ type GraphResponse = {
     financials: GraphFinancials;
     nonFinancials: GraphNonFinancials;
     liabilities: GraphLiabilities;
-    family: GraphFamily;
-    entities: GraphEntities;
+    familyAndOwnership: GraphFamilyAndOwnership;
   };
 };
 
@@ -165,8 +165,7 @@ const SECTION_IMAGES: Record<string, string> = {
   financials: "/wealth-map/financials.png",
   nonFinancials: "/wealth-map/non-financial-assets.png",
   liabilities: "/wealth-map/liabilities.png",
-  family: "/wealth-map/family.png",
-  entities: "/wealth-map/companies-spv.png",
+  familyAndOwnership: "/wealth-map/family-wealth.png",
 };
 
 const CATEGORY_IMAGES: Record<string, string> = {
@@ -185,7 +184,10 @@ const CATEGORY_IMAGES: Record<string, string> = {
   business_liabilities: "/wealth-map/business-liabilities.png",
   tax_legal_obligations: "/wealth-map/taxes.png",
   guarantee_exposure: "/wealth-map/guarantees.png",
-  family: "/wealth-map/family.png",
+  family_members: "/wealth-map/family.png",
+  trusts_foundations: "/wealth-map/trust-foundation.png",
+  companies_spvs: "/wealth-map/companies-spv.png",
+  ownership_relationships: "/wealth-map/ownership-relationships.png",
 };
 
 const FAMILY_IMAGES: Record<string, string> = {
@@ -203,16 +205,14 @@ const SECTION_META: Record<string, { badge: string }> = {
   financials: { badge: "FINANCIAL" },
   nonFinancials: { badge: "NON-FINANCIAL" },
   liabilities: { badge: "LIABILITIES" },
-  family: { badge: "FAMILY" },
-  entities: { badge: "ENTITY" },
+  familyAndOwnership: { badge: "FAMILY & OWNERSHIP" },
 };
 
 const SECTION_LABELS: Record<string, string> = {
   financials: "Financials",
   nonFinancials: "Non-financials",
   liabilities: "Liabilities",
-  family: "Family",
-  entities: "Entities",
+  familyAndOwnership: "Family & Ownership",
 };
 
 // --- Helpers ---
@@ -489,6 +489,34 @@ function ItemNode({ data }: { data: { name: string; value: string; status?: stri
   );
 }
 
+function OwnershipNode({ data }: { data: { title: string; points: string[] } }) {
+  return (
+    <div style={{ fontFamily: FONT_FAMILY, maxWidth: 220 }}>
+      <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
+      <div
+        style={{
+          background: "#ffffff",
+          border: "0.8px solid rgba(0,0,0,0.08)",
+          borderRadius: 8,
+          padding: "8px 10px",
+          boxShadow: "0 3px 6px rgba(30,28,24,0.06)",
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 10, color: "#111", marginBottom: 4 }}>{data.title}</div>
+        {data.points.slice(0, 3).map((point, i) => (
+          <div key={i} style={{ fontSize: 9, color: "#666", lineHeight: "1.4", marginTop: 2, display: "flex", gap: 4 }}>
+            <span style={{ flexShrink: 0 }}>•</span>
+            <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{point}</span>
+          </div>
+        ))}
+        {data.points.length > 3 && (
+          <div style={{ fontSize: 8, color: "#999", marginTop: 3 }}>+{data.points.length - 3} more</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // --- Node type registry ---
 
 const nodeTypes: NodeTypes = {
@@ -496,6 +524,7 @@ const nodeTypes: NodeTypes = {
   sectionNode: SectionNode,
   typeGroupNode: TypeGroupNode,
   itemNode: ItemNode,
+  ownershipNode: OwnershipNode,
 };
 
 // --- Layout builder ---
@@ -576,66 +605,86 @@ function buildFlowElements(
     const section = data.sections[expandedSection as keyof typeof data.sections];
 
     type DisplayItem = { id: string; name: string; value: number; status?: string; imageSrc: string };
-    type DisplayCategory = { slug: string; label: string; adjustedValue: number; items: DisplayItem[] };
+    type OwnershipDisplayItem = { id: string; title: string; points: string[] };
+    type DisplayCategory = { slug: string; label: string; adjustedValue: number; items: DisplayItem[]; ownershipItems?: OwnershipDisplayItem[] };
 
     let categories: DisplayCategory[] = [];
 
     if (expandedSection === "financials" || expandedSection === "nonFinancials" || expandedSection === "liabilities") {
       const sec = section as { adjustedValue: number; categories: GraphCategory[] };
-      categories = sec.categories
-        .map((cat) => ({
-          slug: cat.slug,
-          label: cat.label,
-          adjustedValue: cat.adjustedValue,
-          items: cat.items.map((item) => {
-            let imageSrc: string;
-            if (item.type === "account") {
-              imageSrc = "/wealth-map/bank-account.png";
-            } else if (item.type === "liability") {
-              const lt = (item as GraphLiabilityItem).liabilityType ?? "";
-              imageSrc = getAssetImage(lt, item.name);
-            } else {
-              imageSrc = getAssetImage((item as GraphAssetItem).assetType ?? "", item.name);
-            }
-            return {
-              id: item.id,
-              name: item.name,
-              value: item.adjustedValue,
-              status: item.status,
-              imageSrc,
-            };
-          }),
-        }));
-    } else if (expandedSection === "family") {
-      const fam = section as GraphFamily;
-      categories = [
-        {
-          slug: "family",
-          label: "Family Members",
-          adjustedValue: 0,
-          items: fam.members.map((m) => ({
-            id: String(m.id),
-            name: m.name,
-            value: m.adjustedValue,
-            imageSrc: FAMILY_IMAGES[m.relationship?.toLowerCase()] ?? "/wealth-map/family.png",
-          })),
-        },
-      ];
-    } else if (expandedSection === "entities") {
-      const ent = section as GraphEntities;
-      categories = [
-        {
-          slug: "entities",
-          label: "Entities",
-          adjustedValue: ent.adjustedValue,
-          items: ent.items.map((item) => ({
-            id: String(item.id),
-            name: item.name,
-            value: item.adjustedValue,
-            imageSrc: "/wealth-map/companies-spv.png",
-          })),
-        },
-      ];
+      categories = sec.categories.map((cat) => ({
+        slug: cat.slug,
+        label: cat.label,
+        adjustedValue: cat.adjustedValue ?? 0,
+        items: (cat.items ?? []).map((item) => {
+          let imageSrc: string;
+          if ("type" in item && item.type === "account") {
+            imageSrc = "/wealth-map/bank-account.png";
+          } else if ("type" in item && item.type === "liability") {
+            const lt = (item as GraphLiabilityItem).liabilityType ?? "";
+            imageSrc = getAssetImage(lt, item.name);
+          } else if ("type" in item && item.type === "asset") {
+            imageSrc = getAssetImage((item as GraphAssetItem).assetType ?? "", (item as GraphAssetItem).name);
+          } else {
+            imageSrc = "/wealth-map/holdings.png";
+          }
+          return {
+            id: (item as { id: string }).id,
+            name: (item as { name: string }).name,
+            value: (item as { adjustedValue: number }).adjustedValue,
+            status: (item as { status?: string }).status,
+            imageSrc,
+          };
+        }),
+      }));
+    } else if (expandedSection === "familyAndOwnership") {
+      const fao = section as GraphFamilyAndOwnership;
+      categories = fao.categories.map((cat) => {
+        if (cat.slug === "family_members") {
+          return {
+            slug: cat.slug,
+            label: cat.label,
+            adjustedValue: 0,
+            items: (cat.members ?? []).map((m) => ({
+              id: String(m.id),
+              name: m.name,
+              value: m.adjustedValue,
+              imageSrc: FAMILY_IMAGES[m.relationship?.toLowerCase()] ?? "/wealth-map/family.png",
+            })),
+          };
+        } else if (cat.slug === "ownership_relationships") {
+          return {
+            slug: cat.slug,
+            label: cat.label,
+            adjustedValue: 0,
+            items: [],
+            ownershipItems: (cat.items ?? []).map((item, idx) => ({
+              id: `ownership-${idx}`,
+              title: (item as GraphOwnershipItem).title,
+              points: (item as GraphOwnershipItem).points,
+            })),
+          };
+        } else {
+          return {
+            slug: cat.slug,
+            label: cat.label,
+            adjustedValue: cat.adjustedValue ?? 0,
+            items: (cat.items ?? []).map((item) => {
+              const ci = item as unknown as GraphClientItem;
+              let imageSrc = "/wealth-map/companies-spv.png";
+              if (ci.partyType === "trust" || ci.partyType === "foundation" || ci.partyType === "estate") {
+                imageSrc = "/wealth-map/trust-foundation.png";
+              }
+              return {
+                id: String(ci.id),
+                name: ci.name,
+                value: ci.adjustedValue ?? 0,
+                imageSrc,
+              };
+            }),
+          };
+        }
+      });
     }
 
     const totalCatHeight = (categories.length - 1) * TYPEGROUP_Y_SPACING;
@@ -645,6 +694,7 @@ function buildFlowElements(
       const fullCatKey = `${expandedSection}:${cat.slug}`;
       const isCatExpanded = expandedTypeGroup === fullCatKey;
       const catY = catStartY + ci * TYPEGROUP_Y_SPACING;
+      const itemCount = cat.ownershipItems ? cat.ownershipItems.length : cat.items.length;
 
       nodes.push({
         id: `typegroup-${fullCatKey}`,
@@ -654,7 +704,7 @@ function buildFlowElements(
           title: cat.label,
           subtitle: cat.adjustedValue ? formatValue(cat.adjustedValue, data.client.currency) : "",
           imageSrc: CATEGORY_IMAGES[cat.slug] ?? "/wealth-map/holdings.png",
-          count: cat.items.length,
+          count: itemCount,
           isExpanded: isCatExpanded,
           accent: "#8b6b3a",
           onClick: () => onTypeGroupClick(fullCatKey),
@@ -676,39 +726,71 @@ function buildFlowElements(
 
       // Item nodes (when category is expanded)
       if (isCatExpanded) {
-        const totalItemHeight = (cat.items.length - 1) * ITEM_Y_SPACING;
-        const itemStartY = catY + 23 - totalItemHeight / 2;
+        if (cat.ownershipItems && cat.ownershipItems.length > 0) {
+          const totalItemHeight = (cat.ownershipItems.length - 1) * (ITEM_Y_SPACING + 20);
+          const itemStartY = catY + 23 - totalItemHeight / 2;
 
-        cat.items.forEach((item, ii) => {
-          const itemY = itemStartY + ii * ITEM_Y_SPACING;
-          const statusLabel =
-            item.status === "valued" ? "Valued" : item.status === "stale" ? "Stale" : item.status === "not_on_record" ? "Not on record" : undefined;
+          cat.ownershipItems.forEach((item, ii) => {
+            const itemY = itemStartY + ii * (ITEM_Y_SPACING + 20);
 
-          nodes.push({
-            id: `item-${item.id}`,
-            type: "itemNode",
-            position: { x: X_ITEM, y: itemY },
-            data: {
-              name: item.name,
-              value: item.value ? formatValue(item.value, data.client.currency) : "",
-              status: statusLabel,
-              imageSrc: item.imageSrc,
-            },
-            draggable: false,
+            nodes.push({
+              id: `item-${item.id}`,
+              type: "ownershipNode",
+              position: { x: X_ITEM, y: itemY },
+              data: {
+                title: item.title,
+                points: item.points,
+              },
+              draggable: false,
+            });
+
+            edges.push({
+              id: `edge-typegroup-item-${item.id}`,
+              source: `typegroup-${fullCatKey}`,
+              target: `item-${item.id}`,
+              type: "default",
+              style: {
+                stroke: "#b88555",
+                strokeWidth: 1,
+              },
+              animated: false,
+            });
           });
+        } else {
+          const totalItemHeight = (cat.items.length - 1) * ITEM_Y_SPACING;
+          const itemStartY = catY + 23 - totalItemHeight / 2;
 
-          edges.push({
-            id: `edge-typegroup-item-${item.id}`,
-            source: `typegroup-${fullCatKey}`,
-            target: `item-${item.id}`,
-            type: "default",
-            style: {
-              stroke: "#b88555",
-              strokeWidth: 1,
-            },
-            animated: false,
+          cat.items.forEach((item, ii) => {
+            const itemY = itemStartY + ii * ITEM_Y_SPACING;
+            const statusLabel =
+              item.status === "valued" ? "Valued" : item.status === "stale" ? "Stale" : item.status === "not_on_record" ? "Not on record" : undefined;
+
+            nodes.push({
+              id: `item-${item.id}`,
+              type: "itemNode",
+              position: { x: X_ITEM, y: itemY },
+              data: {
+                name: item.name,
+                value: item.value ? formatValue(item.value, data.client.currency) : "",
+                status: statusLabel,
+                imageSrc: item.imageSrc,
+              },
+              draggable: false,
+            });
+
+            edges.push({
+              id: `edge-typegroup-item-${item.id}`,
+              source: `typegroup-${fullCatKey}`,
+              target: `item-${item.id}`,
+              type: "default",
+              style: {
+                stroke: "#b88555",
+                strokeWidth: 1,
+              },
+              animated: false,
+            });
           });
-        });
+        }
       }
     });
   }
