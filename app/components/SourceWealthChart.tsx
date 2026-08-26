@@ -391,14 +391,14 @@ function TypeGroupNode({ data }: { data: { title: string; subtitle: string; imag
       <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
       <div
         style={{
-          width: 165,
-          height: 46,
+          width: 190,
+          minHeight: 46,
           background: data.isExpanded ? "#fdf6ee" : "#ffffff",
           border: data.isExpanded ? `1.4px solid ${data.accent}` : "0.8px solid rgba(0,0,0,0.08)",
           borderRadius: 8,
           display: "flex",
           alignItems: "center",
-          padding: "0 10px",
+          padding: "6px 10px",
           boxShadow: data.isExpanded ? "0 3px 10px rgba(30,28,24,0.10)" : "0 3px 6px rgba(30,28,24,0.06)",
           gap: 8,
           transition: "all 0.2s ease",
@@ -436,7 +436,7 @@ function TypeGroupNode({ data }: { data: { title: string; subtitle: string; imag
           </div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 11, color: "#111" }}>{data.title}</div>
+          <div style={{ fontWeight: 700, fontSize: 11, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{data.title}</div>
           <div style={{ fontWeight: 500, fontSize: 9, color: "rgba(17,17,17,0.55)", marginTop: 1 }}>{data.subtitle}</div>
         </div>
         <div
@@ -444,6 +444,7 @@ function TypeGroupNode({ data }: { data: { title: string; subtitle: string; imag
             color: data.isExpanded ? data.accent : "#aaa",
             fontSize: 11,
             fontWeight: 700,
+            flexShrink: 0,
             transition: "transform 0.2s ease",
             transform: data.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
           }}
