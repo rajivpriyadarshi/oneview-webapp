@@ -490,8 +490,12 @@ function ItemNode({ data }: { data: { name: string; value: string; status?: stri
 }
 
 function OwnershipNode({ data }: { data: { title: string; points: string[] } }) {
+  const [expanded, setExpanded] = useState(false);
+  const visiblePoints = expanded ? data.points : data.points.slice(0, 3);
+  const hasMore = data.points.length > 3;
+
   return (
-    <div style={{ fontFamily: FONT_FAMILY, maxWidth: 220 }}>
+    <div style={{ fontFamily: FONT_FAMILY, maxWidth: 240 }}>
       <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
       <div
         style={{
@@ -503,14 +507,19 @@ function OwnershipNode({ data }: { data: { title: string; points: string[] } }) 
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 10, color: "#111", marginBottom: 4 }}>{data.title}</div>
-        {data.points.slice(0, 3).map((point, i) => (
+        {visiblePoints.map((point, i) => (
           <div key={i} style={{ fontSize: 9, color: "#666", lineHeight: "1.4", marginTop: 2, display: "flex", gap: 4 }}>
             <span style={{ flexShrink: 0 }}>•</span>
             <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{point}</span>
           </div>
         ))}
-        {data.points.length > 3 && (
-          <div style={{ fontSize: 8, color: "#999", marginTop: 3 }}>+{data.points.length - 3} more</div>
+        {hasMore && (
+          <div
+            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            style={{ fontSize: 9, color: "#8b6b3a", marginTop: 4, cursor: "pointer", fontWeight: 600 }}
+          >
+            {expanded ? "Show less" : `+${data.points.length - 3} more`}
+          </div>
         )}
       </div>
     </div>
@@ -727,11 +736,11 @@ function buildFlowElements(
       // Item nodes (when category is expanded)
       if (isCatExpanded) {
         if (cat.ownershipItems && cat.ownershipItems.length > 0) {
-          const totalItemHeight = (cat.ownershipItems.length - 1) * (ITEM_Y_SPACING + 20);
+          const totalItemHeight = (cat.ownershipItems.length - 1) * (ITEM_Y_SPACING + 80);
           const itemStartY = catY + 23 - totalItemHeight / 2;
 
           cat.ownershipItems.forEach((item, ii) => {
-            const itemY = itemStartY + ii * (ITEM_Y_SPACING + 20);
+            const itemY = itemStartY + ii * (ITEM_Y_SPACING + 80);
 
             nodes.push({
               id: `item-${item.id}`,
