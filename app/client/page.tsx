@@ -1698,7 +1698,7 @@ function InsightPanel({
   const askAiPrompt = getInsightAskAiPrompt(activeInsight);
 
   return (
-    <section className="relative min-h-[409px] overflow-hidden rounded-[16px] bg-[#fff4e8] p-[24px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:p-[20px]">
+    <section className="relative min-h-[409px] overflow-hidden rounded-[16px] p-[24px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:p-[20px]" style={{ backgroundColor: "rgba(255,255,255,0.5)" }}>
       <Image
         src="/insights.png"
         alt=""
@@ -1707,7 +1707,7 @@ function InsightPanel({
         sizes="(max-width: 1180px) 100vw, 380px"
       />
       <div className="absolute inset-0 bg-white/5" />
-      <div className="relative z-[1] flex items-start justify-between gap-[16px]">
+      <div className="relative z-[1] flex items-center justify-between gap-[16px]">
         <div>
           <h2 className="m-0 font-satoshi text-[18px] font-semibold leading-none text-[#282420] max-[640px]:text-[16px]">Insights</h2>
           {activeInsight.timestamp ? (
@@ -1720,7 +1720,7 @@ function InsightPanel({
               <button
                 key={`${insight.title}-${index}`}
                 type="button"
-                className={`h-[8px] w-[8px] rounded-full border-0 p-0 transition ${index === safeActiveIndex ? "bg-black" : "bg-black/20 hover:bg-black/35"}`}
+                className={`h-[10px] w-[10px] rounded-full border-0 p-0 transition ${index === safeActiveIndex ? "bg-black" : "bg-black/20 hover:bg-black/35"}`}
                 aria-label={`Show insight ${index + 1}`}
                 aria-current={index === safeActiveIndex ? "true" : undefined}
                 onClick={() => setActiveIndex(index)}
@@ -1753,16 +1753,20 @@ function InsightPanel({
       <div className="relative z-[1] mt-[32px] flex flex-wrap items-center justify-between gap-[12px] max-[640px]:mt-[24px]">
         <button
           type="button"
-          className="inline-flex min-h-[38px] items-center gap-[8px] rounded-full border border-[#b37f40]/20 bg-[#fff5d7]/35 px-[14px] font-satoshi text-[14px] font-semibold text-[#a87536]"
+          className="inline-flex min-h-[38px] items-center gap-[8px] rounded-full border bg-[#fff5d7]/35 px-[14px] font-satoshi text-[14px] font-bold leading-[18.2px]"
+          style={{ backgroundImage: "linear-gradient(to right, rgba(222,150,69,1), rgba(128,77,19,1))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", borderColor: "rgba(128,77,19,0.24)" }}
           onClick={() => onAskAiInsight(askAiPrompt)}
         >
           <SparkleIcon />
           Ask AI
         </button>
-        <button type="button" className="inline-flex min-h-[38px] items-center gap-[8px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[14px] font-medium text-[#443830]" onClick={onDismiss}>
-          <span aria-hidden="true" className="text-[18px] leading-none">&times;</span>
+        <div className="flex items-center justify-center min-h-[38px] gap-[6px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[14px] font-medium leading-[18.2px] text-[rgba(74, 67, 52, 1)] text-[18px] cursor-pointer" onClick={onDismiss}>
+          <svg width="12" height="12" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7.84601 0.713867L0.710938 7.84894M0.710938 0.713867L7.84601 7.84894" stroke="#2F2B2C" stroke-width="1.42702" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+
           Dismiss
-        </button>
+        </div>
       </div>
     </section>
   );
@@ -3238,10 +3242,14 @@ function TrendUpIcon() {
 
 function SparkleIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 3L13.7 8.3L19 10L13.7 11.7L12 17L10.3 11.7L5 10L10.3 8.3L12 3Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
-      <path d="M5 14L5.8 16.2L8 17L5.8 17.8L5 20L4.2 17.8L2 17L4.2 16.2L5 14Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M18 15L18.6 16.4L20 17L18.6 17.6L18 19L17.4 17.6L16 17L17.4 16.4L18 15Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <path d="M2.33073 14.0003V10.667M2.33073 4.00033V0.666992M0.664062 2.33366H3.9974M0.664062 12.3337H3.9974M7.9974 1.33366L6.84128 4.33957C6.65327 4.82839 6.55927 5.0728 6.41308 5.27838C6.28352 5.46059 6.12433 5.61979 5.94212 5.74935C5.73653 5.89553 5.49212 5.98953 5.0033 6.17754L1.9974 7.33366L5.0033 8.48978C5.49212 8.67779 5.73653 8.77179 5.94212 8.91797C6.12433 9.04753 6.28352 9.20673 6.41308 9.38893C6.55927 9.59452 6.65327 9.83893 6.84128 10.3278L7.9974 13.3337L9.15352 10.3278C9.34152 9.83893 9.43553 9.59452 9.58171 9.38894C9.71127 9.20673 9.87047 9.04753 10.0527 8.91797C10.2583 8.77179 10.5027 8.67778 10.9915 8.48978L13.9974 7.33366L10.9915 6.17754C10.5027 5.98953 10.2583 5.89553 10.0527 5.74935C9.87046 5.61979 9.71127 5.46059 9.58171 5.27838C9.43553 5.0728 9.34152 4.82839 9.15351 4.33957L7.9974 1.33366Z" stroke="url(#paint0_linear_sparkle)" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+      <defs>
+        <linearGradient id="paint0_linear_sparkle" x1="10.6641" y1="14.0003" x2="0.664062" y2="-4.66634" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#804D13"/>
+          <stop offset="1" stopColor="#FFE86A"/>
+        </linearGradient>
+      </defs>
     </svg>
   );
 }
