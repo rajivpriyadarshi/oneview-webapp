@@ -71,18 +71,30 @@ type GraphFamilyMember = {
   adjustedValue: number;
 };
 
-type GraphFinancials = {
+type GraphCategory = {
+  slug: string;
+  label: string;
   adjustedValue: number;
   items: (GraphAssetItem | GraphAccountItem | GraphLiabilityItem)[];
 };
 
-type GraphFamily = {
-  members: GraphFamilyMember[];
+type GraphFinancials = {
+  adjustedValue: number;
+  categories: GraphCategory[];
 };
 
 type GraphNonFinancials = {
   adjustedValue: number;
-  items: GraphAssetItem[];
+  categories: GraphCategory[];
+};
+
+type GraphLiabilities = {
+  adjustedValue: number;
+  categories: GraphCategory[];
+};
+
+type GraphFamily = {
+  members: GraphFamilyMember[];
 };
 
 type GraphEntities = {
@@ -100,8 +112,9 @@ type GraphResponse = {
   };
   sections: {
     financials: GraphFinancials;
-    family: GraphFamily;
     nonFinancials: GraphNonFinancials;
+    liabilities: GraphLiabilities;
+    family: GraphFamily;
     entities: GraphEntities;
   };
 };
@@ -135,6 +148,10 @@ const ASSET_TYPE_IMAGES: Record<string, string> = {
   brokerage: "/wealth-map/brokerage-account.png",
   loan: "/wealth-map/loan.png",
   mortgage: "/wealth-map/mortgage.png",
+  margin_loan: "/wealth-map/loan.png",
+  corporate_debt: "/wealth-map/business-liabilities.png",
+  tax_payable: "/wealth-map/taxes.png",
+  guarantee: "/wealth-map/guarantees.png",
   insurance: "/wealth-map/personal-liabilities.png",
   trust: "/wealth-map/trust-foundation.png",
   company: "/wealth-map/companies-spv.png",
@@ -146,15 +163,28 @@ const ASSET_TYPE_IMAGES: Record<string, string> = {
 
 const SECTION_IMAGES: Record<string, string> = {
   financials: "/wealth-map/financials.png",
-  family: "/wealth-map/family.png",
   nonFinancials: "/wealth-map/non-financial-assets.png",
+  liabilities: "/wealth-map/liabilities.png",
+  family: "/wealth-map/family.png",
   entities: "/wealth-map/companies-spv.png",
 };
 
-const TYPE_GROUP_IMAGES: Record<string, string> = {
-  asset: "/wealth-map/holdings.png",
-  account: "/wealth-map/bank-account.png",
-  liability: "/wealth-map/liabilities.png",
+const CATEGORY_IMAGES: Record<string, string> = {
+  banking_cash: "/wealth-map/bank.png",
+  investment_accounts: "/wealth-map/brokerage-account.png",
+  retirement_tax_advantage: "/wealth-map/retirement-accounts.png",
+  private_investments: "/wealth-map/investment-portfolio.png",
+  digital_financial_assets: "/wealth-map/digital-assets.png",
+  real_estate: "/wealth-map/real-estate.png",
+  collections: "/wealth-map/art-collectibles.png",
+  vehicles: "/wealth-map/vehicles.png",
+  intellectual_property: "/wealth-map/intellectual-property.png",
+  other_personal_property: "/wealth-map/other-personal-property.png",
+  mortgages: "/wealth-map/mortgage.png",
+  personal_liabilities: "/wealth-map/personal-liabilities.png",
+  business_liabilities: "/wealth-map/business-liabilities.png",
+  tax_legal_obligations: "/wealth-map/taxes.png",
+  guarantee_exposure: "/wealth-map/guarantees.png",
   family: "/wealth-map/family.png",
 };
 
@@ -171,23 +201,18 @@ const FAMILY_IMAGES: Record<string, string> = {
 
 const SECTION_META: Record<string, { badge: string }> = {
   financials: { badge: "FINANCIAL" },
-  family: { badge: "FAMILY" },
   nonFinancials: { badge: "NON-FINANCIAL" },
+  liabilities: { badge: "LIABILITIES" },
+  family: { badge: "FAMILY" },
   entities: { badge: "ENTITY" },
 };
 
 const SECTION_LABELS: Record<string, string> = {
   financials: "Financials",
-  family: "Family",
   nonFinancials: "Non-financials",
+  liabilities: "Liabilities",
+  family: "Family",
   entities: "Entities",
-};
-
-const TYPE_GROUP_LABELS: Record<string, string> = {
-  asset: "Assets",
-  account: "Accounts",
-  liability: "Liabilities",
-  family: "Family Members",
 };
 
 // --- Helpers ---
@@ -546,91 +571,102 @@ function buildFlowElements(
     });
   });
 
-  // Type group nodes (when a section is expanded)
+  // Category nodes (when a section is expanded)
   if (expandedSection) {
     const section = data.sections[expandedSection as keyof typeof data.sections];
-    let items: { id: string; name: string; value: number; status?: string; type: string; imageSrc: string }[] = [];
 
-    if (expandedSection === "financials") {
-      items = (section as GraphFinancials).items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        value: item.adjustedValue,
-        status: item.status,
-        type: item.type,
-        imageSrc:
-          item.type === "account"
-            ? "/wealth-map/bank-account.png"
-            : item.type === "liability"
-              ? "/wealth-map/liabilities.png"
-              : getAssetImage((item as GraphAssetItem).assetType ?? "", item.name),
-      }));
+    type DisplayItem = { id: string; name: string; value: number; status?: string; imageSrc: string };
+    type DisplayCategory = { slug: string; label: string; adjustedValue: number; items: DisplayItem[] };
+
+    let categories: DisplayCategory[] = [];
+
+    if (expandedSection === "financials" || expandedSection === "nonFinancials" || expandedSection === "liabilities") {
+      const sec = section as { adjustedValue: number; categories: GraphCategory[] };
+      categories = sec.categories
+        .filter((cat) => cat.items.length > 0)
+        .map((cat) => ({
+          slug: cat.slug,
+          label: cat.label,
+          adjustedValue: cat.adjustedValue,
+          items: cat.items.map((item) => {
+            let imageSrc: string;
+            if (item.type === "account") {
+              imageSrc = "/wealth-map/bank-account.png";
+            } else if (item.type === "liability") {
+              const lt = (item as GraphLiabilityItem).liabilityType ?? "";
+              imageSrc = getAssetImage(lt, item.name);
+            } else {
+              imageSrc = getAssetImage((item as GraphAssetItem).assetType ?? "", item.name);
+            }
+            return {
+              id: item.id,
+              name: item.name,
+              value: item.adjustedValue,
+              status: item.status,
+              imageSrc,
+            };
+          }),
+        }));
     } else if (expandedSection === "family") {
-      items = (section as GraphFamily).members.map((m) => ({
-        id: String(m.id),
-        name: m.name,
-        value: m.adjustedValue,
-        type: "family",
-        imageSrc: FAMILY_IMAGES[m.relationship?.toLowerCase()] ?? "/wealth-map/family.png",
-      }));
-    } else if (expandedSection === "nonFinancials") {
-      items = (section as GraphNonFinancials).items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        value: item.adjustedValue,
-        status: item.status,
-        type: item.type,
-        imageSrc: getAssetImage(item.assetType ?? "", item.name),
-      }));
+      const fam = section as GraphFamily;
+      categories = [
+        {
+          slug: "family",
+          label: "Family Members",
+          adjustedValue: 0,
+          items: fam.members.map((m) => ({
+            id: String(m.id),
+            name: m.name,
+            value: m.adjustedValue,
+            imageSrc: FAMILY_IMAGES[m.relationship?.toLowerCase()] ?? "/wealth-map/family.png",
+          })),
+        },
+      ];
     } else if (expandedSection === "entities") {
-      items = (section as GraphEntities).items.map((item) => ({
-        id: String(item.id),
-        name: item.name,
-        value: item.adjustedValue,
-        type: item.partyType,
-        imageSrc: "/wealth-map/companies-spv.png",
-      }));
+      const ent = section as GraphEntities;
+      categories = [
+        {
+          slug: "entities",
+          label: "Entities",
+          adjustedValue: ent.adjustedValue,
+          items: ent.items.map((item) => ({
+            id: String(item.id),
+            name: item.name,
+            value: item.adjustedValue,
+            imageSrc: "/wealth-map/companies-spv.png",
+          })),
+        },
+      ];
     }
 
-    // Group by type
-    const grouped = new Map<string, typeof items>();
-    for (const item of items) {
-      const key = item.type;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key)!.push(item);
-    }
+    const totalCatHeight = (categories.length - 1) * TYPEGROUP_Y_SPACING;
+    const catStartY = clientY - totalCatHeight / 2;
 
-    const typeKeys = Array.from(grouped.keys());
-    const totalTypeHeight = (typeKeys.length - 1) * TYPEGROUP_Y_SPACING;
-    const typeStartY = clientY - totalTypeHeight / 2;
-
-    typeKeys.forEach((typeKey, ti) => {
-      const groupItems = grouped.get(typeKey)!;
-      const groupValue = groupItems.reduce((sum, item) => sum + item.value, 0);
-      const fullTypeGroupKey = `${expandedSection}:${typeKey}`;
-      const isTypeExpanded = expandedTypeGroup === fullTypeGroupKey;
-      const typeGroupY = typeStartY + ti * TYPEGROUP_Y_SPACING;
+    categories.forEach((cat, ci) => {
+      const fullCatKey = `${expandedSection}:${cat.slug}`;
+      const isCatExpanded = expandedTypeGroup === fullCatKey;
+      const catY = catStartY + ci * TYPEGROUP_Y_SPACING;
 
       nodes.push({
-        id: `typegroup-${fullTypeGroupKey}`,
+        id: `typegroup-${fullCatKey}`,
         type: "typeGroupNode",
-        position: { x: X_TYPEGROUP, y: typeGroupY },
+        position: { x: X_TYPEGROUP, y: catY },
         data: {
-          title: TYPE_GROUP_LABELS[typeKey] ?? typeKey.charAt(0).toUpperCase() + typeKey.slice(1),
-          subtitle: groupValue ? formatValue(groupValue, data.client.currency) : "",
-          imageSrc: TYPE_GROUP_IMAGES[typeKey] ?? "/wealth-map/holdings.png",
-          count: groupItems.length,
-          isExpanded: isTypeExpanded,
+          title: cat.label,
+          subtitle: cat.adjustedValue ? formatValue(cat.adjustedValue, data.client.currency) : "",
+          imageSrc: CATEGORY_IMAGES[cat.slug] ?? "/wealth-map/holdings.png",
+          count: cat.items.length,
+          isExpanded: isCatExpanded,
           accent: "#8b6b3a",
-          onClick: () => onTypeGroupClick(fullTypeGroupKey),
+          onClick: () => onTypeGroupClick(fullCatKey),
         },
         draggable: false,
       });
 
       edges.push({
-        id: `edge-section-${fullTypeGroupKey}`,
+        id: `edge-section-${fullCatKey}`,
         source: `section-${expandedSection}`,
-        target: `typegroup-${fullTypeGroupKey}`,
+        target: `typegroup-${fullCatKey}`,
         type: "default",
         style: {
           stroke: "#b88555",
@@ -639,12 +675,12 @@ function buildFlowElements(
         animated: false,
       });
 
-      // Item nodes (when type group is expanded)
-      if (isTypeExpanded) {
-        const totalItemHeight = (groupItems.length - 1) * ITEM_Y_SPACING;
-        const itemStartY = typeGroupY + 23 - totalItemHeight / 2;
+      // Item nodes (when category is expanded)
+      if (isCatExpanded) {
+        const totalItemHeight = (cat.items.length - 1) * ITEM_Y_SPACING;
+        const itemStartY = catY + 23 - totalItemHeight / 2;
 
-        groupItems.forEach((item, ii) => {
+        cat.items.forEach((item, ii) => {
           const itemY = itemStartY + ii * ITEM_Y_SPACING;
           const statusLabel =
             item.status === "valued" ? "Valued" : item.status === "stale" ? "Stale" : item.status === "not_on_record" ? "Not on record" : undefined;
@@ -664,7 +700,7 @@ function buildFlowElements(
 
           edges.push({
             id: `edge-typegroup-item-${item.id}`,
-            source: `typegroup-${fullTypeGroupKey}`,
+            source: `typegroup-${fullCatKey}`,
             target: `item-${item.id}`,
             type: "default",
             style: {
