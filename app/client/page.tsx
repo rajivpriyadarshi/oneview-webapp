@@ -1148,6 +1148,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
                     : <AssistantMessage message={message} showReplySuggestions={message.isLast} />
                 )}
               </ThreadPrimitive.Messages>
+              <ThreadThinking />
               <ThreadPrimitive.ViewportFooter className={TW.threadFooter}>
                 <ThreadPrimitive.ScrollToBottom className={TW.scrollToBottom} aria-label="Scroll to bottom">
                   <ArrowDownIcon />
@@ -2491,6 +2492,23 @@ function ComposerPrimaryAction() {
   );
 }
 
+function ThreadThinking() {
+  const isRunning = useThread((t) => t.isRunning);
+  const messages = useThread((t) => t.messages);
+  const lastMessage = messages[messages.length - 1];
+  const showThinking = isRunning && (!lastMessage || lastMessage.role === "user");
+  if (!showThinking) return null;
+  return (
+    <div className={TW.messageAssistant}>
+      <div className={TW.messageStack}>
+        <div className={`${TW.messageContent} ${TW.assistantMessageContent}`}>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(0,0,0,0.45)", fontFamily: "Satoshi Variable, sans-serif" }}>Thinking...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserMessage() {
   return (
     <MessagePrimitive.Root className={TW.messageUser}>
@@ -2513,7 +2531,7 @@ function AssistantMessage({
   const workflowPlanCtx = useContext(WorkflowPlanContext);
   const workflowPlan = showReplySuggestions ? workflowPlanCtx : null;
   const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
-  const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
+  const isStreaming = message.status?.type !== "complete";
   const shouldShowArtifact = Boolean(messageArtifact && message.status?.type === "complete" && !isStreaming);
   const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
   const showContent = !hasSteps || stepsAnimationDone;

@@ -675,6 +675,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
                     message.role === "user" ? <UserMessage /> : <AssistantMessage message={message} showReplySuggestions={message.isLast} />
                   )}
                 </ThreadPrimitive.Messages>
+                <ThreadThinking />
               </div>
               <ThreadPrimitive.ViewportFooter className="sticky bottom-0 z-[5] bg-transparent pt-3">
                 <ThreadPrimitive.ScrollToBottom className="hidden data-[state=visible]:inline-grid absolute left-1/2 top-[-16px] h-9 w-9 -translate-x-1/2 -translate-y-full place-items-center rounded-full border border-white/60 bg-white/85 text-[#171615] shadow-[0_2px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl" aria-label="Scroll to bottom">
@@ -874,6 +875,23 @@ function ComposerPrimaryAction() {
   );
 }
 
+function ThreadThinking() {
+  const isRunning = useThread((t) => t.isRunning);
+  const messages = useThread((t) => t.messages);
+  const lastMessage = messages[messages.length - 1];
+  const showThinking = isRunning && (!lastMessage || lastMessage.role === "user");
+  if (!showThinking) return null;
+  return (
+    <div className={TW.messageAssistant}>
+      <div className={TW.messageStack}>
+        <div className={`${TW.messageContent} ${TW.assistantMessageContent}`}>
+          <p style={{ margin: 0, fontSize: 13, color: "rgba(0,0,0,0.45)", fontFamily: "Satoshi Variable, sans-serif" }}>Thinking...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserMessage() {
   return (
     <MessagePrimitive.Root className={TW.messageUser}>
@@ -890,7 +908,7 @@ function AssistantMessage({ message, showReplySuggestions }: { message: MessageS
   const workflowPlanCtx = useContext(WorkflowPlanContext);
   const workflowPlan = showReplySuggestions ? workflowPlanCtx : null;
   const hasSteps = Boolean(workflowPlan && workflowPlan.steps && workflowPlan.steps.length > 0);
-  const isStreaming = message.content.some((p) => (p as { type: string }).type === "indicator");
+  const isStreaming = message.status?.type !== "complete";
   const shouldShowArtifact = Boolean(messageArtifact && message.status?.type === "complete" && !isStreaming);
   const [stepsAnimationDone, setStepsAnimationDone] = useState(false);
   const showContent = !hasSteps || stepsAnimationDone;
