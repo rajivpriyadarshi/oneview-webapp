@@ -1,24 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  BubbleController,
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  type ChartArea,
-  type ChartData,
-  type ChartOptions,
-  type Plugin,
-} from "chart.js";
-import ChartDataLabels from "chartjs-plugin-datalabels";
-import { Chart } from "react-chartjs-2";
+  ReactFlow,
+  Background,
+  Controls,
+  useNodesState,
+  useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
+  Handle,
+  Position,
+  type Node,
+  type Edge,
+  type NodeTypes,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import "./wealth-map-flow.css";
 import { apiRequest } from "../lib/apiClient";
-
-ChartJS.register(BubbleController, CategoryScale, LinearScale, PointElement, Tooltip, Legend, ChartDataLabels);
 
 // --- API Types ---
 
@@ -107,27 +106,7 @@ type GraphResponse = {
   };
 };
 
-// --- Chart Node Types ---
-
-type NodeKind = "client" | "section" | "typeGroup" | "item";
-
-type WealthMapPoint = {
-  id: string;
-  x: number;
-  y: number;
-  r: number;
-  kind: NodeKind;
-  title: string;
-  subtitle?: string;
-  status?: string;
-  color: string;
-  accent?: string;
-  tone?: "green" | "red" | "gold" | "blue" | "purple" | "orange" | "brown";
-  section?: string;
-  badge?: string;
-  value?: number;
-  imageSrc?: string;
-};
+// --- Constants ---
 
 const ASSET_TYPE_IMAGES: Record<string, string> = {
   real_estate: "/wealth-map/real-estate.png",
@@ -190,20 +169,36 @@ const FAMILY_IMAGES: Record<string, string> = {
   self: "/wealth-map/uhnw-client.png",
 };
 
-const imageCache = new Map<string, HTMLImageElement>();
+const SECTION_META: Record<string, { badge: string }> = {
+  financials: { badge: "FINANCIAL" },
+  family: { badge: "FAMILY" },
+  nonFinancials: { badge: "NON-FINANCIAL" },
+  entities: { badge: "ENTITY" },
+};
 
-let _chartInstance: ChartJS | null = null;
+const SECTION_LABELS: Record<string, string> = {
+  financials: "Financials",
+  family: "Family",
+  nonFinancials: "Non-financials",
+  entities: "Entities",
+};
 
-function getImage(src: string): HTMLImageElement | null {
-  if (imageCache.has(src)) {
-    const img = imageCache.get(src)!;
-    return img.complete && img.naturalWidth > 0 ? img : null;
-  }
-  const img = new Image();
-  img.onload = () => { if (_chartInstance) _chartInstance.draw(); };
-  img.src = src;
-  imageCache.set(src, img);
-  return null;
+const TYPE_GROUP_LABELS: Record<string, string> = {
+  asset: "Assets",
+  account: "Accounts",
+  liability: "Liabilities",
+  family: "Family Members",
+};
+
+// --- Helpers ---
+
+function formatValue(value: number, currency = "USD"): string {
+  const abs = Math.abs(value);
+  const prefix = value < 0 ? "-" : "";
+  const symbol = currency === "USD" ? "$" : currency;
+  if (abs >= 1_000_000) return `${prefix}${symbol}${(abs / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${prefix}${symbol}${(abs / 1_000).toFixed(0)}K`;
+  return `${prefix}${symbol}${abs.toFixed(0)}`;
 }
 
 function getAssetImage(assetType: string, name: string): string {
@@ -223,87 +218,338 @@ function getAssetImage(assetType: string, name: string): string {
   return "/wealth-map/holdings.png";
 }
 
-type HitZone = { id: string; left: number; top: number; right: number; bottom: number };
+// --- Custom Node Components ---
 
-const SECTION_META: Record<string, { tone: WealthMapPoint["tone"]; accent: string; badge: string }> = {
-  financials: { tone: "purple", accent: "#8b6b3a", badge: "FINANCIAL" },
-  family: { tone: "blue", accent: "#2a6fb0", badge: "FAMILY" },
-  nonFinancials: { tone: "orange", accent: "#b87333", badge: "NON-FINANCIAL" },
-  entities: { tone: "green", accent: "#2a7856", badge: "ENTITY" },
-};
+const FONT_FAMILY = "'Satoshi Variable', Satoshi, sans-serif";
 
-const SECTION_LABELS: Record<string, string> = {
-  financials: "Financials",
-  family: "Family",
-  nonFinancials: "Non-financials",
-  entities: "Entities",
-};
-
-function formatValue(value: number, currency = "USD"): string {
-  const abs = Math.abs(value);
-  const prefix = value < 0 ? "-" : "";
-  const symbol = currency === "USD" ? "$" : currency;
-  if (abs >= 1_000_000) return `${prefix}${symbol}${(abs / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${prefix}${symbol}${(abs / 1_000).toFixed(0)}K`;
-  return `${prefix}${symbol}${abs.toFixed(0)}`;
+function ClientNode({ data }: { data: { name: string; value: string; imageSrc: string } }) {
+  return (
+    <div style={{ fontFamily: FONT_FAMILY, position: "relative" }}>
+      <div
+        style={{
+          position: "absolute",
+          top: -20,
+          left: 0,
+          background: "#050505",
+          color: "#fff",
+          fontSize: 9,
+          fontWeight: 800,
+          padding: "2px 8px",
+          borderRadius: 4,
+          letterSpacing: 0.5,
+        }}
+      >
+        CLIENT
+      </div>
+      <div
+        style={{
+          width: 155,
+          height: 192,
+          background: "#1b1207",
+          border: "1.8px solid #9b5c09",
+          borderRadius: 11,
+          overflow: "hidden",
+          boxShadow: "0 7px 14px rgba(65, 44, 18, 0.24)",
+          position: "relative",
+        }}
+      >
+        <div style={{ width: "100%", height: 80, overflow: "hidden", borderRadius: "9px 9px 0 0" }}>
+          <img
+            src={data.imageSrc}
+            alt={data.name}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: "30px 10px 14px",
+            background: "linear-gradient(to bottom, rgba(22,13,3,0) 0%, rgba(22,13,3,0.84) 34%, rgba(16,10,2,0.98) 100%)",
+          }}
+        >
+          <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{data.name}</div>
+          <div style={{ color: "#f3d585", fontWeight: 500, fontSize: 10, marginTop: 4 }}>
+            Adjusted value: {data.value}
+          </div>
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            bottom: 10,
+            right: 10,
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: "#4caf15",
+            boxShadow: "0 0 6px rgba(76, 175, 21, 0.42)",
+          }}
+        />
+      </div>
+      <Handle type="source" position={Position.Right} style={{ background: "transparent", border: "none" }} />
+    </div>
+  );
 }
 
-const TYPE_GROUP_LABELS: Record<string, string> = {
-  asset: "Assets",
-  account: "Accounts",
-  liability: "Liabilities",
-  family: "Family Members",
+function SectionNode({ data }: { data: { title: string; subtitle: string; imageSrc: string; badge: string; isExpanded: boolean; onClick: () => void } }) {
+  return (
+    <div style={{ fontFamily: FONT_FAMILY, position: "relative", cursor: "pointer" }} onClick={data.onClick}>
+      <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
+      <div
+        style={{
+          position: "absolute",
+          top: -18,
+          left: 0,
+          background: data.isExpanded ? "#7a6840" : "#aeb9b6",
+          color: "#fff",
+          fontSize: 8,
+          fontWeight: 800,
+          padding: "2px 8px",
+          borderRadius: 4,
+          letterSpacing: 0.4,
+        }}
+      >
+        {data.badge}
+      </div>
+      <div
+        style={{
+          width: 180,
+          height: 52,
+          background: data.isExpanded ? "#fdf6ee" : "#ffffff",
+          border: data.isExpanded ? "1.6px solid #8b6b3a" : "1px solid rgba(0,0,0,0.1)",
+          borderRadius: 9,
+          display: "flex",
+          alignItems: "center",
+          padding: "0 12px",
+          boxShadow: data.isExpanded ? "0 4px 12px rgba(30,28,24,0.12)" : "0 4px 8px rgba(30,28,24,0.08)",
+          gap: 10,
+          transition: "all 0.2s ease",
+        }}
+      >
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            overflow: "hidden",
+            flexShrink: 0,
+          }}
+        >
+          <img src={data.imageSrc} alt={data.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: 12, color: "#111" }}>{data.title}</div>
+          <div style={{ fontWeight: 500, fontSize: 9, color: "rgba(17,17,17,0.62)", marginTop: 1 }}>{data.subtitle}</div>
+        </div>
+        <div
+          style={{
+            color: data.isExpanded ? "#8b6b3a" : "#999",
+            fontSize: 12,
+            fontWeight: 700,
+            transition: "transform 0.2s ease",
+            transform: data.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+          }}
+        >
+          &#x203A;
+        </div>
+      </div>
+      <Handle type="source" position={Position.Right} style={{ background: "transparent", border: "none" }} />
+    </div>
+  );
+}
+
+function TypeGroupNode({ data }: { data: { title: string; subtitle: string; imageSrc: string; count: number; isExpanded: boolean; accent: string; onClick: () => void } }) {
+  return (
+    <div style={{ fontFamily: FONT_FAMILY, position: "relative", cursor: "pointer" }} onClick={data.onClick}>
+      <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
+      <div
+        style={{
+          width: 165,
+          height: 46,
+          background: data.isExpanded ? "#fdf6ee" : "#ffffff",
+          border: data.isExpanded ? `1.4px solid ${data.accent}` : "0.8px solid rgba(0,0,0,0.08)",
+          borderRadius: 8,
+          display: "flex",
+          alignItems: "center",
+          padding: "0 10px",
+          boxShadow: data.isExpanded ? "0 3px 10px rgba(30,28,24,0.10)" : "0 3px 6px rgba(30,28,24,0.06)",
+          gap: 8,
+          transition: "all 0.2s ease",
+        }}
+      >
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: "50%",
+              overflow: "hidden",
+            }}
+          >
+            <img src={data.imageSrc} alt={data.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
+          <div
+            style={{
+              position: "absolute",
+              top: -4,
+              right: -6,
+              width: 14,
+              height: 14,
+              borderRadius: "50%",
+              background: data.accent,
+              color: "#fff",
+              fontSize: 8,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {data.count}
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 11, color: "#111" }}>{data.title}</div>
+          <div style={{ fontWeight: 500, fontSize: 9, color: "rgba(17,17,17,0.55)", marginTop: 1 }}>{data.subtitle}</div>
+        </div>
+        <div
+          style={{
+            color: data.isExpanded ? data.accent : "#aaa",
+            fontSize: 11,
+            fontWeight: 700,
+            transition: "transform 0.2s ease",
+            transform: data.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+          }}
+        >
+          &#x203A;
+        </div>
+      </div>
+      <Handle type="source" position={Position.Right} style={{ background: "transparent", border: "none" }} />
+    </div>
+  );
+}
+
+function ItemNode({ data }: { data: { name: string; value: string; status?: string; imageSrc: string } }) {
+  const statusColor = data.status === "Valued" ? "#1a8f4a" : data.status === "Stale" ? "#d4a017" : "#d44";
+  const statusIcon = data.status === "Valued" ? "✓" : data.status === "Stale" ? "⏱" : "⊘";
+  const truncatedName = data.name.length > 22 ? data.name.slice(0, 20) + "…" : data.name;
+
+  return (
+    <div style={{ fontFamily: FONT_FAMILY, display: "flex", alignItems: "center", gap: 8 }}>
+      <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
+      <div
+        style={{
+          width: 44,
+          height: 52,
+          borderRadius: 8,
+          overflow: "hidden",
+          flexShrink: 0,
+          boxShadow: "0 3px 8px rgba(30,28,24,0.18)",
+        }}
+      >
+        <img src={data.imageSrc} alt={data.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </div>
+      <div>
+        <div style={{ fontWeight: 800, fontSize: 11, color: "#111" }}>{truncatedName}</div>
+        <div style={{ fontWeight: 500, fontSize: 9, color: "#777", marginTop: 2 }}>{data.value}</div>
+        {data.status && (
+          <div style={{ fontWeight: 600, fontSize: 9, color: statusColor, marginTop: 2 }}>
+            {statusIcon} {data.status}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// --- Node type registry ---
+
+const nodeTypes: NodeTypes = {
+  clientNode: ClientNode,
+  sectionNode: SectionNode,
+  typeGroupNode: TypeGroupNode,
+  itemNode: ItemNode,
 };
 
-function buildNodes(data: GraphResponse, expandedSection: string | null, expandedTypeGroup: string | null): WealthMapPoint[] {
-  const nodes: WealthMapPoint[] = [];
+// --- Layout builder ---
+
+const X_CLIENT = 0;
+const X_SECTION = 300;
+const X_TYPEGROUP = 580;
+const X_ITEM = 850;
+const SECTION_Y_SPACING = 100;
+const TYPEGROUP_Y_SPACING = 80;
+const ITEM_Y_SPACING = 72;
+
+function buildFlowElements(
+  data: GraphResponse,
+  expandedSection: string | null,
+  expandedTypeGroup: string | null,
+  onSectionClick: (sectionKey: string) => void,
+  onTypeGroupClick: (typeGroupKey: string) => void,
+): { nodes: Node[]; edges: Edge[] } {
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+
+  // Client node
+  const sectionKeys = Object.keys(data.sections) as (keyof typeof data.sections)[];
+  const totalSectionHeight = (sectionKeys.length - 1) * SECTION_Y_SPACING;
+  const clientY = totalSectionHeight / 2;
 
   nodes.push({
     id: "client",
-    x: 8,
-    y: 50,
-    r: 18,
-    kind: "client",
-    title: data.client.name,
-    subtitle: `Adjusted value: ${formatValue(data.client.adjustedValue, data.client.currency)}`,
-    color: "#211507",
-    accent: "#b7771e",
-    value: data.client.adjustedValue,
-    imageSrc: "/wealth-map/uhnw-client.png",
+    type: "clientNode",
+    position: { x: X_CLIENT, y: clientY - 96 },
+    data: {
+      name: data.client.name,
+      value: formatValue(data.client.adjustedValue, data.client.currency),
+      imageSrc: "/wealth-map/uhnw-client.png",
+    },
+    draggable: false,
   });
 
-  const sectionKeys = Object.keys(data.sections) as (keyof typeof data.sections)[];
-  const sectionCount = sectionKeys.length;
-  const yStart = 30;
-  const ySpacing = 40 / Math.max(sectionCount - 1, 1);
-
+  // Section nodes
   sectionKeys.forEach((key, i) => {
     const meta = SECTION_META[key];
     const section = data.sections[key];
-    const sectionValue = "adjustedValue" in section ? section.adjustedValue : 0;
+    const sectionValue = "adjustedValue" in section ? (section as { adjustedValue: number }).adjustedValue : 0;
     const isExpanded = expandedSection === key;
+    const sectionY = i * SECTION_Y_SPACING;
 
     nodes.push({
-      id: key,
-      x: 35,
-      y: yStart + i * ySpacing,
-      r: 8,
-      kind: "section",
-      title: SECTION_LABELS[key],
-      subtitle: sectionValue ? formatValue(sectionValue, data.client.currency) : undefined,
-      color: isExpanded ? "#fdf6ee" : "#ffffff",
-      accent: meta.accent,
-      tone: meta.tone,
-      badge: meta.badge,
-      section: key,
-      value: sectionValue,
-      imageSrc: SECTION_IMAGES[key],
+      id: `section-${key}`,
+      type: "sectionNode",
+      position: { x: X_SECTION, y: sectionY },
+      data: {
+        title: SECTION_LABELS[key],
+        subtitle: sectionValue ? formatValue(sectionValue, data.client.currency) : "",
+        imageSrc: SECTION_IMAGES[key],
+        badge: meta.badge,
+        isExpanded,
+        onClick: () => onSectionClick(key),
+      },
+      draggable: false,
+    });
+
+    edges.push({
+      id: `edge-client-${key}`,
+      source: "client",
+      target: `section-${key}`,
+      type: "default",
+      style: {
+        stroke: isExpanded ? "#ad6a22" : "rgba(180,160,120,0.35)",
+        strokeWidth: isExpanded ? 1.8 : 1.2,
+      },
+      animated: false,
     });
   });
 
+  // Type group nodes (when a section is expanded)
   if (expandedSection) {
     const section = data.sections[expandedSection as keyof typeof data.sections];
-    let items: { id: string; name: string; value: number; status?: string; type: string; imageSrc?: string }[] = [];
+    let items: { id: string; name: string; value: number; status?: string; type: string; imageSrc: string }[] = [];
 
     if (expandedSection === "financials") {
       items = (section as GraphFinancials).items.map((item) => ({
@@ -312,7 +558,12 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
         value: item.adjustedValue,
         status: item.status,
         type: item.type,
-        imageSrc: item.type === "account" ? "/wealth-map/bank-account.png" : item.type === "liability" ? "/wealth-map/liabilities.png" : getAssetImage((item as GraphAssetItem).assetType ?? "", item.name),
+        imageSrc:
+          item.type === "account"
+            ? "/wealth-map/bank-account.png"
+            : item.type === "liability"
+              ? "/wealth-map/liabilities.png"
+              : getAssetImage((item as GraphAssetItem).assetType ?? "", item.name),
       }));
     } else if (expandedSection === "family") {
       items = (section as GraphFamily).members.map((m) => ({
@@ -341,6 +592,7 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
       }));
     }
 
+    // Group by type
     const grouped = new Map<string, typeof items>();
     for (const item of items) {
       const key = item.type;
@@ -349,132 +601,176 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
     }
 
     const typeKeys = Array.from(grouped.keys());
-    const typeCount = typeKeys.length;
-    const typeYSpacing = 22;
-    const typeTotalSpan = (typeCount - 1) * typeYSpacing;
-    const typeStartY = 50 - typeTotalSpan / 2;
-    const meta = SECTION_META[expandedSection];
+    const totalTypeHeight = (typeKeys.length - 1) * TYPEGROUP_Y_SPACING;
+    const typeStartY = clientY - totalTypeHeight / 2;
 
     typeKeys.forEach((typeKey, ti) => {
       const groupItems = grouped.get(typeKey)!;
       const groupValue = groupItems.reduce((sum, item) => sum + item.value, 0);
-      const isTypeExpanded = expandedTypeGroup === `${expandedSection}:${typeKey}`;
+      const fullTypeGroupKey = `${expandedSection}:${typeKey}`;
+      const isTypeExpanded = expandedTypeGroup === fullTypeGroupKey;
+      const typeGroupY = typeStartY + ti * TYPEGROUP_Y_SPACING;
 
       nodes.push({
-        id: `type:${expandedSection}:${typeKey}`,
-        x: 64,
-        y: typeStartY + ti * typeYSpacing,
-        r: 6,
-        kind: "typeGroup",
-        title: TYPE_GROUP_LABELS[typeKey] ?? typeKey.charAt(0).toUpperCase() + typeKey.slice(1),
-        subtitle: groupValue ? formatValue(groupValue, data.client.currency) : undefined,
-        color: isTypeExpanded ? "#fdf6ee" : "#ffffff",
-        accent: meta.accent,
-        tone: meta.tone,
-        section: expandedSection,
-        badge: `${groupItems.length}`,
-        value: groupValue,
-        imageSrc: TYPE_GROUP_IMAGES[typeKey] ?? "/wealth-map/holdings.png",
+        id: `typegroup-${fullTypeGroupKey}`,
+        type: "typeGroupNode",
+        position: { x: X_TYPEGROUP, y: typeGroupY },
+        data: {
+          title: TYPE_GROUP_LABELS[typeKey] ?? typeKey.charAt(0).toUpperCase() + typeKey.slice(1),
+          subtitle: groupValue ? formatValue(groupValue, data.client.currency) : "",
+          imageSrc: TYPE_GROUP_IMAGES[typeKey] ?? "/wealth-map/holdings.png",
+          count: groupItems.length,
+          isExpanded: isTypeExpanded,
+          accent: "#8b6b3a",
+          onClick: () => onTypeGroupClick(fullTypeGroupKey),
+        },
+        draggable: false,
       });
 
-      if (isTypeExpanded) {
-        const itemCount = groupItems.length;
-        const isLargeList = itemCount > 8;
-        const spacing = isLargeList ? 8 : 14;
-        const neededSpan = itemCount > 1 ? (itemCount - 1) * spacing : 0;
-        const maxSpan = isLargeList ? 94 : 70;
-        const totalSpan = Math.min(neededSpan, maxSpan);
-        const centerY = 50;
-        const startY = isLargeList ? 3 : centerY - totalSpan / 2;
-        const itemSpacing = itemCount > 1 ? totalSpan / (itemCount - 1) : 0;
+      edges.push({
+        id: `edge-section-${fullTypeGroupKey}`,
+        source: `section-${expandedSection}`,
+        target: `typegroup-${fullTypeGroupKey}`,
+        type: "default",
+        style: {
+          stroke: "#b88555",
+          strokeWidth: 1.4,
+        },
+        animated: false,
+      });
 
-        groupItems.forEach((item, i) => {
-          const itemY = itemCount === 1 ? 50 : startY + i * itemSpacing;
-          const arc = isLargeList ? 0 : Math.sin((itemCount > 1 ? i / (itemCount - 1) : 0.5) * Math.PI) * 10;
-          const itemX = isLargeList ? 86 : 84 + arc;
+      // Item nodes (when type group is expanded)
+      if (isTypeExpanded) {
+        const totalItemHeight = (groupItems.length - 1) * ITEM_Y_SPACING;
+        const itemStartY = typeGroupY + 23 - totalItemHeight / 2;
+
+        groupItems.forEach((item, ii) => {
+          const itemY = itemStartY + ii * ITEM_Y_SPACING;
+          const statusLabel =
+            item.status === "valued" ? "Valued" : item.status === "stale" ? "Stale" : item.status === "not_on_record" ? "Not on record" : undefined;
+
           nodes.push({
-            id: `item:${item.id}`,
-            x: itemX,
-            y: itemY,
-            r: 5,
-            kind: "item",
-            title: item.name,
-            subtitle: item.value ? formatValue(item.value, data.client.currency) : undefined,
-            status: item.status === "valued" ? "Valued" : item.status === "stale" ? "Stale" : item.status === "not_on_record" ? "Not on record" : undefined,
-            color: meta.accent,
-            accent: meta.accent,
-            tone: meta.tone,
-            section: expandedSection,
-            value: item.value,
-            imageSrc: item.imageSrc,
+            id: `item-${item.id}`,
+            type: "itemNode",
+            position: { x: X_ITEM, y: itemY },
+            data: {
+              name: item.name,
+              value: item.value ? formatValue(item.value, data.client.currency) : "",
+              status: statusLabel,
+              imageSrc: item.imageSrc,
+            },
+            draggable: false,
+          });
+
+          edges.push({
+            id: `edge-typegroup-item-${item.id}`,
+            source: `typegroup-${fullTypeGroupKey}`,
+            target: `item-${item.id}`,
+            type: "default",
+            style: {
+              stroke: "#b88555",
+              strokeWidth: 1,
+            },
+            animated: false,
           });
         });
       }
     });
   }
 
-  return nodes;
+  return { nodes, edges };
 }
 
-let _hitZones: HitZone[] = [];
-let _expandedSection: string | null = null;
-let _expandedTypeGroup: string | null = null;
-let _hoveredItem: string | null = null;
-let _animProgress = 1;
-let _animSectionX = 50;
-let _animSectionY = 50;
-let _animSource: "section" | "typeGroup" = "section";
+// --- Inner Flow Component (needs ReactFlowProvider above it) ---
+
+function WealthMapFlow({
+  graphData,
+  className,
+}: {
+  graphData: GraphResponse;
+  className: string;
+}) {
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [expandedTypeGroup, setExpandedTypeGroup] = useState<string | null>(null);
+  const { fitView } = useReactFlow();
+
+  const onSectionClick = useCallback(
+    (sectionKey: string) => {
+      setExpandedSection((prev) => {
+        if (prev === sectionKey) return null;
+        setExpandedTypeGroup(null);
+        return sectionKey;
+      });
+    },
+    [],
+  );
+
+  const onTypeGroupClick = useCallback(
+    (typeGroupKey: string) => {
+      setExpandedTypeGroup((prev) => (prev === typeGroupKey ? null : typeGroupKey));
+    },
+    [],
+  );
+
+  const { nodes: flowNodes, edges: flowEdges } = useMemo(
+    () => buildFlowElements(graphData, expandedSection, expandedTypeGroup, onSectionClick, onTypeGroupClick),
+    [graphData, expandedSection, expandedTypeGroup, onSectionClick, onTypeGroupClick],
+  );
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(flowEdges);
+
+  useEffect(() => {
+    setNodes(flowNodes);
+    setEdges(flowEdges);
+  }, [flowNodes, flowEdges, setNodes, setEdges]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fitView({ padding: 0.2, duration: 300 });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [expandedSection, expandedTypeGroup, fitView]);
+
+  return (
+    <div className={`h-full w-full ${className}`} style={{ fontFamily: FONT_FAMILY }}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        nodeTypes={nodeTypes}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
+        nodesConnectable={false}
+        panOnDrag
+        zoomOnScroll
+        zoomOnPinch
+        minZoom={0.3}
+        maxZoom={2}
+        proOptions={{ hideAttribution: true }}
+      >
+        <Background color="rgba(74, 65, 56, 0.24)" gap={46} size={2.7} variant={"dots" as any} />
+        <Controls
+          showInteractive={false}
+          style={{
+            bottom: 16,
+            left: 16,
+            borderRadius: 8,
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          }}
+        />
+      </ReactFlow>
+    </div>
+  );
+}
+
+// --- Main Export ---
 
 export function SourceWealthChart({ clientId, className = "" }: { clientId: number | null; className?: string }) {
   const [graphData, setGraphData] = useState<GraphResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const [expandedTypeGroup, setExpandedTypeGroup] = useState<string | null>(null);
-  const chartRef = useRef<ChartJS<"bubble", WealthMapPoint[]> | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-
-  _expandedSection = expandedSection;
-  _expandedTypeGroup = expandedTypeGroup;
-  _hoveredItem = hoveredItem;
-
-  const animRef = useRef<number | null>(null);
-  const prevExpandedRef = useRef<string | null>(null);
-  const prevTypeGroupRef = useRef<string | null>(null);
-
-  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    const canvas = event.currentTarget.querySelector("canvas");
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mx = event.clientX - rect.left;
-    const my = event.clientY - rect.top;
-
-    let found: string | null = null;
-    for (const zone of _hitZones) {
-      if (zone.id.startsWith("item:") && mx >= zone.left && mx <= zone.right && my >= zone.top && my <= zone.bottom) {
-        found = zone.id;
-        break;
-      }
-    }
-    setHoveredItem((prev) => prev !== found ? found : prev);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setHoveredItem(null);
-  }, []);
-
-  useEffect(() => {
-    if (chartRef.current) {
-      _chartInstance = chartRef.current;
-      chartRef.current.draw();
-    }
-  }, [hoveredItem]);
-
-  useEffect(() => {
-    if (chartRef.current) _chartInstance = chartRef.current;
-  });
 
   useEffect(() => {
     if (!clientId) return;
@@ -494,693 +790,46 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
     }
 
     void fetchGraph();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [clientId]);
 
-  const handleClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    const canvas = event.currentTarget.querySelector("canvas");
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
-
-    for (const zone of _hitZones) {
-      if (clickX >= zone.left && clickX <= zone.right && clickY >= zone.top && clickY <= zone.bottom) {
-        if (zone.id === "client" || zone.id.startsWith("item:")) break;
-        if (zone.id.startsWith("type:")) {
-          setExpandedTypeGroup((prev) => prev === zone.id.slice(5) ? null : zone.id.slice(5));
-          break;
-        }
-        setExpandedSection((prev) => {
-          if (prev === zone.id) return null;
-          setExpandedTypeGroup(null);
-          return zone.id;
-        });
-        break;
-      }
-    }
-  }, []);
-
-  const nodes = useMemo(() => {
-    if (!graphData) return [];
-    return buildNodes(graphData, expandedSection, expandedTypeGroup);
-  }, [graphData, expandedSection, expandedTypeGroup]);
-
-  useEffect(() => {
-    for (const node of nodes) {
-      if (node.imageSrc) getImage(node.imageSrc);
-    }
-  }, [nodes]);
-
-  useEffect(() => {
-    if (expandedSection && expandedSection !== prevExpandedRef.current) {
-      const sectionNode = nodes.find((n) => n.kind === "section" && n.id === expandedSection);
-      if (sectionNode) {
-        _animSectionX = sectionNode.x;
-        _animSectionY = sectionNode.y;
-      }
-      _animSource = "section";
-      _animProgress = 0;
-      const startTime = performance.now();
-      const duration = 350;
-
-      const animate = (now: number) => {
-        const elapsed = now - startTime;
-        _animProgress = Math.min(elapsed / duration, 1);
-        _animProgress = 1 - Math.pow(1 - _animProgress, 3);
-        if (chartRef.current) chartRef.current.draw();
-        if (elapsed < duration) {
-          animRef.current = requestAnimationFrame(animate);
-        }
-      };
-      if (animRef.current) cancelAnimationFrame(animRef.current);
-      animRef.current = requestAnimationFrame(animate);
-    } else if (!expandedSection) {
-      _animProgress = 1;
-    }
-    prevExpandedRef.current = expandedSection;
-  }, [expandedSection, nodes]);
-
-  useEffect(() => {
-    if (expandedTypeGroup && expandedTypeGroup !== prevTypeGroupRef.current) {
-      const tgNode = nodes.find((n) => n.kind === "typeGroup" && n.id === `type:${expandedTypeGroup}`);
-      if (tgNode) {
-        _animSectionX = tgNode.x;
-        _animSectionY = tgNode.y;
-      }
-      _animSource = "typeGroup";
-      _animProgress = 0;
-      const startTime = performance.now();
-      const duration = 350;
-
-      const animate = (now: number) => {
-        const elapsed = now - startTime;
-        _animProgress = Math.min(elapsed / duration, 1);
-        _animProgress = 1 - Math.pow(1 - _animProgress, 3);
-        if (chartRef.current) chartRef.current.draw();
-        if (elapsed < duration) {
-          animRef.current = requestAnimationFrame(animate);
-        }
-      };
-      if (animRef.current) cancelAnimationFrame(animRef.current);
-      animRef.current = requestAnimationFrame(animate);
-    } else if (!expandedTypeGroup) {
-      _animProgress = 1;
-    }
-    prevTypeGroupRef.current = expandedTypeGroup;
-  }, [expandedTypeGroup, nodes]);
-
-  useEffect(() => {
-    let el = containerRef.current?.parentElement;
-    while (el && el.scrollHeight <= el.clientHeight) {
-      el = el.parentElement;
-    }
-    if (!el) return;
-    const itemCount = nodes.filter((n) => n.kind === "item").length;
-    if (itemCount > 8) {
-      requestAnimationFrame(() => {
-        const scrollMax = el!.scrollHeight - el!.clientHeight;
-        el!.scrollTo({ top: scrollMax / 2, behavior: "smooth" });
-      });
-    }
-  }, [expandedSection, nodes]);
-
-  const data = useMemo<ChartData<"bubble", WealthMapPoint[]>>(
-    () => ({
-      datasets: [
-        {
-          label: "Wealth map",
-          data: nodes,
-          backgroundColor: nodes.map(() => "rgba(0,0,0,0)"),
-          borderColor: nodes.map(() => "rgba(0,0,0,0)"),
-          borderWidth: 0,
-        },
-      ],
-    }),
-    [nodes],
-  );
-
-  const options = useMemo<ChartOptions<"bubble">>(
-    () => ({
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
-      layout: { padding: { top: 24, right: 140, bottom: 22, left: 18 } },
-      scales: {
-        x: { type: "linear", min: 0, max: 100, display: false },
-        y: { type: "linear", min: 0, max: 100, reverse: true, display: false },
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: false },
-        datalabels: { display: false },
-      },
-    }),
-    [],
-  );
-
-  const plugin = useMemo<Plugin<"bubble">>(() => createWealthMapPlugin(), []);
-
   if (!clientId) {
-    return <div className="grid h-full place-items-center font-satoshi text-[14px] text-black/50">No client selected</div>;
+    return (
+      <div className="grid h-full place-items-center text-[14px] text-black/50" style={{ fontFamily: FONT_FAMILY }}>
+        No client selected
+      </div>
+    );
   }
 
   if (loading) {
-    return <div className="grid h-full place-items-center font-satoshi text-[14px] text-black/50">Loading wealth map...</div>;
+    return (
+      <div className="grid h-full place-items-center text-[14px] text-black/50" style={{ fontFamily: FONT_FAMILY }}>
+        Loading wealth map...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="grid h-full place-items-center font-satoshi text-[14px] text-red-500">{error}</div>;
+    return (
+      <div className="grid h-full place-items-center text-[14px] text-red-500" style={{ fontFamily: FONT_FAMILY }}>
+        {error}
+      </div>
+    );
   }
 
   if (!graphData) {
-    return <div className="grid h-full place-items-center font-satoshi text-[14px] text-black/50">No data available</div>;
+    return (
+      <div className="grid h-full place-items-center text-[14px] text-black/50" style={{ fontFamily: FONT_FAMILY }}>
+        No data available
+      </div>
+    );
   }
-
-  const expandedItemCount = nodes.filter((n) => n.kind === "item").length;
-  const dynamicHeight = expandedItemCount > 8 ? Math.max(620, expandedItemCount * 70) : 620;
 
   return (
-    <div ref={containerRef} className={`relative h-full w-full cursor-pointer overflow-auto ${className}`} onClick={handleClick} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} style={{ minHeight: `${dynamicHeight}px` }}>
-      <Chart ref={chartRef} type="bubble" data={data} options={options} plugins={[plugin]} />
-    </div>
+    <ReactFlowProvider>
+      <WealthMapFlow graphData={graphData} className={className} />
+    </ReactFlowProvider>
   );
-}
-
-// --- Rendering Plugin ---
-
-function createWealthMapPlugin(): Plugin<"bubble"> {
-  return {
-    id: "radialWealthMap",
-    beforeDatasetsDraw(chart) {
-      const { ctx, chartArea } = chart;
-      if (!chartArea) return;
-
-      ctx.save();
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(chartArea.left, chartArea.top, chartArea.width, chartArea.height);
-      drawGrid(ctx, chartArea);
-
-      const { scales } = chart;
-      const px = (x: number) => scales.x.getPixelForValue(x);
-      const py = (y: number) => scales.y.getPixelForValue(y);
-
-      drawAmbient(ctx, px(40), py(45), "#caffdc", 170);
-      drawAmbient(ctx, px(55), py(50), "#dacdff", 155);
-      drawAmbient(ctx, px(70), py(55), "#ffd0b8", 145);
-
-      const nodes = chart.data.datasets[0]?.data as WealthMapPoint[] | undefined;
-      if (nodes) {
-        drawConnections(ctx, px, py, nodes);
-      }
-
-      ctx.restore();
-    },
-    afterDatasetsDraw(chart) {
-      const { ctx, scales } = chart;
-      const px = (x: number) => scales.x.getPixelForValue(x);
-      const py = (y: number) => scales.y.getPixelForValue(y);
-
-      const nodes = chart.data.datasets[0]?.data as WealthMapPoint[] | undefined;
-      if (!nodes || nodes.length === 0) return;
-
-      ctx.save();
-      const zones: HitZone[] = [];
-
-      const originX = px(_animSectionX);
-      const originY = py(_animSectionY);
-
-      for (const node of nodes) {
-        let nodeX = px(node.x);
-        let nodeY = py(node.y);
-
-        if (node.kind === "client") {
-          drawClientCard(ctx, nodeX, nodeY, node);
-          zones.push({ id: node.id, left: nodeX - 78, top: nodeY - 96, right: nodeX + 78, bottom: nodeY + 96 });
-        } else if (node.kind === "section") {
-          const isExpanded = _expandedSection === node.id;
-          drawSectionCard(ctx, nodeX, nodeY, node, isExpanded);
-          zones.push({ id: node.id, left: nodeX - 26, top: nodeY - 22, right: nodeX + 114, bottom: nodeY + 22 });
-        } else if (node.kind === "typeGroup") {
-          if (_animProgress < 1 && _animSource === "section") {
-            const t = _animProgress;
-            nodeX = originX + (nodeX - originX) * t;
-            nodeY = originY + (nodeY - originY) * t;
-            ctx.globalAlpha = t;
-          }
-          const isTypeExpanded = node.color === "#fdf6ee";
-          drawTypeGroupCard(ctx, nodeX, nodeY, node, isTypeExpanded);
-          ctx.globalAlpha = 1;
-          zones.push({ id: node.id, left: nodeX - 22, top: nodeY - 20, right: nodeX + 110, bottom: nodeY + 20 });
-        } else if (node.kind === "item") {
-          if (_animProgress < 1 && _animSource === "typeGroup") {
-            const t = _animProgress;
-            nodeX = originX + (nodeX - originX) * t;
-            nodeY = originY + (nodeY - originY) * t;
-            ctx.globalAlpha = t;
-          }
-          drawItemTile(ctx, nodeX, nodeY, node);
-          ctx.globalAlpha = 1;
-          zones.push({ id: node.id, left: nodeX - 22, top: nodeY - 26, right: nodeX + 120, bottom: nodeY + 26 });
-        }
-      }
-
-      if (_hoveredItem) {
-        const hoveredNode = nodes.find((n) => n.id === _hoveredItem);
-        if (hoveredNode) {
-          drawItemTooltip(ctx, px(hoveredNode.x), py(hoveredNode.y), hoveredNode);
-        }
-      }
-
-      ctx.restore();
-      _hitZones = zones;
-    },
-  };
-}
-
-function drawConnections(
-  ctx: CanvasRenderingContext2D,
-  px: (v: number) => number,
-  py: (v: number) => number,
-  nodes: WealthMapPoint[],
-) {
-  const clientNode = nodes.find((n) => n.kind === "client");
-  const sections = nodes.filter((n) => n.kind === "section");
-  const typeGroups = nodes.filter((n) => n.kind === "typeGroup");
-  const items = nodes.filter((n) => n.kind === "item");
-
-  if (!clientNode) return;
-
-  const clientX = px(clientNode.x);
-  const clientY = py(clientNode.y);
-  const greenDotX = clientX + 78;
-
-  sections.forEach((section) => {
-    const sectionLeft = px(section.x) - 26;
-    const sectionY = py(section.y);
-    const isExpanded = _expandedSection === section.id;
-    const color = isExpanded ? "#ad6a22" : `rgba(180,160,120,0.35)`;
-    const width = isExpanded ? 1.4 : 1;
-    drawCurve(ctx, greenDotX, clientY, sectionLeft, sectionY, color, width);
-  });
-
-  if (typeGroups.length > 0) {
-    const expandedSection = sections.find((s) => _expandedSection === s.id);
-    if (expandedSection) {
-      const sectionRight = px(expandedSection.x) - 26 + 140;
-      const sectionY = py(expandedSection.y);
-      const t = _animProgress;
-      ctx.globalAlpha = t * 0.82;
-      typeGroups.forEach((tg) => {
-        const targetX = px(tg.x) - 22;
-        const targetY = py(tg.y);
-        const endX = sectionRight + (targetX - sectionRight) * t;
-        const endY = sectionY + (targetY - sectionY) * t;
-        drawCurve(ctx, sectionRight, sectionY, endX, endY, "#b88555", 1.2);
-      });
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  if (items.length > 0) {
-    const expandedTG = typeGroups.find((tg) => tg.color === "#fdf6ee");
-    if (expandedTG) {
-      const tgRight = px(expandedTG.x) - 22 + 132;
-      const tgY = py(expandedTG.y);
-      const t = _animProgress;
-      ctx.globalAlpha = t * 0.82;
-      items.forEach((item) => {
-        const targetX = px(item.x) - 20;
-        const targetY = py(item.y);
-        const endX = tgRight + (targetX - tgRight) * t;
-        const endY = tgY + (targetY - tgY) * t;
-        drawCurve(ctx, tgRight, tgY, endX, endY, "#b88555", 1);
-      });
-      ctx.globalAlpha = 1;
-    }
-  }
-}
-
-function drawGrid(ctx: CanvasRenderingContext2D, area: ChartArea) {
-  ctx.fillStyle = "rgba(74, 65, 56, 0.24)";
-  for (let x = area.left; x <= area.right; x += 46) {
-    for (let y = area.top; y <= area.bottom; y += 46) {
-      ctx.beginPath();
-      ctx.arc(x, y, 1.35, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-}
-
-function drawAmbient(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, radius: number) {
-  const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-  gradient.addColorStop(0, color);
-  gradient.addColorStop(1, "rgba(255,255,255,0)");
-  ctx.globalAlpha = 0.32;
-  ctx.fillStyle = gradient;
-  ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-}
-
-function drawCurve(
-  ctx: CanvasRenderingContext2D,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-  color: string,
-  width: number,
-) {
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.globalAlpha = 0.82;
-  const midX = x1 + (x2 - x1) * 0.55;
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.bezierCurveTo(midX, y1, midX, y2, x2, y2);
-  ctx.stroke();
-  ctx.restore();
-}
-
-function drawClientCard(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint) {
-  const width = 155;
-  const height = 192;
-  const left = x - width / 2;
-  const top = y - height / 2;
-
-  drawBadge(ctx, left, top - 16, 32, "CLIENT", "#050505", "#fff", 5.5, 13, 4);
-  ctx.shadowColor = "rgba(65, 44, 18, 0.24)";
-  ctx.shadowBlur = 14;
-  ctx.shadowOffsetY = 7;
-  ctx.fillStyle = "#1b1207";
-  roundRect(ctx, left, top, width, height, 11);
-  ctx.fill();
-  ctx.strokeStyle = "#9b5c09";
-  ctx.lineWidth = 1.8;
-  ctx.stroke();
-  ctx.shadowColor = "transparent";
-
-  drawPortraitPhoto(ctx, left + 8, top + 8, width - 16, 72, node.imageSrc);
-
-  const overlay = ctx.createLinearGradient(left, top + 60, left, top + height);
-  overlay.addColorStop(0, "rgba(22, 13, 3, 0)");
-  overlay.addColorStop(0.34, "rgba(22, 13, 3, 0.84)");
-  overlay.addColorStop(1, "rgba(16, 10, 2, 0.98)");
-  ctx.fillStyle = overlay;
-  roundRect(ctx, left + 8, top + 48, width - 16, height - 58, 7);
-  ctx.fill();
-
-  ctx.fillStyle = "#fff";
-  ctx.font = "800 10px Satoshi, Arial";
-  ctx.fillText(node.title, left + 10, top + 98);
-  ctx.fillStyle = "#f3d585";
-  ctx.font = "500 6px Satoshi, Arial";
-  ctx.fillText(node.subtitle ?? "", left + 10, top + 108);
-
-  ctx.fillStyle = "#4caf15";
-  ctx.shadowColor = "rgba(76, 175, 21, 0.42)";
-  ctx.shadowBlur = 6;
-  ctx.beginPath();
-  ctx.arc(left + width - 8, top + height - 12, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-}
-
-function drawSectionCard(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint, isExpanded: boolean) {
-  const width = 140;
-  const height = 44;
-  const left = x - 26;
-  const top = y - height / 2;
-
-  if (node.badge) drawBadge(ctx, left, top - 15, 60, node.badge, isExpanded ? "#7a6840" : "#aeb9b6", "#fff", 5.5, 12, 4);
-
-  ctx.shadowColor = "rgba(30, 28, 24, 0.12)";
-  ctx.shadowBlur = isExpanded ? 12 : 8;
-  ctx.shadowOffsetY = 4;
-  ctx.fillStyle = isExpanded ? "#fdf6ee" : "#ffffff";
-  roundRect(ctx, left, top, width, height, 9);
-  ctx.fill();
-  ctx.strokeStyle = isExpanded ? "#8b6b3a" : "rgba(0,0,0,0.1)";
-  ctx.lineWidth = isExpanded ? 1.6 : 1;
-  ctx.stroke();
-  ctx.shadowColor = "transparent";
-
-  drawPhoto(ctx, left + 9, top + 8, 28, 28, node.accent ?? "#5f8f4e", true, node.imageSrc);
-
-  ctx.fillStyle = "#111";
-  ctx.font = "800 10px Satoshi, Arial";
-  ctx.fillText(node.title, left + 43, top + 22);
-  ctx.fillStyle = "rgba(17, 17, 17, 0.62)";
-  ctx.font = "500 6px Satoshi, Arial";
-  ctx.fillText(node.subtitle ?? "", left + 43, top + 32);
-
-  const arrowX = left + width - 16;
-  const arrowY = top + height / 2;
-  ctx.strokeStyle = isExpanded ? "#8b6b3a" : "#999";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  if (isExpanded) {
-    ctx.moveTo(arrowX - 3, arrowY + 2);
-    ctx.lineTo(arrowX, arrowY - 2);
-    ctx.lineTo(arrowX + 3, arrowY + 2);
-  } else {
-    ctx.moveTo(arrowX - 2, arrowY - 3);
-    ctx.lineTo(arrowX + 2, arrowY);
-    ctx.lineTo(arrowX - 2, arrowY + 3);
-  }
-  ctx.stroke();
-}
-
-function drawTypeGroupCard(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint, isExpanded: boolean) {
-  const width = 130;
-  const height = 38;
-  const left = x - 22;
-  const top = y - height / 2;
-
-  ctx.shadowColor = "rgba(30, 28, 24, 0.10)";
-  ctx.shadowBlur = isExpanded ? 10 : 6;
-  ctx.shadowOffsetY = 3;
-  ctx.fillStyle = isExpanded ? "#fdf6ee" : "#ffffff";
-  roundRect(ctx, left, top, width, height, 8);
-  ctx.fill();
-  ctx.strokeStyle = isExpanded ? (node.accent ?? "#8b6b3a") : "rgba(0,0,0,0.08)";
-  ctx.lineWidth = isExpanded ? 1.4 : 0.8;
-  ctx.stroke();
-  ctx.shadowColor = "transparent";
-
-  const circleX = left + 15;
-  const circleY = top + height / 2;
-  drawPhoto(ctx, circleX - 10, circleY - 10, 20, 20, node.accent ?? "#8b6b3a", true, node.imageSrc);
-
-  const badgeX = circleX + 7;
-  const badgeY = circleY - 8;
-  ctx.fillStyle = node.accent ?? "#8b6b3a";
-  ctx.beginPath();
-  ctx.arc(badgeX, badgeY, 5.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#fff";
-  ctx.font = "700 5.5px Satoshi, Arial";
-  ctx.textAlign = "center";
-  ctx.fillText(node.badge ?? "", badgeX, badgeY + 2);
-  ctx.textAlign = "left";
-
-  ctx.fillStyle = "#111";
-  ctx.font = "700 9px Satoshi, Arial";
-  ctx.fillText(node.title, left + 30, top + 17);
-  ctx.fillStyle = "rgba(17, 17, 17, 0.55)";
-  ctx.font = "500 7px Satoshi, Arial";
-  ctx.fillText(node.subtitle ?? "", left + 30, top + 28);
-
-  const arrowX = left + width - 14;
-  const arrowY = top + height / 2;
-  ctx.strokeStyle = isExpanded ? (node.accent ?? "#8b6b3a") : "#aaa";
-  ctx.lineWidth = 1.3;
-  ctx.beginPath();
-  if (isExpanded) {
-    ctx.moveTo(arrowX - 3, arrowY + 2);
-    ctx.lineTo(arrowX, arrowY - 2);
-    ctx.lineTo(arrowX + 3, arrowY + 2);
-  } else {
-    ctx.moveTo(arrowX - 2, arrowY - 3);
-    ctx.lineTo(arrowX + 2, arrowY);
-    ctx.lineTo(arrowX - 2, arrowY + 3);
-  }
-  ctx.stroke();
-}
-
-function drawItemTile(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint) {
-  const tileW = 44;
-  const tileH = 52;
-  const left = x - tileW / 2;
-  const top = y - tileH / 2;
-
-  ctx.shadowColor = "rgba(30, 28, 24, 0.18)";
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetY = 3;
-  drawPhoto(ctx, left, top, tileW, tileH, node.color, false, node.imageSrc);
-  ctx.shadowColor = "transparent";
-
-  const textX = left + tileW + 6;
-  const textY = y - 6;
-
-  ctx.fillStyle = "#111";
-  ctx.font = "800 9px Satoshi, Arial";
-  const maxTitleWidth = 100;
-  const title = node.title.length > 22 ? node.title.slice(0, 20) + "…" : node.title;
-  ctx.fillText(title, textX, textY);
-  ctx.fillStyle = "#777";
-  ctx.font = "500 7px Satoshi, Arial";
-  ctx.fillText(node.subtitle ?? "", textX, textY + 11);
-
-  if (node.status) {
-    const isGood = node.status === "Valued";
-    ctx.fillStyle = isGood ? "#1a8f4a" : node.status === "Stale" ? "#d4a017" : "#d44";
-    ctx.font = "600 7px Satoshi, Arial";
-    const icon = isGood ? "✓ " : node.status === "Stale" ? "⏱ " : "⊘ ";
-    ctx.fillText(icon + node.status, textX, textY + 22);
-  }
-}
-
-function drawItemTooltip(ctx: CanvasRenderingContext2D, x: number, y: number, node: WealthMapPoint) {
-  const padding = 10;
-  const lineHeight = 14;
-  const lines: string[] = [node.title];
-  if (node.subtitle) lines.push(node.subtitle);
-  if (node.status) lines.push(node.status);
-
-  ctx.font = "600 10px Satoshi, Arial";
-  const maxWidth = Math.max(...lines.map((l) => ctx.measureText(l).width));
-  const width = maxWidth + padding * 2;
-  const height = lines.length * lineHeight + padding * 2 - 4;
-
-  const tooltipX = x + 50;
-  const tooltipY = y - height - 10;
-
-  ctx.shadowColor = "rgba(0,0,0,0.18)";
-  ctx.shadowBlur = 12;
-  ctx.shadowOffsetY = 4;
-  ctx.fillStyle = "#1b1207";
-  roundRect(ctx, tooltipX, tooltipY, width, height, 8);
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-
-  ctx.strokeStyle = "#8b6b3a";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.fillStyle = "#fff";
-  ctx.font = "700 10px Satoshi, Arial";
-  ctx.fillText(lines[0], tooltipX + padding, tooltipY + padding + 10);
-
-  if (lines[1]) {
-    ctx.fillStyle = "#f3d585";
-    ctx.font = "500 9px Satoshi, Arial";
-    ctx.fillText(lines[1], tooltipX + padding, tooltipY + padding + 10 + lineHeight);
-  }
-
-  if (lines[2]) {
-    const isGood = lines[2] === "Valued";
-    ctx.fillStyle = isGood ? "#6fd88a" : lines[2] === "Stale" ? "#f5d167" : "#ff7b7b";
-    ctx.font = "600 9px Satoshi, Arial";
-    ctx.fillText(lines[2], tooltipX + padding, tooltipY + padding + 10 + lineHeight * 2);
-  }
-}
-
-// --- Drawing Utilities ---
-
-function drawBadge(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  text: string,
-  fill: string,
-  color: string,
-  fontSize = 6,
-  height = 14,
-  radius = 4,
-) {
-  ctx.fillStyle = fill;
-  roundRect(ctx, x, y, width, height, radius);
-  ctx.fill();
-  ctx.fillStyle = color;
-  ctx.font = `800 ${fontSize}px Satoshi, Arial`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(text, x + width / 2, y + height / 2);
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-}
-
-function drawPortraitPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, imageSrc?: string) {
-  ctx.save();
-  roundRect(ctx, x, y, width, height, 14);
-  ctx.clip();
-  const img = imageSrc ? getImage(imageSrc) : null;
-  if (img) {
-    const imgAspect = img.naturalWidth / img.naturalHeight;
-    const boxAspect = width / height;
-    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
-    if (imgAspect > boxAspect) {
-      sw = img.naturalHeight * boxAspect;
-      sx = (img.naturalWidth - sw) / 2;
-    } else {
-      sh = img.naturalWidth / boxAspect;
-      sy = (img.naturalHeight - sh) / 2;
-    }
-    ctx.drawImage(img, sx, sy, sw, sh, x, y, width, height);
-  } else {
-    const background = ctx.createLinearGradient(x, y, x + width, y + height);
-    background.addColorStop(0, "#55b95f");
-    background.addColorStop(0.48, "#d4bd4a");
-    background.addColorStop(1, "#334d35");
-    ctx.fillStyle = background;
-    ctx.fillRect(x, y, width, height);
-  }
-  ctx.restore();
-}
-
-function drawPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, color: string, circular = false, imageSrc?: string) {
-  ctx.save();
-  roundRect(ctx, x, y, width, height, circular ? width / 2 : 8);
-  ctx.clip();
-  const img = imageSrc ? getImage(imageSrc) : null;
-  if (img) {
-    const imgAspect = img.naturalWidth / img.naturalHeight;
-    const boxAspect = width / height;
-    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
-    if (imgAspect > boxAspect) {
-      sw = img.naturalHeight * boxAspect;
-      sx = (img.naturalWidth - sw) / 2;
-    } else {
-      sh = img.naturalWidth / boxAspect;
-      sy = (img.naturalHeight - sh) / 2;
-    }
-    ctx.drawImage(img, sx, sy, sw, sh, x, y, width, height);
-  } else {
-    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-    gradient.addColorStop(0, color);
-    gradient.addColorStop(0.5, "#e0bd63");
-    gradient.addColorStop(1, "#12352b");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x, y, width, height);
-  }
-  ctx.restore();
-}
-
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
 }

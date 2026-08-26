@@ -1419,8 +1419,8 @@ function OverviewTab({
 
 function WealthMapTab({ clientId }: { clientId: number | null }) {
   return (
-    <div className="min-h-0 overflow-auto bg-white" style={{ maxHeight: "calc(100vh - 52px)" }}>
-      <section className="relative min-h-[640px] bg-white">
+    <div className="overflow-hidden bg-white" style={{ height: "calc(100vh - 52px)" }}>
+      <section className="relative h-full bg-white">
         <SourceWealthChart clientId={clientId} />
       </section>
     </div>
