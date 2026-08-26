@@ -37,20 +37,15 @@ export default function ClientsPage() {
   const meetings = meetingsData?.results ?? [];
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f7f6f3" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#F8F8F8" }}>
       <Sidebar />
 
       <main style={{ flex: 1, position: "relative", overflow: "hidden", padding: "48px 40px", marginLeft: 80 }}>
-        {/* Warm gradient blobs */}
         <div style={{
-          position: "absolute", top: -115, left: 0, width: "80%", height: 561,
-          background: "linear-gradient(180deg, rgba(255,241,163,0.80) 0%, rgba(255,241,163,0.80) 50%, rgba(255,178,134,0.80) 75%, rgba(255,111,50,0.80) 100%)",
-          filter: "blur(82px)", opacity: 0.4, pointerEvents: "none", zIndex: 0,
-        }} />
-        <div style={{
-          position: "absolute", bottom: -150, right: -100, width: "80%", height: 561,
-          background: "linear-gradient(180deg, rgba(255,241,163,0.80) 0%, rgba(255,241,163,0.80) 50%, rgba(255,178,134,0.80) 75%, rgba(255,111,50,0.80) 100%)",
-          filter: "blur(82px)", opacity: 0.4, transform: "rotate(180deg)", pointerEvents: "none", zIndex: 0,
+          position: "absolute", inset: 0,
+          backgroundImage: "url('/dashboard-bg.png')",
+          backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat",
+          pointerEvents: "none", zIndex: 0,
         }} />
 
         <div style={{ position: "relative", zIndex: 1 }}>
@@ -153,7 +148,7 @@ export default function ClientsPage() {
           {alerts.length === 0 ? (
             <p style={{ fontSize: 14, color: "#6B7280", margin: 0 }}>No alerts</p>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, maxHeight: 400, overflowY: "auto" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 400, overflowY: "auto" }}>
               {alerts.map((alert) => {
                 const type = alert.type?.toLowerCase();
                 const isDocType = type === "document" || type === "documents";
@@ -174,13 +169,13 @@ export default function ClientsPage() {
                 <div
                   key={alert.id}
                   onClick={hasAction ? handleClick : undefined}
-                  style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: 8, transition: "background 0.15s" }}
+                  style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: "16px 24px", transition: "background 0.15s", background: "#00000005" }}
                   onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
-                  onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
+                  onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "#00000005") : undefined}
                 >
                   <div style={{
                     width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
-                    background: alert.client ? "#39952D" : "#3B82F6",
+                    background: (alert.cta_url && alert.cta_text && !isClickable) ? "#7F67B7" : "#39952D",
                   }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
@@ -188,7 +183,7 @@ export default function ClientsPage() {
                       {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
                     </div>
                     {alert.cta_url && alert.cta_text && !isClickable && (
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", marginTop: 4, display: "inline-block" }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "Satoshi Variable, sans-serif", marginTop: 4, display: "inline-block" }}>
                         {alert.cta_text}
                       </span>
                     )}
@@ -215,7 +210,7 @@ export default function ClientsPage() {
                 return (
                   <div key={meeting.id} style={{
                     borderRadius: 16, padding: 16,
-                    backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')",
+                    backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFE5, #FFFFFFE5), url('/insights.png')",
                     backgroundSize: "cover", backgroundPosition: "center",
                     backgroundColor: isFirst ? undefined : "#CA8C4626",
                     display: "flex", alignItems: "center", gap: 12,
@@ -392,13 +387,13 @@ function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; on
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Alerts</h3>
-        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
+        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "Satoshi Variable, sans-serif", lineHeight: "100%" }}>View all</button>
       </div>
 
       {alerts.length === 0 ? (
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No alerts</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {alerts.slice(0, 3).map((alert) => {
             const type = alert.type?.toLowerCase();
             const isDocType = type === "document" || type === "documents";
@@ -409,13 +404,13 @@ function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; on
               <div
                 key={alert.id}
                 onClick={hasAction ? () => onCheckNow(alert) : undefined}
-                style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: 8, transition: "background 0.15s" }}
+                style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: "16px 24px", transition: "background 0.15s", background: "#00000005" }}
                 onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
-                onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "transparent") : undefined}
+                onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "#00000005") : undefined}
               >
                 <div style={{
                   width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
-                  background: alert.client ? "#39952D" : "#3B82F6",
+                  background: (alert.cta_url && alert.cta_text && !isClickable) ? "#7F67B7" : "#39952D",
                 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
@@ -423,7 +418,7 @@ function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; on
                     {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
                   </div>
                   {alert.cta_url && alert.cta_text && !isClickable && (
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#3B82F6", marginTop: 4, display: "inline-block" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "Satoshi Variable, sans-serif", marginTop: 4, display: "inline-block" }}>
                       {alert.cta_text}
                     </span>
                   )}
@@ -442,7 +437,7 @@ function MeetingsPanel({ meetings, onViewAll }: { meetings: CrmMeeting[]; onView
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Upcoming meetings</h3>
-        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "rgba(0,0,0,0.50)" }}>View all</button>
+        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "Satoshi Variable, sans-serif", lineHeight: "100%" }}>View all</button>
       </div>
       {meetings.length === 0 ? (
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No upcoming meetings</p>
@@ -456,7 +451,7 @@ function MeetingsPanel({ meetings, onViewAll }: { meetings: CrmMeeting[]; onView
             return (
               <div key={meeting.id} style={{
                 borderRadius: 16, padding: 16,
-                backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')",
+                backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFE5, #FFFFFFE5), url('/insights.png')",
                 backgroundSize: "cover", backgroundPosition: "center",
                 backgroundColor: isFirst ? undefined : "#CA8C4626",
                 display: "flex", alignItems: "center", gap: 12,

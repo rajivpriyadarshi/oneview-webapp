@@ -42,6 +42,7 @@ const WORKFLOW_ICONS = [
   "/meeting-preparation.png",
   "/opportunity-finder.png",
   "/real-estate-value.png",
+  "/top-movers-news.png",
 ];
 
 export default function AppsPage() {
@@ -136,7 +137,7 @@ export default function AppsPage() {
             zIndex: 1,
             width: "100%",
             maxWidth: 859,
-            background: "white",
+            background: "transparent",
             borderRadius: 24,
             display: "flex",
             flexDirection: "column",
@@ -224,7 +225,7 @@ export default function AppsPage() {
                           paddingRight: 8,
                           paddingTop: 4,
                           paddingBottom: 4,
-                          background: "#F7F7F7",
+                          background: "#F2F2F2",
                           borderRadius: 6,
                           justifyContent: "center",
                           alignItems: "center",
@@ -232,13 +233,13 @@ export default function AppsPage() {
                           display: "flex",
                         }}>
                           <div style={{
-                            color: "rgba(0, 0, 0, 0.40)",
+                            color: "#00000066",
                             fontSize: 12,
                             fontFamily: "Cascadia Code, monospace",
                             fontWeight: 400,
                             wordWrap: "break-word",
                           }}>
-                            {cmd.command}
+                            {cmd.name}
                           </div>
                         </div>
                       </div>
@@ -263,6 +264,9 @@ export default function AppsPage() {
                       cursor: "pointer",
                     }}
                   >
+                    <svg width="11" height="14" viewBox="0 0 11 14" fill="none">
+                      <path d="M0.664062 2.08057C0.664062 1.43313 0.664062 1.10941 0.799056 0.930962C0.916659 0.775503 1.09641 0.679302 1.29099 0.667684C1.51435 0.654348 1.78371 0.833916 2.32241 1.19305L9.33278 5.86663C9.77791 6.16338 10.0005 6.31176 10.078 6.49878C10.1458 6.66228 10.1458 6.84603 10.078 7.00954C10.0005 7.19655 9.77791 7.34493 9.33278 7.64167L2.32241 12.3153C1.7837 12.6744 1.51435 12.854 1.29099 12.8406C1.09641 12.829 0.916659 12.7328 0.799056 12.5773C0.664062 12.3989 0.664062 12.0752 0.664062 11.4277V2.08057Z" stroke="white" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                     <span style={{
                       color: "white",
                       fontSize: 12,

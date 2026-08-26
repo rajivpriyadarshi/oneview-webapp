@@ -27,19 +27,15 @@ export default function ClientsPage() {
   const totalCount = data?.count ?? 0;
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f7f6f3" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#F8F8F8" }}>
       <Sidebar />
 
       <main style={{ flex: 1, position: "relative", overflow: "hidden", padding: "48px 40px", marginLeft: 80 }}>
         <div style={{
-          position: "absolute", top: -115, left: 0, width: "80%", height: 561,
-          background: "linear-gradient(180deg, rgba(255,241,163,0.80) 0%, rgba(255,241,163,0.80) 50%, rgba(255,178,134,0.80) 75%, rgba(255,111,50,0.80) 100%)",
-          filter: "blur(82px)", opacity: 0.4, pointerEvents: "none", zIndex: 0,
-        }} />
-        <div style={{
-          position: "absolute", bottom: -150, right: -100, width: "80%", height: 561,
-          background: "linear-gradient(180deg, rgba(255,241,163,0.80) 0%, rgba(255,241,163,0.80) 50%, rgba(255,178,134,0.80) 75%, rgba(255,111,50,0.80) 100%)",
-          filter: "blur(82px)", opacity: 0.4, transform: "rotate(180deg)", pointerEvents: "none", zIndex: 0,
+          position: "absolute", inset: 0,
+          backgroundImage: "url('/dashboard-bg.png')",
+          backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat",
+          pointerEvents: "none", zIndex: 0,
         }} />
 
         <div style={{ position: "relative", zIndex: 1 }}>
