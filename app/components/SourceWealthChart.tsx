@@ -126,7 +126,102 @@ type WealthMapPoint = {
   section?: string;
   badge?: string;
   value?: number;
+  imageSrc?: string;
 };
+
+const ASSET_TYPE_IMAGES: Record<string, string> = {
+  real_estate: "/wealth-map/real-estate.png",
+  vehicle: "/wealth-map/vehicles.png",
+  apartment: "/wealth-map/apartments.png",
+  farmland: "/wealth-map/farmland.png",
+  residential: "/wealth-map/residential.png",
+  condo: "/wealth-map/condo.png",
+  commercial: "/wealth-map/commercial.png",
+  villa: "/wealth-map/villa.png",
+  jewellery: "/wealth-map/jewellery.png",
+  jewelry: "/wealth-map/jewellery.png",
+  digital_asset: "/wealth-map/digital-assets.png",
+  crypto: "/wealth-map/digital-assets.png",
+  gold: "/wealth-map/gold.png",
+  art: "/wealth-map/art-collectibles.png",
+  collectible: "/wealth-map/art-collectibles.png",
+  watch: "/wealth-map/jewellery.png",
+  cash: "/wealth-map/cash.png",
+  savings: "/wealth-map/savings.png",
+  investment: "/wealth-map/investments.png",
+  equity: "/wealth-map/brokerage-account.png",
+  bond: "/wealth-map/investments.png",
+  mutual_fund: "/wealth-map/investment-portfolio.png",
+  bank_account: "/wealth-map/bank-account.png",
+  brokerage: "/wealth-map/brokerage-account.png",
+  loan: "/wealth-map/loan.png",
+  mortgage: "/wealth-map/mortgage.png",
+  insurance: "/wealth-map/personal-liabilities.png",
+  trust: "/wealth-map/trust-foundation.png",
+  company: "/wealth-map/companies-spv.png",
+  spv: "/wealth-map/companies-spv.png",
+  angel_investment: "/wealth-map/investments.png",
+  private_equity: "/wealth-map/holdings.png",
+  venture_capital: "/wealth-map/holdings.png",
+};
+
+const SECTION_IMAGES: Record<string, string> = {
+  financials: "/wealth-map/financials.png",
+  family: "/wealth-map/family.png",
+  nonFinancials: "/wealth-map/non-financial-assets.png",
+  entities: "/wealth-map/companies-spv.png",
+};
+
+const TYPE_GROUP_IMAGES: Record<string, string> = {
+  asset: "/wealth-map/holdings.png",
+  account: "/wealth-map/bank-account.png",
+  liability: "/wealth-map/liabilities.png",
+  family: "/wealth-map/family.png",
+};
+
+const FAMILY_IMAGES: Record<string, string> = {
+  spouse: "/wealth-map/female-spouse.png",
+  wife: "/wealth-map/female-spouse.png",
+  husband: "/wealth-map/male-spouse.png",
+  child: "/wealth-map/child-boy.png",
+  son: "/wealth-map/child-boy.png",
+  daughter: "/wealth-map/child-girl.png",
+  parent: "/wealth-map/family.png",
+  self: "/wealth-map/uhnw-client.png",
+};
+
+const imageCache = new Map<string, HTMLImageElement>();
+
+let _chartInstance: ChartJS | null = null;
+
+function getImage(src: string): HTMLImageElement | null {
+  if (imageCache.has(src)) {
+    const img = imageCache.get(src)!;
+    return img.complete && img.naturalWidth > 0 ? img : null;
+  }
+  const img = new Image();
+  img.onload = () => { if (_chartInstance) _chartInstance.draw(); };
+  img.src = src;
+  imageCache.set(src, img);
+  return null;
+}
+
+function getAssetImage(assetType: string, name: string): string {
+  const normalized = assetType.toLowerCase().replace(/[\s-]+/g, "_");
+  if (ASSET_TYPE_IMAGES[normalized]) return ASSET_TYPE_IMAGES[normalized];
+  const nameLower = name.toLowerCase();
+  if (nameLower.includes("bank")) return "/wealth-map/bank-account.png";
+  if (nameLower.includes("angel") || nameLower.includes("invest")) return "/wealth-map/investments.png";
+  if (nameLower.includes("property") || nameLower.includes("apartment") || nameLower.includes("condo")) return "/wealth-map/real-estate.png";
+  if (nameLower.includes("car") || nameLower.includes("porsche") || nameLower.includes("bmw") || nameLower.includes("vehicle")) return "/wealth-map/vehicles.png";
+  if (nameLower.includes("gold")) return "/wealth-map/gold.png";
+  if (nameLower.includes("art") || nameLower.includes("paint")) return "/wealth-map/art-collectibles.png";
+  if (nameLower.includes("watch") || nameLower.includes("rolex")) return "/wealth-map/jewellery.png";
+  if (nameLower.includes("farm")) return "/wealth-map/farmland.png";
+  if (nameLower.includes("loan")) return "/wealth-map/loan.png";
+  if (nameLower.includes("mortgage")) return "/wealth-map/mortgage.png";
+  return "/wealth-map/holdings.png";
+}
 
 type HitZone = { id: string; left: number; top: number; right: number; bottom: number };
 
@@ -174,6 +269,7 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
     color: "#211507",
     accent: "#b7771e",
     value: data.client.adjustedValue,
+    imageSrc: "/wealth-map/uhnw-client.png",
   });
 
   const sectionKeys = Object.keys(data.sections) as (keyof typeof data.sections)[];
@@ -201,12 +297,13 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
       badge: meta.badge,
       section: key,
       value: sectionValue,
+      imageSrc: SECTION_IMAGES[key],
     });
   });
 
   if (expandedSection) {
     const section = data.sections[expandedSection as keyof typeof data.sections];
-    let items: { id: string; name: string; value: number; status?: string; type: string }[] = [];
+    let items: { id: string; name: string; value: number; status?: string; type: string; imageSrc?: string }[] = [];
 
     if (expandedSection === "financials") {
       items = (section as GraphFinancials).items.map((item) => ({
@@ -215,6 +312,7 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
         value: item.adjustedValue,
         status: item.status,
         type: item.type,
+        imageSrc: item.type === "account" ? "/wealth-map/bank-account.png" : item.type === "liability" ? "/wealth-map/liabilities.png" : getAssetImage((item as GraphAssetItem).assetType ?? "", item.name),
       }));
     } else if (expandedSection === "family") {
       items = (section as GraphFamily).members.map((m) => ({
@@ -222,6 +320,7 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
         name: m.name,
         value: m.adjustedValue,
         type: "family",
+        imageSrc: FAMILY_IMAGES[m.relationship?.toLowerCase()] ?? "/wealth-map/family.png",
       }));
     } else if (expandedSection === "nonFinancials") {
       items = (section as GraphNonFinancials).items.map((item) => ({
@@ -230,6 +329,7 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
         value: item.adjustedValue,
         status: item.status,
         type: item.type,
+        imageSrc: getAssetImage(item.assetType ?? "", item.name),
       }));
     } else if (expandedSection === "entities") {
       items = (section as GraphEntities).items.map((item) => ({
@@ -237,6 +337,7 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
         name: item.name,
         value: item.adjustedValue,
         type: item.partyType,
+        imageSrc: "/wealth-map/companies-spv.png",
       }));
     }
 
@@ -273,6 +374,7 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
         section: expandedSection,
         badge: `${groupItems.length}`,
         value: groupValue,
+        imageSrc: TYPE_GROUP_IMAGES[typeKey] ?? "/wealth-map/holdings.png",
       });
 
       if (isTypeExpanded) {
@@ -304,6 +406,7 @@ function buildNodes(data: GraphResponse, expandedSection: string | null, expande
             tone: meta.tone,
             section: expandedSection,
             value: item.value,
+            imageSrc: item.imageSrc,
           });
         });
       }
@@ -364,9 +467,14 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
 
   useEffect(() => {
     if (chartRef.current) {
+      _chartInstance = chartRef.current;
       chartRef.current.draw();
     }
   }, [hoveredItem]);
+
+  useEffect(() => {
+    if (chartRef.current) _chartInstance = chartRef.current;
+  });
 
   useEffect(() => {
     if (!clientId) return;
@@ -417,6 +525,12 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
     if (!graphData) return [];
     return buildNodes(graphData, expandedSection, expandedTypeGroup);
   }, [graphData, expandedSection, expandedTypeGroup]);
+
+  useEffect(() => {
+    for (const node of nodes) {
+      if (node.imageSrc) getImage(node.imageSrc);
+    }
+  }, [nodes]);
 
   useEffect(() => {
     if (expandedSection && expandedSection !== prevExpandedRef.current) {
@@ -769,7 +883,7 @@ function drawClientCard(ctx: CanvasRenderingContext2D, x: number, y: number, nod
   ctx.stroke();
   ctx.shadowColor = "transparent";
 
-  drawPortraitPhoto(ctx, left + 8, top + 8, width - 16, 72);
+  drawPortraitPhoto(ctx, left + 8, top + 8, width - 16, 72, node.imageSrc);
 
   const overlay = ctx.createLinearGradient(left, top + 60, left, top + height);
   overlay.addColorStop(0, "rgba(22, 13, 3, 0)");
@@ -814,7 +928,7 @@ function drawSectionCard(ctx: CanvasRenderingContext2D, x: number, y: number, no
   ctx.stroke();
   ctx.shadowColor = "transparent";
 
-  drawPhoto(ctx, left + 9, top + 8, 28, 28, node.accent ?? "#5f8f4e", true);
+  drawPhoto(ctx, left + 9, top + 8, 28, 28, node.accent ?? "#5f8f4e", true, node.imageSrc);
 
   ctx.fillStyle = "#111";
   ctx.font = "800 10px Satoshi, Arial";
@@ -859,16 +973,18 @@ function drawTypeGroupCard(ctx: CanvasRenderingContext2D, x: number, y: number, 
 
   const circleX = left + 15;
   const circleY = top + height / 2;
+  drawPhoto(ctx, circleX - 10, circleY - 10, 20, 20, node.accent ?? "#8b6b3a", true, node.imageSrc);
+
+  const badgeX = circleX + 7;
+  const badgeY = circleY - 8;
   ctx.fillStyle = node.accent ?? "#8b6b3a";
-  ctx.globalAlpha = 0.18;
   ctx.beginPath();
-  ctx.arc(circleX, circleY, 10, 0, Math.PI * 2);
+  ctx.arc(badgeX, badgeY, 5.5, 0, Math.PI * 2);
   ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = node.accent ?? "#8b6b3a";
-  ctx.font = "700 7px Satoshi, Arial";
+  ctx.fillStyle = "#fff";
+  ctx.font = "700 5.5px Satoshi, Arial";
   ctx.textAlign = "center";
-  ctx.fillText(node.badge ?? "", circleX, circleY + 2.5);
+  ctx.fillText(node.badge ?? "", badgeX, badgeY + 2);
   ctx.textAlign = "left";
 
   ctx.fillStyle = "#111";
@@ -904,7 +1020,7 @@ function drawItemTile(ctx: CanvasRenderingContext2D, x: number, y: number, node:
   ctx.shadowColor = "rgba(30, 28, 24, 0.18)";
   ctx.shadowBlur = 8;
   ctx.shadowOffsetY = 3;
-  drawPhoto(ctx, left, top, tileW, tileH, node.color);
+  drawPhoto(ctx, left, top, tileW, tileH, node.color, false, node.imageSrc);
   ctx.shadowColor = "transparent";
 
   const textX = left + tileW + 6;
@@ -999,29 +1115,59 @@ function drawBadge(
   ctx.textBaseline = "alphabetic";
 }
 
-function drawPortraitPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number) {
+function drawPortraitPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, imageSrc?: string) {
   ctx.save();
   roundRect(ctx, x, y, width, height, 14);
   ctx.clip();
-  const background = ctx.createLinearGradient(x, y, x + width, y + height);
-  background.addColorStop(0, "#55b95f");
-  background.addColorStop(0.48, "#d4bd4a");
-  background.addColorStop(1, "#334d35");
-  ctx.fillStyle = background;
-  ctx.fillRect(x, y, width, height);
+  const img = imageSrc ? getImage(imageSrc) : null;
+  if (img) {
+    const imgAspect = img.naturalWidth / img.naturalHeight;
+    const boxAspect = width / height;
+    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+    if (imgAspect > boxAspect) {
+      sw = img.naturalHeight * boxAspect;
+      sx = (img.naturalWidth - sw) / 2;
+    } else {
+      sh = img.naturalWidth / boxAspect;
+      sy = (img.naturalHeight - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, width, height);
+  } else {
+    const background = ctx.createLinearGradient(x, y, x + width, y + height);
+    background.addColorStop(0, "#55b95f");
+    background.addColorStop(0.48, "#d4bd4a");
+    background.addColorStop(1, "#334d35");
+    ctx.fillStyle = background;
+    ctx.fillRect(x, y, width, height);
+  }
   ctx.restore();
 }
 
-function drawPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, color: string, circular = false) {
+function drawPhoto(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, color: string, circular = false, imageSrc?: string) {
   ctx.save();
   roundRect(ctx, x, y, width, height, circular ? width / 2 : 8);
   ctx.clip();
-  const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-  gradient.addColorStop(0, color);
-  gradient.addColorStop(0.5, "#e0bd63");
-  gradient.addColorStop(1, "#12352b");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(x, y, width, height);
+  const img = imageSrc ? getImage(imageSrc) : null;
+  if (img) {
+    const imgAspect = img.naturalWidth / img.naturalHeight;
+    const boxAspect = width / height;
+    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+    if (imgAspect > boxAspect) {
+      sw = img.naturalHeight * boxAspect;
+      sx = (img.naturalWidth - sw) / 2;
+    } else {
+      sh = img.naturalWidth / boxAspect;
+      sy = (img.naturalHeight - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, width, height);
+  } else {
+    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(0.5, "#e0bd63");
+    gradient.addColorStop(1, "#12352b");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x, y, width, height);
+  }
   ctx.restore();
 }
 

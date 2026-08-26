@@ -31,6 +31,7 @@ type WealthPoint = {
   value?: string;
   status?: string;
   kind: "client" | "category" | "asset" | "dot";
+  image?: string;
 };
 
 const attentionItems = [
@@ -57,25 +58,25 @@ const attentionItems = [
 ];
 
 const categoryPoints: WealthPoint[] = [
-  { x: 42, y: 66, r: 18, label: "Family Trust", value: "Adjusted value: $378M", kind: "category" },
-  { x: 42, y: 50, r: 18, label: "Financials", value: "Adjusted value: $378M", kind: "category" },
-  { x: 42, y: 37, r: 18, label: "Family", value: "Adjusted value: $378M", kind: "category" },
-  { x: 42, y: 21, r: 18, label: "Non-financials", value: "Adjusted value: $378M", kind: "category" },
-  { x: 65, y: 63, r: 18, label: "Loans", value: "Adjusted value: $378M", kind: "category" },
-  { x: 65, y: 50, r: 20, label: "Assets", value: "Adjusted value: $378M", kind: "category" },
-  { x: 65, y: 36, r: 18, label: "Investments", value: "Adjusted value: $378M", kind: "category" },
+  { x: 42, y: 66, r: 18, label: "Family Trust", value: "Adjusted value: $378M", kind: "category", image: "/wealth-map/trust-foundation.png" },
+  { x: 42, y: 50, r: 18, label: "Financials", value: "Adjusted value: $378M", kind: "category", image: "/wealth-map/financials.png" },
+  { x: 42, y: 37, r: 18, label: "Family", value: "Adjusted value: $378M", kind: "category", image: "/wealth-map/family.png" },
+  { x: 42, y: 21, r: 18, label: "Non-financials", value: "Adjusted value: $378M", kind: "category", image: "/wealth-map/non-financial-assets.png" },
+  { x: 65, y: 63, r: 18, label: "Loans", value: "Adjusted value: $378M", kind: "category", image: "/wealth-map/loan.png" },
+  { x: 65, y: 50, r: 20, label: "Assets", value: "Adjusted value: $378M", kind: "category", image: "/wealth-map/holdings.png" },
+  { x: 65, y: 36, r: 18, label: "Investments", value: "Adjusted value: $378M", kind: "category", image: "/wealth-map/investments.png" },
 ];
 
 const assetPoints: WealthPoint[] = [
-  { x: 88, y: 82, r: 14, label: "MENGI YAY VIRTUS XP55", value: "Adjusted value: $10K", status: "Not on record", kind: "asset" },
-  { x: 91, y: 75, r: 14, label: "Porsche 911 GT3", value: "Adjusted value: $90K", status: "Not on record", kind: "asset" },
-  { x: 93, y: 67, r: 14, label: "Arts & paintings", value: "Adjusted value: $101K", status: "Not on record", kind: "asset" },
-  { x: 94, y: 58, r: 14, label: "Rolex watches", value: "Adjusted value: $70K", status: "Verified", kind: "asset" },
-  { x: 95, y: 50, r: 16, label: "Jumeirah lake tower", value: "Adjusted value: $2.1M", status: "Explore details", kind: "asset" },
-  { x: 94, y: 42, r: 14, label: "BMW X3", value: "Adjusted value: $80K", status: "Not on record", kind: "asset" },
-  { x: 93, y: 34, r: 14, label: "India Farmland", value: "Adjusted value: $110K", status: "Not on record", kind: "asset" },
-  { x: 91, y: 26, r: 14, label: "Australia apartment", value: "Adjusted value: $900K", status: "Not on record", kind: "asset" },
-  { x: 88, y: 18, r: 14, label: "US condo", value: "Adjusted value: $700K", status: "Not on record", kind: "asset" },
+  { x: 88, y: 82, r: 14, label: "MENGI YAY VIRTUS XP55", value: "Adjusted value: $10K", status: "Not on record", kind: "asset", image: "/wealth-map/vehicles.png" },
+  { x: 91, y: 75, r: 14, label: "Porsche 911 GT3", value: "Adjusted value: $90K", status: "Not on record", kind: "asset", image: "/wealth-map/vehicles.png" },
+  { x: 93, y: 67, r: 14, label: "Arts & paintings", value: "Adjusted value: $101K", status: "Not on record", kind: "asset", image: "/wealth-map/art-collectibles.png" },
+  { x: 94, y: 58, r: 14, label: "Rolex watches", value: "Adjusted value: $70K", status: "Verified", kind: "asset", image: "/wealth-map/jewellery.png" },
+  { x: 95, y: 50, r: 16, label: "Jumeirah lake tower", value: "Adjusted value: $2.1M", status: "Explore details", kind: "asset", image: "/wealth-map/condo.png" },
+  { x: 94, y: 42, r: 14, label: "BMW X3", value: "Adjusted value: $80K", status: "Not on record", kind: "asset", image: "/wealth-map/vehicles.png" },
+  { x: 93, y: 34, r: 14, label: "India Farmland", value: "Adjusted value: $110K", status: "Not on record", kind: "asset", image: "/wealth-map/farmland.png" },
+  { x: 91, y: 26, r: 14, label: "Australia apartment", value: "Adjusted value: $900K", status: "Not on record", kind: "asset", image: "/wealth-map/apartments.png" },
+  { x: 88, y: 18, r: 14, label: "US condo", value: "Adjusted value: $700K", status: "Not on record", kind: "asset", image: "/wealth-map/residential.png" },
 ];
 
 const dotPoints: WealthPoint[] = [
@@ -98,6 +99,7 @@ const clientPoint: WealthPoint = {
   r: 24,
   label: "Prashanth Ranganathan",
   value: "Adjusted value: $378M",
+  image: "/wealth-map/uhnw-client.png",
   kind: "client",
 };
 
