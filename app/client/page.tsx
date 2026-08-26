@@ -857,7 +857,12 @@ export default function ChatPage() {
           {notice ? <p className={TW.notice}>{notice}</p> : null}
         </aside>
 
-        <ClientOverview client={client} isLoadingClient={isLoadingClient} requestedClientId={requestedClientId} />
+        <ClientOverview
+          client={client}
+          isLoadingClient={isLoadingClient}
+          requestedClientId={requestedClientId}
+          onAskAiInsight={(prompt) => void startPromptChat(prompt)}
+        />
       </main>
       </ArtifactPopupProvider>
     </div>
@@ -1179,10 +1184,12 @@ function ClientOverview({
   client,
   isLoadingClient,
   requestedClientId,
+  onAskAiInsight,
 }: {
   client: WealthCrmClient | null;
   isLoadingClient: boolean;
   requestedClientId: string | null;
+  onAskAiInsight: (prompt: string) => void;
 }) {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
@@ -1204,7 +1211,14 @@ function ClientOverview({
         </nav>
       </header>
 
-      {activeTab === "overview" ? <OverviewTab client={client} clientId={client?.id ?? requestedClientId} isLoadingClient={isLoadingClient} /> : null}
+      {activeTab === "overview" ? (
+        <OverviewTab
+          client={client}
+          clientId={client?.id ?? requestedClientId}
+          isLoadingClient={isLoadingClient}
+          onAskAiInsight={onAskAiInsight}
+        />
+      ) : null}
       {activeTab === "wealth-map" ? <WealthMapTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
       {activeTab === "interactions" ? <InteractionsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} isLoadingClient={isLoadingClient} /> : null}
       {activeTab === "documents" ? <DocumentsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
@@ -1250,13 +1264,16 @@ function OverviewTab({
   client,
   clientId,
   isLoadingClient,
+  onAskAiInsight,
 }: {
   client: WealthCrmClient | null;
   clientId: number | string | null;
   isLoadingClient: boolean;
+  onAskAiInsight: (prompt: string) => void;
 }) {
   const [clientDetail, setClientDetail] = useState<ClientDetailResponse | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [dismissedInsightKey, setDismissedInsightKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!clientId) {
@@ -1344,9 +1361,12 @@ function OverviewTab({
   const assetAllocationTotal = clientDetail?.asset_allocation?.total_managed
     ? formatClientMoney(clientDetail.asset_allocation.total_managed, clientDetail.asset_allocation.currency)
     : clientAum;
-  const hasInsights = (Array.isArray(clientDetail?.insights) ? clientDetail.insights : []).some((insight) => Boolean(normalizeInsight(insight)));
+  const insightItems = getInsightItems(clientDetail?.insights);
+  const hasInsights = insightItems.some((insight) => Boolean(normalizeInsight(insight)));
+  const insightKey = getInsightKey(insightItems, clientId);
+  const hasVisibleInsights = hasInsights && dismissedInsightKey !== insightKey;
   const hasRecentActivity = (Array.isArray(clientDetail?.recent_activity) ? clientDetail.recent_activity : []).some((activity) => Boolean(normalizeActivity(activity)));
-  const hasSidePanels = hasInsights || hasRecentActivity;
+  const hasSidePanels = hasVisibleInsights || hasRecentActivity;
   const overviewImageSrc = getOverviewImageSrc(clientDetail, client);
 
   return (
@@ -1408,7 +1428,13 @@ function OverviewTab({
 
         {hasSidePanels ? (
           <aside className="relative z-[3] grid content-start gap-[16px]">
-            {hasInsights ? <InsightPanel insights={clientDetail?.insights ?? []} /> : null}
+            {hasVisibleInsights ? (
+              <InsightPanel
+                insights={insightItems}
+                onAskAiInsight={onAskAiInsight}
+                onDismiss={() => setDismissedInsightKey(insightKey)}
+              />
+            ) : null}
             {hasRecentActivity ? <RecentActivityPanel activities={clientDetail?.recent_activity ?? []} /> : null}
           </aside>
         ) : null}
@@ -1633,12 +1659,43 @@ function formatLabelText(value: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function InsightPanel({ insights }: { insights: unknown[] }) {
-  const firstInsight = insights.map(normalizeInsight).find(Boolean);
+function InsightPanel({
+  insights,
+  onAskAiInsight,
+  onDismiss,
+}: {
+  insights: unknown[];
+  onAskAiInsight: (prompt: string) => void;
+  onDismiss: () => void;
+}) {
+  const normalizedInsights = useMemo(
+    () => insights.map(normalizeInsight).filter((insight): insight is OverviewInsight => Boolean(insight)),
+    [insights],
+  );
+  const insightKey = useMemo(() => getInsightKey(insights), [insights]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  if (!firstInsight) {
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [insightKey]);
+
+  useEffect(() => {
+    if (normalizedInsights.length <= 1) return;
+
+    const intervalId = window.setInterval(() => {
+      setActiveIndex((index) => (index + 1) % normalizedInsights.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [normalizedInsights.length, insightKey]);
+
+  if (normalizedInsights.length === 0) {
     return null;
   }
+
+  const safeActiveIndex = Math.min(activeIndex, normalizedInsights.length - 1);
+  const activeInsight = normalizedInsights[safeActiveIndex] ?? normalizedInsights[0];
+  const askAiPrompt = getInsightAskAiPrompt(activeInsight);
 
   return (
     <section className="relative min-h-[409px] overflow-hidden rounded-[16px] bg-[#fff4e8] p-[24px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:p-[20px]">
@@ -1653,36 +1710,56 @@ function InsightPanel({ insights }: { insights: unknown[] }) {
       <div className="relative z-[1] flex items-start justify-between gap-[16px]">
         <div>
           <h2 className="m-0 font-satoshi text-[18px] font-semibold leading-none text-[#282420] max-[640px]:text-[16px]">Insights</h2>
-          {firstInsight?.timestamp ? (
-            <p className="mt-[4px] mb-0 font-satoshi text-[12px] text-[#6c625b]">{firstInsight.timestamp}</p>
+          {activeInsight.timestamp ? (
+            <p className="mt-[4px] mb-0 font-satoshi text-[12px] text-[#6c625b]">{activeInsight.timestamp}</p>
           ) : null}
         </div>
-        {insights.length > 1 ? (
-          <div className="flex items-center gap-[6px]" aria-hidden="true">
-            {insights.slice(0, 4).map((_, index) => (
-              <span key={index} className={`h-[8px] w-[8px] rounded-full ${index === 0 ? "bg-black" : "bg-black/20"}`} />
+        {normalizedInsights.length > 1 ? (
+          <div className="flex items-center gap-[6px]" aria-label="Insight slides">
+            {normalizedInsights.map((insight, index) => (
+              <button
+                key={`${insight.title}-${index}`}
+                type="button"
+                className={`h-[8px] w-[8px] rounded-full border-0 p-0 transition ${index === safeActiveIndex ? "bg-black" : "bg-black/20 hover:bg-black/35"}`}
+                aria-label={`Show insight ${index + 1}`}
+                aria-current={index === safeActiveIndex ? "true" : undefined}
+                onClick={() => setActiveIndex(index)}
+              />
             ))}
           </div>
         ) : null}
       </div>
 
-      <div className="relative z-[1] mt-[80px] max-w-[280px] max-[1180px]:mt-[60px] max-[640px]:mt-[50px]">
-        <p className="m-0 font-satoshi text-[28px] font-medium leading-[1.15] tracking-normal text-[#282420] max-[640px]:text-[24px]">
-          {firstInsight.title}
-        </p>
-        {firstInsight.body ? (
-          <p className="mt-[14px] mb-0 font-satoshi text-[14px] font-normal leading-[1.45] text-[#675443]">
-            {firstInsight.body}
-          </p>
-        ) : null}
+      <div className="relative z-[1] mt-[80px] max-w-[280px] overflow-hidden max-[1180px]:mt-[60px] max-[640px]:mt-[50px]" aria-live="polite">
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${safeActiveIndex * 100}%)` }}
+        >
+          {normalizedInsights.map((insight, index) => (
+            <article key={`${insight.title}-${index}`} className="w-full shrink-0">
+              <p className="m-0 font-satoshi text-[28px] font-medium leading-[1.15] tracking-normal text-[#282420] max-[640px]:text-[24px]">
+                {insight.title}
+              </p>
+              {insight.body ? (
+                <p className="mt-[14px] mb-0 font-satoshi text-[14px] font-normal leading-[1.45] text-[#675443]">
+                  {insight.body}
+                </p>
+              ) : null}
+            </article>
+          ))}
+        </div>
       </div>
 
       <div className="relative z-[1] mt-[32px] flex flex-wrap items-center justify-between gap-[12px] max-[640px]:mt-[24px]">
-        <button type="button" className="inline-flex min-h-[38px] items-center gap-[8px] rounded-full border border-[#b37f40]/20 bg-[#fff5d7]/35 px-[14px] font-satoshi text-[14px] font-semibold text-[#a87536]">
+        <button
+          type="button"
+          className="inline-flex min-h-[38px] items-center gap-[8px] rounded-full border border-[#b37f40]/20 bg-[#fff5d7]/35 px-[14px] font-satoshi text-[14px] font-semibold text-[#a87536]"
+          onClick={() => onAskAiInsight(askAiPrompt)}
+        >
           <SparkleIcon />
           Ask AI
         </button>
-        <button type="button" className="inline-flex min-h-[38px] items-center gap-[8px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[14px] font-medium text-[#443830]">
+        <button type="button" className="inline-flex min-h-[38px] items-center gap-[8px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[14px] font-medium text-[#443830]" onClick={onDismiss}>
           <span aria-hidden="true" className="text-[18px] leading-none">&times;</span>
           Dismiss
         </button>
@@ -1730,6 +1807,39 @@ type OverviewActivity = {
   date: string;
   copy: string;
 };
+
+function getInsightItems(value: unknown): unknown[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (!isRecord(value)) {
+    return [];
+  }
+
+  return Array.isArray(value.items) ? value.items : [];
+}
+
+function getInsightKey(insights: unknown[], scope?: number | string | null) {
+  const parts = insights.map((insight, index) => {
+    if (!isRecord(insight)) {
+      return `${index}:${String(insight)}`;
+    }
+
+    const id = insight.id;
+    if (typeof id === "string" || typeof id === "number") {
+      return String(id);
+    }
+
+    return getStringField(insight, ["title", "headline", "name", "summary", "message", "text"]) || String(index);
+  });
+
+  return `${scope ?? "global"}:${parts.join("|")}`;
+}
+
+function getInsightAskAiPrompt(insight: OverviewInsight) {
+  return `Help me understand this insight: ${[insight.title, insight.body].filter(Boolean).join(" - ")} `;
+}
 
 function normalizeInsight(value: unknown): OverviewInsight | null {
   if (typeof value === "string") {

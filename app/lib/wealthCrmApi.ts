@@ -91,7 +91,10 @@ export type ClientDetailResponse = {
       pct: string;
     }>;
   };
-  insights: unknown[];
+  insights: unknown[] | {
+    generated_at?: string | null;
+    items?: unknown[];
+  };
   recent_activity: unknown[];
 };
 
