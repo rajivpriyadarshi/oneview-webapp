@@ -16,6 +16,7 @@ import {
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import "./wealth-map-flow.css";
 import { apiRequest } from "../lib/apiClient";
 
 // --- API Types ---
@@ -741,9 +742,7 @@ function WealthMapFlow({
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.2 }}
-        nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={false}
         panOnDrag
         zoomOnScroll
         zoomOnPinch
