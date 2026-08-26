@@ -583,7 +583,6 @@ function buildFlowElements(
     if (expandedSection === "financials" || expandedSection === "nonFinancials" || expandedSection === "liabilities") {
       const sec = section as { adjustedValue: number; categories: GraphCategory[] };
       categories = sec.categories
-        .filter((cat) => cat.items.length > 0)
         .map((cat) => ({
           slug: cat.slug,
           label: cat.label,
