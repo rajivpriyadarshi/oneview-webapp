@@ -707,14 +707,80 @@ function Composer({ placeholder, prompts, onPromptSelect, selectedPromptId }: { 
   const threadRuntime = useThreadRuntime({ optional: true });
   const [promptsExpanded, setPromptsExpanded] = useState(false);
   const [collapsedPromptCount, setCollapsedPromptCount] = useState(2);
+  const [slashQuery, setSlashQuery] = useState<string | null>(null);
+  const [slashIndex, setSlashIndex] = useState(0);
+  const slashDropdownRef = useRef<HTMLDivElement | null>(null);
   const promptListRef = useRef<HTMLDivElement | null>(null);
   const promptMeasureRef = useRef<HTMLDivElement | null>(null);
 
   const composerPrompts = prompts && prompts.length > 0 ? prompts : DEFAULT_COMPOSER_PROMPTS;
+
+  const slashMatches = useMemo(() => {
+    if (slashQuery === null) return [];
+    const q = slashQuery.toLowerCase();
+    return composerPrompts.filter((p) => p.title.toLowerCase().includes(q));
+  }, [slashQuery, composerPrompts]);
+
+  const slashMatchesRef = useRef(slashMatches);
+  slashMatchesRef.current = slashMatches;
+  const slashQueryRef = useRef(slashQuery);
+  slashQueryRef.current = slashQuery;
+  const slashIndexRef = useRef(slashIndex);
+  slashIndexRef.current = slashIndex;
+
+  const handleComposerInput = useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
+    const value = (e.target as HTMLTextAreaElement).value;
+    if (value.startsWith("/")) {
+      setSlashQuery(value.slice(1));
+      setSlashIndex(0);
+    } else {
+      setSlashQuery(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (slashDropdownRef.current && slashQuery !== null) {
+      const item = slashDropdownRef.current.children[slashIndex] as HTMLElement | undefined;
+      if (item) item.scrollIntoView({ block: "nearest" });
+    }
+  }, [slashIndex, slashQuery]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (slashQueryRef.current === null || slashMatchesRef.current.length === 0) return;
+      if (e.key === "Tab" || e.key === "Enter") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const match = slashMatchesRef.current[slashIndexRef.current];
+        if (match && threadRuntime?.composer) {
+          threadRuntime.composer.setText(match.user_message || "");
+          onPromptSelect?.(match);
+          setSlashQuery(null);
+        }
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSlashIndex((i) => (i + 1) % slashMatchesRef.current.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSlashIndex((i) => (i - 1 + slashMatchesRef.current.length) % slashMatchesRef.current.length);
+      } else if (e.key === "Escape") {
+        setSlashQuery(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [threadRuntime, onPromptSelect]);
   const hasPromptOverflow = collapsedPromptCount < composerPrompts.length;
-  const visiblePrompts = composerPrompts.length > 0
-    ? (promptsExpanded ? composerPrompts : composerPrompts.slice(0, Math.max(1, collapsedPromptCount)))
-    : [];
+  const visiblePrompts = useMemo(() => {
+    if (composerPrompts.length === 0) return [];
+    if (promptsExpanded) return composerPrompts;
+    const sliced = composerPrompts.slice(0, Math.max(2, collapsedPromptCount));
+    if (selectedPromptId && !sliced.some((p) => p.id === selectedPromptId)) {
+      const selected = composerPrompts.find((p) => p.id === selectedPromptId);
+      if (selected) return [selected, ...sliced.slice(0, sliced.length - 1)];
+    }
+    return sliced;
+  }, [composerPrompts, promptsExpanded, collapsedPromptCount, selectedPromptId]);
 
   useLayoutEffect(() => {
     const list = promptListRef.current;
@@ -732,7 +798,7 @@ function Composer({ placeholder, prompts, onPromptSelect, selectedPromptId }: { 
         usedWidth = nextWidth;
         nextCount += 1;
       }
-      setCollapsedPromptCount(Math.max(1, nextCount));
+      setCollapsedPromptCount(Math.max(2, nextCount));
     };
     updateVisiblePromptCount();
     const ro = new ResizeObserver(updateVisiblePromptCount);
@@ -765,9 +831,24 @@ function Composer({ placeholder, prompts, onPromptSelect, selectedPromptId }: { 
           ) : null}
         </div>
       )}
-      <div className={`${TW.composer} ${isRunning ? TW.composerThinking : ""}`}>
+      <div className={`${TW.composer} ${isRunning ? TW.composerThinking : ""}`} style={{ position: "relative" }}>
+        {slashQuery !== null && slashMatches.length > 0 && (
+          <div ref={slashDropdownRef} style={{ position: "absolute", bottom: "100%", left: 0, right: 0, background: "white", border: "1px solid rgba(0,0,0,0.10)", borderRadius: 12, padding: "6px 0", marginBottom: 4, boxShadow: "0 4px 16px rgba(0,0,0,0.08)", maxHeight: 200, overflowY: "auto", zIndex: 10 }}>
+            {slashMatches.map((p, i) => (
+              <div
+                key={p.id}
+                style={{ padding: "10px 16px", cursor: "pointer", background: i === slashIndex ? "#F2F2F2" : "transparent", display: "flex", alignItems: "center", gap: 8 }}
+                onMouseEnter={() => setSlashIndex(i)}
+                onMouseDown={(e) => { e.preventDefault(); if (threadRuntime?.composer) { threadRuntime.composer.setText(p.user_message || ""); onPromptSelect?.(p); setSlashQuery(null); } }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#804D13" }}>/{p.title}</span>
+                {p.description && <span style={{ fontSize: 12, color: "rgba(0,0,0,0.45)" }}>{p.description}</span>}
+              </div>
+            ))}
+          </div>
+        )}
         <div className={TW.composerInputRow}>
-          <ComposerPrimitive.Input className={TW.composerInput} data-chat-composer-input placeholder={placeholder} rows={1} autoFocus />
+          <ComposerPrimitive.Input className={TW.composerInput} data-chat-composer-input placeholder={placeholder} rows={1} autoFocus onInput={handleComposerInput} />
         </div>
         <div className="flex shrink-0 items-center px-[16px]">
           <ComposerPrimaryAction />
