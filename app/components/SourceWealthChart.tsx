@@ -436,7 +436,7 @@ function TypeGroupNode({ data }: { data: { title: string; subtitle: string; imag
           </div>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 11, color: "#111", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{data.title}</div>
+          <div style={{ fontWeight: 700, fontSize: 11, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: "1.3" }}>{data.title}</div>
           <div style={{ fontWeight: 500, fontSize: 9, color: "rgba(17,17,17,0.55)", marginTop: 1 }}>{data.subtitle}</div>
         </div>
         <div
@@ -460,7 +460,6 @@ function TypeGroupNode({ data }: { data: { title: string; subtitle: string; imag
 function ItemNode({ data }: { data: { name: string; value: string; status?: string; imageSrc: string } }) {
   const statusColor = data.status === "Valued" ? "#1a8f4a" : data.status === "Stale" ? "#d4a017" : "#d44";
   const statusIcon = data.status === "Valued" ? "✓" : data.status === "Stale" ? "⏱" : "⊘";
-  const truncatedName = data.name.length > 22 ? data.name.slice(0, 20) + "…" : data.name;
 
   return (
     <div style={{ fontFamily: FONT_FAMILY, display: "flex", alignItems: "center", gap: 8 }}>
@@ -477,8 +476,8 @@ function ItemNode({ data }: { data: { name: string; value: string; status?: stri
       >
         <img src={data.imageSrc} alt={data.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
-      <div>
-        <div style={{ fontWeight: 800, fontSize: 11, color: "#111" }}>{truncatedName}</div>
+      <div style={{ maxWidth: 130 }}>
+        <div style={{ fontWeight: 800, fontSize: 11, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: "1.3" }}>{data.name}</div>
         <div style={{ fontWeight: 500, fontSize: 9, color: "#777", marginTop: 2 }}>{data.value}</div>
         {data.status && (
           <div style={{ fontWeight: 600, fontSize: 9, color: statusColor, marginTop: 2 }}>
