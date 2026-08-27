@@ -1030,7 +1030,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
             selectedPromptRef.current = null;
             setSelectedPromptId(null);
             onExecutionPlanChange?.(pendingWorkflow.execution_plan ?? null);
-          } else if (!executionPlan) {
+          } else {
             onExecutionPlanChange?.(null);
           }
 

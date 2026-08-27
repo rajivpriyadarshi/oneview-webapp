@@ -98,95 +98,99 @@ export default function ClientsPage() {
 
           {/* Two-column layout */}
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-            {/* Client queue */}
-            <div style={{
-              flex: 1, background: "white",
-              borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", overflow: "hidden",
-            }}>
-              {/* Header */}
-              <div style={{ padding: "28px 28px 0" }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "#8b6b3a", marginBottom: 4 }}>Today</div>
-                <h2 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: 0 }}>
-                  {isLoading ? "Loading..." : `${totalCount} clients needs your attention`}
-                </h2>
-              </div>
-
-              {/* Filter tabs */}
-              <div style={{ display: "flex", gap: 8, padding: "16px 28px 20px", flexWrap: "wrap" }}>
-                {FILTER_TABS.map((tab) => {
-                  const isActive = activeFilter === tab;
-                  return (
-                    <button
-                      key={tab}
-                      onClick={() => { setActiveFilter(tab); setExpanded(false); }}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 6,
-                        padding: "8px 14px", borderRadius: 20,
-                        border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)",
-                        background: isActive ? "#1a1a1a" : "white",
-                        color: isActive ? "white" : "#374151",
-                        fontSize: 13, fontWeight: 500, cursor: "pointer",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      {tab}
-                      <span style={{
-                        fontSize: 12, fontWeight: 600,
-                        color: isActive ? "rgba(255,255,255,0.7)" : "#6B7280",
-                      }}>
-                        {filterCounts[tab]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Client rows */}
-              {isError && (
-                <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
-                  Failed to load clients. Please try again.
+            <div className="flex flex-col gap-4">
+              {/* Client queue */}
+              <div style={{
+                flex: 1, background: "white",
+                borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", overflow: "hidden",
+              }}>
+                {/* Header */}
+                <div style={{ padding: "28px 28px 0" }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: "#8b6b3a", marginBottom: 4 }}>Today</div>
+                  <h2 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: 0 }}>
+                    {isLoading ? "Loading..." : `${totalCount} clients needs your attention`}
+                  </h2>
                 </div>
-              )}
-              {isLoading && (
-                <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
-                  Loading clients...
-                </div>
-              )}
-              {!isLoading && !isError && filteredClients.length === 0 && (
-                <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
-                  No clients need attention right now.
-                </div>
-              )}
-              {displayClients.map((client, i) => (
-                <ClientRow
-                  key={client.id}
-                  client={client}
-                  isLast={i === displayClients.length - 1 && (expanded || filteredClients.length <= 4)}
-                  onNavigate={(id) => router.push(`/client?clientId=${id}`)}
-                />
-              ))}
 
-              {/* Expand all */}
-              {filteredClients.length > 4 && (
-                <div
-                  onClick={() => setExpanded(!expanded)}
-                  style={{
-                    padding: "16px 28px",
-                    display: "flex", justifyContent: "center", alignItems: "center", gap: 6,
-                    cursor: "pointer", borderTop: "1px solid rgba(0,0,0,0.06)",
-                  }}
-                >
-                  <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>
-                    {expanded ? "Show less" : "Expand all"}
-                  </span>
-                  <svg
-                    width="14" height="14" viewBox="0 0 14 14" fill="none"
-                    style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+                {/* Filter tabs */}
+                <div style={{ display: "flex", gap: 8, padding: "16px 28px 20px", flexWrap: "wrap" }}>
+                  {FILTER_TABS.map((tab) => {
+                    const isActive = activeFilter === tab;
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => { setActiveFilter(tab); setExpanded(false); }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 6,
+                          padding: "8px 14px", borderRadius: 20,
+                          border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)",
+                          background: isActive ? "#1a1a1a" : "white",
+                          color: isActive ? "white" : "#374151",
+                          fontSize: 13, fontWeight: 500, cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        {tab}
+                        <span style={{
+                          fontSize: 12, fontWeight: 600,
+                          color: isActive ? "rgba(255,255,255,0.7)" : "#6B7280",
+                        }}>
+                          {filterCounts[tab]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Client rows */}
+                {isError && (
+                  <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
+                    Failed to load clients. Please try again.
+                  </div>
+                )}
+                {isLoading && (
+                  <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
+                    Loading clients...
+                  </div>
+                )}
+                {!isLoading && !isError && filteredClients.length === 0 && (
+                  <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
+                    No clients need attention right now.
+                  </div>
+                )}
+                {displayClients.map((client, i) => (
+                  <ClientRow
+                    key={client.id}
+                    client={client}
+                    isLast={i === displayClients.length - 1 && (expanded || filteredClients.length <= 4)}
+                    onNavigate={(id) => router.push(`/client?clientId=${id}`)}
+                  />
+                ))}
+
+                {/* Expand all */}
+                {filteredClients.length > 4 && (
+                  <div
+                    onClick={() => setExpanded(!expanded)}
+                    style={{
+                      padding: "16px 28px",
+                      display: "flex", justifyContent: "center", alignItems: "center", gap: 6,
+                      cursor: "pointer", borderTop: "1px solid rgba(0,0,0,0.06)",
+                    }}
                   >
-                    <path d="M3 5.5L7 9.5L11 5.5" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              )}
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>
+                      {expanded ? "Show less" : "Expand all"}
+                    </span>
+                    <svg
+                      width="14" height="14" viewBox="0 0 14 14" fill="none"
+                      style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+                    >
+                      <path d="M3 5.5L7 9.5L11 5.5" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {/* Market watch */}
+              <MarketWatch />
             </div>
 
             {/* Right panels */}
@@ -347,7 +351,8 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
       <div style={{ flex: "0 0 240px", display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{
           width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
-          background: "linear-gradient(135deg, #f5e6c8, #e8d5a8)",
+          backgroundImage: "linear-gradient(#FFFFFFB2, #FFFFFFB2), url('/insights.png')",
+          backgroundSize: "cover", backgroundPosition: "center",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: "#4C2D08" }}>{initials}</span>
@@ -546,6 +551,99 @@ function MeetingIcon({ title }: { title: string }) {
   return (
     <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
       <path d="M1 19V13M8.0008 19V1M15.0016 19V7" stroke="black" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const MARKET_DATA = [
+  {
+    name: "S&P Futures",
+    value: "$7,686.00",
+    change: "0.08%",
+    delta: "-$6.00",
+    color: "#9B1B1B",
+    points: [50,48,46,44,42,40,38,36,35,34,34,35,36,35,34,33,34,35,36,35],
+  },
+  {
+    name: "NASDAQ Fut.",
+    value: "$29,245.00",
+    change: "0.11%",
+    delta: "-$31.75",
+    color: "#9B1B1B",
+    points: [52,50,48,45,42,40,38,36,34,32,31,30,30,30,31,30,30,30,30,30],
+  },
+  {
+    name: "Dow Futures",
+    value: "$53,634.00",
+    change: "0.02%",
+    delta: "-$11.00",
+    color: "#1B7A3D",
+    points: [30,28,26,24,22,20,18,18,19,20,22,24,25,26,27,28,28,27,28,28],
+  },
+  {
+    name: "VIX",
+    value: "15.46",
+    change: "2.46%",
+    delta: "-0.39",
+    color: "#9B1B1B",
+    points: [60,55,48,40,35,30,28,26,25,25,26,27,28,28,29,30,30,31,31,31],
+  },
+];
+
+function MarketWatch() {
+  return (
+    <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24 }}>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>Market watch</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+        {MARKET_DATA.map((item) => (
+          <div key={item.name} style={{ borderRadius: 16, border: "1px solid rgba(0,0,0,0.06)", padding: "16px 18px", position: "relative", overflow: "hidden" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+              <span style={{ fontSize: 14, fontWeight: 500, color: "#27251E", fontFamily: "Satoshi Variable, sans-serif", lineHeight: "20px" }}>{item.name}</span>
+              <span style={{ fontSize: 14, fontWeight: 400, color: item.color, lineHeight: "20px" }}>{item.change}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(0,0,0,0.45)", fontFamily: "Satoshi Variable, sans-serif", lineHeight: "16px" }}>{item.value}</span>
+              <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(0,0,0,0.45)", fontFamily: "Satoshi Variable, sans-serif", lineHeight: "16px" }}>{item.delta}</span>
+            </div>
+            <Sparkline points={item.points} color={item.color} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Sparkline({ points, color }: { points: number[]; color: string }) {
+  const w = 200;
+  const h = 48;
+  const max = Math.max(...points);
+  const min = Math.min(...points);
+  const range = max - min || 1;
+  const step = w / (points.length - 1);
+
+  const pathD = points
+    .map((p, i) => {
+      const x = i * step;
+      const y = h - ((p - min) / range) * (h - 8) - 4;
+      return `${i === 0 ? "M" : "L"}${x},${y}`;
+    })
+    .join(" ");
+
+  const areaD = `${pathD} L${w},${h} L0,${h} Z`;
+
+  const midY = h - ((points[0] - min + (points[points.length - 1] - min)) / 2 / range) * (h - 8) - 4;
+
+  return (
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
+      <line x1="0" y1={midY} x2={w} y2={midY} stroke="rgba(0,0,0,0.12)" strokeWidth="1" strokeDasharray="4 3" />
+      <defs>
+        <linearGradient id={`grad-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill={`url(#grad-${color.replace("#", "")})`} />
+      <path d={pathD} fill="none" stroke={color} strokeWidth="1.5" />
     </svg>
   );
 }
