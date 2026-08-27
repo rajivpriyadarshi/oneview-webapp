@@ -143,6 +143,9 @@ export const api = createApi({
     crmLogout: builder.mutation<{ message: string }, void>({
       query: () => ({ url: "/crm/logout/", method: "POST" }),
     }),
+    crmResetData: builder.mutation<{ status: string; message: string }, void>({
+      query: () => ({ url: "/crm/reset/", method: "POST" }),
+    }),
 
     // Profile
     getProfile: builder.query<Profile, void>({
@@ -416,6 +419,7 @@ export const {
   useLogoutMutation,
   useCrmLoginMutation,
   useCrmLogoutMutation,
+  useCrmResetDataMutation,
   useGetProfileQuery,
   useUpdateProfileMutation,
   useListPortfoliosQuery,
