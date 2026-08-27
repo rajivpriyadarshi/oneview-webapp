@@ -168,7 +168,9 @@ const TW = {
   // fighting that block's text-[13px]. Per Figma 2411:13978.
   userMessageContent: "max-w-full [overflow-wrap:anywhere] rounded-[20px_20px_0_20px] bg-[#F3F3F3] p-[16px] font-satoshi text-[16px] font-medium leading-[1.5] tracking-[-0.16px] text-[#0D0D0D]",
   assistantMessageContent: "py-1",
-  messageStack: "max-w-full",
+  // w-full, not shrink-to-fit: full-width children (the artifact card) need a
+  // full-width parent to stretch into.
+  messageStack: "w-full min-w-0 max-w-full",
   replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
   replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[12px] py-[10px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   messageControls: "mt-2 inline-flex items-center gap-1.5",

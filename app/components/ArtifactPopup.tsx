@@ -35,26 +35,33 @@ export default function ArtifactPopup() {
 
   if (positioning === "client-panel") {
     return (
-      <div
-        className="absolute inset-0 z-[80] overflow-y-auto"
-        style={{
-          backgroundImage: "linear-gradient(125deg, rgba(255,244,216,0.94) 0%, rgba(255,207,92,0.78) 32%, rgba(246,155,205,0.72) 64%, rgba(227,212,248,0.82) 100%), url('/insights.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <button
-          type="button"
-          className="absolute right-[24px] top-[20px] z-[2] flex h-[40px] w-[40px] items-center justify-center rounded-full border border-black/10 bg-white text-black/80 shadow-[0_6px_22px_rgba(0,0,0,0.10)] transition hover:bg-white/90 hover:text-black"
-          onClick={closeArtifact}
-          aria-label="Close"
-        >
-          <CloseIcon />
-        </button>
+      <div className="absolute inset-0 z-[80]">
+        {/* Backdrop exported from Figma 2473:7283 rather than hand-mixed gradient
+            stops. It gets its own layer because opacity can't be applied to just
+            the background-image of the scroll container. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.82] backdrop-blur-[2px]"
+          style={{
+            backgroundImage: "url('/artifact-backdrop.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div className="absolute inset-0 overflow-y-auto">
+          <button
+            type="button"
+            className="absolute right-[24px] top-[20px] z-[2] flex h-[40px] w-[40px] items-center justify-center rounded-full border border-black/10 bg-white text-black/80 shadow-[0_6px_22px_rgba(0,0,0,0.10)] transition hover:bg-white/90 hover:text-black"
+            onClick={closeArtifact}
+            aria-label="Close"
+          >
+            <CloseIcon />
+          </button>
 
-        <div className="mx-auto flex min-h-full w-full max-w-[900px] items-start px-[32px] py-[96px] max-[900px]:px-[20px] max-[900px]:py-[78px]">
-          <div className="w-full rounded-[28px] bg-white px-[32px] py-[28px] shadow-[0_24px_80px_rgba(58,35,9,0.16)] max-[640px]:rounded-[22px] max-[640px]:px-[22px]">
-            <ArtifactRenderer artifact={artifact} />
+          <div className="relative z-[1] mx-auto flex min-h-full w-full max-w-[900px] items-start px-[32px] py-[96px] max-[900px]:px-[20px] max-[900px]:py-[78px]">
+            <div className="w-full rounded-[28px] bg-white px-[32px] py-[28px] shadow-[0_24px_80px_rgba(58,35,9,0.16)] max-[640px]:rounded-[22px] max-[640px]:px-[22px]">
+              <ArtifactRenderer artifact={artifact} />
+            </div>
           </div>
         </div>
       </div>
@@ -64,12 +71,20 @@ export default function ArtifactPopup() {
   if (positioning === "fixed") {
     return (
       <div
-        className="fixed inset-0 z-[600] overflow-y-auto p-[24px] backdrop-blur-[2px]"
-        style={{
-          background: "linear-gradient(125deg, rgba(255,244,216,0.80) 0%, rgba(255,203,48,0.78) 30%, rgba(246,155,205,0.80) 64%, rgba(224,211,247,0.80) 100%)",
-        }}
+        className="fixed inset-0 z-[600] overflow-y-auto p-[24px]"
         onClick={closeArtifact}
       >
+        {/* Same Figma backdrop (2473:7283) as the client-panel variant; fixed so
+            it stays put while the artifact scrolls. */}
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 opacity-[0.82] backdrop-blur-[2px]"
+          style={{
+            backgroundImage: "url('/artifact-backdrop.jpg')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
         <button
           type="button"
           className="fixed right-[24px] top-[20px] z-[2] flex h-[40px] w-[40px] items-center justify-center rounded-full border border-black/10 bg-white text-black/80 shadow-[0_6px_22px_rgba(0,0,0,0.10)] transition hover:bg-white/90 hover:text-black"
@@ -79,7 +94,7 @@ export default function ArtifactPopup() {
           <CloseIcon />
         </button>
 
-        <div className="mx-auto flex min-h-full w-full max-w-[760px] items-center py-[72px] max-[720px]:py-[56px]">
+        <div className="relative z-[1] mx-auto flex min-h-full w-full max-w-[760px] items-center py-[72px] max-[720px]:py-[56px]">
           <div
             className="w-full rounded-[28px] bg-white px-[28px] py-[24px] shadow-[0_24px_90px_rgba(79,45,8,0.16)] max-[640px]:rounded-[22px] max-[640px]:px-[22px]"
             onClick={(e) => e.stopPropagation()}
