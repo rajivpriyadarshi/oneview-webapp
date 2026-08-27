@@ -24,6 +24,15 @@ import {
 } from "../lib/documentsApi";
 import type { AuthSession, PasswordlessAuthSession, Profile, CRMAuthSession } from "../lib/realAuthApi";
 
+export type CrmAttentionItem = {
+  type: "meeting" | "task" | "portfolio" | "opportunity" | "request" | "message";
+  id: number;
+  title: string;
+  subtitle: string;
+  occurred_at: string | null;
+  scheduled_at: string | null;
+};
+
 export type CrmClient = {
   id: number;
   display_name: string;
@@ -32,10 +41,14 @@ export type CrmClient = {
   base_currency: string;
   primary_tax_jurisdiction: string;
   is_active: boolean;
+  priority: "high" | "medium" | "low";
   last_interaction_at: string | null;
   upcoming_meeting_at: string | null;
   net_worth: string | null;
   net_worth_currency: string | null;
+  net_worth_change_1m: string | null;
+  net_worth_change_1m_pct: string | null;
+  attention_item: CrmAttentionItem | null;
   created_at: string;
   updated_at: string;
 };
