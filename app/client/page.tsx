@@ -1252,7 +1252,7 @@ function ClientTabButton({
           alignItems: "center",
           gap: "8px",
           background: active ? "rgba(162, 144, 118, 0.20)" : "rgba(162, 144, 118, 0.00)",
-          fontSize: "13px",
+          fontSize: "14px",
           fontWeight: active ? 700 : 500,
         }}
         aria-current={active ? "page" : undefined}
