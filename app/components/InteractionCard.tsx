@@ -1,7 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import type { Interaction } from "../types/interactionTypes";
+import { getCrmInteraction } from "../lib/wealthCrmApi";
+import InteractionDetailModal from "./InteractionDetailModal";
 
 interface InteractionCardProps {
   interaction: Interaction;
@@ -9,11 +12,18 @@ interface InteractionCardProps {
   onToggleExpand: () => void;
 }
 
+// Cache for storing fetched interaction details
+const interactionDetailCache = new Map<number, Interaction & { body?: string | null }>();
+
 export default function InteractionCard({
   interaction,
   isExpanded,
   onToggleExpand,
 }: InteractionCardProps) {
+  const [detailedInteraction, setDetailedInteraction] = useState<Interaction & { body?: string | null }>(interaction);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hasLoadedDetail, setHasLoadedDetail] = useState(false);
   const getIconForSourceType = (sourceType: string): string => {
     switch (sourceType) {
       case "meeting_note":
@@ -61,15 +71,70 @@ export default function InteractionCard({
   };
 
   const hasExpandedContent =
-    interaction.extracted_summary ||
-    (interaction.key_takeaways && interaction.key_takeaways.length > 0) ||
-    (interaction.next_steps && interaction.next_steps.length > 0) ||
-    (interaction.attendees && interaction.attendees.length > 0);
+    detailedInteraction.extracted_summary ||
+    (detailedInteraction.key_takeaways && detailedInteraction.key_takeaways.length > 0) ||
+    (detailedInteraction.next_steps && detailedInteraction.next_steps.length > 0) ||
+    (detailedInteraction.attendees && detailedInteraction.attendees.length > 0);
+
+  // Fetch detailed interaction on expand
+  useEffect(() => {
+    if (isExpanded && !hasLoadedDetail) {
+      // Check if we have cached data
+      const cached = interactionDetailCache.get(interaction.id);
+      if (cached) {
+        setDetailedInteraction(cached);
+        setHasLoadedDetail(true);
+        return;
+      }
+
+      // Fetch from API if not cached
+      const fetchDetail = async () => {
+        setIsLoadingDetail(true);
+        try {
+          const detail = await getCrmInteraction(interaction.id);
+          // Merge the detailed data with the original interaction to preserve list-only fields
+          const mergedDetail = {
+            ...interaction, // Keep subtitle, memory_updated, etc. from list
+            ...detail, // Override with detailed data
+            subtitle: interaction.subtitle, // Preserve subtitle from list
+            memory_updated: interaction.memory_updated, // Preserve memory_updated from list
+          };
+
+          // Cache the result
+          interactionDetailCache.set(interaction.id, mergedDetail);
+          setDetailedInteraction(mergedDetail);
+          setHasLoadedDetail(true);
+        } catch (error) {
+          console.error("Failed to fetch interaction detail:", error);
+        } finally {
+          setIsLoadingDetail(false);
+        }
+      };
+      fetchDetail();
+    }
+  }, [isExpanded, hasLoadedDetail, interaction]);
+
+  // Reset detailed interaction when base interaction changes
+  useEffect(() => {
+    // Check cache first
+    const cached = interactionDetailCache.get(interaction.id);
+    if (cached) {
+      setDetailedInteraction(cached);
+      setHasLoadedDetail(true);
+    } else {
+      setDetailedInteraction(interaction);
+      setHasLoadedDetail(false);
+    }
+  }, [interaction.id, interaction]);
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+  };
 
   return (
     <div
       className={`timeline-row ${isExpanded ? "expanded" : ""}`}
-      onClick={() => hasExpandedContent && onToggleExpand()}
+      onClick={() => hasExpandedContent && !isModalOpen && onToggleExpand()}
       style={{ cursor: hasExpandedContent ? "pointer" : "default" }}
     >
       <div className="timeline-row-content">
@@ -84,11 +149,11 @@ export default function InteractionCard({
         </div>
 
         <div className="row-content">
-          <h3 className="interaction-title">{interaction.subject}</h3>
+          <h3 className="interaction-title">{detailedInteraction.subject}</h3>
           <p className="interaction-subtitle">
-            {interaction.subtitle}
+            {detailedInteraction.subtitle}
           </p>
-          {interaction.memory_updated && (
+          {detailedInteraction.memory_updated && (
             <div className="ai-action">
               <Image src="/ic-memory-updated.svg" alt="" width={12} height={12} />
               <span>Memory updated</span>
@@ -97,7 +162,7 @@ export default function InteractionCard({
         </div>
 
         <div className="row-actions">
-          <span className="timestamp">{formatTimestamp(interaction.occurred_at)}</span>
+          <span className="timestamp">{formatTimestamp(detailedInteraction.occurred_at)}</span>
           {hasExpandedContent && (
             <div className="chevron-icon" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -110,44 +175,78 @@ export default function InteractionCard({
 
       {isExpanded && hasExpandedContent && (
         <div className="expanded-body">
-          {interaction.extracted_summary && (
-            <p className="summary-text">{interaction.extracted_summary}</p>
-          )}
+          {isLoadingDetail ? (
+            <div className="loading-indicator" style={{ padding: "20px", textAlign: "center", color: "#6B7280", fontSize: "13px" }}>
+              Loading details...
+            </div>
+          ) : (
+            <>
+              {detailedInteraction.extracted_summary && (
+                <p className="summary-text">{detailedInteraction.extracted_summary}</p>
+              )}
 
-          {((interaction.key_takeaways && interaction.key_takeaways.length > 0) ||
-            (interaction.next_steps && interaction.next_steps.length > 0)) && (
-            <div className="takeaways-steps">
-              {interaction.key_takeaways && interaction.key_takeaways.length > 0 && (
-                <div className="key-takeaways">
-                  <h4 className="section-title">Key takeaways</h4>
-                  <div className="bullets">
-                    {interaction.key_takeaways.map((takeaway, index) => (
-                      <p key={index}>{takeaway}</p>
-                    ))}
-                  </div>
+              {((detailedInteraction.key_takeaways && detailedInteraction.key_takeaways.length > 0) ||
+                (detailedInteraction.next_steps && detailedInteraction.next_steps.length > 0)) && (
+                <div className="takeaways-steps">
+                  {detailedInteraction.key_takeaways && detailedInteraction.key_takeaways.length > 0 && (
+                    <div className="key-takeaways">
+                      <h4 className="section-title">Key takeaways</h4>
+                      <div className="bullets">
+                        {detailedInteraction.key_takeaways.map((takeaway, index) => (
+                          <p key={index}>{takeaway}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {detailedInteraction.next_steps && detailedInteraction.next_steps.length > 0 && (
+                    <div className="next-steps">
+                      <h4 className="section-title">Next steps</h4>
+                      <div className="steps-list">
+                        {detailedInteraction.next_steps.map((step, index) => (
+                          <p key={index}>{step}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {interaction.next_steps && interaction.next_steps.length > 0 && (
-                <div className="next-steps">
-                  <h4 className="section-title">Next steps</h4>
-                  <div className="steps-list">
-                    {interaction.next_steps.map((step, index) => (
-                      <p key={index}>{step}</p>
-                    ))}
-                  </div>
+              {detailedInteraction.attendees && detailedInteraction.attendees.length > 0 && (
+                <div className="attendees-section">
+                  <h4 className="section-title">Attendees</h4>
+                  <p className="attendees-list">{detailedInteraction.attendees.join(", ")}</p>
                 </div>
               )}
-            </div>
-          )}
 
-          {interaction.attendees && interaction.attendees.length > 0 && (
-            <div className="attendees-section">
-              <h4 className="section-title">Attendees</h4>
-              <p className="attendees-list">{interaction.attendees.join(", ")}</p>
-            </div>
+              {detailedInteraction.subject && detailedInteraction.body && (
+                <button
+                  type="button"
+                  className="interaction-view-details"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsModalOpen(true);
+                  }}
+                >
+                  View details
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              )}
+            </>
           )}
         </div>
+      )}
+
+      {detailedInteraction.subject && detailedInteraction.body && (
+        <InteractionDetailModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          subject={detailedInteraction.subject}
+          body={detailedInteraction.body}
+          showGradientBackground={false}
+        />
       )}
     </div>
   );

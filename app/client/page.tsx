@@ -1426,7 +1426,7 @@ function OverviewTab({
         aria-hidden="true"
       />
 
-      <section className="relative z-[1] h-[238px] bg-transparent px-[36px] max-[1180px]:h-[235px] max-[1180px]:px-[24px] max-[640px]:h-[200px] max-[640px]:px-[16px]">
+      <section className="relative z-[1] bg-transparent px-[36px] pb-[40px] max-[1180px]:px-[24px] max-[640px]:px-[16px]">
         <div className="relative z-[1] pt-[90px] max-[1180px]:pt-[72px] max-[640px]:pt-[48px]">
           <h1 className="m-0 font-['ButlerPro'] text-[42px] font-semibold leading-[120%] tracking-[-0.84px] text-[#4D2E0C] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]">
             {clientName}
