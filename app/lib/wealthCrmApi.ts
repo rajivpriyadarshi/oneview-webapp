@@ -102,6 +102,13 @@ export async function getClientDetail(clientId: number | string) {
   return apiRequest<ClientDetailResponse>(`/crm/clients/${encodeURIComponent(String(clientId))}/`);
 }
 
+export async function dismissClientInsight(clientId: number | string, insightId: number | string) {
+  return apiRequest<{ status: string }>(
+    `/crm/clients/${encodeURIComponent(String(clientId))}/insights/${encodeURIComponent(String(insightId))}/dismiss/`,
+    { method: "POST" },
+  );
+}
+
 export async function listClientInteractions(
   clientId: number | string,
   params?: {
@@ -140,4 +147,10 @@ export async function listClientInteractions(
   );
 
   return response;
+}
+
+export async function getCrmInteraction(interactionId: number | string) {
+  return apiRequest<Interaction & { body?: string | null }>(
+    `/crm/interactions/${encodeURIComponent(String(interactionId))}/`,
+  );
 }

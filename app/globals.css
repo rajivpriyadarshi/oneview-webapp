@@ -2993,7 +2993,7 @@ button:disabled {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   min-width: 0;
 }
 
@@ -3005,7 +3005,8 @@ button:disabled {
   letter-spacing: -0.36px;
   color: #111827;
   margin: 0;
-  font-feature-settings: 'ss03' on;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
 }
 
 .interaction-subtitle {
@@ -3015,13 +3016,15 @@ button:disabled {
   line-height: 24px;
   color: #6B7280;
   margin: 0;
-  font-feature-settings: 'ss03' on;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
 }
 
 .ai-action {
   display: flex;
   gap: 6px;
   align-items: center;
+  margin-top: 8px;
 }
 
 .ai-action svg {
@@ -3036,7 +3039,8 @@ button:disabled {
   font-weight: 500;
   line-height: 20px;
   color: #6B7280;
-  font-feature-settings: 'ss03' on;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
 }
 
 .row-actions {
@@ -3160,7 +3164,7 @@ button:disabled {
 }
 
 .interactions-tab-container .search-header-container {
-  margin-bottom: 32px;
+  margin-bottom: 40px;
 }
 
 /* Lottie Loading State */
