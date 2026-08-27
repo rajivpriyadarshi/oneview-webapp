@@ -77,6 +77,11 @@ export default function RootLayout({
       className={`${butlerPro.variable} ${butlerProRoman.variable} ${butlerProRomanDisplay.variable} ${butlerProMedium.variable} ${butlerProSemiBold.variable} ${satoshi.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Cascadia+Code:ital,wght@0,200..700;1,200..700&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
+      </head>
       <body suppressHydrationWarning>
         <StoreProvider>
           <AuthEvents />
