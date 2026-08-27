@@ -1074,7 +1074,7 @@ function remarkInlineBullets() {
 
 function rehypeBoldNumbers() {
   return (tree: import("hast").Root) => {
-    const PATTERN = /(\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?(?:\s*-\s*\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?)?|\b\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?%)/g;
+    const PATTERN = /(\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?(?:\s*[–—\-]\s*\$?[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?)?|\b\d+(?:\.\d+)?(?:\s*[–—\-]\s*\d+(?:\.\d+)?)?%)/g;
     visit(tree, "text", (node: import("hast").Text, index: number | undefined, parent: import("hast").Parent | undefined) => {
       if (!parent || index == null) return;
       const parts: (import("hast").Text | import("hast").Element)[] = [];

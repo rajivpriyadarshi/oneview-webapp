@@ -792,7 +792,8 @@ export default function ChatPage() {
                     sessions.map((session) => (
                       <div
                         key={session.id}
-                        className={TW.conversationDropdownItem}
+                        ref={(el) => { if (el && selectedSession?.id === session.id) { requestAnimationFrame(() => { const container = el.closest('[role="menu"]'); if (container) { container.scrollTop = Math.max(0, el.offsetTop - el.offsetHeight); } }); } }}
+                        className={`${TW.conversationDropdownItem} ${selectedSession?.id === session.id ? "!bg-black/[0.05] font-medium" : ""}`}
                         role="menuitem"
                         tabIndex={0}
                         onClick={() => void selectSession(session)}
@@ -3001,7 +3002,7 @@ function remarkInlineBullets() {
 // Wraps financial figures like $2.1M, $18,903, 5%, 0.06% in <strong>
 function rehypeBoldNumbers() {
   return (tree: import("hast").Root) => {
-    const PATTERN = /(\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?(?:\s*-\s*\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?)?|\b\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?%)/g;
+    const PATTERN = /(\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?(?:\s*[–—\-]\s*\$?[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?)?|\b\d+(?:\.\d+)?(?:\s*[–—\-]\s*\d+(?:\.\d+)?)?%)/g;
     visit(tree, "text", (node: import("hast").Text, index: number | undefined, parent: import("hast").Parent | undefined) => {
       if (!parent || index == null) return;
       const parts: (import("hast").Text | import("hast").Element)[] = [];
