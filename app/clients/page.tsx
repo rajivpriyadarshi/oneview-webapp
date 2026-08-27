@@ -3,12 +3,17 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
-import { useGetCrmClientsQuery, type CrmClient } from "../store/api";
+import { useGetCrmClientsQuery, type CrmClient, type CrmAttentionItem } from "../store/api";
 import { getStoredAuthToken } from "../lib/session";
+
+const SORT_OPTIONS = ["All priorities", "High", "Medium", "Low"] as const;
+type SortOption = (typeof SORT_OPTIONS)[number];
 
 export default function ClientsPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("All priorities");
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
 
   useEffect(() => {
     if (!getStoredAuthToken()) {
@@ -20,10 +25,18 @@ export default function ClientsPage() {
 
   const allClients = data?.results ?? [];
   const clients = useMemo(() => {
-    if (!searchQuery.trim()) return allClients;
-    const q = searchQuery.toLowerCase();
-    return allClients.filter((c) => c.display_name.toLowerCase().includes(q));
-  }, [allClients, searchQuery]);
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    let list = allClients;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = allClients.filter((c) => c.display_name.toLowerCase().includes(q));
+    }
+    if (sortBy !== "All priorities") {
+      const filterPriority = sortBy.toLowerCase();
+      list = list.filter((c) => (c.priority ?? "low") === filterPriority);
+    }
+    return [...list].sort((a, b) => (priorityOrder[a.priority ?? "low"] ?? 2) - (priorityOrder[b.priority ?? "low"] ?? 2));
+  }, [allClients, searchQuery, sortBy]);
   const totalCount = data?.count ?? 0;
 
   return (
@@ -41,16 +54,17 @@ export default function ClientsPage() {
         <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
           <h1 style={{ fontSize: 42, fontWeight: 600, color: "#000000", lineHeight: "50.4px", margin: 0, fontFamily: "ButlerPro, serif" }}>Client list</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, background: "white", border: "1px solid rgba(0,0,0,0.10)", borderRadius: 14, padding: "14px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, borderRadius: 16, outline: "1px solid #E5E7EB", outlineOffset: -1, padding: "12px 20px" }}>
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M17.5 17.5L13.125 13.125M15 8.75C15 12.2018 12.2018 15 8.75 15C5.29822 15 2.5 12.2018 2.5 8.75C2.5 5.29822 5.29822 2.5 8.75 2.5C12.2018 2.5 15 5.29822 15 8.75Z" stroke="rgba(0,0,0,0.40)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="9" cy="9" r="6.5" stroke="#4B5563" strokeWidth="2" />
+              <path d="M14 14L17.5 17.5" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" />
             </svg>
             <input
               type="text"
               placeholder="Search a client"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ border: "none", outline: "none", fontSize: 16, color: "#111827", background: "transparent", width: 300 }}
+              style={{ border: "none", outline: "none", fontSize: 15, color: "#111827", background: "transparent", width: 300, fontFamily: "Satoshi, sans-serif" }}
             />
           </div>
         </div>
@@ -66,12 +80,41 @@ export default function ClientsPage() {
                 {isLoading ? "Loading..." : `${totalCount} clients need your attention`}
               </p>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 14, color: "#4B5563" }}>Sort:</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>All priorities</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M3 4.5L6 7.5L9 4.5" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+            <div style={{ position: "relative" }}>
+              <div
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}
+              >
+                <span style={{ fontSize: 14, color: "#4B5563" }}>Sort:</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>{sortBy}</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: showSortDropdown ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+                  <path d="M3 4.5L6 7.5L9 4.5" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              {showSortDropdown && (
+                <div style={{
+                  position: "absolute", top: "100%", right: 0, marginTop: 8,
+                  background: "white", borderRadius: 12, border: "1px solid rgba(0,0,0,0.10)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.10)", overflow: "hidden", zIndex: 10, minWidth: 160,
+                }}>
+                  {SORT_OPTIONS.map((option) => (
+                    <div
+                      key={option}
+                      onClick={() => { setSortBy(option); setShowSortDropdown(false); }}
+                      style={{
+                        padding: "10px 16px", fontSize: 14, cursor: "pointer",
+                        color: sortBy === option ? "#111827" : "#4B5563",
+                        fontWeight: sortBy === option ? 700 : 400,
+                        background: sortBy === option ? "rgba(0,0,0,0.04)" : "white",
+                      }}
+                      onMouseEnter={(e) => { if (sortBy !== option) e.currentTarget.style.background = "rgba(0,0,0,0.02)"; }}
+                      onMouseLeave={(e) => { if (sortBy !== option) e.currentTarget.style.background = "white"; }}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -138,34 +181,11 @@ function formatNetWorth(amount: string | null, currency: string | null): string 
   return `${symbol}${num.toFixed(0)}`;
 }
 
-function getAttention(client: CrmClient): { title: string; subtitle: string; type: "meeting" | "message" } {
-  if (client.upcoming_meeting_at) {
-    const d = new Date(client.upcoming_meeting_at);
-    const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-    return { title: `Upcoming meeting on ${dateStr}`, subtitle: `Prepare for ${timeStr} meeting`, type: "meeting" };
-  }
-  if (client.last_interaction_at) {
-    const d = new Date(client.last_interaction_at);
-    const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    return { title: `Last interaction on ${dateStr}`, subtitle: "Review and follow up", type: "message" };
-  }
-  return { title: "No recent activity", subtitle: "Schedule a touchpoint", type: "message" };
-}
-
-function getPriority(client: CrmClient): "high" | "medium" | "low" {
-  if (!client.upcoming_meeting_at) return "low";
-  const daysUntil = (new Date(client.upcoming_meeting_at).getTime() - Date.now()) / 86_400_000;
-  if (daysUntil <= 2) return "high";
-  if (daysUntil <= 7) return "medium";
-  return "low";
-}
-
 function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: boolean; onNavigate: (id: number) => void }) {
   const initials = getInitials(client.display_name);
   const netWorth = formatNetWorth(client.net_worth, client.net_worth_currency);
-  const attention = getAttention(client);
-  const priority = getPriority(client);
+  const attention = client.attention_item;
+  const priority = client.priority ?? "low";
   const priorityStyle = PRIORITY_STYLES[priority];
 
   return (
@@ -199,11 +219,17 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-        <AttentionIcon type={attention.type} />
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "#090D1A", lineHeight: "20px" }}>{attention.title}</div>
-          <div style={{ fontSize: 12, color: "#475569", lineHeight: "18px" }}>{attention.subtitle}</div>
-        </div>
+        {attention ? (
+          <>
+            <AttentionIcon type={attention.type} />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "#090D1A", lineHeight: "20px" }}>{attention.title}</div>
+              <div style={{ fontSize: 12, color: "#475569", lineHeight: "18px" }}>{attention.subtitle}</div>
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 14, color: "#6B7280" }}>No recent activity</div>
+        )}
       </div>
 
       <div style={{ flex: "0 0 100px", display: "flex", justifyContent: "center" }}>
@@ -232,18 +258,24 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
   );
 }
 
-function AttentionIcon({ type }: { type: "meeting" | "message" }) {
-  const s = ATTENTION_ICON_STYLES[type];
+function AttentionIcon({ type }: { type: CrmAttentionItem["type"] }) {
+  const s = ATTENTION_ICON_STYLES[type] ?? ATTENTION_ICON_STYLES.message;
   return (
     <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {type === "meeting" && (
+      {(type === "meeting" || type === "task") && (
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <rect x="1" y="2.5" width="12" height="10.5" rx="1.5" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M1 5.5H13" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M4.5 1V3.5M9.5 1V3.5" stroke={s.stroke} strokeWidth="1.2" strokeLinecap="round" />
         </svg>
       )}
-      {type === "message" && (
+      {type === "portfolio" && (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="3" width="12" height="9" rx="1.5" stroke={s.stroke} strokeWidth="1.2" />
+          <path d="M5 3V2.5C5 1.94772 5.44772 1.5 6 1.5H8C8.55228 1.5 9 1.94772 9 2.5V3" stroke={s.stroke} strokeWidth="1.2" />
+        </svg>
+      )}
+      {(type === "message" || type === "opportunity" || type === "request") && (
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M1 2.5C1 1.94772 1.44772 1.5 2 1.5H12C12.5523 1.5 13 1.94772 13 2.5V9.5C13 10.0523 12.5523 10.5 12 10.5H2C1.44772 10.5 1 10.0523 1 9.5V2.5Z" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M1.5 2.5L7 7L12.5 2.5" stroke={s.stroke} strokeWidth="1.2" strokeLinecap="round" />
@@ -264,8 +296,12 @@ const PRIORITY_STYLES = {
   low: { bg: "#E5F7EB", color: "#218C47" },
 };
 
-const ATTENTION_ICON_STYLES = {
+const ATTENTION_ICON_STYLES: Record<string, { bg: string; stroke: string }> = {
   meeting: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
+  task: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
+  portfolio: { bg: "rgba(107,114,128,0.07)", stroke: "#475569" },
+  opportunity: { bg: "#F9EFDE", stroke: "#804D13" },
+  request: { bg: "#F9EFDE", stroke: "#804D13" },
   message: { bg: "#F9EFDE", stroke: "#804D13" },
 };
 

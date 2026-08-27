@@ -1,10 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
-import { useGetCrmClientsQuery, useGetCrmAlertsQuery, useGetCrmMeetingsQuery, type CrmClient, type CrmAlert, type CrmMeeting } from "../store/api";
+import { useGetCrmClientsQuery, useGetCrmAlertsQuery, useGetCrmMeetingsQuery, type CrmClient, type CrmAttentionItem, type CrmAlert, type CrmMeeting } from "../store/api";
 import { getStoredAuthToken, getStoredAdvisorProfile } from "../lib/session";
+
+const FILTER_TABS = ["All", "Task", "Meeting", "Portfolio", "Opportunities", "Requests"] as const;
+type FilterTab = (typeof FILTER_TABS)[number];
+
+const ATTENTION_TYPE_MAP: Record<FilterTab, CrmAttentionItem["type"][] | null> = {
+  All: null,
+  Task: ["task"],
+  Meeting: ["meeting"],
+  Portfolio: ["portfolio"],
+  Opportunities: ["opportunity"],
+  Requests: ["request"],
+};
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -12,6 +24,8 @@ export default function ClientsPage() {
   const [today, setToday] = useState("");
   const [showAlertsModal, setShowAlertsModal] = useState(false);
   const [showMeetingsModal, setShowMeetingsModal] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("All");
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (!getStoredAuthToken()) {
@@ -35,6 +49,29 @@ export default function ClientsPage() {
   const totalCount = data?.count ?? 0;
   const alerts = alertsData?.results ?? [];
   const meetings = meetingsData?.results ?? [];
+
+  const filteredClients = useMemo(() => {
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    const types = ATTENTION_TYPE_MAP[activeFilter];
+    const list = types ? clients.filter((c) => c.attention_item && types.includes(c.attention_item.type)) : [...clients];
+    return list.sort((a, b) => (priorityOrder[a.priority ?? "low"] ?? 2) - (priorityOrder[b.priority ?? "low"] ?? 2));
+  }, [clients, activeFilter]);
+
+  const displayClients = expanded ? filteredClients : filteredClients.slice(0, 4);
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<FilterTab, number> = { All: clients.length, Task: 0, Meeting: 0, Portfolio: 0, Opportunities: 0, Requests: 0 };
+    for (const c of clients) {
+      if (!c.attention_item) continue;
+      const t = c.attention_item.type;
+      if (t === "task") counts.Task++;
+      else if (t === "meeting") counts.Meeting++;
+      else if (t === "portfolio") counts.Portfolio++;
+      else if (t === "opportunity") counts.Opportunities++;
+      else if (t === "request") counts.Requests++;
+    }
+    return counts;
+  }, [clients]);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F8F8F8" }}>
@@ -64,64 +101,92 @@ export default function ClientsPage() {
             {/* Client queue */}
             <div style={{
               flex: 1, background: "white",
-              borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", overflow: "hidden",
+              borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", overflow: "hidden",
             }}>
-              <div style={{ padding: "24px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0 }}>Client queue</h2>
-                  <p style={{ fontSize: 14, color: "#475569", margin: "4px 0 0" }}>
-                    {isLoading ? "Loading..." : `${totalCount} clients need your attention`}
-                  </p>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 14, color: "#4B5563" }}>Sort:</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#111827" }}>All priorities</span>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M3 4.5L6 7.5L9 4.5" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
+              {/* Header */}
+              <div style={{ padding: "28px 28px 0" }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "#8b6b3a", marginBottom: 4 }}>Today</div>
+                <h2 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: 0 }}>
+                  {isLoading ? "Loading..." : `${totalCount} clients needs your attention`}
+                </h2>
               </div>
 
-              {/* Column headers */}
-              <div style={{
-                display: "flex", gap: 16, padding: "4px 24px",
-                background: "rgba(229,231,235,0.16)", borderBottom: "1px solid rgba(0,0,0,0.08)",
-              }}>
-                <div style={{ flex: "0 0 260px" }}>
-                  <span style={colHeaderStyle}>Client</span>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <span style={colHeaderStyle}>Needs attention</span>
-                </div>
-                <div style={{ flex: "0 0 100px", textAlign: "center" as const }}>
-                  <span style={colHeaderStyle}>Priority</span>
-                </div>
-                <div style={{ flex: "0 0 40px" }} />
+              {/* Filter tabs */}
+              <div style={{ display: "flex", gap: 8, padding: "16px 28px 20px", flexWrap: "wrap" }}>
+                {FILTER_TABS.map((tab) => {
+                  const isActive = activeFilter === tab;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => { setActiveFilter(tab); setExpanded(false); }}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 6,
+                        padding: "8px 14px", borderRadius: 20,
+                        border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)",
+                        background: isActive ? "#1a1a1a" : "white",
+                        color: isActive ? "white" : "#374151",
+                        fontSize: 13, fontWeight: 500, cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      {tab}
+                      <span style={{
+                        fontSize: 12, fontWeight: 600,
+                        color: isActive ? "rgba(255,255,255,0.7)" : "#6B7280",
+                      }}>
+                        {filterCounts[tab]}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
+              {/* Client rows */}
               {isError && (
-                <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
+                <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
                   Failed to load clients. Please try again.
                 </div>
               )}
               {isLoading && (
-                <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
+                <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
                   Loading clients...
                 </div>
               )}
-              {!isLoading && !isError && clients.length === 0 && (
-                <div style={{ padding: "40px 24px", textAlign: "center", color: "#6B7280" }}>
+              {!isLoading && !isError && filteredClients.length === 0 && (
+                <div style={{ padding: "40px 28px", textAlign: "center", color: "#6B7280" }}>
                   No clients need attention right now.
                 </div>
               )}
-              {clients.map((client, i) => (
+              {displayClients.map((client, i) => (
                 <ClientRow
                   key={client.id}
                   client={client}
-                  isLast={i === clients.length - 1}
+                  isLast={i === displayClients.length - 1 && (expanded || filteredClients.length <= 4)}
                   onNavigate={(id) => router.push(`/client?clientId=${id}`)}
                 />
               ))}
+
+              {/* Expand all */}
+              {filteredClients.length > 4 && (
+                <div
+                  onClick={() => setExpanded(!expanded)}
+                  style={{
+                    padding: "16px 28px",
+                    display: "flex", justifyContent: "center", alignItems: "center", gap: 6,
+                    cursor: "pointer", borderTop: "1px solid rgba(0,0,0,0.06)",
+                  }}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#374151" }}>
+                    {expanded ? "Show less" : "Expand all"}
+                  </span>
+                  <svg
+                    width="14" height="14" viewBox="0 0 14 14" fill="none"
+                    style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+                  >
+                    <path d="M3 5.5L7 9.5L11 5.5" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+              )}
             </div>
 
             {/* Right panels */}
@@ -259,34 +324,11 @@ function formatNetWorth(amount: string | null, currency: string | null): string 
   return `${symbol}${num.toFixed(0)}`;
 }
 
-function getAttention(client: CrmClient): { title: string; subtitle: string; type: "meeting" | "message" } {
-  if (client.upcoming_meeting_at) {
-    const d = new Date(client.upcoming_meeting_at);
-    const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-    return { title: `Upcoming meeting on ${dateStr}`, subtitle: `Prepare for ${timeStr} meeting`, type: "meeting" };
-  }
-  if (client.last_interaction_at) {
-    const d = new Date(client.last_interaction_at);
-    const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    return { title: `Last interaction on ${dateStr}`, subtitle: "Review and follow up", type: "message" };
-  }
-  return { title: "No recent activity", subtitle: "Schedule a touchpoint", type: "message" };
-}
-
-function getPriority(client: CrmClient): "high" | "medium" | "low" {
-  if (!client.upcoming_meeting_at) return "low";
-  const daysUntil = (new Date(client.upcoming_meeting_at).getTime() - Date.now()) / 86_400_000;
-  if (daysUntil <= 2) return "high";
-  if (daysUntil <= 7) return "medium";
-  return "low";
-}
-
 function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: boolean; onNavigate: (id: number) => void }) {
   const initials = getInitials(client.display_name);
   const netWorth = formatNetWorth(client.net_worth, client.net_worth_currency);
-  const attention = getAttention(client);
-  const priority = getPriority(client);
+  const attention = client.attention_item;
+  const priority = client.priority ?? "low";
   const priorityStyle = PRIORITY_STYLES[priority];
 
   return (
@@ -294,44 +336,47 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
       onClick={() => onNavigate(client.id)}
       style={{
         display: "flex", alignItems: "center", gap: 16,
-        padding: "20px 24px",
-        borderBottom: isLast ? "none" : "1px solid #E5E7EB",
+        padding: "18px 28px",
+        borderBottom: isLast ? "none" : "1px solid #F1F1F1",
         background: "white",
         cursor: "pointer",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.background = "#fafafa")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
     >
-      <div style={{ flex: "0 0 260px", display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ flex: "0 0 240px", display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{
           width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
-          backgroundImage: "linear-gradient(#FFFFFFB2, #FFFFFFB2), url('/insights.png')",
-          backgroundSize: "cover", backgroundPosition: "center",
+          background: "linear-gradient(135deg, #f5e6c8, #e8d5a8)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: "#4C2D08" }}>{initials}</span>
         </div>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{client.display_name}</div>
-          <div style={{ fontSize: 14, color: "#4B5563", marginTop: 2 }}>
-            Net worth <strong>{netWorth}</strong>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>{client.display_name}</div>
+          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
+            Net worth <strong style={{ color: "#111827" }}>{netWorth}</strong>
           </div>
         </div>
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-        <AttentionIcon type={attention.type} />
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 500, color: "#090D1A", lineHeight: "20px" }}>{attention.title}</div>
-          <div style={{ fontSize: 12, color: "#475569", lineHeight: "18px" }}>{attention.subtitle}</div>
-        </div>
+        {attention && (
+          <>
+            <AttentionIcon type={attention.type} />
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "#090D1A", lineHeight: "20px" }}>{attention.title}</div>
+              <div style={{ fontSize: 12, color: "#6B7280", lineHeight: "18px" }}>{attention.subtitle}</div>
+            </div>
+          </>
+        )}
       </div>
 
-      <div style={{ flex: "0 0 100px", display: "flex", justifyContent: "center" }}>
+      <div style={{ flex: "0 0 80px", display: "flex", justifyContent: "center" }}>
         <span style={{
-          padding: "4px 6px", borderRadius: 6,
+          padding: "4px 8px", borderRadius: 6,
           background: priorityStyle.bg, color: priorityStyle.color,
-          fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "1.15px",
+          fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.8px",
         }}>
           {priority}
         </span>
@@ -353,18 +398,19 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
   );
 }
 
-function AttentionIcon({ type }: { type: "meeting" | "message" }) {
-  const s = ATTENTION_ICON_STYLES[type];
+function AttentionIcon({ type }: { type: CrmAttentionItem["type"] }) {
+  const iconType = type === "meeting" || type === "task" ? "meeting" : "message";
+  const s = ATTENTION_ICON_STYLES[iconType];
   return (
     <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {type === "meeting" && (
+      {iconType === "meeting" && (
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <rect x="1" y="2.5" width="12" height="10.5" rx="1.5" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M1 5.5H13" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M4.5 1V3.5M9.5 1V3.5" stroke={s.stroke} strokeWidth="1.2" strokeLinecap="round" />
         </svg>
       )}
-      {type === "message" && (
+      {iconType === "message" && (
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M1 2.5C1 1.94772 1.44772 1.5 2 1.5H12C12.5523 1.5 13 1.94772 13 2.5V9.5C13 10.0523 12.5523 10.5 12 10.5H2C1.44772 10.5 1 10.0523 1 9.5V2.5Z" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M1.5 2.5L7 7L12.5 2.5" stroke={s.stroke} strokeWidth="1.2" strokeLinecap="round" />
@@ -529,10 +575,6 @@ function ModalOverlay({ onClose, children }: { onClose: () => void; children: Re
   );
 }
 
-const colHeaderStyle: React.CSSProperties = {
-  fontSize: 12, fontWeight: 700, color: "rgba(116,116,126,0.70)",
-  textTransform: "uppercase", letterSpacing: "1.2px",
-};
 
 const PRIORITY_STYLES = {
   high: { bg: "#FFF0EB", color: "#D92206" },
