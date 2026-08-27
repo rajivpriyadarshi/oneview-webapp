@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getStoredAdvisorProfile, clearAuthToken } from "../lib/session";
-import { useCrmLogoutMutation } from "../store/api";
+import { useCrmLogoutMutation, useCrmResetDataMutation } from "../store/api";
 
 const ACTIVE_COLOR = "#804D13";
 const INACTIVE_COLOR = "rgba(0,0,0,0.70)";
@@ -19,7 +19,9 @@ export default function Sidebar(_props: SidebarProps = {}) {
   const router = useRouter();
   const [initial, setInitial] = useState("N");
   const [showLogout, setShowLogout] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [crmLogout, { isLoading: isLoggingOut }] = useCrmLogoutMutation();
+  const [crmResetData] = useCrmResetDataMutation();
 
   useEffect(() => {
     const advisor = getStoredAdvisorProfile();
@@ -34,6 +36,17 @@ export default function Sidebar(_props: SidebarProps = {}) {
     } finally {
       clearAuthToken();
       router.replace("/auth");
+    }
+  }
+
+  async function handleResetData() {
+    setShowLogout(false);
+    setIsResetting(true);
+    try {
+      await crmResetData().unwrap();
+      window.location.reload();
+    } catch {
+      setIsResetting(false);
     }
   }
 
@@ -91,7 +104,7 @@ export default function Sidebar(_props: SidebarProps = {}) {
         </button>
       </div>
 
-      {/* Logout confirmation dialog */}
+      {/* Logout / Reset dialog */}
       {showLogout && (
         <div
           onClick={() => setShowLogout(false)}
@@ -109,9 +122,9 @@ export default function Sidebar(_props: SidebarProps = {}) {
               display: "flex", flexDirection: "column", gap: 8,
             }}
           >
-            <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A" }}>Log out?</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#0F172A" }}>Account</div>
             <div style={{ fontSize: 14, color: "#475569", marginBottom: 16 }}>
-              You'll need to sign in again to access your clients.
+              Manage your session and data.
             </div>
             <button
               onClick={handleLogout}
@@ -123,7 +136,17 @@ export default function Sidebar(_props: SidebarProps = {}) {
                 opacity: isLoggingOut ? 0.7 : 1,
               }}
             >
-              {isLoggingOut ? "Logging out…" : "Yes, log out"}
+              {isLoggingOut ? "Logging out…" : "Log out"}
+            </button>
+            <button
+              onClick={handleResetData}
+              style={{
+                padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer",
+                background: "#FEE2E2", color: "#DC2626",
+                fontSize: 15, fontWeight: 600,
+              }}
+            >
+              Reset data
             </button>
             <button
               onClick={() => setShowLogout(false)}
@@ -136,6 +159,23 @@ export default function Sidebar(_props: SidebarProps = {}) {
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Resetting data overlay — blocks all interaction */}
+      {isResetting && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(255,255,255,0.85)", backdropFilter: "blur(6px)",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16,
+        }}>
+          <div style={{
+            width: 40, height: 40, border: "4px solid #E5E7EB", borderTopColor: ACTIVE_COLOR,
+            borderRadius: "50%", animation: "spin 0.8s linear infinite",
+          }} />
+          <div style={{ fontSize: 16, fontWeight: 600, color: "#0F172A" }}>Resetting data…</div>
+          <div style={{ fontSize: 14, color: "#6B7280" }}>Please wait, this may take a moment.</div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       )}
     </aside>
