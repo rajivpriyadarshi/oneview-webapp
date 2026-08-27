@@ -50,7 +50,7 @@ export default function ArtifactMessage({ artifact }: { artifact: ArtifactData }
 
   return (
     <div
-      className="my-3 max-w-[496px] cursor-pointer rounded-[22px] p-[2px] transition hover:-translate-y-px"
+      className="my-3 w-full cursor-pointer rounded-[16px] p-[1.5px] transition hover:-translate-y-px"
       style={{
         backgroundImage: "linear-gradient(120deg, rgba(255,190,106,0.95), rgba(246,224,177,0.55) 45%, rgba(210,122,196,0.8)), url('/insights.png')",
         backgroundSize: "cover",
@@ -68,18 +68,18 @@ export default function ArtifactMessage({ artifact }: { artifact: ArtifactData }
       }}
     >
       <div
-        className="flex min-h-[132px] items-center justify-between gap-[16px] rounded-[20px] bg-white px-[22px] py-[20px]"
+        className="flex items-center justify-between gap-[16px] rounded-[14.5px] bg-white px-[16px] py-[20px]"
       >
         <div className="min-w-0">
-          <p className="mb-[10px] font-satoshi text-[11px] font-medium uppercase tracking-[0.18em] text-black/50">
+          <p className="mb-[4px] font-satoshi text-[10px] font-medium uppercase tracking-[0.14em] text-black/50">
             {label}
           </p>
-          <p className="font-satoshi text-[18px] font-semibold leading-[1.25] text-[#7b674f]">
+          <p className="truncate font-satoshi text-[16px] font-semibold leading-[1.25] tracking-[-0.16px] text-[#7b674f]">
             {title}
           </p>
           <span className="sr-only">Click to view details</span>
         </div>
-        <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[10px] bg-[linear-gradient(135deg,#ffe7a4_0%,#f7b73f_46%,#e9bdd8_100%)] text-[#a46100] shadow-[0_6px_18px_rgba(178,108,21,0.18)]">
+        <span className="grid h-[28px] w-[28px] shrink-0 place-items-center rounded-[9px] bg-[linear-gradient(135deg,#ffe7a4_0%,#f7b73f_46%,#e9bdd8_100%)] text-[#a46100] shadow-[0_4px_12px_rgba(178,108,21,0.18)]">
           <ArrowIcon />
         </span>
       </div>

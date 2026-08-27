@@ -164,7 +164,9 @@ const TW = {
   messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
   messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
   messageContent: "max-w-full [overflow-wrap:anywhere] rounded-lg font-satoshi text-[13px] leading-relaxed text-black",
-  userMessageContent: "rounded-[20px_20px_4px_20px] border border-white/50 bg-[#f4f4f4]/70 px-[16px] py-[14px] text-black shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
+  // Self-contained (not layered on messageContent) so its 16px type isn't
+  // fighting that block's text-[13px]. Per Figma 2411:13978.
+  userMessageContent: "max-w-full [overflow-wrap:anywhere] rounded-[20px_20px_0_20px] bg-[#F3F3F3] p-[16px] font-satoshi text-[16px] font-medium leading-[1.5] tracking-[-0.16px] text-[#0D0D0D]",
   assistantMessageContent: "py-1",
   messageStack: "max-w-full",
   replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
@@ -173,7 +175,7 @@ const TW = {
   inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
   actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
   branchCount: "font-satoshi text-[12px] font-bold tabular-nums",
-  markdown: "[overflow-wrap:anywhere] font-satoshi text-[14px] leading-[18.9px] text-black/90 [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
+  markdown: "[overflow-wrap:anywhere] font-satoshi text-[16px] leading-[1.5] tracking-[-0.16px] text-[#0D0D0D] [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
   toolGroup: "my-3 overflow-hidden rounded-[10px] border border-[#0e5f5b]/10 bg-white/70",
   toolSummary: "flex cursor-pointer list-none items-center justify-between gap-2.5 px-3.5 py-3 select-none [&::-webkit-details-marker]:hidden",
   toolLabel: "inline-flex items-center gap-[8px] font-satoshi text-[12px] font-bold text-[#0e5f5b] [&_svg]:transition-transform",
@@ -521,7 +523,9 @@ export default function ChatOnePage() {
                       <div
                         // The row is 16px tall per Figma; the ::before pad extends the
                         // click target into the 16px gap without affecting layout.
-                        className="group/client relative flex h-4 cursor-pointer items-center px-2 before:absolute before:inset-x-0 before:-inset-y-2 before:-z-10 before:content-['']"
+                        // mb-1 when open gives the folder title a little air above
+                        // its chat list (on top of the wrapper's gap-1).
+                        className={`group/client relative flex h-4 cursor-pointer items-center px-2 before:absolute before:inset-x-0 before:-inset-y-2 before:-z-10 before:content-[''] ${isExpanded ? "mb-1" : ""}`}
                         onClick={() => void toggleClientGroup(client)}
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -553,7 +557,7 @@ export default function ChatOnePage() {
                           {showNewChat && (
                             <div
                               style={ACTIVE_CHAT_BG}
-                              className="cursor-pointer truncate rounded-lg px-2 py-[7px] font-satoshi text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-black"
+                              className="cursor-pointer truncate rounded-lg px-2 py-[7px] font-satoshi text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-black"
                               onClick={() => { setSelectedClientId(client.id); startNewChat(); }}
                             >
                               New chat
@@ -572,7 +576,7 @@ export default function ChatOnePage() {
                                 <div
                                   key={session.id}
                                   style={isActive ? ACTIVE_CHAT_BG : undefined}
-                                  className={`cursor-pointer truncate rounded-lg px-2 py-[7px] font-satoshi text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-black ${isActive ? "" : "hover:bg-black/[0.04]"}`}
+                                  className={`cursor-pointer truncate rounded-lg px-2 py-[7px] font-satoshi text-[12px] font-normal leading-[18px] tracking-[-0.24px] text-black ${isActive ? "" : "hover:bg-black/[0.04]"}`}
                                   onClick={() => void selectSession(session, client.id)}
                                 >
                                   {session.title}
@@ -1007,7 +1011,7 @@ function ThreadThinking() {
 function UserMessage() {
   return (
     <MessagePrimitive.Root className={TW.messageUser}>
-      <div className={`${TW.messageContent} ${TW.userMessageContent}`}>
+      <div className={TW.userMessageContent}>
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>

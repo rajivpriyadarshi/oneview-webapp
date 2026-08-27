@@ -162,7 +162,8 @@ export function WorkflowExecutionSteps({
               <div>
                 <span style={{
                   color: "black",
-                  fontSize: 12,
+                  fontSize: 16,
+                  letterSpacing: "-0.16px",
                   fontFamily: "Satoshi Variable, Satoshi, sans-serif",
                   fontWeight: 400,
                 }}>
@@ -170,7 +171,8 @@ export function WorkflowExecutionSteps({
                 </span>
                 <span style={{
                   color: "black",
-                  fontSize: 12,
+                  fontSize: 16,
+                  letterSpacing: "-0.16px",
                   fontFamily: "Satoshi Variable, Satoshi, sans-serif",
                   fontWeight: 500,
                 }}>
@@ -207,8 +209,9 @@ export function WorkflowExecutionSteps({
                   }} />
                 </div>
                 <div style={{
-                  color: "rgba(113, 113, 122, 0.80)",
+                  color: "rgba(0, 0, 0, 0.6)",
                   fontSize: 12,
+                  letterSpacing: "-0.12px",
                   fontFamily: "Satoshi Variable, Satoshi, sans-serif",
                   fontWeight: 400,
                 }}>
