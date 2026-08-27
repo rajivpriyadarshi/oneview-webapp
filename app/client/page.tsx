@@ -143,6 +143,15 @@ const DEFAULT_COMPOSER_PROMPTS: ChatPrompt[] = [
   },
 ];
 
+const MOCK_ASSET_ALLOCATION_BUCKETS = [
+  { label: "ETF", value: "6900000", pct: "34.30" },
+  { label: "EQUITY", value: "5200000", pct: "25.87" },
+  { label: "FIXED INCOME", value: "3600000", pct: "17.91" },
+  { label: "REAL ASSETS", value: "2600000", pct: "12.94" },
+  { label: "HEDGE FUNDS", value: "1800000", pct: "8.96" },
+];
+const ASSET_ALLOCATION_CHART_ROTATION_DEG = -90;
+
 type AiChatMessageMetadata = {
   session_id?: string;
   message_id?: string;
@@ -1276,6 +1285,8 @@ function OverviewTab({
   const [clientDetail, setClientDetail] = useState<ClientDetailResponse | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [dismissedInsightIds, setDismissedInsightIds] = useState<Set<string>>(() => new Set());
+  const searchParams = useSearchParams();
+  const useMockAssetAllocation = searchParams.get("mock_asset_allocation") === "1";
 
   useEffect(() => {
     if (!clientId) {
@@ -1388,8 +1399,12 @@ function OverviewTab({
   const hasAumChange = Boolean(aumChange || aumChangePct);
 
   // Asset allocation data
-  const assetAllocationData = clientDetail?.asset_allocation?.buckets || [];
-  const assetAllocationTotal = clientDetail?.asset_allocation?.total_managed
+  const assetAllocationData = useMockAssetAllocation
+    ? MOCK_ASSET_ALLOCATION_BUCKETS
+    : clientDetail?.asset_allocation?.buckets || [];
+  const assetAllocationTotal = useMockAssetAllocation
+    ? "$20.1M"
+    : clientDetail?.asset_allocation?.total_managed
     ? formatClientMoney(clientDetail.asset_allocation.total_managed, clientDetail.asset_allocation.currency)
     : clientAum;
   const insightItems = getInsightItems(clientDetail?.insights);
@@ -2218,7 +2233,7 @@ function AssetAllocationChart({
   totalLabel?: string;
   buckets?: Array<{ label: string; value: string; pct: string }>;
 }) {
-  const allocationColors = ["#1D761F", "#1E8A4B", "#FFC14E", "#10B981", "#C8F65C", "#14B8A6", "#8B5CF6", "#F97316"];
+  const allocationColors = ["#1D761F", "#1E8AAA", "#FFC14E", "#10B981", "#C8F65C", "#14B8A6", "#8B5CF6", "#F97316", "#804D13", "#FF5733","#FFD700", "#FFA500", "#14B8D3"];
   const slices = buckets
     .map((bucket, index) => ({
       label: bucket.label || "Uncategorized",
@@ -2236,33 +2251,53 @@ function AssetAllocationChart({
   const allocationAnnotations = allocationTotal > 0 ? visibleSlices.map((slice) => {
     const start = allocationCumulative;
     allocationCumulative += slice.value;
+    const end = allocationCumulative;
 
-    const midAngle = -90 + ((start + slice.value / 2) / allocationTotal) * 360;
-    const angle = (midAngle * Math.PI) / 180;
-    const cos = Math.cos(angle);
-    const sin = Math.sin(angle);
-    const dotRadius = 104;
-    const elbowRadius = 134;
-    const labelChars = Math.max(slice.label.length, formatPercent(slice.value).length);
-    const labelGap = 26 + Math.min(42, labelChars * 1.8);
-    const labelRadius = 112 + labelGap;
-    const labelX = 160 + (cos >= 0 ? 1 : -1) * labelRadius;
-    const labelY = Math.max(22, Math.min(292, 160 + sin * 152));
-    const elbowX = 160 + cos * elbowRadius;
-    const elbowY = 160 + sin * elbowRadius;
-    const lineEndX = cos >= 0 ? labelX - 8 : labelX + 8;
+    // Calculate the mid-angle of the arc segment to match ChartJS rendering
+    // ChartJS with rotation:-90 actually starts at LEFT (180° or -180°) and goes clockwise
+    // Our percentages go 0% -> 100% clockwise from LEFT
+    const startPct = start / allocationTotal;
+    const endPct = end / allocationTotal;
+    const midPct = (startPct + endPct) / 2;
+
+    // Convert to angle: ChartJS starts at left (180°), we need to match that
+    // Shift by 90° to the left: -90° - 90° = -180°
+    const chartStartAngle = ASSET_ALLOCATION_CHART_ROTATION_DEG - 90;
+    const midAngleDeg = chartStartAngle + (midPct * 360);
+    const midAngleRad = (midAngleDeg * Math.PI) / 180;
+
+    const cos = Math.cos(midAngleRad);
+    const sin = Math.sin(midAngleRad);
+
+    // Chart center and radii (reduced by 30% for shorter lines)
+    const centerX = 160;
+    const centerY = 160;
+    const dotRadius = 104;  // Dot on the arc perimeter
+    const elbowRadius = 125; // Elbow point for the line (reduced from 134)
+    const labelRadius = 155;  // Label position (reduced from 180)
+
+    // Calculate positions along the radial line
+    const dotX = centerX + cos * dotRadius;
+    const dotY = centerY + sin * dotRadius;
+    const elbowX = centerX + cos * elbowRadius;
+    const elbowY = centerY + sin * elbowRadius;
+    const labelX = centerX + cos * labelRadius;
+    const labelY = centerY + sin * labelRadius;
+
+    // Determine text anchor and line end based on which side of the chart
     const textAnchor: "start" | "end" = cos >= 0 ? "start" : "end";
+    const lineEndX = cos >= 0 ? labelX - 8 : labelX + 8;
 
     return {
       ...slice,
       labelText: slice.label,
       dot: {
-        x: 160 + cos * dotRadius,
-        y: 160 + sin * dotRadius,
+        x: dotX,
+        y: dotY,
       },
       line: {
-        x1: 160 + cos * dotRadius,
-        y1: 160 + sin * dotRadius,
+        x1: dotX,
+        y1: dotY,
         x2: elbowX,
         y2: elbowY,
         x3: lineEndX,
@@ -2294,7 +2329,7 @@ function AssetAllocationChart({
     responsive: true,
     maintainAspectRatio: false,
     cutout: "71%",
-    rotation: -90,
+    rotation: ASSET_ALLOCATION_CHART_ROTATION_DEG,
     plugins: {
       legend: {
         display: false,
@@ -2332,6 +2367,7 @@ function AssetAllocationChart({
           </span>
         </div>
 
+        {/* Render all labels */}
         {hasAllocationData ? (
           <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 320 320" fill="none" aria-hidden="true">
             {allocationAnnotations.map((annotation, index) => (
