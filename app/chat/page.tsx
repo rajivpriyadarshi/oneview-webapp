@@ -412,7 +412,7 @@ export default function ChatOnePage() {
       </header>
 
       {/* Main layout */}
-      <div className="ml-[80px] flex h-screen pt-[60px]">
+      <div className="ml-[80px] flex h-screen pt-[50px]">
         {/* Left Panel */}
         <aside className={`relative h-full shrink-0 border-r border-black/10 backdrop-blur-[12px] transition-all duration-300 max-[900px]:hidden ${sidebarCollapsed ? "w-0 overflow-hidden border-r-0" : "w-[348px]"}`}>
           {/* Search input */}
@@ -1015,8 +1015,86 @@ function AssistantActionBar() {
   );
 }
 
+function remarkCapsHeadings() {
+  return (tree: import("mdast").Root) => {
+    visit(tree, "paragraph", (node: import("mdast").Paragraph, index: number | undefined, parent: import("mdast").Parent | undefined) => {
+      if (!parent || index == null) return;
+      if (node.children.some((c) => c.type !== "text")) return;
+      const raw = node.children.map((c) => ("value" in c ? c.value : "")).join("").trim();
+      const isAllCaps = /^[A-Z][A-Z\s\d\-&/]{1,58}:?$/.test(raw);
+      const isTitleHeading = raw.length <= 60 && /^[A-Z]/.test(raw) && /[?:]$/.test(raw) && !/\./.test(raw);
+      if (!isAllCaps && !isTitleHeading) return;
+      node.children = [{
+        type: "strong",
+        data: { hProperties: { className: ["heading"] } },
+        children: [{ type: "text", value: raw }],
+      } as unknown as import("mdast").Strong];
+    });
+  };
+}
+
+function remarkInlineBullets() {
+  function extractText(node: import("mdast").PhrasingContent): string {
+    if ("value" in node) return node.value;
+    if ("children" in node) return (node.children as import("mdast").PhrasingContent[]).map(extractText).join("");
+    return "";
+  }
+  return (tree: import("mdast").Root) => {
+    visit(tree, "paragraph", (node: import("mdast").Paragraph, index: number | undefined, parent: import("mdast").Parent | undefined) => {
+      if (!parent || index == null) return;
+      const raw = node.children.map(extractText).join("");
+      if (!raw.includes("•")) return;
+      const parts = raw.split("•").map((s) => s.trim()).filter(Boolean);
+      if (parts.length < 2) return;
+
+      const makeList = (items: string[]): import("mdast").List => ({
+        type: "list",
+        ordered: false,
+        spread: false,
+        children: items.map((text) => ({
+          type: "listItem" as const,
+          spread: false,
+          children: [{ type: "paragraph" as const, children: [{ type: "text" as const, value: text }] }],
+        })),
+      });
+
+      if (parent.type === "listItem") {
+        const [lead, ...rest] = parts;
+        const replacements: import("mdast").Content[] = [
+          { type: "paragraph", children: [{ type: "text", value: lead }] },
+          makeList(rest),
+        ];
+        parent.children.splice(index, 1, ...replacements);
+      } else {
+        parent.children.splice(index, 1, makeList(parts));
+      }
+    });
+  };
+}
+
+function rehypeBoldNumbers() {
+  return (tree: import("hast").Root) => {
+    const PATTERN = /(\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?(?:\s*-\s*\$[\d,]+(?:\.\d+)?(?:[KMBTkmbt](?:\b|(?=[^a-zA-Z])))?)?|\b\d+(?:\.\d+)?(?:\s*-\s*\d+(?:\.\d+)?)?%)/g;
+    visit(tree, "text", (node: import("hast").Text, index: number | undefined, parent: import("hast").Parent | undefined) => {
+      if (!parent || index == null) return;
+      const parts: (import("hast").Text | import("hast").Element)[] = [];
+      let last = 0;
+      let match;
+      PATTERN.lastIndex = 0;
+      while ((match = PATTERN.exec(node.value)) !== null) {
+        if (match.index > last) parts.push({ type: "text", value: node.value.slice(last, match.index) });
+        parts.push({ type: "element", tagName: "strong", properties: { className: ["num"] }, children: [{ type: "text", value: match[0] }] });
+        last = match.index + match[0].length;
+      }
+      if (parts.length === 0) return;
+      if (last < node.value.length) parts.push({ type: "text", value: node.value.slice(last) });
+      parent.children.splice(index, 1, ...parts);
+    });
+  };
+}
+
 function MarkdownText() {
-  return <MarkdownTextPrimitive className={TW.markdown} remarkPlugins={[remarkGfm]} />;
+  return <MarkdownTextPrimitive className={TW.markdown} remarkPlugins={[remarkGfm, remarkCapsHeadings, remarkInlineBullets]} rehypePlugins={[rehypeBoldNumbers]} />;
 }
 
 function ToolCallGroup({ children, count, status }: { children: ReactNode; count: number; status: string }) {

@@ -194,7 +194,7 @@ const TW = {
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
   advisorHeader: "relative z-[40] flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
-  conversationBtn: "inline-flex w-full min-w-0 max-w-full items-center justify-start gap-[8px] overflow-hidden rounded-xl border-0 bg-transparent px-[12px] py-[10px] text-left font-satoshi text-[14px] font-medium leading-[130%] tracking-normal text-black [&_svg]:shrink-0",
+  conversationBtn: "inline-flex w-full min-w-0 max-w-full cursor-pointer items-center justify-start gap-[8px] overflow-hidden rounded-xl border-0 bg-transparent px-[12px] py-[10px] text-left font-satoshi text-[14px] font-medium leading-[130%] tracking-normal text-black [&_svg]:shrink-0",
   conversationText: "block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
   conversationDropdown: "absolute top-[43px] left-[-7px] z-[60] w-[238px] max-h-[50vh] overflow-y-auto rounded-[22px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] max-[640px]:left-[-4px] max-[640px]:w-[calc(100vw-64px)]",
   conversationDropdownItem: "flex min-h-[46px] w-full cursor-pointer items-center border-0 border-b border-black/10 bg-white px-[24px] text-left font-satoshi text-[13px] font-normal leading-[1.15] text-black transition last:border-b-0 hover:bg-black/[0.025]",
@@ -244,7 +244,7 @@ const TW = {
   messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
   messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
   messageContent: "max-w-full [overflow-wrap:anywhere] rounded-lg font-satoshi text-[13px] leading-relaxed text-black",
-  userMessageContent: "rounded-[18px_18px_4px_18px] border border-white/50 bg-[#ede8df] px-[14px] py-[12px] text-black",
+  userMessageContent: "rounded-[20px_20px_4px_20px] border border-white/50 bg-[#ede8df] px-[16px] py-[14px] text-black shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
   assistantMessageContent: "py-1",
   messageStack: "max-w-full",
   replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
@@ -253,7 +253,7 @@ const TW = {
   inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
   actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
   branchCount: "font-satoshi text-[12px] font-bold tabular-nums",
-  markdown: "[overflow-wrap:anywhere] font-satoshi text-[13px] leading-relaxed text-black [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
+  markdown: "[overflow-wrap:anywhere] font-satoshi text-[14px] leading-[18.9px] text-black/90 [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
   toolGroup: "my-3 overflow-hidden rounded-[10px] border border-[#0e5f5b]/10 bg-white/70",
   toolSummary: "flex cursor-pointer list-none items-center justify-between gap-2.5 px-3.5 py-3 select-none [&::-webkit-details-marker]:hidden",
   toolLabel: "inline-flex items-center gap-[8px] font-satoshi text-[12px] font-bold text-[#0e5f5b] [&_svg]:transition-transform",
@@ -2945,8 +2945,8 @@ function remarkCapsHeadings() {
   return (tree: import("mdast").Root) => {
     visit(tree, "paragraph", (node: import("mdast").Paragraph, index: number | undefined, parent: import("mdast").Parent | undefined) => {
       if (!parent || index == null) return;
+      if (node.children.some((c) => c.type !== "text")) return;
       const raw = node.children.map((c) => ("value" in c ? c.value : "")).join("").trim();
-      // Match heading-like lines: ALL CAPS, or short Title Case lines ending with : or ?
       const isAllCaps = /^[A-Z][A-Z\s\d\-&/]{1,58}:?$/.test(raw);
       const isTitleHeading = raw.length <= 60 && /^[A-Z]/.test(raw) && /[?:]$/.test(raw) && !/\./.test(raw);
       if (!isAllCaps && !isTitleHeading) return;
@@ -2960,10 +2960,15 @@ function remarkCapsHeadings() {
 }
 
 function remarkInlineBullets() {
+  function extractText(node: import("mdast").PhrasingContent): string {
+    if ("value" in node) return node.value;
+    if ("children" in node) return (node.children as import("mdast").PhrasingContent[]).map(extractText).join("");
+    return "";
+  }
   return (tree: import("mdast").Root) => {
     visit(tree, "paragraph", (node: import("mdast").Paragraph, index: number | undefined, parent: import("mdast").Parent | undefined) => {
       if (!parent || index == null) return;
-      const raw = node.children.map((c) => ("value" in c ? c.value : "")).join("");
+      const raw = node.children.map(extractText).join("");
       if (!raw.includes("•")) return;
       const parts = raw.split("•").map((s) => s.trim()).filter(Boolean);
       if (parts.length < 2) return;
@@ -2980,7 +2985,6 @@ function remarkInlineBullets() {
       });
 
       if (parent.type === "listItem") {
-        // Keep the text before the first bullet as the paragraph, add sub-list after
         const [lead, ...rest] = parts;
         const replacements: import("mdast").Content[] = [
           { type: "paragraph", children: [{ type: "text", value: lead }] },
