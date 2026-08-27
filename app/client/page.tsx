@@ -204,7 +204,7 @@ const TW = {
   attentionTitle: "m-0 mb-[28px] max-w-[350px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
   attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
   attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
-  promptChipsRow: "mb-[10px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] p-[10px] pt-[8px] pb-[0px]",
+  promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
   promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-[#0000000A] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07] max-[640px]:max-w-[145px] max-[640px]:truncate",
@@ -229,7 +229,7 @@ const TW = {
   scrollToBottom: "hidden data-[state=visible]:inline-grid absolute left-1/2 top-[-16px] h-9 w-9 -translate-x-1/2 -translate-y-full place-items-center rounded-full border border-white/60 bg-white/85 text-[#171615] shadow-[0_2px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl",
   errorBanner: "mx-auto mb-[10px] w-full rounded-lg border border-[#973022]/20 bg-white/70 px-[12px] py-[10px] font-satoshi text-[13px] text-[#8f2415]",
   composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent px-[22px] max-[1180px]:px-[20px] max-[900px]:px-[20px] max-[640px]:px-[14px]",
-  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] p-[1px] pt-[10px]",
+  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] p-[1px] pt-[6px]",
   composer: "relative mx-auto flex min-h-[80px] w-full items-center rounded-[28px] border border-black/[0.06] bg-white py-[8px] transition rounded-[24px] ",
   composerThinking: "ring-1 ring-[#b37f40]/40",
   composerInputRow: "flex-1 min-w-0 px-[14px] max-[1180px]:px-[18px] max-[640px]:px-[14px]",
@@ -244,16 +244,18 @@ const TW = {
   messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
   messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
   messageContent: "max-w-full [overflow-wrap:anywhere] rounded-lg font-satoshi text-[13px] leading-relaxed text-black",
-  userMessageContent: "rounded-[20px_20px_4px_20px] border border-white/50 bg-[#ede8df] px-[16px] py-[14px] text-black shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
+  // Self-contained (not layered on messageContent) so its 14px type isn't
+  // fighting that block's text-[13px]. Matches the full chat screen.
+  userMessageContent: "max-w-full [overflow-wrap:anywhere] rounded-[20px_20px_0_20px] bg-[#F3F3F3] p-[16px] font-satoshi text-[14px] font-medium leading-[1.5] tracking-[-0.16px] text-[#0D0D0D]",
   assistantMessageContent: "py-1",
   messageStack: "max-w-full",
   replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
-  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[12px] py-[10px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
+  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   messageControls: "mt-2 inline-flex items-center gap-1.5",
   inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
   actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
   branchCount: "font-satoshi text-[12px] font-bold tabular-nums",
-  markdown: "[overflow-wrap:anywhere] font-satoshi text-[14px] leading-[18.9px] text-black/90 [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
+  markdown: "[overflow-wrap:anywhere] font-satoshi text-[14px] leading-[1.5] tracking-[-0.16px] text-[#0D0D0D] [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
   toolGroup: "my-3 overflow-hidden rounded-[10px] border border-[#0e5f5b]/10 bg-white/70",
   toolSummary: "flex cursor-pointer list-none items-center justify-between gap-2.5 px-3.5 py-3 select-none [&::-webkit-details-marker]:hidden",
   toolLabel: "inline-flex items-center gap-[8px] font-satoshi text-[12px] font-bold text-[#0e5f5b] [&_svg]:transition-transform",
@@ -2682,11 +2684,13 @@ function Composer({ placeholder, agent, prompts, onPromptSelect, selectedPromptI
           {slashMatches.map((p, i) => (
             <div
               key={p.id}
-              style={{ padding: "10px 16px", cursor: "pointer", background: i === slashIndex ? "#F2F2F2" : "transparent", display: "flex", alignItems: "center", gap: 8 }}
+              // Column, not row: the panel is too narrow to keep the title on
+              // the same line without wrapping it mid-name.
+              style={{ padding: "10px 16px", cursor: "pointer", background: i === slashIndex ? "#F2F2F2" : "transparent", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}
               onMouseEnter={() => setSlashIndex(i)}
               onMouseDown={(e) => { e.preventDefault(); if (threadRuntime?.composer) { threadRuntime.composer.setText(p.user_message || ""); onPromptSelect?.(p); setSlashQuery(null); } }}
             >
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#804D13" }}>/{p.title}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#804D13", whiteSpace: "nowrap" }}>/{p.title}</span>
               {p.description && <span style={{ fontSize: 12, color: "rgba(0,0,0,0.45)" }}>{p.description}</span>}
             </div>
           ))}
@@ -2752,7 +2756,7 @@ function ThreadThinking() {
 function UserMessage() {
   return (
     <MessagePrimitive.Root className={TW.messageUser}>
-      <div className={`${TW.messageContent} ${TW.userMessageContent}`}>
+      <div className={TW.userMessageContent}>
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>
