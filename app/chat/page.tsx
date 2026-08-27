@@ -200,6 +200,13 @@ const TW = {
   attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
 };
 
+// Selected chat row: gradient texture washed out by 80% white, per Figma 2411:14694.
+const ACTIVE_CHAT_BG = {
+  backgroundImage: "linear-gradient(rgba(255,255,255,0.8), rgba(255,255,255,0.8)), url('/gradient-texture.jpg')",
+  backgroundSize: "cover",
+  backgroundPosition: "center",
+} as const;
+
 export default function ChatOnePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -257,6 +264,14 @@ export default function ChatOnePage() {
       setSelectedClientId(client.id);
       void toggleClientGroup(client);
     }
+  }, [requestedClientId, isLoadingClients, clients]);
+
+  // Open the first client's chats on load, so the list isn't all-collapsed on arrival.
+  const didAutoExpand = useRef(false);
+  useEffect(() => {
+    if (didAutoExpand.current || requestedClientId || isLoadingClients || clients.length === 0) return;
+    didAutoExpand.current = true;
+    void toggleClientGroup(clients[0]);
   }, [requestedClientId, isLoadingClients, clients]);
 
   useEffect(() => {
@@ -407,99 +422,122 @@ export default function ChatOnePage() {
         <Sidebar />
 
       {/* Top Header Bar */}
-      <header className="fixed left-[80px] right-0 top-0 z-50 flex items-center justify-between border-b border-black/10 bg-white/20 px-6 py-2.5 backdrop-blur-[32px]">
+      <header className="fixed left-[80px] right-0 top-0 z-50 flex h-[56px] items-center justify-between border-b border-black/10 bg-white/20 px-4 backdrop-blur-[32px]">
         <h1 className="m-0 text-[22px] font-medium leading-[26.4px] text-black" style={{ fontFamily: "var(--font-butler)" }}>AI assistant</h1>
+        {/* Sidebar edge: divider + collapse toggle, aligned to the 246px panel. */}
+        {!sidebarCollapsed && <span className="pointer-events-none absolute left-[246px] top-0 h-full w-px bg-black/10 max-[900px]:hidden" />}
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed((v) => !v)}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={`absolute top-[11px] flex h-[34px] w-[34px] items-center justify-center rounded-[12px] transition-all duration-300 hover:bg-black/5 max-[900px]:hidden ${sidebarCollapsed ? "left-[8px]" : "left-[196px]"}`}
+        >
+          <img src="/chat-sidebar/icon-layout-left.svg" alt="" className={`h-4 w-4 transition-transform duration-300 ${sidebarCollapsed ? "scale-x-[-1]" : ""}`} />
+        </button>
       </header>
 
       {/* Main layout */}
-      <div className="ml-[80px] flex h-screen pt-[50px]">
+      <div className="ml-[80px] flex h-screen pt-[56px]">
         {/* Left Panel */}
-        <aside className={`relative h-full shrink-0 border-r border-black/10 backdrop-blur-[12px] transition-all duration-300 max-[900px]:hidden ${sidebarCollapsed ? "w-0 overflow-hidden border-r-0" : "w-[348px]"}`}>
-          {/* Search input */}
-          <div className="px-3 pt-6 pb-4">
-            <div className="flex items-center justify-between rounded-full bg-white px-[14px] py-3" style={{ outline: "1px solid rgba(0,0,0,0.10)", outlineOffset: "-1px" }}>
+        <aside className={`relative h-full shrink-0 overflow-hidden border-r border-black/[0.08] bg-white transition-all duration-300 max-[900px]:hidden ${sidebarCollapsed ? "w-0 border-r-0" : "w-[246px]"}`}>
+          <div className="flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden px-2 py-4">
+            {/* Search input */}
+            <div className="flex shrink-0 items-center gap-2 rounded-[50px] border border-black/10 bg-white px-4 py-2">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search your chat"
-                className="min-w-0 flex-1 border-0 bg-transparent outline-none"
-                style={{ color: "rgba(0, 0, 0, 0.60)", fontSize: 12, fontFamily: "var(--font-satoshi)", fontWeight: 400, lineHeight: "18px", wordWrap: "break-word" }}
+                placeholder="Search your chats"
+                className="min-w-0 flex-1 border-0 bg-transparent font-satoshi text-[12px] font-medium leading-[18px] tracking-[-0.12px] text-black outline-none placeholder:text-black/60"
               />
-              <SearchIcon />
+              <img src="/chat-sidebar/icon-search.svg" alt="" className="h-4 w-4 shrink-0" />
+            </div>
+
+            {/* Clients + chat history */}
+            <div className="flex flex-col gap-4">
+              <div className="flex h-4 items-center px-2">
+                <span className="font-satoshi text-[10px] font-medium text-[#6B7280]">Clients</span>
+              </div>
+
+              {isLoadingClients ? (
+                <div className="px-2 font-satoshi text-[12px] text-black/40">Loading clients...</div>
+              ) : (
+                filteredClients.map((client) => {
+                  const group = clientGroups.get(client.id);
+                  const hasSearchQuery = searchQuery.trim().length > 0;
+                  const isExpanded = hasSearchQuery ? true : (group?.isExpanded ?? false);
+                  const sessions = group?.sessions ?? [];
+                  const visibleSessions = hasSearchQuery
+                    ? sessions.filter((s) => s.title?.toLowerCase().includes(searchQuery.trim().toLowerCase()))
+                    : sessions;
+                  const showNewChat = selectedClientId === client.id && !selectedSessionId;
+                  return (
+                    <div key={client.id} className="flex flex-col gap-1">
+                      {/* Client folder row. Plus + chevron only appear on hover. */}
+                      <div
+                        // h-4 keeps the Figma row height; the -my/py pair widens the
+                        // click target to the full 32px pitch without shifting layout.
+                        className="group/client -my-2 box-content flex h-4 cursor-pointer items-center gap-2 px-2 py-2"
+                        onClick={() => void toggleClientGroup(client)}
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <img src="/chat-sidebar/icon-folder.svg" alt="" className="h-4 w-4 shrink-0" />
+                          <span className="truncate font-satoshi text-[12px] font-bold text-[#0D0D0D]">{client.display_name}</span>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label="New chat"
+                          className="h-4 w-4 shrink-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover/client:opacity-100"
+                          onClick={(e) => { e.stopPropagation(); if (!isExpanded) void toggleClientGroup(client); setSelectedClientId(client.id); startNewChat(); }}
+                        >
+                          <img src="/chat-sidebar/icon-plus.svg" alt="" className="h-4 w-4" />
+                        </button>
+                        <span className="h-4 w-4 shrink-0 opacity-0 transition-opacity group-hover/client:opacity-100">
+                          <img
+                            src="/chat-sidebar/icon-chevron-down.svg"
+                            alt=""
+                            className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          />
+                        </span>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="flex flex-col pl-4">
+                          {showNewChat && (
+                            <div
+                              style={ACTIVE_CHAT_BG}
+                              className="cursor-pointer truncate rounded-lg px-2 py-[7px] font-satoshi text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-black"
+                              onClick={() => { setSelectedClientId(client.id); startNewChat(); }}
+                            >
+                              New chat
+                            </div>
+                          )}
+                          {group?.isLoading ? (
+                            <div className="px-2 py-[7px] font-satoshi text-[12px] leading-[18px] text-black/40">Loading...</div>
+                          ) : (
+                            visibleSessions.map((session) => {
+                              const isActive = session.id === selectedSessionId;
+                              return (
+                                <div
+                                  key={session.id}
+                                  style={isActive ? ACTIVE_CHAT_BG : undefined}
+                                  className={`cursor-pointer truncate rounded-lg px-2 py-[7px] font-satoshi text-[12px] font-medium leading-[18px] tracking-[-0.24px] text-black ${isActive ? "" : "hover:bg-black/[0.04]"}`}
+                                  onClick={() => void selectSession(session, client.id)}
+                                >
+                                  {session.title}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
-          <div className="absolute left-[13px] right-[13px] top-[88px] bottom-0 overflow-y-auto">
-            {isLoadingClients ? (
-              <div className="py-6 text-center font-satoshi text-[12px] text-black/40">Loading clients...</div>
-            ) : (
-              filteredClients.map((client) => {
-                const group = clientGroups.get(client.id);
-                const hasSearchQuery = searchQuery.trim().length > 0;
-                const isExpanded = hasSearchQuery ? true : (group?.isExpanded ?? false);
-                const initial = (client.display_name || "?").trim()[0].toUpperCase();
-                return (
-                  <div key={client.id} className="mb-2">
-                    <div
-                      className="flex cursor-pointer items-center justify-between py-3 px-1"
-                      onClick={() => void toggleClientGroup(client)}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <ClientAvatar initial={initial} />
-                        <span className="font-satoshi text-[14px] font-medium leading-[21px] text-black">{client.display_name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" className="flex h-6 w-6 items-center justify-center rounded-full text-black/30 hover:text-black/60" onClick={(e) => { e.stopPropagation(); if (!isExpanded) void toggleClientGroup(client); setSelectedClientId(client.id); startNewChat(); }} aria-label="New chat">
-                          <PlusIcon />
-                        </button>
-                        <ChevronIcon expanded={isExpanded} />
-                      </div>
-                    </div>
-                    {isExpanded && (
-                      <div className="ml-1 mb-2 flex flex-col gap-[6px]">
-                        {/* New chat item - only show when active for this client */}
-                        {selectedClientId === client.id && !selectedSessionId && (
-                          <div
-                            style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center" }}
-                            className="cursor-pointer rounded-2xl px-3 py-2.5 font-satoshi text-[13px] font-medium leading-[18px] text-black transition"
-                            onClick={() => { setSelectedClientId(client.id); startNewChat(); }}
-                          >
-                            New chat
-                          </div>
-                        )}
-                        {group?.isLoading ? (
-                          <div className="py-2 pl-3 font-satoshi text-[12px] text-black/40">Loading...</div>
-                        ) : group?.sessions.length ? (
-                          (searchQuery.trim() ? group.sessions.filter((s) => s.title?.toLowerCase().includes(searchQuery.trim().toLowerCase())) : group.sessions).map((session) => (
-                            <div
-                              key={session.id}
-                              style={session.id === selectedSessionId ? { backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center" } : undefined}
-                              className={`cursor-pointer rounded-2xl px-3 py-2.5 font-satoshi text-[13px] leading-[18px] transition ${session.id === selectedSessionId ? "font-medium text-black" : "bg-[#FEFCFA] text-black/80 hover:bg-[#FBF7F2]"}`}
-                              onClick={() => void selectSession(session, client.id)}
-                            >
-                              {session.title}
-                            </div>
-                          ))
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
         </aside>
-
-        {/* Collapse button */}
-        <button
-          type="button"
-          onClick={() => setSidebarCollapsed((v) => !v)}
-          className={`absolute top-[100px] z-20 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-black/10 bg-white transition-all duration-300 max-[900px]:hidden ${sidebarCollapsed ? "left-[87px]" : "left-[435px]"}`}
-        >
-          <span className={`inline-flex transition-transform duration-300 ${sidebarCollapsed ? "rotate-180" : ""}`}>
-            <CollapseIcon />
-          </span>
-        </button>
 
         {/* Chat Area */}
         <section className="relative flex h-full flex-1 flex-col overflow-hidden">
@@ -1211,38 +1249,6 @@ function formatToolPayload(value: unknown) {
 }
 
 // Icons
-function ClientAvatar({ initial }: { initial: string }) {
-  return (
-    <div className="flex h-6 w-6 items-center justify-center rounded-full" style={{ backgroundImage: "linear-gradient(#FFFFFFB2, #FFFFFFB2), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center" }}>
-      <span className="font-satoshi text-[9px] font-bold text-[#4C2D08]">{initial}</span>
-    </div>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <div className="flex h-4 w-4 items-center justify-center">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="rgba(0,0,0,0.70)" strokeWidth="1.85" /><path d="M11 11L14 14" stroke="rgba(0,0,0,0.70)" strokeWidth="1.85" strokeLinecap="round" /></svg>
-    </div>
-  );
-}
-
-function ChevronIcon({ expanded }: { expanded: boolean }) {
-  return (
-    <div className="flex h-5 w-5 items-center justify-center opacity-40">
-      <svg width="10" height="5" viewBox="0 0 10 5" fill="none" className={`transition-transform ${expanded ? "rotate-180" : ""}`}><path d="M0 0L5 5L10 0" stroke="rgba(0,0,0,0.40)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-    </div>
-  );
-}
-
-function CollapseIcon() {
-  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.72" y="1.72" width="16.56" height="16.56" rx="2" stroke="#262C31" strokeWidth="1.4" /><path d="M7.5 18.2812V1.71875" stroke="#262C31" strokeWidth="1.4" /><path d="M13.3594 11.9922L11.0156 9.64844L13.3594 7.30469" stroke="#262C31" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
-
-function PlusIcon() {
-  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3V13M3 8H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>;
-}
-
 function ArrowUpIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5M5 12L12 5L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }

@@ -298,7 +298,7 @@ export default function AppsPage() {
                           paddingBottom: 5,
                           // Figma layer stack: gradient texture over #E1DEF8, softened by 80% white.
                           background:
-                            "linear-gradient(0deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.80) 100%), url('/apps/tag-bg.jpg') center / cover no-repeat, #E1DEF8",
+                            "linear-gradient(0deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.80) 100%), url('/gradient-texture.jpg') center / cover no-repeat, #E1DEF8",
                           borderRadius: 6,
                           justifyContent: "center",
                           alignItems: "center",
