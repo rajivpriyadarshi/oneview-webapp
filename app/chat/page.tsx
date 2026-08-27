@@ -223,6 +223,7 @@ export default function ChatOnePage() {
   const [prompts, setPrompts] = useState<ChatPrompt[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasPrefetchedSessions, setHasPrefetchedSessions] = useState(false);
   const [workflowExecutionPlan, setWorkflowExecutionPlan] = useState<ExecutionPlanData | null>(null);
 
   const filteredClients = useMemo(() => {
@@ -237,6 +238,23 @@ export default function ChatOnePage() {
   }, [clients, clientGroups, searchQuery]);
 
   const chatClientId = selectedClientId ?? requestedClientId ?? clients[0]?.id ?? null;
+
+  // Split the list once chat counts are known: clients you've talked about first
+  // (most recent activity on top), everyone else after.
+  const clientSections = useMemo(() => {
+    if (!hasPrefetchedSessions) return [{ label: "Clients", clients: filteredClients }];
+    const withChats: WealthCrmClient[] = [];
+    const withoutChats: WealthCrmClient[] = [];
+    for (const client of filteredClients) {
+      if ((clientGroups.get(client.id)?.sessions.length ?? 0) > 0) withChats.push(client);
+      else withoutChats.push(client);
+    }
+    withChats.sort((a, b) => lastActivityAt(clientGroups.get(b.id)) - lastActivityAt(clientGroups.get(a.id)));
+    const sections = [] as { label: string; clients: WealthCrmClient[] }[];
+    if (withChats.length) sections.push({ label: "Recent chats", clients: withChats });
+    if (withoutChats.length) sections.push({ label: withChats.length ? "Other clients" : "Clients", clients: withoutChats });
+    return sections;
+  }, [filteredClients, clientGroups, hasPrefetchedSessions]);
 
   useEffect(() => {
     let cancelled = false;
@@ -266,13 +284,48 @@ export default function ChatOnePage() {
     }
   }, [requestedClientId, isLoadingClients, clients]);
 
-  // Open the first client's chats on load, so the list isn't all-collapsed on arrival.
+  // Load every client's chats up front. Needed to split the list into "Recent chats"
+  // vs "Other clients" — a collapsed row otherwise gives no hint whether it has any.
+  useEffect(() => {
+    if (isLoadingClients || clients.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      const results = await Promise.all(
+        clients.map(async (client) => {
+          try {
+            return { client, sessions: getVisibleSessions(await listAiChatSessions({ clientId: client.id })) };
+          } catch {
+            return { client, sessions: [] as AiChatSession[] };
+          }
+        }),
+      );
+      if (cancelled) return;
+      setClientGroups((prev) => {
+        const next = new Map(prev);
+        for (const { client, sessions } of results) {
+          const existing = next.get(client.id);
+          // Don't clobber a group the user already opened / that is mid-fetch.
+          if (existing?.isExpanded || existing?.isLoading) continue;
+          next.set(client.id, { client, sessions, isLoading: false, isExpanded: false });
+        }
+        return next;
+      });
+      setHasPrefetchedSessions(true);
+    })();
+    return () => { cancelled = true; };
+  }, [isLoadingClients, clients]);
+
+  // Open the most recently used client on arrival, so the list isn't all-collapsed.
   const didAutoExpand = useRef(false);
   useEffect(() => {
-    if (didAutoExpand.current || requestedClientId || isLoadingClients || clients.length === 0) return;
+    if (didAutoExpand.current || requestedClientId || !hasPrefetchedSessions || clients.length === 0) return;
+    const target = [...clients]
+      .filter((c) => (clientGroups.get(c.id)?.sessions.length ?? 0) > 0)
+      .sort((a, b) => lastActivityAt(clientGroups.get(b.id)) - lastActivityAt(clientGroups.get(a.id)))[0];
+    if (!target) return;
     didAutoExpand.current = true;
-    void toggleClientGroup(clients[0]);
-  }, [requestedClientId, isLoadingClients, clients]);
+    void toggleClientGroup(target);
+  }, [requestedClientId, hasPrefetchedSessions, clients, clientGroups]);
 
   useEffect(() => {
     let cancelled = false;
@@ -416,30 +469,17 @@ export default function ChatOnePage() {
   return (
     <ArtifactPopupProvider autoOpenEnabled={false} positioning="fixed">
       <div className="relative h-screen w-full overflow-hidden bg-white">
-        {/* Background */}
-        <img src="/chat-vector-bg.png" alt="" className="pointer-events-none absolute bottom-0 left-0 w-full" />
-
         <Sidebar />
 
       {/* Top Header Bar */}
       <header className="fixed left-[80px] right-0 top-0 z-50 flex h-[56px] items-center justify-between border-b border-black/10 bg-white/20 px-4 backdrop-blur-[32px]">
         <h1 className="m-0 text-[22px] font-medium leading-[26.4px] text-black" style={{ fontFamily: "var(--font-butler)" }}>AI assistant</h1>
-        {/* Sidebar edge: divider + collapse toggle, aligned to the 246px panel. */}
-        {!sidebarCollapsed && <span className="pointer-events-none absolute left-[246px] top-0 h-full w-px bg-black/10 max-[900px]:hidden" />}
-        <button
-          type="button"
-          onClick={() => setSidebarCollapsed((v) => !v)}
-          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`absolute top-[11px] flex h-[34px] w-[34px] items-center justify-center rounded-[12px] transition-all duration-300 hover:bg-black/5 max-[900px]:hidden ${sidebarCollapsed ? "left-[8px]" : "left-[196px]"}`}
-        >
-          <img src="/chat-sidebar/icon-layout-left.svg" alt="" className={`h-4 w-4 transition-transform duration-300 ${sidebarCollapsed ? "scale-x-[-1]" : ""}`} />
-        </button>
       </header>
 
       {/* Main layout */}
       <div className="ml-[80px] flex h-screen pt-[56px]">
         {/* Left Panel */}
-        <aside className={`relative h-full shrink-0 overflow-hidden border-r border-black/[0.08] bg-white transition-all duration-300 max-[900px]:hidden ${sidebarCollapsed ? "w-0 border-r-0" : "w-[246px]"}`}>
+        <aside className={`relative h-full shrink-0 overflow-hidden border-r border-black/[0.08] bg-white transition-all duration-300 max-[900px]:hidden ${sidebarCollapsed ? "w-0 border-r-0" : "w-[280px]"}`}>
           <div className="flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden px-2 py-4">
             {/* Search input */}
             <div className="flex shrink-0 items-center gap-2 rounded-[50px] border border-black/10 bg-white px-4 py-2">
@@ -448,21 +488,25 @@ export default function ChatOnePage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search your chats"
-                className="min-w-0 flex-1 border-0 bg-transparent font-satoshi text-[12px] font-medium leading-[18px] tracking-[-0.12px] text-black outline-none placeholder:text-black/60"
+                className="min-w-0 flex-1 border-0 bg-transparent text-black outline-none placeholder:text-black/60"
+                // Inline, not utilities: the unlayered `input { font: inherit }` reset in
+                // globals.css outranks any layered Tailwind font utility here.
+                style={{ fontFamily: "var(--font-satoshi)", fontSize: 12, fontWeight: 500, lineHeight: "18px", letterSpacing: "-0.12px" }}
               />
               <img src="/chat-sidebar/icon-search.svg" alt="" className="h-4 w-4 shrink-0" />
             </div>
 
             {/* Clients + chat history */}
-            <div className="flex flex-col gap-4">
-              <div className="flex h-4 items-center px-2">
-                <span className="font-satoshi text-[10px] font-medium text-[#6B7280]">Clients</span>
-              </div>
+            {isLoadingClients ? (
+              <div className="px-2 font-satoshi text-[12px] text-black/40">Loading clients...</div>
+            ) : (
+              clientSections.map((section) => (
+                <div key={section.label} className="flex flex-col gap-4">
+                  <div className="flex h-4 items-center px-2">
+                    <span className="font-satoshi text-[10px] font-medium leading-4 text-[#6B7280]">{section.label}</span>
+                  </div>
 
-              {isLoadingClients ? (
-                <div className="px-2 font-satoshi text-[12px] text-black/40">Loading clients...</div>
-              ) : (
-                filteredClients.map((client) => {
+                  {section.clients.map((client) => {
                   const group = clientGroups.get(client.id);
                   const hasSearchQuery = searchQuery.trim().length > 0;
                   const isExpanded = hasSearchQuery ? true : (group?.isExpanded ?? false);
@@ -475,30 +519,33 @@ export default function ChatOnePage() {
                     <div key={client.id} className="flex flex-col gap-1">
                       {/* Client folder row. Plus + chevron only appear on hover. */}
                       <div
-                        // h-4 keeps the Figma row height; the -my/py pair widens the
-                        // click target to the full 32px pitch without shifting layout.
-                        className="group/client -my-2 box-content flex h-4 cursor-pointer items-center gap-2 px-2 py-2"
+                        // The row is 16px tall per Figma; the ::before pad extends the
+                        // click target into the 16px gap without affecting layout.
+                        className="group/client relative flex h-4 cursor-pointer items-center px-2 before:absolute before:inset-x-0 before:-inset-y-2 before:-z-10 before:content-['']"
                         onClick={() => void toggleClientGroup(client)}
                       >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
                           <img src="/chat-sidebar/icon-folder.svg" alt="" className="h-4 w-4 shrink-0" />
-                          <span className="truncate font-satoshi text-[12px] font-bold text-[#0D0D0D]">{client.display_name}</span>
+                          <span className="truncate font-satoshi text-[12px] font-bold leading-4 text-[#0D0D0D]">{client.display_name}</span>
                         </div>
-                        <button
-                          type="button"
-                          aria-label="New chat"
-                          className="h-4 w-4 shrink-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover/client:opacity-100"
-                          onClick={(e) => { e.stopPropagation(); if (!isExpanded) void toggleClientGroup(client); setSelectedClientId(client.id); startNewChat(); }}
-                        >
-                          <img src="/chat-sidebar/icon-plus.svg" alt="" className="h-4 w-4" />
-                        </button>
-                        <span className="h-4 w-4 shrink-0 opacity-0 transition-opacity group-hover/client:opacity-100">
+                        {/* Zero-width until hover, so the name only truncates once the
+                            icons actually take up room. 56px = 8px pad + 16 + 8 gap + 16,
+                            with slack so subpixel rounding can't clip the chevron. */}
+                        <div className="flex max-w-0 shrink-0 items-center gap-2 overflow-hidden opacity-0 transition-all duration-200 focus-within:max-w-[56px] focus-within:pl-2 focus-within:opacity-100 group-hover/client:max-w-[56px] group-hover/client:pl-2 group-hover/client:opacity-100">
+                          <button
+                            type="button"
+                            aria-label="New chat"
+                            className="h-4 w-4 shrink-0"
+                            onClick={(e) => { e.stopPropagation(); if (!isExpanded) void toggleClientGroup(client); setSelectedClientId(client.id); startNewChat(); }}
+                          >
+                            <img src="/chat-sidebar/icon-plus.svg" alt="" className="h-4 w-4" />
+                          </button>
                           <img
                             src="/chat-sidebar/icon-chevron-down.svg"
                             alt=""
-                            className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                            className={`h-4 w-4 shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                           />
-                        </span>
+                        </div>
                       </div>
 
                       {isExpanded && (
@@ -514,6 +561,10 @@ export default function ChatOnePage() {
                           )}
                           {group?.isLoading ? (
                             <div className="px-2 py-[7px] font-satoshi text-[12px] leading-[18px] text-black/40">Loading...</div>
+                          ) : visibleSessions.length === 0 && !showNewChat ? (
+                            <div className="px-2 py-[7px] font-satoshi text-[12px] leading-[18px] tracking-[-0.24px] text-black/40">
+                              {searchQuery.trim() ? "No matching chats" : "No chats yet"}
+                            </div>
                           ) : (
                             visibleSessions.map((session) => {
                               const isActive = session.id === selectedSessionId;
@@ -533,11 +584,26 @@ export default function ChatOnePage() {
                       )}
                     </div>
                   );
-                })
-              )}
-            </div>
+                  })}
+                </div>
+              ))
+            )}
           </div>
         </aside>
+
+        {/* Collapse button */}
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed((v) => !v)}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          // top-[69px] centers the 42px button on the search field: 56px header
+          // + 16px panel padding + 18px (half the 36px field) - 21px.
+          className={`absolute top-[69px] z-20 flex h-[42px] w-[42px] items-center justify-center rounded-full border border-black/10 bg-white transition-all duration-300 max-[900px]:hidden ${sidebarCollapsed ? "left-[87px]" : "left-[367px]"}`}
+        >
+          <span className={`inline-flex transition-transform duration-300 ${sidebarCollapsed ? "rotate-180" : ""}`}>
+            <CollapseIcon />
+          </span>
+        </button>
 
         {/* Chat Area */}
         <section className="relative flex h-full flex-1 flex-col overflow-hidden">
@@ -562,6 +628,14 @@ export default function ChatOnePage() {
       </div>
     </ArtifactPopupProvider>
   );
+}
+
+function lastActivityAt(group?: ClientGroup) {
+  if (!group) return 0;
+  return group.sessions.reduce((latest, session) => {
+    const stamp = Date.parse(session.updated_at ?? session.created_at ?? "");
+    return Number.isNaN(stamp) ? latest : Math.max(latest, stamp);
+  }, 0);
 }
 
 function getVisibleSessions(sessions: AiChatSession[]) {
@@ -1249,6 +1323,10 @@ function formatToolPayload(value: unknown) {
 }
 
 // Icons
+function CollapseIcon() {
+  return <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="1.72" y="1.72" width="16.56" height="16.56" rx="2" stroke="#262C31" strokeWidth="1.4" /><path d="M7.5 18.2812V1.71875" stroke="#262C31" strokeWidth="1.4" /><path d="M13.3594 11.9922L11.0156 9.64844L13.3594 7.30469" stroke="#262C31" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
 function ArrowUpIcon() {
   return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V5M5 12L12 5L19 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
