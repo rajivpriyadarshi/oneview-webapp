@@ -172,7 +172,7 @@ const TW = {
   // full-width parent to stretch into.
   messageStack: "w-full min-w-0 max-w-full",
   replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
-  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[12px] py-[10px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
+  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   messageControls: "mt-2 inline-flex items-center gap-1.5",
   inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
   actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
