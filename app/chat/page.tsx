@@ -148,14 +148,14 @@ const WARM_CHAT_CACHE_MAX_AGE_MS = 30_000;
 const PENDING_LOCAL_CHAT_MAX_AGE_MS = 2 * 60_000;
 
 const TW = {
-  promptChipsRow: "mb-[10px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] p-[10px] pt-[8px] pb-[0px]",
+  promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
   promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-[#0000000A] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:brightness-95 max-[640px]:max-w-[145px] max-[640px]:truncate",
   promptChipExpand: "inline-flex h-[32px] w-[40px] shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-black transition hover:bg-white/85 [&_svg]:h-[13px] [&_svg]:w-[13px]",
   promptMeasure: "pointer-events-none invisible absolute -z-10 flex items-center gap-[12px] whitespace-nowrap max-[640px]:gap-[8px]",
   promptMeasureChip: "inline-flex shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77]",
-  composerWrap: "mx-auto w-full max-w-[720px] rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] pt-[10px]",
+  composerWrap: "mx-auto w-full max-w-[720px] rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] pt-[6px]",
   composer: "relative mx-auto flex min-h-[56px] w-full items-center rounded-[24px] border border-black/[0.06] bg-white py-[8px] transition",
   composerThinking: "ring-1 ring-[#b37f40]/40",
   composerInputRow: "flex-1 min-w-0 px-[14px] max-[640px]:px-[14px]",
@@ -224,6 +224,10 @@ export default function ChatOnePage() {
   const [chatResetId, setChatResetId] = useState(0);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [hasStartedChat, setHasStartedChat] = useState(false);
+  // True once the user has actually picked a chat (existing session or a new
+  // draft). Until then the thread area shows a "select a chat" placeholder
+  // rather than the composer's empty state.
+  const [isNewChatDraft, setIsNewChatDraft] = useState(false);
   const [prompts, setPrompts] = useState<ChatPrompt[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -431,6 +435,7 @@ export default function ChatOnePage() {
   };
 
   const startNewChat = () => {
+    setIsNewChatDraft(true);
     setHasStartedChat(false);
     setSelectedSessionId(null);
     setInitialMessages([]);
@@ -615,6 +620,14 @@ export default function ChatOnePage() {
         <section className="relative flex h-full flex-1 flex-col overflow-hidden">
           {(isLoadingClients || !chatClientId) || isLoadingMessages ? (
             <div className="flex flex-1 items-center justify-center font-satoshi text-[13px] text-black/50">Loading chat...</div>
+          ) : !selectedSessionId && !isNewChatDraft ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
+              <img src="/chat-sidebar/icon-folder.svg" alt="" className="h-[72px] w-[72px] opacity-25" />
+              <div className="flex flex-col items-center gap-[6px]">
+                <p className="m-0 font-butler text-[24px] font-normal leading-[28.8px] text-black/70">Select a chat to get started</p>
+                <p className="m-0 font-satoshi text-[14px] leading-[20px] text-black/45">Pick a conversation from the sidebar, or start a new one with a client.</p>
+              </div>
+            </div>
           ) : (
             <ChatThread
               key={`${chatClientId}:${selectedSession?.id ?? "draft"}:${chatResetId}`}
