@@ -8,17 +8,41 @@ import type { Interaction } from "../types/interactionTypes";
 
 interface InteractionsTabContentProps {
   clientId: number | string;
+  focusedInteractionId?: number | null;
+  onFocusHandled?: () => void;
 }
 
-export default function InteractionsTabContent({ clientId }: InteractionsTabContentProps) {
+export default function InteractionsTabContent({ clientId, focusedInteractionId, onFocusHandled }: InteractionsTabContentProps) {
   const [interactions, setInteractions] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+  const focusedRef = useRef<HTMLDivElement>(null);
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (focusedInteractionId != null && !loading && interactions.length > 0) {
+      setExpandedIds((prev) => new Set(prev).add(focusedInteractionId));
+      setTimeout(() => {
+        const el = focusedRef.current;
+        if (!el) return;
+        let scrollParent: HTMLElement | null = el.parentElement;
+        while (scrollParent) {
+          const { overflowY } = getComputedStyle(scrollParent);
+          if (overflowY === "auto" || overflowY === "scroll") break;
+          scrollParent = scrollParent.parentElement;
+        }
+        if (scrollParent) {
+          const elTop = el.getBoundingClientRect().top - scrollParent.getBoundingClientRect().top + scrollParent.scrollTop;
+          scrollParent.scrollTo({ top: Math.max(0, elTop - 20), behavior: "smooth" });
+        }
+        onFocusHandled?.();
+      }, 300);
+    }
+  }, [focusedInteractionId, loading, interactions]);
 
   // Debounce search query with 1000ms delay to show loader
   useEffect(() => {
@@ -151,12 +175,13 @@ export default function InteractionsTabContent({ clientId }: InteractionsTabCont
                 <p>{dateGroup}</p>
               </div>
               {groupInteractions.map((interaction) => (
-                <InteractionCard
-                  key={interaction.id}
-                  interaction={interaction}
-                  isExpanded={expandedIds.has(interaction.id)}
-                  onToggleExpand={() => toggleExpand(interaction.id)}
-                />
+                <div key={interaction.id} ref={interaction.id === focusedInteractionId ? focusedRef : undefined}>
+                  <InteractionCard
+                    interaction={interaction}
+                    isExpanded={expandedIds.has(interaction.id)}
+                    onToggleExpand={() => toggleExpand(interaction.id)}
+                  />
+                </div>
               ))}
             </div>
           ))}

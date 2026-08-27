@@ -1207,6 +1207,7 @@ function ClientOverview({
   const [activeTab, setActiveTab] = useState<ClientTab>(
     validTabs.includes(tabParam as ClientTab) ? (tabParam as ClientTab) : "overview"
   );
+  const [focusedInteractionId, setFocusedInteractionId] = useState<number | null>(null);
 
   return (
     <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
@@ -1227,10 +1228,11 @@ function ClientOverview({
           clientId={client?.id ?? requestedClientId}
           isLoadingClient={isLoadingClient}
           onAskAiInsight={onAskAiInsight}
+          onOpenInteraction={(id) => { setFocusedInteractionId(id); setActiveTab("interactions"); }}
         />
       ) : null}
       {activeTab === "wealth-map" ? <WealthMapTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
-      {activeTab === "interactions" ? <InteractionsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} isLoadingClient={isLoadingClient} /> : null}
+      {activeTab === "interactions" ? <InteractionsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} isLoadingClient={isLoadingClient} focusedInteractionId={focusedInteractionId} onFocusHandled={() => setFocusedInteractionId(null)} /> : null}
       {activeTab === "documents" ? <DocumentsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
       <ArtifactPopup />
     </section>
@@ -1277,11 +1279,13 @@ function OverviewTab({
   clientId,
   isLoadingClient,
   onAskAiInsight,
+  onOpenInteraction,
 }: {
   client: WealthCrmClient | null;
   clientId: number | string | null;
   isLoadingClient: boolean;
   onAskAiInsight: (prompt: string) => void;
+  onOpenInteraction: (id: number) => void;
 }) {
   const [clientDetail, setClientDetail] = useState<ClientDetailResponse | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
@@ -1484,7 +1488,7 @@ function OverviewTab({
                 onDismissInsight={handleDismissInsight}
               />
             ) : null}
-            {hasRecentActivity ? <RecentActivityPanel activities={clientDetail?.recent_activity ?? []} /> : null}
+            {hasRecentActivity ? <RecentActivityPanel activities={clientDetail?.recent_activity ?? []} onOpenInteraction={onOpenInteraction} /> : null}
           </aside>
         ) : null}
       </div>
@@ -1510,7 +1514,7 @@ function DocumentsTab({ clientId }: { clientId?: number | null }) {
   );
 }
 
-function InteractionsTab({ clientId, isLoadingClient }: { clientId?: number | null; isLoadingClient?: boolean }) {
+function InteractionsTab({ clientId, isLoadingClient, focusedInteractionId, onFocusHandled }: { clientId?: number | null; isLoadingClient?: boolean; focusedInteractionId?: number | null; onFocusHandled?: () => void }) {
   if (isLoadingClient) {
     return (
       <div className="grid min-h-0 flex-1 place-items-center bg-white p-[32px]">
@@ -1529,7 +1533,7 @@ function InteractionsTab({ clientId, isLoadingClient }: { clientId?: number | nu
 
   return (
     <div className="min-h-0 overflow-auto bg-white">
-      <InteractionsTabContent clientId={clientId} />
+      <InteractionsTabContent clientId={clientId} focusedInteractionId={focusedInteractionId} onFocusHandled={onFocusHandled} />
     </div>
   );
 }
@@ -1826,7 +1830,7 @@ function InsightPanel({
   );
 }
 
-function RecentActivityPanel({ activities }: { activities: unknown[] }) {
+function RecentActivityPanel({ activities, onOpenInteraction }: { activities: unknown[]; onOpenInteraction: (id: number) => void }) {
   const normalizedActivities = activities
     .map(normalizeActivity)
     .filter((activity): activity is OverviewActivity => Boolean(activity));
@@ -1836,7 +1840,11 @@ function RecentActivityPanel({ activities }: { activities: unknown[] }) {
       <h2 className="m-0 font-satoshi text-[13px] font-bold uppercase tracking-[0.06em] text-[#6b7280]">Recent activity</h2>
       <div className="mt-[20px] grid">
         {normalizedActivities.map((activity, index) => (
-          <article key={`${activity.title}-${index}`} className={`grid grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] py-[18px] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}>
+          <article
+            key={`${activity.title}-${index}`}
+            className={`grid cursor-pointer grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] rounded-[8px] py-[18px] transition-colors hover:bg-black/[0.02] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}
+            onClick={() => { if (activity.id != null) onOpenInteraction(Number(activity.id)); }}
+          >
             <span className={`inline-grid h-[40px] w-[40px] place-items-center rounded-[10px] ${activity.iconClass}`}>
               {activity.icon}
             </span>
