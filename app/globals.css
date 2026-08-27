@@ -80,6 +80,73 @@ button:disabled {
   opacity: 0.68;
 }
 
+/*
+ * Auth screen type + disabled state.
+ * These live outside @layer components on purpose: the unlayered resets above
+ * (font: inherit, button font-family, button:disabled opacity) win over layered
+ * rules regardless of specificity, so the .continue-button / .field input
+ * declarations further down never take effect on their own.
+ */
+.login-card .continue-button,
+.login-card .field input,
+.login-card .account-field input {
+  font-family: var(--font-satoshi), "Satoshi", sans-serif;
+  font-feature-settings: 'ss03' on;
+  font-size: 16px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 24px;
+  letter-spacing: 0;
+}
+
+.login-card .continue-button:disabled {
+  opacity: 0.4;
+}
+
+.continue-button-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/*
+ * Discover Apps workflow cards. Frosted glass over the page gradient, with a
+ * lift on hover. Kept in CSS rather than inline styles so :hover can override
+ * the resting shadow/transform; also unlayered, matching the block above.
+ */
+.app-card {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: blur(32px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+  will-change: transform;
+}
+
+.app-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-card {
+    transition: none;
+  }
+
+  .app-card:hover {
+    transform: none;
+  }
+}
+
 @layer components {
   .login-page {
     min-height: 100vh;
@@ -186,9 +253,9 @@ button:disabled {
   align-items: center;
   padding: 32px 16px;
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 0.5px solid rgba(0, 0, 0, 0.04);
   border-radius: 32px;
-  box-shadow: 0 18px 60px rgba(53, 44, 34, 0.05);
+  box-shadow: 0 4px 2px rgba(0, 0, 0, 0.08);
 }
 
 .login-card h1 {
@@ -212,8 +279,32 @@ button:disabled {
   letter-spacing: -1.28px;
 }
 
-.account-card h1 {
+.auth-heading {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   margin-bottom: 32px;
+}
+
+.auth-heading h1 {
+  font-family: var(--font-butler-semibold), var(--font-butler), Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.auth-subtitle {
+  margin: 0;
+  color: rgba(0, 0, 0, 0.8);
+  font-family: "Satoshi";
+  font-feature-settings: 'ss03' on;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.14px;
 }
 
 .google-button {
@@ -341,7 +432,7 @@ button:disabled {
   align-items: center;
   gap: 4px;
   border: 0;
-  border-radius: 56px;
+  border-radius: 16px;
   background: #000;
   overflow: hidden;
   color: #FFF;
@@ -1989,7 +2080,7 @@ button:disabled {
     border-radius: 24px;
   }
 
-  .account-card h1 {
+  .auth-heading {
     margin-bottom: 38px;
   }
 
