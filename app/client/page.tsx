@@ -74,6 +74,8 @@ import {
 } from "../lib/aiChatApi";
 import { appConfig } from "../lib/config";
 import {
+  dismissClientInsight,
+  getCrmInteraction,
   getWealthCrmClient,
   getClientDetail,
   listWealthCrmClients,
@@ -1243,13 +1245,15 @@ function ClientTabButton({
     <li>
       <button
         type="button"
-        className={`shrink-0 rounded-xl border-0 font-satoshi text-[14px] leading-[18.2px] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [&_svg]:h-[16px] [&_svg]:w-[16px] ${active ? "font-bold" : "font-medium hover:bg-black/5"}`}
+        className={`shrink-0 rounded-xl border-0 font-satoshi text-[14px] leading-[130%] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none] [&_svg]:h-[16px] [&_svg]:w-[16px] ${active ? "" : "hover:bg-black/5"}`}
         style={{
           display: "flex",
           padding: "10px 12px",
           alignItems: "center",
           gap: "8px",
-          background: active ? "rgba(162, 144, 118, 0.20)" : "rgba(162, 144, 118, 0.00)"
+          background: active ? "rgba(162, 144, 118, 0.20)" : "rgba(162, 144, 118, 0.00)",
+          fontSize: "14px",
+          fontWeight: active ? 700 : 500,
         }}
         aria-current={active ? "page" : undefined}
         onClick={onClick}
@@ -1274,13 +1278,14 @@ function OverviewTab({
 }) {
   const [clientDetail, setClientDetail] = useState<ClientDetailResponse | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
-  const [dismissedInsightKey, setDismissedInsightKey] = useState<string | null>(null);
+  const [dismissedInsightIds, setDismissedInsightIds] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     if (!clientId) {
       console.log("OverviewTab: No client ID, skipping API call");
       setClientDetail(null);
       setIsLoadingDetail(false);
+      setDismissedInsightIds(new Set());
       return;
     }
 
@@ -1288,6 +1293,7 @@ function OverviewTab({
     let cancelled = false;
     setClientDetail(null);
     setIsLoadingDetail(true);
+    setDismissedInsightIds(new Set());
 
     getClientDetail(clientId)
       .then((detail) => {
@@ -1314,6 +1320,33 @@ function OverviewTab({
       cancelled = true;
     };
   }, [clientId]);
+
+  const handleDismissInsight = useCallback(
+    async (insight: OverviewInsight) => {
+      if (!clientId || insight.id === undefined || insight.id === null) {
+        return;
+      }
+
+      const insightId = String(insight.id);
+      setDismissedInsightIds((current) => {
+        const next = new Set(current);
+        next.add(insightId);
+        return next;
+      });
+
+      try {
+        await dismissClientInsight(clientId, insight.id);
+      } catch (error) {
+        console.error("OverviewTab: Failed to dismiss insight:", error);
+        setDismissedInsightIds((current) => {
+          const next = new Set(current);
+          next.delete(insightId);
+          return next;
+        });
+      }
+    },
+    [clientId],
+  );
 
   // Show loading state only while a request is actively in flight.
   if (isLoadingClient || isLoadingDetail) {
@@ -1363,11 +1396,13 @@ function OverviewTab({
     ? formatClientMoney(clientDetail.asset_allocation.total_managed, clientDetail.asset_allocation.currency)
     : clientAum;
   const insightItems = getInsightItems(clientDetail?.insights);
-  const hasInsights = insightItems.some((insight) => Boolean(normalizeInsight(insight)));
-  const insightKey = getInsightKey(insightItems, clientId);
-  const hasVisibleInsights = hasInsights && dismissedInsightKey !== insightKey;
+  const visibleInsightItems = insightItems.filter((insight) => {
+    const insightId = getInsightId(insight);
+    return insightId === null || !dismissedInsightIds.has(String(insightId));
+  });
+  const hasInsights = visibleInsightItems.some((insight) => Boolean(normalizeInsight(insight)));
   const hasRecentActivity = (Array.isArray(clientDetail?.recent_activity) ? clientDetail.recent_activity : []).some((activity) => Boolean(normalizeActivity(activity)));
-  const hasSidePanels = hasVisibleInsights || hasRecentActivity;
+  const hasSidePanels = hasInsights || hasRecentActivity;
   const overviewImageSrc = getOverviewImageSrc(clientDetail, client);
 
   return (
@@ -1378,9 +1413,9 @@ function OverviewTab({
         aria-hidden="true"
       />
 
-      <section className="relative z-[1] h-[210px] bg-transparent px-[36px] max-[1180px]:h-[195px] max-[1180px]:px-[24px] max-[640px]:h-[180px] max-[640px]:px-[16px]">
-        <div className="relative z-[1] pt-[48px] max-[640px]:pt-[32px]">
-          <h1 className="m-0 font-serif text-[38px] font-bold leading-[1.15] tracking-normal text-[#3d2208] [overflow-wrap:break-word] max-[640px]:text-[32px]">
+      <section className="relative z-[1] h-[238px] bg-transparent px-[36px] max-[1180px]:h-[235px] max-[1180px]:px-[24px] max-[640px]:h-[200px] max-[640px]:px-[16px]">
+        <div className="relative z-[1] pt-[90px] max-[1180px]:pt-[72px] max-[640px]:pt-[48px]">
+          <h1 className="m-0 font-['ButlerPro'] text-[42px] font-semibold leading-[120%] tracking-[-0.84px] text-[#4D2E0C] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]">
             {clientName}
           </h1>
           {clientSubtitle ? (
@@ -1429,11 +1464,11 @@ function OverviewTab({
 
         {hasSidePanels ? (
           <aside className="relative z-[3] grid content-start gap-[16px]">
-            {hasVisibleInsights ? (
+            {hasInsights ? (
               <InsightPanel
-                insights={insightItems}
+                insights={visibleInsightItems}
                 onAskAiInsight={onAskAiInsight}
-                onDismiss={() => setDismissedInsightKey(insightKey)}
+                onDismissInsight={handleDismissInsight}
               />
             ) : null}
             {hasRecentActivity ? <RecentActivityPanel activities={clientDetail?.recent_activity ?? []} /> : null}
@@ -1663,11 +1698,11 @@ function formatLabelText(value: string) {
 function InsightPanel({
   insights,
   onAskAiInsight,
-  onDismiss,
+  onDismissInsight,
 }: {
   insights: unknown[];
   onAskAiInsight: (prompt: string) => void;
-  onDismiss: () => void;
+  onDismissInsight: (insight: OverviewInsight) => void;
 }) {
   const normalizedInsights = useMemo(
     () => insights.map(normalizeInsight).filter((insight): insight is OverviewInsight => Boolean(insight)),
@@ -1675,20 +1710,21 @@ function InsightPanel({
   );
   const insightKey = useMemo(() => getInsightKey(insights), [insights]);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
 
   useEffect(() => {
     setActiveIndex(0);
   }, [insightKey]);
 
   useEffect(() => {
-    if (normalizedInsights.length <= 1) return;
+    if (normalizedInsights.length <= 1 || isCarouselPaused) return;
 
     const intervalId = window.setInterval(() => {
       setActiveIndex((index) => (index + 1) % normalizedInsights.length);
     }, 5000);
 
     return () => window.clearInterval(intervalId);
-  }, [normalizedInsights.length, insightKey]);
+  }, [normalizedInsights.length, insightKey, isCarouselPaused]);
 
   if (normalizedInsights.length === 0) {
     return null;
@@ -1699,15 +1735,15 @@ function InsightPanel({
   const askAiPrompt = getInsightAskAiPrompt(activeInsight);
 
   return (
-    <section className="relative min-h-[409px] overflow-hidden rounded-[16px] p-[24px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:p-[20px]" style={{ backgroundColor: "rgba(255,255,255,0.5)" }}>
-      <Image
-        src="/insights.png"
-        alt=""
-        fill
-        className="object-cover"
-        sizes="(max-width: 1180px) 100vw, 380px"
-      />
-      <div className="absolute inset-0 bg-white/5" />
+    <section
+      className="relative min-h-[409px] overflow-hidden rounded-[16px] bg-cover bg-center bg-no-repeat p-[24px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:p-[20px]"
+      style={{
+        backgroundColor: "rgba(255,255,255,0.5)",
+        backgroundImage: "linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0.05)), url('/bg-insights.png')",
+      }}
+      onMouseEnter={() => setIsCarouselPaused(true)}
+      onMouseLeave={() => setIsCarouselPaused(false)}
+    >
       <div className="relative z-[1] flex items-center justify-between gap-[16px]">
         <div>
           <h2 className="m-0 font-satoshi text-[18px] font-semibold leading-none text-[#282420] max-[640px]:text-[16px]">Insights</h2>
@@ -1761,13 +1797,17 @@ function InsightPanel({
           <SparkleIcon />
           Ask AI
         </button>
-        <div className="flex items-center justify-center min-h-[38px] gap-[6px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[14px] font-medium leading-[18.2px] text-[rgba(74, 67, 52, 1)] text-[18px] cursor-pointer" onClick={onDismiss}>
+        <button
+          type="button"
+          className="flex min-h-[38px] cursor-pointer items-center justify-center gap-[6px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[18px] font-medium leading-[18.2px] text-[rgba(74,67,52,1)]"
+          onClick={() => onDismissInsight(activeInsight)}
+        >
           <svg width="12" height="12" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M7.84601 0.713867L0.710938 7.84894M0.710938 0.713867L7.84601 7.84894" stroke="#2F2B2C" stroke-width="1.42702" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7.84601 0.713867L0.710938 7.84894M0.710938 0.713867L7.84601 7.84894" stroke="#2F2B2C" strokeWidth="1.42702" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
 
           Dismiss
-        </div>
+        </button>
       </div>
     </section>
   );
@@ -1788,8 +1828,8 @@ function RecentActivityPanel({ activities }: { activities: unknown[] }) {
               {activity.icon}
             </span>
             <div className="min-w-0">
-              <h3 className="m-0 font-satoshi text-[15px] font-bold leading-tight text-[#111827] max-[640px]:text-[14px]">{activity.title}</h3>
-              <p className="mt-[6px] mb-0 font-satoshi text-[13px] font-normal leading-[1.4] text-[#6b7280] max-[640px]:text-[12px]">{activity.copy}</p>
+              <h3 className="m-0 font-satoshi text-[16px] font-bold leading-normal tracking-[-0.16px] text-[#111827] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{activity.title}</h3>
+              <RecentActivityDescription activity={activity} />
             </div>
             <time className="pt-[2px] font-satoshi text-[12px] font-bold text-[#9ca3af] max-[640px]:text-[11px]">{activity.date}</time>
           </article>
@@ -1799,13 +1839,119 @@ function RecentActivityPanel({ activities }: { activities: unknown[] }) {
   );
 }
 
+function RecentActivityDescription({ activity }: { activity: OverviewActivity }) {
+  const textRef = useRef<HTMLParagraphElement | null>(null);
+  const [displayCopy, setDisplayCopy] = useState(activity.copy);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [canExpand, setCanExpand] = useState(false);
+  const [hasFetchedDetail, setHasFetchedDetail] = useState(false);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
+
+  const measureOverflow = useCallback(() => {
+    const element = textRef.current;
+    if (!element) return;
+    setCanExpand(element.scrollHeight > element.clientHeight + 1);
+  }, []);
+
+  useEffect(() => {
+    setDisplayCopy(activity.copy);
+    setIsExpanded(false);
+    setHasFetchedDetail(false);
+    setIsFetchingDetail(false);
+  }, [activity.id, activity.copy]);
+
+  useLayoutEffect(() => {
+    if (isExpanded) return;
+    measureOverflow();
+  }, [displayCopy, isExpanded, measureOverflow]);
+
+  useEffect(() => {
+    if (isExpanded) return;
+
+    window.addEventListener("resize", measureOverflow);
+    return () => window.removeEventListener("resize", measureOverflow);
+  }, [isExpanded, measureOverflow]);
+
+  const handleSeeMore = async () => {
+    if (activity.id !== undefined && activity.id !== null && !hasFetchedDetail) {
+      setIsFetchingDetail(true);
+
+      try {
+        const detail = await getCrmInteraction(activity.id);
+        const fullCopy = getLongestStringField(getRecord(detail), [
+          "body",
+          "extracted_summary",
+          "description",
+          "copy",
+          "note",
+          "notes",
+          "message",
+          "text",
+        ]);
+
+        if (fullCopy && fullCopy.length > displayCopy.length) {
+          setDisplayCopy(fullCopy);
+        }
+      } catch (error) {
+        console.error("RecentActivityDescription: Failed to load interaction detail:", error);
+      } finally {
+        setHasFetchedDetail(true);
+        setIsFetchingDetail(false);
+      }
+    }
+
+    setIsExpanded(true);
+  };
+
+  if (!displayCopy) {
+    return null;
+  }
+
+  return (
+    <div className="relative mt-[6px]">
+      <p
+        ref={textRef}
+        className="m-0 font-satoshi text-[13px] font-normal leading-[140%] text-[#6B7280]"
+        style={
+          isExpanded
+            ? undefined
+            : {
+                display: "-webkit-box",
+                overflow: "hidden",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+              }
+        }
+      >
+        {displayCopy}
+      </p>
+      {canExpand ? (
+        <button
+          type="button"
+          className="mt-[8px] inline-flex items-center gap-[8px] border-0 bg-transparent p-0 font-satoshi text-[10px] font-medium leading-[130%] tracking-normal text-[#804D13] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]"
+          style={{ fontSize: "13px" }}
+          onClick={isExpanded ? () => setIsExpanded(false) : handleSeeMore}
+          disabled={isFetchingDetail}
+        >
+          {isExpanded ? "See less" : "See more"}
+          <svg className={`h-[14px] w-[14px] transition-transform ${isExpanded ? "rotate-180" : ""}`} viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 type OverviewInsight = {
+  id?: string | number;
   title: string;
   body?: string;
   timestamp?: string;
 };
 
 type OverviewActivity = {
+  id?: string | number;
   icon: ReactNode;
   iconClass: string;
   title: string;
@@ -1823,6 +1969,15 @@ function getInsightItems(value: unknown): unknown[] {
   }
 
   return Array.isArray(value.items) ? value.items : [];
+}
+
+function getInsightId(value: unknown) {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const id = value.id;
+  return typeof id === "string" || typeof id === "number" ? id : null;
 }
 
 function getInsightKey(insights: unknown[], scope?: number | string | null) {
@@ -1846,6 +2001,19 @@ function getInsightAskAiPrompt(insight: OverviewInsight) {
   return `Help me understand this insight: ${[insight.title, insight.body].filter(Boolean).join(" - ")} `;
 }
 
+function getLongestStringField(record: Record<string, unknown>, keys: string[]) {
+  return keys.reduce<string | null>((longest, key) => {
+    const value = record[key];
+
+    if (typeof value !== "string" || !value.trim()) {
+      return longest;
+    }
+
+    const trimmed = value.trim();
+    return !longest || trimmed.length > longest.length ? trimmed : longest;
+  }, null);
+}
+
 function normalizeInsight(value: unknown): OverviewInsight | null {
   if (typeof value === "string") {
     return value.trim() ? { title: value.trim() } : null;
@@ -1858,12 +2026,14 @@ function normalizeInsight(value: unknown): OverviewInsight | null {
   const title = getStringField(value, ["title", "headline", "name", "summary", "message", "text"]);
   const body = getStringField(value, ["body", "description", "detail", "details", "copy", "recommendation"]);
   const timestamp = getStringField(value, ["updated_at", "created_at", "timestamp", "date"]);
+  const id = getInsightId(value);
 
   if (!title && !body) {
     return null;
   }
 
   return {
+    id: id ?? undefined,
     title: title || body || "Insight",
     body: body && body !== title ? body : undefined,
     timestamp: timestamp ? formatActivityDate(timestamp) : undefined,
@@ -1887,10 +2057,11 @@ function normalizeActivity(value: unknown): OverviewActivity | null {
     return null;
   }
 
+  const id = getInsightId(value);
   const iconField = getStringField(value, ["icon", "icon_type"]);
   const type = getStringField(value, ["type", "source_type", "channel", "kind"]);
   const title = getStringField(value, ["title", "subject", "name", "summary"]) || (type ? formatLabelText(type) : null);
-  const copy = getStringField(value, ["copy", "description", "body", "note", "notes", "message", "text"]) || "";
+  const copy = getLongestStringField(value, ["body", "full_description", "description_full", "copy", "description", "detail", "details", "note", "notes", "message", "text", "extracted_summary"]) || "";
   const dateValue = getStringField(value, ["date", "occurred_at", "created_at", "updated_at", "timestamp"]);
 
   if (!title && !copy) {
@@ -1901,6 +2072,7 @@ function normalizeActivity(value: unknown): OverviewActivity | null {
   const iconData = iconField ? getActivityIconByName(iconField) : getActivityIcon(type || title || copy);
 
   return {
+    id: id ?? undefined,
     ...iconData,
     title: title || "Activity",
     date: dateValue ? formatActivityDate(dateValue) : "",
@@ -2094,7 +2266,7 @@ function AssetAllocationChart({
   const chartOptions: ChartOptions<"doughnut"> = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: "58%",
+    cutout: "71%",
     rotation: -90,
     plugins: {
       legend: {
