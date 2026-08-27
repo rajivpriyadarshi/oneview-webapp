@@ -1819,7 +1819,7 @@ function RecentActivityPanel({ activities }: { activities: unknown[] }) {
     .filter((activity): activity is OverviewActivity => Boolean(activity));
 
   return (
-    <section className="relative z-[4] rounded-[20px] border border-[#e5e7eb] bg-white px-[28px] py-[26px] max-[640px]:rounded-[16px] max-[640px]:px-[20px]">
+    <section className="relative z-[4] rounded-[20px] border border-[#804D13] bg-white px-[24px] py-[26px] max-[640px]:rounded-[16px] max-[640px]:px-[20px]">
       <h2 className="m-0 font-satoshi text-[13px] font-bold uppercase tracking-[0.06em] text-[#6b7280]">Recent activity</h2>
       <div className="mt-[20px] grid">
         {normalizedActivities.map((activity, index) => (
