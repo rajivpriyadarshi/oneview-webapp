@@ -3145,6 +3145,33 @@ button:disabled {
   font-feature-settings: 'ss03' on;
 }
 
+.interaction-view-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  margin-top: 8px;
+  background: transparent;
+  border: none;
+  color: #111827;
+  font-family: Inter, sans-serif;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: normal;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.interaction-view-details:hover {
+  opacity: 0.7;
+}
+
+.interaction-view-details svg {
+  width: 16px;
+  height: 16px;
+}
+
 .loading-state,
 .empty-state {
   display: flex;
