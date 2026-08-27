@@ -98,7 +98,7 @@ export default function ClientsPage() {
 
           {/* Two-column layout */}
           <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-            <div className="flex flex-col gap-4">
+            {/* <div className="flex flex-col gap-4"> */}
               {/* Client queue */}
               <div style={{
                 flex: 1, background: "white",
@@ -106,7 +106,7 @@ export default function ClientsPage() {
               }}>
                 {/* Header */}
                 <div style={{ padding: "28px 28px 0" }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: "#8b6b3a", marginBottom: 4 }}>Today</div>
+                  <div style={{ fontSize: 14, fontWeight: 400, color: "#475569", marginBottom: 4, fontFamily: "Satoshi, sans-serif", wordWrap: "break-word" }}>Today</div>
                   <h2 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: 0 }}>
                     {isLoading ? "Loading..." : `${totalCount} clients needs your attention`}
                   </h2>
@@ -190,11 +190,12 @@ export default function ClientsPage() {
                 )}
               </div>
               {/* Market watch */}
-              <MarketWatch />
-            </div>
+              {/* <MarketWatch /> */}
+            {/* </div> */}
 
             {/* Right panels */}
             <div style={{ flex: "0 0 360px", display: "flex", flexDirection: "column", gap: 16 }}>
+              <ManagedAssetsCard clients={clients} />
               <AlertsPanel alerts={alerts} onViewAll={() => setShowAlertsModal(true)} onCheckNow={(alert) => {
                 const type = alert.type?.toLowerCase();
                 if (type === "document" || type === "documents" && alert.client) {
@@ -552,6 +553,46 @@ function MeetingIcon({ title }: { title: string }) {
     <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
       <path d="M1 19V13M8.0008 19V1M15.0016 19V7" stroke="black" strokeWidth="2" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function ManagedAssetsCard({ clients }: { clients: CrmClient[] }) {
+  const totalAssets = useMemo(() => {
+    let sum = 0;
+    for (const c of clients) {
+      if (c.net_worth) {
+        const num = parseFloat(c.net_worth);
+        if (!isNaN(num)) sum += num;
+      }
+    }
+    return sum;
+  }, [clients]);
+
+  const formatted = totalAssets >= 1_000_000_000
+    ? `$${(totalAssets / 1_000_000_000).toFixed(2)}B`
+    : totalAssets >= 1_000_000
+    ? `$${(totalAssets / 1_000_000).toFixed(2)}M`
+    : totalAssets >= 1_000
+    ? `$${(totalAssets / 1_000).toFixed(0)}K`
+    : `$${totalAssets.toFixed(0)}`;
+
+  return (
+    <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px" }}>
+      <p style={{ fontSize: 12, fontWeight: 500, color: "rgba(0,0,0,0.40)", letterSpacing: "1.44px", textTransform: "uppercase", margin: "0 0 8px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>
+        Managed assets
+      </p>
+      <p style={{ fontSize: 28, fontWeight: 500, color: "#111111", margin: "0 0 8px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>
+        {formatted}
+      </p>
+      {/* <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <svg width="7" height="7" viewBox="0 0 7 7" fill="none">
+          <path d="M5.9992 5.9992V1H1M5.9992 1L1 5.9992" stroke="#10B981" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        <span style={{ fontSize: 13, fontWeight: 500, color: "#10B981", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>
+          $0.25B | 7.14% MTD
+        </span>
+      </div> */}
+    </div>
   );
 }
 
