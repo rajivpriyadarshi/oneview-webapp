@@ -816,7 +816,7 @@ function WealthMapFlow({
   graphData: GraphResponse;
   className: string;
 }) {
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>("financials");
   const [expandedTypeGroup, setExpandedTypeGroup] = useState<string | null>(null);
   const { fitView } = useReactFlow();
 
