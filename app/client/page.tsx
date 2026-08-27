@@ -181,18 +181,18 @@ const TW = {
   mobileHistoryBtn: "hidden h-[36px] w-[36px] items-center justify-center rounded-full border-0 bg-transparent text-[#7f4e0b] max-md:inline-flex hover:bg-[#7f4e0b]/10",
   mobileHeaderBtn: "inline-flex shrink-0 items-center gap-[8px] rounded-full border border-[#804d13]/20 bg-[#f0ebe0] py-[8px] pr-[12px] pl-[8px] font-satoshi text-[13px] text-[#804d13] hover:bg-[#e8e0d0]",
   mobileHeaderBtnIcon: "inline-grid place-items-center rounded-full bg-gradient-to-b from-[#b37f40] to-[#432411] p-[6px] text-white",
-  workspace: "relative ml-[80px] grid h-screen grid-cols-[minmax(300px,380px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(292px,350px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
+  workspace: "relative ml-[80px] grid h-screen grid-cols-[minmax(360px,440px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
-  advisorHeader: "relative z-[40] flex min-w-0 items-center justify-between gap-[10px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] py-[14px] backdrop-blur-[12px] max-[640px]:px-[12px]",
+  advisorHeader: "relative z-[40] flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
-  conversationBtn: "inline-flex w-full min-w-0 max-w-full items-center justify-start gap-[8px] overflow-hidden border-0 bg-transparent py-[6px] text-left font-satoshi text-[13px] font-medium leading-[16.9px] tracking-normal text-black [&_svg]:shrink-0",
+  conversationBtn: "inline-flex w-full min-w-0 max-w-full items-center justify-start gap-[8px] overflow-hidden rounded-xl border-0 bg-transparent px-[12px] py-[10px] text-left font-satoshi text-[14px] font-medium leading-[130%] tracking-normal text-black [&_svg]:shrink-0",
   conversationText: "block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
   conversationDropdown: "absolute top-[43px] left-[-7px] z-[60] w-[238px] max-h-[50vh] overflow-y-auto rounded-[22px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] max-[640px]:left-[-4px] max-[640px]:w-[calc(100vw-64px)]",
   conversationDropdownItem: "flex min-h-[46px] w-full cursor-pointer items-center border-0 border-b border-black/10 bg-white px-[24px] text-left font-satoshi text-[13px] font-normal leading-[1.15] text-black transition last:border-b-0 hover:bg-black/[0.025]",
   conversationDropdownEmpty: "flex min-h-[46px] items-center px-[24px] font-satoshi text-[13px] font-normal text-black/40",
   advisorAddBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto pr-[14px] pl-[28px] pt-[64px] pb-[190px] max-[1180px]:pl-[20px] max-[900px]:pr-[56px] max-[900px]:pl-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
-  attentionTitle: "m-0 mb-[28px] max-w-[350px] font-serif text-[32px] font-normal leading-[1.1] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
+  attentionTitle: "m-0 mb-[28px] max-w-[350px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
   attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
   attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
   promptChipsRow: "mb-[10px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] p-[10px] pt-[8px] pb-[0px]",
@@ -766,18 +766,15 @@ export default function ChatPage() {
           <aside className={TW.advisorPanel} aria-label="Advisor chat">
           <div className={TW.advisorHeader}>
             <div className={TW.conversationMenuWrap} ref={conversationMenuRef}>
-              <button
-                type="button"
+              <div
                 className={TW.conversationBtn}
-                aria-expanded={conversationMenuOpen}
-                aria-haspopup="menu"
                 onClick={() => setConversationMenuOpen((open) => !open)}
               >
                 <span className={TW.conversationText}>
                   {selectedSession?.title && selectedSession.title !== "New chat" ? selectedSession.title : "New conversation"}
                 </span>
                 <ChevronDownIcon />
-              </button>
+              </div>
               {conversationMenuOpen ? (
                 <div className={TW.conversationDropdown} role="menu">
                   {isLoadingSessions ? (
@@ -813,7 +810,7 @@ export default function ChatPage() {
 
           {!isChatActive ? (
             <div className={TW.attentionContent}>
-              <h1 className={TW.attentionTitle}>What can I help you with?</h1>
+              <h1 className={TW.attentionTitle}>What can I help<br/>you with?</h1>
               <div className={TW.attentionList}>
                 {ATTENTION_ITEMS.map((item) => (
                   <div
@@ -830,7 +827,7 @@ export default function ChatPage() {
                     }}
                   >
                     <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
-                    {item.action}
+                    <span style={{ background: "linear-gradient(90deg, #988267 0%, #8C6722 50%, #7D6F7E 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{item.action}</span>
                   </div>
                 ))}
               </div>
@@ -1203,7 +1200,7 @@ function ClientOverview({
 
   return (
     <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
-      <header className="flex min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
+      <header className="flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
           <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] pt-[10px] pb-[10px] px-0">
             <ClientTabButton active={activeTab === "overview"} icon={<OverviewIcon />} label="Overview" onClick={() => setActiveTab("overview")} />

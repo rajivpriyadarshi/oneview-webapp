@@ -195,7 +195,7 @@ const TW = {
   loadingDot: "h-1 w-1 rounded-full bg-current",
   attentionContent: "flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto px-6",
   attentionInner: "flex flex-col items-start",
-  attentionTitle: "m-0 mb-[28px] max-w-[350px] text-[32px] font-normal leading-[1.1] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
+  attentionTitle: "m-0 mb-[28px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word]",
   attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
   attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
 };
@@ -644,7 +644,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
             <div className="flex flex-1 flex-col">
               <div className={TW.attentionContent}>
                 <div className={TW.attentionInner}>
-                  <h1 className={TW.attentionTitle} style={{ fontFamily: "var(--font-butler)" }}>What can I help you with?</h1>
+                  <h1 className={TW.attentionTitle}>What can I help you with?</h1>
                   <div className={TW.attentionList}>
                     {ATTENTION_ITEMS.map((item) => (
                       <ThreadPrimitive.Suggestion
@@ -655,7 +655,7 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
                         style={{ fontFamily: "'Cascadia Code', monospace", fontSize: 12 }}
                       >
                         <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
-                        {item.action}
+                        <span style={{ background: "linear-gradient(90deg, #988267 0%, #8C6722 50%, #7D6F7E 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{item.action}</span>
                       </ThreadPrimitive.Suggestion>
                     ))}
                   </div>

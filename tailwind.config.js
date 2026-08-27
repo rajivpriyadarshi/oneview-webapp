@@ -26,6 +26,7 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-inter)', 'var(--font-geist)', 'system-ui', 'sans-serif'],
         serif: ['var(--font-butler)', 'Georgia', 'serif'],
+        butler: ['var(--font-butler)', 'Georgia', 'serif'],
         satoshi: ['var(--font-satoshi)', 'Arial', 'Helvetica', 'sans-serif'],
         'butler-medium': ['var(--font-butler-medium)', 'Georgia', 'serif'],
         'butler-semibold': ['var(--font-butler-semibold)', 'Georgia', 'serif'],
