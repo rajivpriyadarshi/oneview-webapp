@@ -2234,20 +2234,50 @@ function AssetAllocationChart({
   const colors = slices.map((bucket) => bucket.color);
   const hasAllocationData = data.length > 0;
   const visibleSlices = slices.slice(0, 5);
-  const connectorMarks = [
-    { circle: { cx: 258, cy: 108 }, line: { x1: 258, y1: 108, x2: 282, y2: 88 } },
-    { circle: { cx: 258, cy: 228 }, line: { x1: 258, y1: 228, x2: 280, y2: 245 } },
-    { circle: { cx: 100, cy: 245 }, line: { x1: 100, y1: 245, x2: 78, y2: 258 } },
-    { circle: { cx: 62, cy: 140 }, line: { x1: 62, y1: 140, x2: 38, y2: 118 } },
-    { circle: { cx: 145, cy: 50 }, line: { x1: 145, y1: 50, x2: 130, y2: 30 } },
-  ];
-  const labelPositions = [
-    "right-[-10px] top-[16%] max-[640px]:right-[-4px]",
-    "bottom-[14%] right-[-10px] max-[640px]:right-[-4px]",
-    "bottom-[8%] left-[0px] max-[640px]:left-[4px]",
-    "left-[-16px] top-[28%] max-[640px]:left-[-4px]",
-    "left-[22%] top-[0%]",
-  ];
+  const allocationTotal = data.reduce((sum, value) => sum + value, 0);
+  let allocationCumulative = 0;
+  const allocationAnnotations = allocationTotal > 0 ? visibleSlices.map((slice) => {
+    const start = allocationCumulative;
+    allocationCumulative += slice.value;
+
+    const midAngle = -90 + ((start + slice.value / 2) / allocationTotal) * 360;
+    const angle = (midAngle * Math.PI) / 180;
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const dotRadius = 104;
+    const elbowRadius = 134;
+    const labelChars = Math.max(slice.label.length, formatPercent(slice.value).length);
+    const labelGap = 26 + Math.min(42, labelChars * 1.8);
+    const labelRadius = 112 + labelGap;
+    const labelX = 160 + (cos >= 0 ? 1 : -1) * labelRadius;
+    const labelY = Math.max(22, Math.min(292, 160 + sin * 152));
+    const elbowX = 160 + cos * elbowRadius;
+    const elbowY = 160 + sin * elbowRadius;
+    const lineEndX = cos >= 0 ? labelX - 8 : labelX + 8;
+    const textAnchor: "start" | "end" = cos >= 0 ? "start" : "end";
+
+    return {
+      ...slice,
+      labelText: slice.label,
+      dot: {
+        x: 160 + cos * dotRadius,
+        y: 160 + sin * dotRadius,
+      },
+      line: {
+        x1: 160 + cos * dotRadius,
+        y1: 160 + sin * dotRadius,
+        x2: elbowX,
+        y2: elbowY,
+        x3: lineEndX,
+        y3: labelY,
+      },
+      label: {
+        x: labelX,
+        y: labelY,
+        anchor: textAnchor,
+      },
+    };
+  }) : [];
 
   const chartData: ChartData<"doughnut", number[], string> = {
     labels,
@@ -2306,28 +2336,24 @@ function AssetAllocationChart({
         </div>
 
         {hasAllocationData ? (
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 320 320" fill="none" aria-hidden="true">
-            {visibleSlices.map((slice, index) => {
-              const mark = connectorMarks[index];
-
-              return (
-                <g key={`${slice.label}-${index}`}>
-                  <circle cx={mark.circle.cx} cy={mark.circle.cy} r="4" fill="#1A2229" />
-                  <line x1={mark.line.x1} y1={mark.line.y1} x2={mark.line.x2} y2={mark.line.y2} stroke="rgba(0,0,0,0.16)" strokeWidth="1" />
-                </g>
-              );
-            })}
+          <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 320 320" fill="none" aria-hidden="true">
+            {allocationAnnotations.map((annotation, index) => (
+              <g key={`${annotation.labelText}-${index}`}>
+                <circle cx={annotation.dot.x} cy={annotation.dot.y} r="4" fill="#1A2229" />
+                <path
+                  d={`M ${annotation.line.x1} ${annotation.line.y1} L ${annotation.line.x2} ${annotation.line.y2} L ${annotation.line.x3} ${annotation.line.y3}`}
+                  stroke="rgba(0,0,0,0.16)"
+                  strokeWidth="1"
+                  fill="none"
+                />
+                <text x={annotation.label.x} y={annotation.label.y} textAnchor={annotation.label.anchor} fill="#5C6A72" fontFamily="Satoshi" fontSize="11" fontWeight="400">
+                  <tspan x={annotation.label.x} dy="0">{annotation.labelText}</tspan>
+                  <tspan x={annotation.label.x} dy="17" fill="#1A2229" fontSize="13" fontWeight="700">{formatPercent(annotation.value)}</tspan>
+                </text>
+              </g>
+            ))}
           </svg>
         ) : null}
-
-        {visibleSlices.map((slice, index) => {
-          return (
-            <div key={`${slice.label}-${index}`} className={`absolute ${labelPositions[index]} text-right`}>
-              <span className="block self-stretch font-satoshi text-[11px] font-normal leading-normal text-[#5C6A72]" style={{ fontStyle: 'normal' }}>{slice.label}</span>
-              <strong className="block self-stretch font-satoshi text-[13px] font-bold leading-normal text-[#1A2229]" style={{ fontStyle: 'normal', fontWeight: 700 }}>{formatPercent(slice.value)}</strong>
-            </div>
-          );
-        })}
       </div>
 
       {hasAllocationData ? (
