@@ -827,6 +827,9 @@ export default function ChatPage() {
                 {ATTENTION_ITEMS.map((item) => (
                   <div
                     className={`${TW.attentionSuggestion} ${item.bg}`}
+                    // Same inline guard the chat screen uses: the layered
+                    // utilities lose to globals.css, so pin size/family here.
+                    style={{ fontFamily: "'Cascadia Code', monospace", fontSize: 12 }}
                     key={item.action}
                     role="button"
                     tabIndex={0}
@@ -1215,7 +1218,7 @@ function ClientOverview({
     <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
       <header className="flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
-          <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] pt-[10px] pb-[10px] px-0">
+          <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] p-0">
             <ClientTabButton active={activeTab === "overview"} icon={<OverviewIcon />} label="Overview" onClick={() => setActiveTab("overview")} />
             <ClientTabButton active={activeTab === "wealth-map"} icon={<WealthMapIcon />} label="Wealth map" onClick={() => setActiveTab("wealth-map")} />
             <ClientTabButton active={activeTab === "interactions"} icon={<InteractionsIcon />} label="Interactions" onClick={() => setActiveTab("interactions")} />
@@ -1256,15 +1259,21 @@ function ClientTabButton({
     <li>
       <button
         type="button"
-        className={`shrink-0 rounded-xl border-0 font-satoshi text-[14px] leading-[130%] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none] [&_svg]:h-[16px] [&_svg]:w-[16px] ${active ? "" : "hover:bg-black/5"}`}
+        // Per Figma 2411:15494: 8/12 padding, 5.137px icon gap, 17.124px icons,
+        // 14px Satoshi Bold at -0.28px. Active is a #41240D pill (42px radius,
+        // white text); inactive is transparent with a 12px radius.
+        className={`flex shrink-0 items-center gap-[5.137px] border-0 font-satoshi whitespace-nowrap [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none] px-[12px] py-[8px] [&_svg]:h-[17.124px] [&_svg]:w-[17.124px] ${
+          active
+            ? "rounded-[42px] bg-[#41240D] text-white"
+            : "rounded-[42px] bg-transparent text-black/80 hover:bg-black/5"
+        }`}
+        // Inline, not Tailwind: globals.css has an unlayered `button { font: inherit }`
+        // that beats layered utilities, so text-[14px]/font-bold would be ignored.
         style={{
-          display: "flex",
-          padding: "10px 12px",
-          alignItems: "center",
-          gap: "8px",
-          background: active ? "rgba(162, 144, 118, 0.20)" : "rgba(162, 144, 118, 0.00)",
-          fontSize: "14px",
-          fontWeight: active ? 700 : 500,
+          fontSize: "14px", fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.28px",
+          // globals.css only sets this on a few scoped selectors, so without it
+          // macOS subpixel rendering makes Bold look heavier than Figma does.
+          WebkitFontSmoothing: "antialiased",
         }}
         aria-current={active ? "page" : undefined}
         onClick={onClick}
