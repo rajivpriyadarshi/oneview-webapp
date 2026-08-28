@@ -546,8 +546,8 @@ function ItemNode({
   );
 }
 
-function OwnershipNode({ data }: { data: { title: string; points: string[] } }) {
-  const [expanded, setExpanded] = useState(false);
+function OwnershipNode({ data }: { data: { title: string; points: string[]; isExpanded?: boolean; onToggle?: () => void } }) {
+  const expanded = data.isExpanded ?? false;
   const visiblePoints = expanded ? data.points : data.points.slice(0, 2);
   const hasMore = data.points.length > 2;
 
@@ -555,7 +555,9 @@ function OwnershipNode({ data }: { data: { title: string; points: string[] } }) 
     <div className={expanded ? "ownership-expanded" : ""} style={{ fontFamily: FONT_FAMILY, width: 400 }}>
       <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
       <div
+        onClick={() => data.onToggle?.()}
         style={{
+          cursor: "pointer",
           background: expanded ? "rgba(254, 243, 223, 0.5)" : "rgba(255, 254, 252, 0.5)",
           backdropFilter: "blur(12px) saturate(120%)",
           WebkitBackdropFilter: "blur(12px) saturate(120%)",
@@ -573,12 +575,11 @@ function OwnershipNode({ data }: { data: { title: string; points: string[] } }) 
             <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{point}</span>
           </div>
         ))}
-        {hasMore && (
+        {hasMore && !expanded && (
           <div
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            style={{ fontSize: 16, color: "#8b6b3a", marginTop: 4, cursor: "pointer", fontWeight: 600 }}
+            style={{ fontSize: 16, color: "#8b6b3a", marginTop: 4, fontWeight: 600 }}
           >
-            {expanded ? "Show less" : `+${data.points.length - 2} more`}
+            +{data.points.length - 2} more
           </div>
         )}
       </div>
@@ -616,6 +617,8 @@ function buildFlowElements(
   onItemClick: (itemId: string) => void,
   onProfileDetails: () => void,
   clientImageSrc?: string,
+  expandedOwnershipId?: string | null,
+  onOwnershipToggle?: (id: string) => void,
 ): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -853,13 +856,16 @@ function buildFlowElements(
           cat.ownershipItems.forEach((item, ii) => {
             const itemY = itemStartY + ii * (OWNERSHIP_CARD_HEIGHT + OWNERSHIP_GAP);
 
+            const ownershipNodeId = `item-${item.id}`;
             nodes.push({
-              id: `item-${item.id}`,
+              id: ownershipNodeId,
               type: "ownershipNode",
               position: { x: X_ITEM, y: itemY },
               data: {
                 title: item.title,
                 points: item.points,
+                isExpanded: expandedOwnershipId === ownershipNodeId,
+                onToggle: () => onOwnershipToggle?.(ownershipNodeId),
               },
               draggable: false,
             });
@@ -938,6 +944,7 @@ function WealthMapFlow({
   const [expandedSection, setExpandedSection] = useState<string | null>("financials");
   const [expandedTypeGroup, setExpandedTypeGroup] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [expandedOwnershipId, setExpandedOwnershipId] = useState<string | null>(null);
   const { fitView } = useReactFlow();
 
   const onSectionClick = useCallback(
@@ -964,6 +971,10 @@ function WealthMapFlow({
     setSelectedItemId((previous) => (previous === itemId ? null : itemId));
   }, []);
 
+  const onOwnershipToggle = useCallback((id: string) => {
+    setExpandedOwnershipId((prev) => (prev === id ? null : id));
+  }, []);
+
   const { nodes: flowNodes, edges: flowEdges } = useMemo(
     () =>
       buildFlowElements(
@@ -976,8 +987,10 @@ function WealthMapFlow({
         onItemClick,
         onProfileDetails,
         clientImageSrc,
+        expandedOwnershipId,
+        onOwnershipToggle,
       ),
-    [graphData, expandedSection, expandedTypeGroup, selectedItemId, onSectionClick, onTypeGroupClick, onItemClick, onProfileDetails, clientImageSrc],
+    [graphData, expandedSection, expandedTypeGroup, selectedItemId, onSectionClick, onTypeGroupClick, onItemClick, onProfileDetails, clientImageSrc, expandedOwnershipId, onOwnershipToggle],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
