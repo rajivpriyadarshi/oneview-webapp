@@ -3,6 +3,7 @@
 import { type CSSProperties, type ReactNode, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import SuggestionChip from "../components/SuggestionChip";
 import { useChat } from "@ai-sdk/react";
 import {
   ArcElement,
@@ -201,9 +202,6 @@ const TW = {
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto pr-[14px] pl-[28px] pt-[64px] pb-[190px] max-[1180px]:pl-[20px] max-[900px]:pr-[56px] max-[900px]:pl-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
   attentionTitle: "m-0 mb-[28px] max-w-[350px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
   attentionList: "grid max-w-[640px] gap-[10px] justify-items-start",
-  // Same pill as the in-chat reply suggestions (TW.replyPill below) — the empty
-  // state and the thread show the same kind of chip, so they share one look.
-  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
@@ -250,7 +248,6 @@ const TW = {
   assistantMessageContent: "py-1",
   messageStack: "max-w-full",
   replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
-  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   messageControls: "mt-2 inline-flex items-center gap-1.5",
   inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
   actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
@@ -825,26 +822,12 @@ export default function ChatPage() {
               <h1 className={TW.attentionTitle}>What can I help<br/>you with?</h1>
               <div className={TW.attentionList}>
                 {ATTENTION_ITEMS.map((item) => (
-                  <div
-                    className={TW.attentionSuggestion}
-                    // Same inline guard the reply pills use: the layered
-                    // utilities lose to globals.css, so pin the background and
-                    // family here.
-                    style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace" }}
+                  <SuggestionChip
                     key={item.action}
-                    role="button"
-                    tabIndex={0}
+                    label={item.action}
+                    className="max-w-full"
                     onClick={() => void startPromptChat(item.prompt)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        void startPromptChat(item.prompt);
-                      }
-                    }}
-                  >
-                    <span aria-hidden="true" className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
-                    <span>{item.action}</span>
-                  </div>
+                  />
                 ))}
               </div>
             </div>
@@ -3069,10 +3052,7 @@ function ReplySuggestionButton({
   };
 
   return (
-    <div className={TW.replyPill} style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace", cursor: "pointer" }} onClick={handleClick}>
-      <span className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
-      <span>{suggestion}</span>
-    </div>
+    <SuggestionChip label={suggestion} onClick={handleClick} />
   );
 }
 

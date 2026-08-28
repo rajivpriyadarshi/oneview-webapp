@@ -2,6 +2,7 @@
 
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import SuggestionChip, { SUGGESTION_CHIP_CLASS, SUGGESTION_CHIP_STYLE, SuggestionChipBody } from "../components/SuggestionChip";
 import { useChat } from "@ai-sdk/react";
 import {
   ActionBarPrimitive,
@@ -168,7 +169,6 @@ const TW = {
   // full-width parent to stretch into.
   messageStack: "w-full min-w-0 max-w-full",
   replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
-  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   messageControls: "mt-2 inline-flex items-center gap-1.5",
   inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
   actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
@@ -197,9 +197,6 @@ const TW = {
   attentionInner: "flex flex-col items-start",
   attentionTitle: "m-0 mb-[28px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word]",
   attentionList: "grid max-w-[640px] gap-[10px] justify-items-start",
-  // Same pill as the in-chat reply suggestions (TW.replyPill below) — the empty
-  // state and the thread show the same kind of chip, so they share one look.
-  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
 };
 
 // Selected chat row: gradient texture washed out by 80% white, per Figma 2411:14694.
@@ -780,14 +777,10 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
                         key={item.action}
                         prompt={item.prompt}
                         send
-                        className={TW.attentionSuggestion}
-                        // Same inline guard the reply pills use: the layered
-                        // utilities lose to globals.css, so pin the background
-                        // and family here.
-                        style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace" }}
+                        className={`${SUGGESTION_CHIP_CLASS} max-w-full`}
+                        style={SUGGESTION_CHIP_STYLE}
                       >
-                        <span aria-hidden="true" className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
-                        <span>{item.action}</span>
+                        <SuggestionChipBody>{item.action}</SuggestionChipBody>
                       </ThreadPrimitive.Suggestion>
                     ))}
                   </div>
@@ -1131,10 +1124,7 @@ function ReplySuggestionButton({ suggestion, autoSubmit }: { suggestion: string;
     window.requestAnimationFrame(() => { document.querySelector<HTMLTextAreaElement>("[data-chat-composer-input]")?.focus(); });
   };
   return (
-    <div className={TW.replyPill} style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace", cursor: "pointer" }} onClick={handleClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(); } }}>
-      <span className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
-      <span>{suggestion}</span>
-    </div>
+    <SuggestionChip label={suggestion} onClick={handleClick} />
   );
 }
 

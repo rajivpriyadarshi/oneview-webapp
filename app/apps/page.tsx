@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { type CSSProperties, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import Sidebar from "../components/Sidebar";
@@ -94,6 +94,21 @@ function getPresentation(cmd: WorkflowCommand, index: number): WorkflowPresentat
   };
 }
 
+// The page's entrance order, same shape as the client overview's table: one
+// place to read and reorder the sequence instead of numbers spread through the
+// JSX. `.stagger-in` / `.stagger-fade` in globals.css turn these into delays.
+const APPS_STAGGER = {
+  backdrop: 0,
+  title: 1,
+  subtitle: 2,
+  cards: 3,
+};
+
+/** Where the request button lands — after however many cards actually rendered. */
+function requestButtonStagger(cardCount: number) {
+  return APPS_STAGGER.cards + Math.min(cardCount, 8);
+}
+
 export default function AppsPage() {
   const router = useRouter();
   const [commands, setCommands] = useState<WorkflowCommand[]>([]);
@@ -153,15 +168,17 @@ export default function AppsPage() {
           alignItems: "center",
           minHeight: "100vh",
         }}>
-          {/* Background image */}
-          <div style={{
+          {/* Background image. Fades rather than slides — 16px of travel on a
+              full-bleed image reads as the whole page shifting. */}
+          <div className="stagger-fade" style={{
             position: "absolute",
             inset: 0,
             backgroundImage: "url('/bg-app-workflow.png')",
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
-          }} />
+            "--stagger-index": APPS_STAGGER.backdrop,
+          } as CSSProperties} />
 
           {/* Title + subtitle */}
           <div style={{
@@ -176,28 +193,30 @@ export default function AppsPage() {
             marginTop: 60,
             marginBottom: 40,
           }}>
-            <h1 style={{
+            <h1 className="stagger-in" style={{
               margin: 0,
               color: "black",
+              "--stagger-index": APPS_STAGGER.title,
               fontSize: 42,
               fontFamily: "var(--font-butler-semibold), var(--font-butler), serif",
               fontWeight: 600,
               lineHeight: 1.2,
               letterSpacing: "-1.68px",
               wordWrap: "break-word",
-            }}>
+            } as CSSProperties}>
               Discover Apps
             </h1>
-            <p style={{
+            <p className="stagger-in" style={{
               margin: 0,
               color: "rgba(0, 0, 0, 0.8)",
+              "--stagger-index": APPS_STAGGER.subtitle,
               fontSize: 14,
               fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
               fontFeatureSettings: "'ss03' on",
               fontWeight: 500,
               lineHeight: 1.5,
               letterSpacing: "-0.14px",
-            }}>
+            } as CSSProperties}>
               Simplify your workflows with apps
             </p>
           </div>
@@ -232,9 +251,17 @@ export default function AppsPage() {
             }}>
               {commands.map((cmd, i) => {
                 const { icon, category, description } = getPresentation(cmd, i);
+                // The entrance lives on a wrapper, not on .app-card itself:
+                // .stagger-in animates transform and — because it fills `both` —
+                // holds `transform: none` afterwards, which would outrank
+                // .app-card:hover's translateY(-3px) and kill the lift.
                 return (
                 <div
                   key={cmd.command}
+                  className="stagger-in"
+                  style={{ width: "100%", "--stagger-index": Math.min(APPS_STAGGER.cards + i, 8) } as CSSProperties}
+                >
+                <div
                   className="app-card"
                   style={{
                     width: "100%",
@@ -352,6 +379,7 @@ export default function AppsPage() {
                     </span>
                   </button>
                 </div>
+                </div>
                 );
               })}
             </div>
@@ -359,11 +387,18 @@ export default function AppsPage() {
           </div>
 
           {/* Request a new App button */}
+          {/* Keyed on the fetch so the button remounts when the cards arrive and
+              replays its entrance with the real delay. Without the key it would
+              have already animated at index 3 while the list was still loading,
+              and the later delay change would snap it back mid-flight. */}
           <button
+            key={loading ? "loading" : "loaded"}
+            className="stagger-in"
             onClick={() => { setShowFeedback(true); setFeedbackSubmitted(false); setFeedbackText(""); }}
             style={{
               position: "relative",
               zIndex: 1,
+              "--stagger-index": requestButtonStagger(commands.length),
               marginTop: 32,
               marginBottom: 48,
               height: 56,
@@ -380,7 +415,7 @@ export default function AppsPage() {
               gap: 8,
               display: "inline-flex",
               cursor: "pointer",
-            }}
+            } as CSSProperties}
           >
             <img src="/apps/icon-request-app.svg" alt="" width={24} height={24} style={{ display: "block", width: 24, height: 24 }} />
             <span style={{
