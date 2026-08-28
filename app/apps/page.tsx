@@ -101,6 +101,12 @@ const WORKFLOW_PRESENTATION: Record<string, WorkflowPresentation> = {
     description:
       "Surfaces the biggest moves across client portfolios and explains the news, events, and market developments driving them.",
   },
+  "portfolio optimiser": {
+    icon: "/apps/portfolio-optimizer.png",
+    category: "Portfolio Analysis",
+    description:
+      "Analyses portfolio allocations and suggests rebalancing opportunities to optimise risk-adjusted returns.",
+  }
 };
 
 function getPresentation(cmd: WorkflowCommand, index: number): WorkflowPresentation {
