@@ -2328,8 +2328,8 @@ function getActivityIconByName(iconName: string) {
     "meeting_note": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
     "phone": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
     "call": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "email": { path: "/recent-activity-mail.svg", iconClass: "bg-[#FEF3C7]", size: 16 },
-    "mail": { path: "/recent-activity-mail.svg", iconClass: "bg-[#FEF3C7]", size: 16 },
+    "email": { path: "/recent-activity-mail.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
+    "mail": { path: "/recent-activity-mail.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
     "message": { path: "/icons/interaction/ic-message.png", iconClass: "bg-transparent", size: 32 },
 
     // Financial & Documents
@@ -2382,7 +2382,7 @@ function getActivityIcon(value: string) {
   if (normalized.includes("mail") || normalized.includes("email")) {
     return {
       icon: <Image src="/recent-activity-mail.svg" alt="" width={16} height={16} />,
-      iconClass: "bg-[#FEF3C7]",
+      iconClass: "bg-[rgba(128,77,19,0.16)]",
     };
   }
 
