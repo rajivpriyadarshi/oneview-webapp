@@ -762,8 +762,8 @@ export function DocumentsVault() {
     <div className="docs-vault-content">
       <header className="docs-vault-header">
         <div className="docs-vault-header-left">
-          <h1 className="docs-vault-title" style={{ fontFeatureSettings: "'ss03' on" }}>Documents vault</h1>
-          <p className="docs-vault-subtitle" style={{ fontFeatureSettings: "'ss03' on" }}>
+          <h1 className="docs-vault-title" style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}>Documents vault</h1>
+          <p className="docs-vault-subtitle" style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}>
             Total {docCount} files{accountCount > 0 ? ` across ${accountCount} accounts` : ""}
           </p>
         </div>
@@ -789,7 +789,7 @@ export function DocumentsVault() {
             <button
               type="button"
               className="font-satoshi font-medium leading-[150%] tracking-[-0.04em] text-[#7F4E0B] underline transition-opacity duration-200 hover:opacity-70"
-              style={{ fontFeatureSettings: "'ss03' on", fontSize: "16px" }}
+              style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off", fontSize: "16px" }}
               onClick={() => {
                 trackClick({
                   buttonName: trackingEventsMap.documentsVaultPage.CLICK_DOWNLOAD_INSTRUCTIONS,
@@ -839,8 +839,8 @@ export function DocumentsVault() {
             />
           </svg>
         </div>
-        <strong style={{ fontFeatureSettings: "'ss03' on" }}>{isDragging ? "Drop files to upload" : <>Drop your statements here or <span className="text-[#7f4e0b]">select files</span></>}</strong>
-        <span style={{ fontFeatureSettings: "'ss03' on" }}>CSV, XLSX, PDF (Max 10MB)</span>
+        <strong style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}>{isDragging ? "Drop files to upload" : <>Drop your statements here or <span className="text-[#7f4e0b]">select files</span></>}</strong>
+        <span style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}>CSV, XLSX, PDF (Max 10MB)</span>
       </div>
 
       {error && <p className="docs-error">{error}</p>}

@@ -106,7 +106,7 @@ button:disabled {
 .login-card .field input,
 .login-card .account-field input {
   font-family: var(--font-satoshi), "Satoshi", sans-serif;
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 16px;
   font-style: normal;
   font-weight: 700;
@@ -126,7 +126,7 @@ button:disabled {
  */
 .interaction-view-details {
   font-family: var(--font-satoshi), "Satoshi", sans-serif;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 14px;
   font-style: normal;
   font-weight: 700;
@@ -139,7 +139,7 @@ button:disabled {
    treatment; see the note above. */
 .doc-search-field input {
   font-family: var(--font-satoshi), "Satoshi", sans-serif;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 12px;
   font-style: normal;
   font-weight: 500;
@@ -150,7 +150,7 @@ button:disabled {
 
 .doc-add-button {
   font-family: var(--font-satoshi), "Satoshi", sans-serif;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
@@ -162,7 +162,7 @@ button:disabled {
 .vault-sort button,
 .doc-menu button {
   font-family: var(--font-satoshi), "Satoshi", sans-serif;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
@@ -367,7 +367,7 @@ button:disabled {
   margin: 0;
   color: rgba(0, 0, 0, 0.8);
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
@@ -394,7 +394,7 @@ button:disabled {
   text-align: center;
   text-overflow: ellipsis;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 16px;
   font-style: normal;
   font-weight: 500;
@@ -444,7 +444,7 @@ button:disabled {
   color: #828282;
   text-overflow: ellipsis;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 14px;
   font-style: normal;
   font-weight: 500;
@@ -475,7 +475,7 @@ button:disabled {
   color: #262626;
   text-overflow: ellipsis;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 1rem;
   font-style: normal;
   font-weight: 700;
@@ -507,7 +507,7 @@ button:disabled {
   text-align: center;
   text-overflow: ellipsis;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 16px;
   font-style: normal;
   font-weight: 700;
@@ -573,7 +573,7 @@ button:disabled {
   color: #0000008c;
   font-size: 0.75rem;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-weight: 400;
   line-height: 1.125rem;
   text-align: center;
@@ -771,7 +771,7 @@ button:disabled {
   color: #050505;
   text-align: center;
   font-family: "Satoshi", sans-serif;
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 24px;
   font-style: normal;
   font-weight: 400;
@@ -796,7 +796,7 @@ button:disabled {
   background: #000;
   color: #fff;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 16px;
   font-weight: 500;
   display: flex;
@@ -971,7 +971,7 @@ button:disabled {
 .statement-dropzone strong {
   color: #000;
   font-family: var(--font-satoshi);
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 20px;
   font-style: normal;
   font-weight: 500;
@@ -985,7 +985,7 @@ button:disabled {
   color: rgba(0, 0, 0, 0.37);
   text-align: center;
   font-family: var(--font-satoshi);
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 16px;
   font-style: normal;
   font-weight: 400;
@@ -1031,7 +1031,7 @@ button:disabled {
   min-width: 36px;
   color: #444;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.8125rem;
   font-style: normal;
   font-weight: 800;
@@ -1117,7 +1117,7 @@ button:disabled {
 .brokers-text {
   color: rgba(0, 0, 0, 0.70);
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5rem;
@@ -1151,7 +1151,7 @@ button:disabled {
   background: transparent;
   color: #7F4E0B;
   text-align: center;
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-family: var(--font-satoshi), "Satoshi", sans-serif;
   font-size: 14px;
   font-style: normal;
@@ -1178,7 +1178,7 @@ button:disabled {
   margin-top: 10px;
   margin-bottom: 10px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.875rem;
   font-weight: 800;
 }
@@ -1208,7 +1208,7 @@ button:disabled {
   font-size: 18px;
   font-weight: 400;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   letter-spacing: 0.02em;
   line-height: 1.5rem;
   padding: 20px;
@@ -1228,7 +1228,7 @@ button:disabled {
   color: #383838;
   font-size: 0.9rem;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-weight: 500;
   text-align: center;
   margin-top: 100px;
@@ -1340,7 +1340,7 @@ button:disabled {
   border-radius: 38px;
   font-size: 16px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-weight: 700;
   line-height: 24px;
   letter-spacing: -0.02em;
@@ -1366,7 +1366,7 @@ button:disabled {
 .statement-upload-success .statement-success {
   font-size: 1.125rem;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-weight: 500;
   text-align: center;
   margin: 0;
@@ -1386,7 +1386,7 @@ button:disabled {
   color: #fff;
   font-size: 1.0625rem;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -1467,7 +1467,7 @@ button:disabled {
   margin: 0 0 28px;
   color: #6b6b6b;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.9375rem;
   line-height: 1.375rem;
 }
@@ -1482,7 +1482,7 @@ button:disabled {
   margin-bottom: 6px;
   color: #8a8a8a;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.8125rem;
   font-weight: 500;
 }
@@ -1499,7 +1499,7 @@ button:disabled {
   background: #fff;
   color: #050505;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
@@ -1555,7 +1555,7 @@ button:disabled {
   background: transparent;
   color: #333;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
@@ -1606,7 +1606,7 @@ button:disabled {
   background: #f0ebe4;
   color: #7b4700;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.8125rem;
   font-weight: 800;
 }
@@ -1615,7 +1615,7 @@ button:disabled {
   padding-top: 6px;
   color: #333;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.9375rem;
   line-height: 1.375rem;
 }
@@ -1633,7 +1633,7 @@ button:disabled {
   background: #000;
   color: #fff;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
@@ -1655,7 +1655,7 @@ button:disabled {
 .auth-callback-page p {
   margin: 0;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 1.125rem;
   font-weight: 700;
 }
@@ -2477,7 +2477,7 @@ button:disabled {
   color: rgba(0, 0, 0, 0.70);
   border-radius: 20px;
   font-family: var(--font-satoshi);
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
@@ -2506,7 +2506,7 @@ button:disabled {
 .oneview-info-description {
   color: rgba(0, 0, 0, 0.70);
   font-family: var(--font-satoshi);
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 400;
@@ -2586,7 +2586,7 @@ button:disabled {
 
 .oneview-info-card-value {
   font-family: "Cabinet Grotesk", "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 2.25rem;
   font-weight: 700;
   margin: 0 0 4px;
@@ -2693,9 +2693,9 @@ button:disabled {
 .oneview-info-feature-title {
   color: #000;
   font-kerning: none;
-  font-feature-settings: 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-family: var(--font-satoshi);
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 700;
@@ -2709,13 +2709,13 @@ button:disabled {
   color: #525252;
   font-kerning: none;
   font-family: var(--font-satoshi);
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.875rem;
   font-style: normal;
   font-weight: 500;
   line-height: 150%;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   word-wrap: break-word;
   margin: 0;
 }
@@ -2724,7 +2724,7 @@ button:disabled {
   width: 100%;
   padding: 20px 40px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   background: #1a1a1a;
   color: white;
   border: none;
@@ -2748,7 +2748,7 @@ button:disabled {
   font-weight: 400;
   line-height: 1.3125rem;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   word-wrap: break-word;
   text-align: center;
   margin: 0;
@@ -2872,7 +2872,7 @@ button:disabled {
   gap: 8px;
   color: rgba(0, 0, 0, 0.70);
   font-family: var(--font-satoshi);
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 150%;
@@ -3044,7 +3044,7 @@ button:disabled {
   line-height: normal;
   margin: 0;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .timeline-row {
@@ -3139,7 +3139,7 @@ button:disabled {
   color: #0D0D0D;
   margin: 0;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 /* Figma sets the open row's title to Bold; every collapsed row is Medium. */
@@ -3155,7 +3155,7 @@ button:disabled {
   color: rgba(13, 13, 13, 0.7);
   margin: 0;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .ai-action {
@@ -3195,7 +3195,7 @@ button:disabled {
   line-height: 16px;
   color: rgba(13, 13, 13, 0.8);
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .row-actions {
@@ -3212,7 +3212,7 @@ button:disabled {
   color: rgba(13, 13, 13, 0.7);
   white-space: nowrap;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 /* 8px of padding around a 16px glyph, per the Action 2389 component. */
@@ -3283,7 +3283,7 @@ button:disabled {
   line-height: 1.65;
   color: #0D0D0D;
   margin: 0;
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .takeaways-steps {
@@ -3309,7 +3309,7 @@ button:disabled {
   margin: 0;
   line-height: normal;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .bullets,
@@ -3327,7 +3327,7 @@ button:disabled {
   line-height: 1.5;
   color: #0D0D0D;
   margin: 0;
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .attendees-section {
@@ -3343,7 +3343,7 @@ button:disabled {
   line-height: 1.5;
   color: #0D0D0D;
   margin: 0;
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 /* Type lives in the unlayered override block near the top of this file: the
@@ -3499,7 +3499,7 @@ button:disabled {
   color: #4B5563;
   margin: 0;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 /* Sort control sits in the sub-header's trailing slot; not in Figma, but the
@@ -3538,7 +3538,7 @@ button:disabled {
   letter-spacing: 0.06px;
   color: #374151;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .doc-tag.alert {
@@ -3565,7 +3565,7 @@ button:disabled {
   color: #D92206;
   white-space: nowrap;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .metadata-table {
@@ -3597,7 +3597,7 @@ button:disabled {
   color: #0D0D0D;
   margin: 0;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .metadata-value-group {
@@ -3619,7 +3619,7 @@ button:disabled {
   color: #0D0D0D;
   margin: 0;
   font-kerning: none;
-  font-feature-settings: 'ss03' on, 'liga' off;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
 }
 
 .metadata-value-group img,

@@ -20,7 +20,7 @@
 .privacy-updated {
   margin: 0 0 24px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.875rem;
   font-weight: 500;
   color: rgba(0, 0, 0, 0.6);
@@ -29,7 +29,7 @@
 .privacy-intro {
   margin: 0 0 24px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.9375rem;
   line-height: 1.7;
   color: rgba(0, 0, 0, 0.75);
@@ -42,7 +42,7 @@
 .privacy-section h2 {
   margin: 0 0 16px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 1.25rem;
   font-weight: 700;
   color: black;
@@ -51,7 +51,7 @@
 .privacy-section h3 {
   margin: 24px 0 12px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 1rem;
   font-weight: 700;
   color: black;
@@ -60,7 +60,7 @@
 .privacy-section p {
   margin: 0 0 16px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.9375rem;
   font-weight: 400;
   line-height: 1.7;
@@ -75,7 +75,7 @@
 .privacy-section li {
   margin-bottom: 8px;
   font-family: "Satoshi";
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
   font-size: 0.9375rem;
   font-weight: 400;
   line-height: 1.7;

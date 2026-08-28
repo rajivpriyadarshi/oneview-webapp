@@ -491,7 +491,7 @@ function ItemNode({
       style={{ cursor: "pointer", display: "flex", flexDirection: "column", fontFamily: FONT_FAMILY, gap: 8, width: 417 }}
     >
       <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
-      <NodeTypeLabel selected={data.isSelected} selectedBackground="#4d2e0c">ASSET</NodeTypeLabel>
+      <NodeTypeLabel selected={data.isSelected} selectedBackground="#4d2e0c">{data.kindLabel === "Person" ? "MEMBER" : "ASSET"}</NodeTypeLabel>
       <div style={{ alignItems: "center", display: "flex", gap: 16, width: data.isSelected ? 412 : 417 }}>
         <div
           style={{
@@ -548,24 +548,27 @@ function ItemNode({
 
 function OwnershipNode({ data }: { data: { title: string; points: string[] } }) {
   const [expanded, setExpanded] = useState(false);
-  const visiblePoints = expanded ? data.points : data.points.slice(0, 3);
-  const hasMore = data.points.length > 3;
+  const visiblePoints = expanded ? data.points : data.points.slice(0, 2);
+  const hasMore = data.points.length > 2;
 
   return (
-    <div style={{ fontFamily: FONT_FAMILY, maxWidth: 240 }}>
+    <div className={expanded ? "ownership-expanded" : ""} style={{ fontFamily: FONT_FAMILY, width: 400 }}>
       <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
       <div
         style={{
-          background: "#ffffff",
-          border: "0.8px solid rgba(0,0,0,0.08)",
-          borderRadius: 8,
-          padding: "8px 10px",
-          boxShadow: "0 3px 6px rgba(30,28,24,0.06)",
+          background: expanded ? "rgba(254, 243, 223, 0.5)" : "rgba(255, 254, 252, 0.5)",
+          backdropFilter: "blur(12px) saturate(120%)",
+          WebkitBackdropFilter: "blur(12px) saturate(120%)",
+          border: expanded ? "2px solid #804d13" : "2px solid #d2d2d2",
+          borderRadius: 24,
+          padding: 16,
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.25)",
+          transition: "background-color 160ms ease, border-color 160ms ease",
         }}
       >
-        <div style={{ fontWeight: 700, fontSize: 10, color: "#111", marginBottom: 4 }}>{data.title}</div>
+        <div style={{ fontWeight: 700, fontSize: 20, color: "#111", marginBottom: 4 }}>{data.title}</div>
         {visiblePoints.map((point, i) => (
-          <div key={i} style={{ fontSize: 9, color: "#666", lineHeight: "1.4", marginTop: 2, display: "flex", gap: 4 }}>
+          <div key={i} style={{ fontSize: 16, color: "#666", lineHeight: "1.4", marginTop: 2, display: "flex", gap: 4 }}>
             <span style={{ flexShrink: 0 }}>•</span>
             <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{point}</span>
           </div>
@@ -573,9 +576,9 @@ function OwnershipNode({ data }: { data: { title: string; points: string[] } }) 
         {hasMore && (
           <div
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            style={{ fontSize: 9, color: "#8b6b3a", marginTop: 4, cursor: "pointer", fontWeight: 600 }}
+            style={{ fontSize: 16, color: "#8b6b3a", marginTop: 4, cursor: "pointer", fontWeight: 600 }}
           >
-            {expanded ? "Show less" : `+${data.points.length - 3} more`}
+            {expanded ? "Show less" : `+${data.points.length - 2} more`}
           </div>
         )}
       </div>
@@ -804,7 +807,7 @@ function buildFlowElements(
         data: {
           badge: "CATEGORY",
           title: cat.label,
-          meta: `${itemCount} Assets`,
+          meta: cat.slug === "family_members" ? `${itemCount} ${itemCount === 1 ? "Member" : "Members"}` : `${itemCount} Assets`,
           estimatedValue: cat.adjustedValue ? formatValue(cat.adjustedValue, data.client.currency) : "",
           imageSrc: CATEGORY_IMAGES[cat.slug] ?? "/wealth-map/holdings.png",
           isExpanded: isCatExpanded,
@@ -828,23 +831,14 @@ function buildFlowElements(
       // Item nodes (when category is expanded)
       if (isCatExpanded) {
         if (cat.ownershipItems && cat.ownershipItems.length > 0) {
-          const getOwnershipCardHeight = (item: { points: string[] }) => {
-            const pointCount = item.points.length;
-            const titleHeight = 18;
-            const pointHeight = pointCount * 28;
-            const padding = 20;
-            const showMoreHeight = pointCount > 3 ? 18 : 0;
-            return titleHeight + pointHeight + padding + showMoreHeight + 30;
-          };
+          const OWNERSHIP_CARD_HEIGHT = 200;
+          const OWNERSHIP_GAP = 32;
 
-          const cardHeights = cat.ownershipItems.map(getOwnershipCardHeight);
-          const totalItemHeight = cardHeights.reduce((sum, h) => sum + h, 0) + (cat.ownershipItems.length - 1) * 16;
+          const totalItemHeight = cat.ownershipItems.length * OWNERSHIP_CARD_HEIGHT + (cat.ownershipItems.length - 1) * OWNERSHIP_GAP;
           const itemStartY = catY + 23 - totalItemHeight / 2;
 
-          let cumulativeY = 0;
           cat.ownershipItems.forEach((item, ii) => {
-            const itemY = itemStartY + cumulativeY;
-            cumulativeY += cardHeights[ii] + 16;
+            const itemY = itemStartY + ii * (OWNERSHIP_CARD_HEIGHT + OWNERSHIP_GAP);
 
             nodes.push({
               id: `item-${item.id}`,

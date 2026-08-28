@@ -17,3 +17,7 @@
   outline: none !important;
   box-shadow: none !important;
 }
+
+.react-flow__node:has(.ownership-expanded) {
+  z-index: 1000 !important;
+}

@@ -48,13 +48,13 @@ export function PasswordPromptModal({
         <h2
           id="password-prompt-title"
           className="m-0 mb-2.5 font-satoshi text-[20px] font-extrabold leading-7 tracking-[-0.02em] text-[#050505]"
-          style={{ fontFeatureSettings: "'ss03' on" }}
+          style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}
         >
           Password Required
         </h2>
         <p
           className="m-0 font-satoshi text-[15px] font-normal leading-[22px] tracking-[-0.01em] text-black/65"
-          style={{ fontFeatureSettings: "'ss03' on" }}
+          style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}
         >
           This PDF is password-protected. Please enter the password to unlock it
           (e.g. your PAN number for Zerodha statements).
@@ -63,7 +63,7 @@ export function PasswordPromptModal({
           <input
             type="password"
             className="mt-5 w-full rounded-2xl border-0 bg-[#f7f7f7] px-[23px] py-[18px] font-satoshi text-base font-bold leading-6 text-[#262626] outline-none placeholder:font-medium placeholder:text-[#828282] disabled:cursor-not-allowed disabled:opacity-60"
-            style={{ fontFeatureSettings: "'ss03' on", boxSizing: "border-box" }}
+            style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off", boxSizing: "border-box" }}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter document password"
@@ -73,7 +73,7 @@ export function PasswordPromptModal({
           {error && (
             <p
               className="mt-2 font-satoshi text-[13px] font-bold text-[#a40000]"
-              style={{ fontFeatureSettings: "'ss03' on" }}
+              style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}
             >
               {error}
             </p>
@@ -82,7 +82,7 @@ export function PasswordPromptModal({
             <button
               type="button"
               className="min-h-12 cursor-pointer rounded-full border-0 bg-[#ebebeb] px-5 font-satoshi text-[15px] font-bold text-[#1f1f1f] transition-colors hover:bg-[#e0e0e0] disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ fontFeatureSettings: "'ss03' on" }}
+              style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}
               onClick={() => {
                 setPassword("");
                 onClose();
@@ -94,7 +94,7 @@ export function PasswordPromptModal({
             <button
               type="submit"
               className="min-h-12 cursor-pointer rounded-full border-0 bg-black px-5 font-satoshi text-[15px] font-bold text-white transition-colors hover:bg-black/85 disabled:cursor-not-allowed disabled:bg-[black/40] disabled:text-white"
-              style={{ fontFeatureSettings: "'ss03' on" }}
+              style={{ fontFeatureSettings: "'ss03' on, 'liga' off, 'kern' off" }}
               disabled={isLoading || !password.trim()}
             >
               {isLoading ? "Unlocking..." : "Unlock"}

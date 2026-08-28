@@ -1344,7 +1344,7 @@ function ClientTabButton({
         // white text); inactive is transparent with a 12px radius. The active
         // fill itself is the shared pill behind these buttons, so only the text
         // colour changes here — it cross-fades as the pill arrives.
-        className={`relative flex shrink-0 items-center gap-[5.137px] rounded-[42px] border-0 bg-transparent font-satoshi whitespace-nowrap [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none] px-[12px] py-[8px] transition-colors duration-300 [&_svg]:h-[17.124px] [&_svg]:w-[17.124px] motion-reduce:transition-none ${
+        className={`relative flex shrink-0 items-center gap-[5.137px] rounded-[42px] border-0 bg-transparent font-satoshi whitespace-nowrap [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none] px-[12px] py-[8px] transition-colors duration-300 [&_svg]:h-[17.124px] [&_svg]:w-[17.124px] motion-reduce:transition-none ${
           active ? "text-white" : "text-black/80 hover:bg-black/5"
         }`}
         // Inline, not Tailwind: globals.css has an unlayered `button { font: inherit }`
@@ -1705,8 +1705,8 @@ function AumFact({ label, value, last = false }: { label: string; value: string;
   return (
     <div className="contents">
       <div className="flex min-h-[27px] w-full items-start justify-between gap-[20px] py-[4px] text-[14px] leading-normal">
-        <span className="shrink-0 font-satoshi font-normal text-[#0D0D0D] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{label}</span>
-        <strong className="min-w-0 text-right font-satoshi font-bold break-words text-[#111827] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{value}</strong>
+        <span className="shrink-0 font-satoshi font-normal text-[#0D0D0D] [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">{label}</span>
+        <strong className="min-w-0 text-right font-satoshi font-bold break-words text-[#111827] [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">{value}</strong>
       </div>
       {last ? null : <div className="h-px w-full shrink-0 bg-[#E1E5E8]" aria-hidden="true" />}
     </div>
@@ -1974,9 +1974,9 @@ function InsightPanel({
     >
       <div className="relative z-[1] flex w-full items-center gap-[4px]">
         <div className="min-w-0 flex-1">
-          <h2 className="m-0 font-satoshi text-[18px] font-bold leading-[24px] text-[#0D0D0D] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">Insights</h2>
+          <h2 className="m-0 font-satoshi text-[18px] font-bold leading-[24px] text-[#0D0D0D] [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">Insights</h2>
           {activeInsight.timestamp ? (
-            <p className="m-0 font-satoshi text-[12px] font-medium leading-normal text-[rgba(33,37,37,0.7)] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{activeInsight.timestamp}</p>
+            <p className="m-0 font-satoshi text-[12px] font-medium leading-normal text-[rgba(33,37,37,0.7)] [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">{activeInsight.timestamp}</p>
           ) : null}
         </div>
         {normalizedInsights.length > 1 ? (
@@ -2003,11 +2003,11 @@ function InsightPanel({
           >
             {normalizedInsights.map((insight, index) => (
               <article key={`${insight.title}-${index}`} className="flex w-[232px] shrink-0 flex-col items-start gap-[8px]">
-                <p className="m-0 w-full font-satoshi text-[24px] font-medium leading-[1.1] tracking-[-0.48px] text-[rgba(13,13,13,0.9)] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">
+                <p className="m-0 w-full font-satoshi text-[24px] font-medium leading-[1.1] tracking-[-0.48px] text-[rgba(13,13,13,0.9)] [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">
                   {insight.title}
                 </p>
                 {insight.body ? (
-                  <p className="m-0 w-full font-satoshi text-[14px] font-normal leading-[1.5] text-[rgba(13,13,13,0.8)] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">
+                  <p className="m-0 w-full font-satoshi text-[14px] font-normal leading-[1.5] text-[rgba(13,13,13,0.8)] [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">
                     {insight.body}
                   </p>
                 ) : null}
@@ -2018,7 +2018,7 @@ function InsightPanel({
         <div className="flex w-full items-center gap-[8px]">
           <button
             type="button"
-            className="inline-flex items-center gap-[4px] rounded-[50px] border-0 bg-black px-[12px] py-[8px] font-satoshi text-[14px] font-bold leading-[1.3] text-white [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]"
+            className="inline-flex items-center gap-[4px] rounded-[50px] border-0 bg-black px-[12px] py-[8px] font-satoshi text-[14px] font-bold leading-[1.3] text-white [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]"
             style={{ fontFamily: "var(--font-satoshi), 'Satoshi', sans-serif", fontSize: "14px", fontWeight: 700, lineHeight: 1.3, fontFeatureSettings: "'ss03' on, 'liga' off", fontKerning: "none", WebkitFontSmoothing: "antialiased" }}
             onClick={() => onAskAiInsight(askAiPrompt)}
           >
@@ -2027,7 +2027,7 @@ function InsightPanel({
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-[4px] rounded-[50px] border border-black/[0.08] bg-transparent px-[12px] py-[8px] font-satoshi text-[14px] font-bold leading-[1.3] text-black [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]"
+            className="inline-flex items-center gap-[4px] rounded-[50px] border border-black/[0.08] bg-transparent px-[12px] py-[8px] font-satoshi text-[14px] font-bold leading-[1.3] text-black [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]"
             style={{ fontFamily: "var(--font-satoshi), 'Satoshi', sans-serif", fontSize: "14px", fontWeight: 700, lineHeight: 1.3, fontFeatureSettings: "'ss03' on, 'liga' off", fontKerning: "none", WebkitFontSmoothing: "antialiased" }}
             onClick={() => onDismissInsight(activeInsight)}
           >
@@ -2613,14 +2613,14 @@ function AssetAllocationChart({
         />
       </div>
 
-      <h2 className="relative z-[1] m-0 self-stretch font-satoshi text-[18px] font-bold leading-[24px] text-[#0F172A] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">Asset allocation</h2>
+      <h2 className="relative z-[1] m-0 self-stretch font-satoshi text-[18px] font-bold leading-[24px] text-[#0F172A] [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">Asset allocation</h2>
 
       <div className="relative z-[1] mx-auto h-[314px] w-full max-w-[471px] shrink-0">
         <div className="absolute left-1/2 top-[calc(50%+4px)] h-[218px] w-[218px] -translate-x-1/2 -translate-y-1/2 max-[640px]:h-[200px] max-[640px]:w-[200px]">
           {hasAllocationData ? (
             <Doughnut data={chartData} options={chartOptions} />
           ) : (
-            <div className="flex h-full items-center justify-center rounded-full border border-black/10 bg-white/45 text-center font-satoshi text-[13px] text-black/45 [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">
+            <div className="flex h-full items-center justify-center rounded-full border border-black/10 bg-white/45 text-center font-satoshi text-[13px] text-black/45 [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">
               No allocation data
             </div>
           )}
@@ -2657,7 +2657,7 @@ function AssetAllocationChart({
           {labels.map((label, index) => (
             <span key={label} className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
               <span className="h-[8px] w-[8px] rounded-full" style={{ backgroundColor: colors[index] }} />
-              <span className="font-satoshi text-[12px] font-medium text-black/80 [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{label}</span>
+              <span className="font-satoshi text-[12px] font-medium text-black/80 [font-feature-settings:'ss03'_on,'liga'_off,'kern'_off] [font-kerning:none]">{label}</span>
             </span>
           ))}
         </div>
