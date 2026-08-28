@@ -497,7 +497,6 @@ export default function ChatPage() {
         if (requestId === sessionsRefreshRef.current) {
           const fallbackSessions = getVisibleSessions(readStoredAiChatSessions());
           setSessions(fallbackSessions.filter((session) => String(session.client_id ?? "") === String(clientId)));
-          setNotice("Chat history could not be refreshed. Showing the latest browser fallback.");
         }
       } finally {
         if (requestId === sessionsRefreshRef.current) {
@@ -813,9 +812,8 @@ export default function ChatPage() {
                 </div>
               ) : null}
             </div>
-            <button type="button" className={TW.advisorAddBtn} aria-label="New conversation" onClick={startNewChat}>
-              <PlusIcon />
-            </button>
+            <NewChatButton onClick={startNewChat} />
+
           </div>
 
           {!isChatActive ? (
@@ -3549,6 +3547,20 @@ function BulletListIcon() {
       <circle cx="4" cy="18" r="1.5" fill="currentColor" />
       <path d="M8 6H20M8 12H20M8 18H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function NewChatButton({ onClick }: { onClick: () => void }) {
+  const { closeArtifact } = useArtifactContext();
+  return (
+    <button
+      type="button"
+      className={TW.advisorAddBtn}
+      aria-label="New conversation"
+      onClick={() => { closeArtifact(); onClick(); }}
+    >
+      <PlusIcon />
+    </button>
   );
 }
 

@@ -27,8 +27,16 @@ const STEP_COLORS = [
   "#F59E0B",
 ];
 
+const STEP_ICONS = [
+  "/chat-workflow/family-context.png",
+  "/chat-workflow/portfolio-review.png",
+  "/chat-workflow/risk-alerts.png",
+  "/chat-workflow/meeting-prep.png",
+];
+
 export function WorkflowExecutionSteps({
   executionPlan,
+  isRunning,
   onAnimationComplete,
 }: {
   executionPlan: ExecutionPlan;
@@ -42,6 +50,14 @@ export function WorkflowExecutionSteps({
   onCompleteRef.current = onAnimationComplete;
 
   useEffect(() => {
+    if (isRunning === false && !completedRef.current) {
+      completedRef.current = true;
+      setVisibleCount(executionPlan.steps.length);
+      onCompleteRef.current?.();
+    }
+  }, [isRunning, executionPlan.steps.length]);
+
+  useEffect(() => {
     if (executionPlan.steps.length === 0) {
       onCompleteRef.current?.();
       return;
@@ -52,7 +68,7 @@ export function WorkflowExecutionSteps({
     let currentStep = 0;
 
     const advance = () => {
-      if (cancelled) return;
+      if (cancelled || completedRef.current) return;
       currentStep += 1;
       setVisibleCount(currentStep);
 
@@ -98,11 +114,11 @@ export function WorkflowExecutionSteps({
       {/* Vertical line */}
       <div style={{
         position: "absolute",
-        left: 12,
-        top: 20,
+        left: 11.5,
+        top: 24,
         bottom: 10,
         width: 1,
-        background: "rgba(0, 0, 0, 0.04)",
+        background: "rgba(0, 0, 0, 0.06)",
       }} />
 
       {executionPlan.steps.map((step, i) => {
@@ -132,17 +148,19 @@ export function WorkflowExecutionSteps({
               paddingBottom: 4,
             }}>
               {/* Icon */}
-              <div style={{
-                width: 24,
-                height: 24,
-                borderRadius: 10,
-                background: `linear-gradient(135deg, ${color}40, ${color}80)`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}>
-                {isActive ? (
+              {isActive ? (
+                <div style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 10,
+                  background: `linear-gradient(135deg, ${color}40, ${color}80)`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  position: "relative",
+                  zIndex: 2,
+                }}>
                   <div style={{
                     width: 10,
                     height: 10,
@@ -151,12 +169,16 @@ export function WorkflowExecutionSteps({
                     borderTopColor: "transparent",
                     animation: "wf-spin 0.8s linear infinite",
                   }} />
-                ) : (
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
+                </div>
+              ) : (
+                <img
+                  src={STEP_ICONS[i % STEP_ICONS.length]}
+                  alt=""
+                  width={24}
+                  height={24}
+                  style={{ flexShrink: 0, position: "relative", zIndex: 2 }}
+                />
+              )}
 
               {/* Label */}
               <div>
