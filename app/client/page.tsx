@@ -186,23 +186,21 @@ const TW = {
   mobileHistoryBtn: "hidden h-[36px] w-[36px] items-center justify-center rounded-full border-0 bg-transparent text-[#7f4e0b] max-md:inline-flex hover:bg-[#7f4e0b]/10",
   mobileHeaderBtn: "inline-flex shrink-0 items-center gap-[8px] rounded-full border border-[#804d13]/20 bg-[#f0ebe0] py-[8px] pr-[12px] pl-[8px] font-satoshi text-[13px] text-[#804d13] hover:bg-[#e8e0d0]",
   mobileHeaderBtnIcon: "inline-grid place-items-center rounded-full bg-gradient-to-b from-[#b37f40] to-[#432411] p-[6px] text-white",
-  workspace: "relative ml-[80px] grid h-screen grid-cols-[minmax(360px,440px)_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(320px,420px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
+  workspace: "relative ml-[80px] grid h-screen grid-cols-[434px_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(360px,420px)_minmax(0,1fr)] max-[900px]:h-[calc(100vh-66px)] max-[900px]:grid-cols-1 max-[900px]:overflow-auto max-[720px]:ml-0",
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
-  advisorHeader: "relative z-[40] flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
+  advisorHeader: "relative z-[40] flex h-[54px] min-w-0 items-center justify-between gap-[12px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
   // Not w-full: the chevron should sit right after the title, so the button
   // hugs its content and only the text truncates once it runs out of room.
-  conversationBtn: "inline-flex min-w-0 max-w-full cursor-pointer items-center justify-start gap-[8px] overflow-hidden rounded-xl border-0 bg-transparent px-[12px] py-[10px] text-left font-satoshi text-[14px] font-medium leading-[130%] tracking-normal text-black [&_svg]:shrink-0",
+  conversationBtn: "inline-flex min-w-0 max-w-full cursor-pointer items-center justify-start gap-[5px] overflow-hidden rounded-[10px] border-0 bg-transparent py-[8px] text-left font-satoshi text-[14px] font-bold leading-[130%] tracking-[-0.28px] text-black [&_svg]:h-[16px] [&_svg]:w-[16px] [&_svg]:shrink-0",
   conversationText: "block min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap",
   conversationDropdown: "absolute top-[43px] left-[-7px] z-[60] w-[238px] max-h-[50vh] overflow-y-auto rounded-[22px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] max-[640px]:left-[-4px] max-[640px]:w-[calc(100vw-64px)]",
   conversationDropdownItem: "flex min-h-[46px] w-full cursor-pointer items-center border-0 border-b border-black/10 bg-white px-[24px] text-left font-satoshi text-[13px] font-normal leading-[1.15] text-black transition last:border-b-0 hover:bg-black/[0.025]",
   conversationDropdownEmpty: "flex min-h-[46px] items-center px-[24px] font-satoshi text-[13px] font-normal text-black/40",
-  advisorAddBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
-  attentionContent: "flex min-h-0 flex-col justify-center overflow-auto pr-[14px] pl-[28px] pt-[64px] pb-[190px] max-[1180px]:pl-[20px] max-[900px]:pr-[56px] max-[900px]:pl-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
-  // Figma 2507:22533 — ButlerPro Medium 40/1.2, -2px tracking. The tight
-  // leading is what closes the gap between the two lines.
-  attentionTitle: "m-0 mb-[28px] max-w-[350px] font-butler text-[40px] font-medium leading-[1.2] tracking-[-2px] text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
-  attentionList: "grid max-w-[640px] gap-[10px] justify-items-start",
+  advisorAddBtn: "inline-grid h-[36px] w-[36px] shrink-0 place-items-center rounded-[12px] border border-black/[0.08] bg-transparent text-black transition hover:bg-black/[0.03] [&_svg]:h-[16px] [&_svg]:w-[16px]",
+  attentionContent: "flex min-h-0 flex-col justify-center overflow-auto px-[20px] pt-[64px] pb-[190px] max-[900px]:px-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
+  attentionTitle: "m-0 mb-[20px] max-w-[394px] font-butler text-[40px] font-medium leading-[48px] tracking-[-2px] text-black [overflow-wrap:break-word] max-[640px]:max-w-[320px] max-[640px]:text-[36px] max-[640px]:leading-[43.2px] max-[640px]:tracking-[-1.6px]",
+  attentionList: "grid max-w-[394px] gap-[8px] justify-items-start",
   promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[8px] overflow-hidden max-[640px]:gap-[6px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
@@ -212,8 +210,8 @@ const TW = {
   // measurement counts against.
   promptMeasure: "pointer-events-none invisible absolute -z-10 flex items-center gap-[8px] whitespace-nowrap max-[640px]:gap-[6px]",
   promptMeasureChip: "inline-flex shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77]",
-  compactThread: "absolute right-[22px] bottom-[21px] left-[22px] z-[5] max-[1180px]:right-[20px] max-[1180px]:left-[20px] max-[900px]:right-[20px] max-[900px]:left-[20px] max-[640px]:right-[14px] max-[640px]:bottom-[18px] max-[640px]:left-[14px]",
-  fullThread: "top-[64px] !right-0 !left-0",
+  compactThread: "absolute right-[17px] bottom-[16px] left-[16px] z-[5] max-[1180px]:right-[16px] max-[1180px]:left-[16px] max-[900px]:right-[20px] max-[900px]:left-[20px] max-[640px]:right-[14px] max-[640px]:bottom-[16px] max-[640px]:left-[14px]",
+  fullThread: "top-[54px] !right-0 !left-0",
   loading: "flex min-h-screen flex-col items-center justify-center p-[32px] font-satoshi text-[13px] text-black/50",
   notice: "m-0 rounded-lg border border-[#171615]/10 bg-white/50 p-[12px] font-satoshi text-[13px] leading-snug text-[#171615]/50",
   thread: "relative flex h-full min-h-0 flex-col overflow-hidden",
@@ -230,18 +228,18 @@ const TW = {
   scrollToBottom: "hidden data-[state=visible]:inline-grid absolute left-1/2 top-[-16px] h-9 w-9 -translate-x-1/2 -translate-y-full place-items-center rounded-full border border-white/60 bg-white/85 text-[#171615] shadow-[0_2px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl",
   errorBanner: "mx-auto mb-[10px] w-full rounded-lg border border-[#973022]/20 bg-white/70 px-[12px] py-[10px] font-satoshi text-[13px] text-[#8f2415]",
   composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent px-[22px] max-[1180px]:px-[20px] max-[900px]:px-[20px] max-[640px]:px-[14px]",
-  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] p-[1px] pt-[6px]",
-  composer: "relative mx-auto flex min-h-[80px] w-full items-center rounded-[28px] border border-black/[0.06] bg-white py-[8px] transition rounded-[24px] ",
+  composerWrap: "w-full rounded-[20px] border border-white bg-[#f7f7f7] p-[1px] pt-[6px]",
+  composer: "relative mx-auto flex min-h-[74px] w-full items-center rounded-[24px] border border-black/[0.06] bg-white/90 py-[10px] shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition",
   composerThinking: "ring-1 ring-[#b37f40]/40",
-  composerInputRow: "flex-1 min-w-0 px-[14px] max-[1180px]:px-[18px] max-[640px]:px-[14px]",
-  composerInput: "h-auto min-h-0 w-full resize-none border-0 bg-transparent p-0 font-satoshi text-[14px] font-normal leading-[1.2] text-black outline-none [overflow-wrap:break-word] placeholder:text-[14px] placeholder:font-normal placeholder:leading-[1.2] placeholder:text-black/38",
+  composerInputRow: "min-w-0 flex-1 px-[24px] max-[640px]:px-[16px]",
+  composerInput: "h-auto min-h-0 w-full resize-none border-0 bg-transparent p-0 font-satoshi text-[16px] font-normal leading-[1.35] tracking-[-0.16px] text-black outline-none [overflow-wrap:break-word] placeholder:text-[16px] placeholder:font-normal placeholder:leading-[1.35] placeholder:tracking-[-0.16px] placeholder:text-black/60",
   composerFooter: "hidden",
   composerFooterLeft: "flex min-w-0 items-center gap-[9px]",
   composerFooterRight: "flex items-center gap-[10px]",
   composerIconBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent p-0 text-black transition hover:bg-black/5 [&_svg]:h-[20px] [&_svg]:w-[20px]",
   composerModeBtn: "inline-flex min-h-[32px] min-w-0 items-center gap-[9px] rounded-full border border-black/10 bg-white px-[12px] font-satoshi text-[12px] font-normal leading-[14.4px] text-black [overflow-wrap:break-word] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)] transition hover:bg-black/[0.02] max-[640px]:max-w-[168px]",
   composerModeText: "truncate font-satoshi text-[12px] font-normal leading-[14.4px] text-black [overflow-wrap:break-word]",
-  sendBtn: "inline-grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full border-0 bg-black p-0 text-white transition hover:-translate-y-px hover:bg-[#2d2926] disabled:bg-black disabled:text-white [&_svg]:h-[20px] [&_svg]:w-[20px] max-[1180px]:h-[48px] max-[1180px]:w-[48px] max-[1180px]:[&_svg]:h-[22px] max-[1180px]:[&_svg]:w-[22px] max-[900px]:h-[54px] max-[900px]:w-[54px] max-[900px]:[&_svg]:h-[24px] max-[900px]:[&_svg]:w-[24px] max-[640px]:h-[42px] max-[640px]:w-[42px] max-[640px]:[&_svg]:h-[20px] max-[640px]:[&_svg]:w-[20px]",
+  sendBtn: "inline-grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full border-0 bg-black p-0 text-white transition hover:-translate-y-px hover:bg-[#2d2926] disabled:bg-black disabled:text-white [&_svg]:h-[24px] [&_svg]:w-[24px] max-[640px]:h-[38px] max-[640px]:w-[38px]",
   messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
   messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
   messageContent: "max-w-full [overflow-wrap:anywhere] rounded-lg font-satoshi text-[13px] leading-relaxed text-black",
@@ -1209,7 +1207,7 @@ function ClientOverview({
 
   return (
     <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
-      <header className="flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
+      <header className="flex h-[54px] min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
           <ClientTabBar activeTab={activeTab} onSelect={setActiveTab} />
         </nav>
