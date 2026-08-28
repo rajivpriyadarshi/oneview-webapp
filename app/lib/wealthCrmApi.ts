@@ -80,6 +80,8 @@ export type ClientDetailResponse = {
     client_since: string | null;
     segment: string | null;
     family: string | null;
+    tax_residency?: string | null;
+    primary_tax_jurisdiction?: string | null;
     risk_profile: string | null;
   };
   asset_allocation: {

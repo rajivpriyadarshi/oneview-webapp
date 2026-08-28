@@ -63,17 +63,31 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-inter);
+  /* Satoshi's Figma typography uses stylistic set 03 for the alternate
+     lowercase "t", with standard ligatures and kerning pairs disabled.
+     Keep the complete OpenType recipe at the app root so legacy CSS and new
+     utility classes render identically without component-level overrides. */
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
+  font-kerning: none;
+  font-variant-ligatures: none;
 }
 
 button,
-input {
+input,
+textarea,
+select {
   font: inherit;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
+  font-kerning: none;
+  font-variant-ligatures: none;
 }
 
 button {
   cursor: pointer;
   font-family: var(--font-satoshi);
-  font-feature-settings: 'ss03' on;
+  font-feature-settings: 'ss03' on, 'liga' off, 'kern' off;
+  font-kerning: none;
+  font-variant-ligatures: none;
 }
 
 button:disabled {

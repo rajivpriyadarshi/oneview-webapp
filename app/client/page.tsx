@@ -76,7 +76,6 @@ import {
 import { appConfig } from "../lib/config";
 import {
   dismissClientInsight,
-  getCrmInteraction,
   getWealthCrmClient,
   getClientDetail,
   listWealthCrmClients,
@@ -1479,11 +1478,15 @@ function OverviewTab({
   const clientAum = clientDetail?.aum?.total
     ? formatClientMoney(clientDetail.aum.total, clientDetail.aum.currency)
     : formatClientMoney(client?.net_worth, moneyCurrency);
-  const clientTagValue = clientDetail?.header?.tags?.[0] || formatClientMoney(client?.net_worth, moneyCurrency);
-  const locationTag = clientDetail?.header?.tags?.[1] || client?.primary_tax_jurisdiction || client?.base_currency || "-";
   const clientSince = clientDetail?.at_a_glance?.client_since || getYear(client?.created_at) || "-";
   const segment = clientDetail?.at_a_glance?.segment || client?.segment || (client?.party_type ? formatLabelText(client.party_type) : "-");
   const familyStatus = clientDetail?.at_a_glance?.family?.trim() || client?.family_status || "-";
+  const atAGlanceRecord = getRecord(clientDetail?.at_a_glance);
+  const taxResidency = formatTaxResidency(
+    getStringField(atAGlanceRecord, ["tax_residency", "primary_tax_jurisdiction", "tax_jurisdiction"])
+      || client?.primary_tax_jurisdiction
+      || clientDetail?.header?.tags?.[1],
+  );
   const riskProfile = clientDetail?.at_a_glance?.risk_profile?.trim() || client?.risk_profile || "-";
 
   // AUM change data
@@ -1520,62 +1523,79 @@ function OverviewTab({
           Indices are explicit rather than derived because these are distinct
           elements, not a list. */}
       <div
-        className="stagger-fade pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url('${overviewImageSrc}')`, "--stagger-index": OVERVIEW_STAGGER.backdrop } as CSSProperties}
+        className="stagger-fade pointer-events-none absolute right-0 top-0 z-0 aspect-[1774/887] w-[92.8%] overflow-hidden bg-[#F9F8F7] max-[640px]:w-full"
+        style={{ "--stagger-index": OVERVIEW_STAGGER.backdrop } as CSSProperties}
         aria-hidden="true"
-      />
+      >
+        <Image
+          src={overviewImageSrc}
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 640px) 100vw, 92.8vw"
+          className="object-cover"
+        />
+      </div>
 
-      <section className="relative z-[1] bg-transparent px-[36px] pb-[40px] max-[1180px]:px-[24px] max-[640px]:px-[16px]">
-        <div className="relative z-[1] pt-[90px] max-[1180px]:pt-[72px] max-[640px]:pt-[48px]">
-          <h1
-            className="stagger-in m-0 font-['ButlerPro'] text-[42px] font-semibold leading-[120%] tracking-[-0.84px] text-[#4D2E0C] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]"
-            style={{ "--stagger-index": OVERVIEW_STAGGER.name } as CSSProperties}
-          >
-            {clientName}
-          </h1>
-          {clientSubtitle ? (
-            <p
-              className="stagger-in mt-[10px] mb-0 max-w-[480px] font-satoshi text-[15px] font-normal leading-[1.4] text-[#4a4038] [overflow-wrap:break-word]"
-              style={{ "--stagger-index": OVERVIEW_STAGGER.subtitle } as CSSProperties}
+      <section className="relative z-[1] bg-transparent px-[48px] pb-[56px] max-[1180px]:px-[24px] max-[640px]:px-[16px]">
+        <div className="relative z-[1] flex w-full max-w-[540px] flex-col items-start gap-[16px] pt-[80px] max-[1180px]:pt-[72px] max-[640px]:pt-[48px]">
+          <div className="flex w-full flex-col items-start">
+            <h1
+              className="stagger-in m-0 w-full font-['ButlerPro'] text-[42px] font-semibold leading-[1.2] tracking-[-0.84px] text-[#261706] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]"
+              style={{ "--stagger-index": OVERVIEW_STAGGER.name } as CSSProperties}
             >
-              {clientSubtitle}
-            </p>
-          ) : null}
+              {clientName}
+            </h1>
+            {clientSubtitle ? (
+              <p
+                className="stagger-in m-0 w-full font-satoshi text-[16px] font-normal leading-[1.3] tracking-[-0.16px] text-black/80 [overflow-wrap:break-word]"
+                style={{ "--stagger-index": OVERVIEW_STAGGER.subtitle } as CSSProperties}
+              >
+                {clientSubtitle}
+              </p>
+            ) : null}
+          </div>
           <div
-            className="stagger-in mt-[18px] flex flex-wrap gap-[10px]"
+            className="stagger-in flex flex-wrap items-center gap-[10px]"
             style={{ "--stagger-index": OVERVIEW_STAGGER.tags } as CSSProperties}
             aria-label="Client tags"
           >
-            <span className="inline-flex min-h-[38px] items-center rounded-full bg-[#ece7df]/90 px-[18px] font-satoshi text-[15px] font-bold text-black">{clientTagValue}</span>
-            <span className="inline-flex min-h-[38px] items-center rounded-full bg-[#ece7df]/90 px-[18px] font-satoshi text-[15px] font-bold text-black">{locationTag}</span>
+            <span className="inline-flex items-center justify-center rounded-[60px] bg-[rgba(127,78,11,0.08)] px-[16px] py-[8px] text-center font-satoshi text-[14px] font-bold leading-[1.2] tracking-[-0.28px] whitespace-nowrap text-black">{taxResidency}</span>
           </div>
         </div>
       </section>
 
-      <div className={`relative z-[2] grid gap-[16px] px-[48px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px] ${hasSidePanels ? "grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)]" : "grid-cols-1"}`}>
+      <div className={`relative z-[2] grid w-full gap-[16px] px-[48px] max-[1460px]:grid-cols-1 max-[1460px]:px-[24px] max-[640px]:px-[16px] ${hasSidePanels ? "grid-cols-[minmax(0,1fr)_320px]" : "grid-cols-1"}`}>
         <div className="grid gap-[24px]">
           <div
-            className="stagger-in flex w-[567px] flex-col items-start gap-[32px] rounded-[16px] bg-[rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:w-full max-[640px]:px-[22px] max-[640px]:py-[26px]"
-            style={{ "--stagger-index": OVERVIEW_STAGGER.aumCard } as CSSProperties}
+            className="stagger-in flex w-full min-w-0 flex-col items-start gap-[32px] rounded-[16px] bg-[rgba(255,255,255,0.8)] px-[24px] py-[32px] max-[640px]:px-[20px] max-[640px]:py-[24px]"
+            style={{
+              "--stagger-index": OVERVIEW_STAGGER.aumCard,
+              fontFeatureSettings: "'ss03' on, 'liga' off",
+              fontKerning: "none",
+              WebkitFontSmoothing: "antialiased",
+            } as CSSProperties}
           >
             <section className="w-full">
-              <p className="m-0 font-satoshi text-[16px] font-medium text-[#4D2E0C] max-[640px]:text-[14px]">AUM</p>
-              <div className="mt-[12px] flex flex-wrap items-center gap-x-[12px] gap-y-[8px]">
-                <strong className="font-satoshi text-[32px] font-bold leading-none tracking-normal text-[#1A2229] max-[640px]:text-[28px]">{clientAum}</strong>
-                {hasAumChange ? (
-                  <span className="inline-flex items-center gap-[6px] font-satoshi text-[13px] font-semibold text-[#10B981] max-[640px]:text-[12px]">
-                    <TrendUpIcon />
-                    {[aumChange, aumChangePct ? `${aumChangePct}% vs. last month` : null].filter(Boolean).join(" · ")}
-                  </span>
-                ) : null}
+              <div className="flex flex-col items-start gap-[4px]">
+                <p className="m-0 font-satoshi text-[16px] font-bold leading-normal tracking-[1.92px] text-[#4D2E0C]">AUM</p>
+                <div className="flex min-w-0 flex-wrap items-center gap-x-[12px] gap-y-[6px]">
+                  <strong className="font-satoshi text-[32px] font-bold leading-normal tracking-normal whitespace-nowrap text-[#1A2229] max-[640px]:text-[28px]">{clientAum}</strong>
+                  {hasAumChange ? (
+                    <span className="inline-flex min-w-0 items-center gap-[6px] font-inter text-[13px] font-semibold leading-normal text-[#1E8A4B] max-[640px]:text-[12px]">
+                      <Image src="/aum-trend-up.svg" alt="" width={12} height={12} className="h-[12px] w-[12px] shrink-0" />
+                      {[aumChange, aumChangePct ? `${aumChangePct}% vs. last month` : null].filter(Boolean).join(" · ")}
+                    </span>
+                  ) : null}
+                </div>
               </div>
 
-              <h2 className="mt-[32px] mb-[24px] font-satoshi text-[12px] font-bold uppercase tracking-[0.06em] text-[#6B7280] max-[640px]:mt-[24px]">At a Glance</h2>
-              <div className="grid">
-                <AumFact label="Net worth" value={clientDetail?.at_a_glance?.net_worth ? formatClientMoney(clientDetail.at_a_glance.net_worth, clientDetail.at_a_glance.net_worth_currency) : formatClientMoney(client?.net_worth, moneyCurrency)} />
-                <AumFact label="Client since" value={clientSince} />
+              <h2 className="mt-[32px] mb-[16px] font-inter text-[12px] font-bold leading-normal uppercase text-[rgba(13,13,13,0.5)] max-[640px]:mt-[28px]">At a Glance</h2>
+              <div className="flex w-full flex-col gap-[12px]">
                 <AumFact label="Segment" value={segment} />
+                <AumFact label="Client since" value={clientSince} />
                 <AumFact label="Family" value={familyStatus} />
+                <AumFact label="Tax Residency" value={taxResidency} />
                 <AumFact label="Risk profile" value={riskProfile} last />
               </div>
             </section>
@@ -1668,9 +1688,12 @@ function PlaceholderTab({ title }: { title: string }) {
 
 function AumFact({ label, value, last = false }: { label: string; value: string; last?: boolean }) {
   return (
-    <div className={`flex items-center justify-between gap-[20px] py-[12px] ${last ? "" : "border-b border-[#E5E7EB]"}`}>
-      <span className="font-satoshi text-[14px] font-normal text-[#6B7280]">{label}</span>
-      <strong className="text-right font-satoshi text-[14px] font-bold text-[#111827]">{value}</strong>
+    <div className="contents">
+      <div className="flex min-h-[27px] w-full items-start justify-between gap-[20px] py-[4px] text-[14px] leading-normal">
+        <span className="shrink-0 font-satoshi font-normal text-[#0D0D0D] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{label}</span>
+        <strong className="min-w-0 text-right font-satoshi font-bold break-words text-[#111827] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{value}</strong>
+      </div>
+      {last ? null : <div className="h-px w-full shrink-0 bg-[#E1E5E8]" aria-hidden="true" />}
     </div>
   );
 }
@@ -1821,7 +1844,40 @@ function formatActivityDate(value: string) {
     return value;
   }
 
-  return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" }).toUpperCase();
+  const elapsedMs = Date.now() - date.getTime();
+
+  if (elapsedMs >= 0) {
+    const elapsedMinutes = Math.floor(elapsedMs / 60_000);
+
+    if (elapsedMinutes < 60) {
+      const minutes = Math.max(1, elapsedMinutes);
+      return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
+    }
+
+    const elapsedHours = Math.floor(elapsedMinutes / 60);
+    if (elapsedHours < 24) {
+      return `${elapsedHours} ${elapsedHours === 1 ? "hour" : "hours"} ago`;
+    }
+
+    const elapsedDays = Math.floor(elapsedHours / 24);
+    if (elapsedDays < 7) {
+      return `${elapsedDays} ${elapsedDays === 1 ? "day" : "days"} ago`;
+    }
+  }
+
+  return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
+}
+
+function formatInsightDate(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toDateString() === new Date().toDateString()
+    ? "Today"
+    : date.toLocaleDateString("en-US", { month: "short", day: "2-digit" });
 }
 
 function formatLabelText(value: string) {
@@ -1830,6 +1886,24 @@ function formatLabelText(value: string) {
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatTaxResidency(value: string | null | undefined) {
+  const residency = value?.trim();
+
+  if (!residency) {
+    return "-";
+  }
+
+  if (/^[a-z]{2}$/i.test(residency)) {
+    try {
+      return new Intl.DisplayNames(["en"], { type: "region" }).of(residency.toUpperCase()) || residency.toUpperCase();
+    } catch {
+      return residency.toUpperCase();
+    }
+  }
+
+  return residency;
 }
 
 function InsightPanel({
@@ -1873,28 +1947,29 @@ function InsightPanel({
 
   return (
     <section
-      className="relative min-h-[409px] overflow-hidden rounded-[16px] bg-cover bg-center bg-no-repeat p-[24px] max-[1180px]:min-h-[360px] max-[640px]:rounded-[16px] max-[640px]:p-[20px]"
+      className="relative flex h-[409px] flex-col items-start justify-between overflow-hidden rounded-[16px] p-[24px] max-[1180px]:min-h-[409px] max-[640px]:h-auto max-[640px]:p-[20px]"
       style={{
-        backgroundColor: "rgba(255,255,255,0.5)",
-        backgroundImage: "linear-gradient(rgba(255,255,255,0.05), rgba(255,255,255,0.05)), url('/bg-insights.png')",
+        backgroundImage: `url("data:image/svg+xml;utf8,<svg viewBox='0 0 320 409' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'><rect x='0' y='0' width='100%25' height='100%25' fill='url(%23grad)' opacity='0.94'/><defs><radialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(41.7 30.35 -15.579 21.405 118 379)'><stop stop-color='rgba(254,213,86,1)' offset='0'/><stop stop-color='rgba(243,185,57,1)' offset='0.57927'/><stop stop-color='rgba(244,194,86,1)' offset='0.68445'/><stop stop-color='rgba(246,204,116,1)' offset='0.78963'/><stop stop-color='rgba(249,223,174,1)' offset='1'/></radialGradient></defs></svg>")`,
+        backgroundSize: "100% 100%",
+        backgroundRepeat: "no-repeat",
       }}
       onMouseEnter={() => setIsCarouselPaused(true)}
       onMouseLeave={() => setIsCarouselPaused(false)}
     >
-      <div className="relative z-[1] flex items-center justify-between gap-[16px]">
-        <div>
-          <h2 className="m-0 font-satoshi text-[18px] font-semibold leading-none text-[#282420] max-[640px]:text-[16px]">Insights</h2>
+      <div className="relative z-[1] flex w-full items-center gap-[4px]">
+        <div className="min-w-0 flex-1">
+          <h2 className="m-0 font-satoshi text-[18px] font-bold leading-[24px] text-[#0D0D0D] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">Insights</h2>
           {activeInsight.timestamp ? (
-            <p className="mt-[4px] mb-0 font-satoshi text-[12px] text-[#6c625b]">{activeInsight.timestamp}</p>
+            <p className="m-0 font-satoshi text-[12px] font-medium leading-normal text-[rgba(33,37,37,0.7)] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{activeInsight.timestamp}</p>
           ) : null}
         </div>
         {normalizedInsights.length > 1 ? (
-          <div className="flex items-center gap-[6px]" aria-label="Insight slides">
+          <div className="flex h-[8px] shrink-0 items-center gap-[2px]" aria-label="Insight slides">
             {normalizedInsights.map((insight, index) => (
               <button
                 key={`${insight.title}-${index}`}
                 type="button"
-                className={`h-[10px] w-[10px] rounded-full border-0 p-0 transition ${index === safeActiveIndex ? "bg-black" : "bg-black/20 hover:bg-black/35"}`}
+                className={`h-[8px] w-[8px] shrink-0 rounded-full border-0 p-0 transition-colors ${index === safeActiveIndex ? "bg-black" : "bg-black/20 hover:bg-black/35"}`}
                 aria-label={`Show insight ${index + 1}`}
                 aria-current={index === safeActiveIndex ? "true" : undefined}
                 onClick={() => setActiveIndex(index)}
@@ -1904,47 +1979,46 @@ function InsightPanel({
         ) : null}
       </div>
 
-      <div className="relative z-[1] mt-[80px] max-w-[280px] overflow-hidden max-[1180px]:mt-[60px] max-[640px]:mt-[50px]" aria-live="polite">
-        <div
-          className="flex transition-transform duration-500 ease-out"
-          style={{ transform: `translateX(-${safeActiveIndex * 100}%)` }}
-        >
-          {normalizedInsights.map((insight, index) => (
-            <article key={`${insight.title}-${index}`} className="w-full shrink-0">
-              <p className="m-0 font-satoshi text-[28px] font-medium leading-[1.15] tracking-normal text-[#282420] max-[640px]:text-[24px]">
-                {insight.title}
-              </p>
-              {insight.body ? (
-                <p className="mt-[14px] mb-0 font-satoshi text-[14px] font-normal leading-[1.45] text-[#675443]">
-                  {insight.body}
+      <div className="relative z-[1] flex w-full flex-col items-start gap-[40px]" aria-live="polite">
+        <div className="w-[232px] overflow-hidden">
+          <div
+            className="flex transition-transform duration-500 ease-out"
+            style={{ transform: `translateX(-${safeActiveIndex * 100}%)` }}
+          >
+            {normalizedInsights.map((insight, index) => (
+              <article key={`${insight.title}-${index}`} className="flex w-[232px] shrink-0 flex-col items-start gap-[8px]">
+                <p className="m-0 w-full font-satoshi text-[24px] font-medium leading-[1.1] tracking-[-0.48px] text-[rgba(13,13,13,0.9)] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">
+                  {insight.title}
                 </p>
-              ) : null}
-            </article>
-          ))}
+                {insight.body ? (
+                  <p className="m-0 w-full font-satoshi text-[14px] font-normal leading-[1.5] text-[rgba(13,13,13,0.8)] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">
+                    {insight.body}
+                  </p>
+                ) : null}
+              </article>
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div className="relative z-[1] mt-[32px] flex flex-wrap items-center justify-between gap-[12px] max-[640px]:mt-[24px]">
-        <button
-          type="button"
-          className="inline-flex min-h-[38px] items-center gap-[8px] rounded-full border bg-[#fff5d7]/35 px-[14px] font-satoshi text-[14px] font-bold leading-[18.2px]"
-          style={{ backgroundImage: "linear-gradient(to right, rgba(222,150,69,1), rgba(128,77,19,1))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", borderColor: "rgba(128,77,19,0.24)" }}
-          onClick={() => onAskAiInsight(askAiPrompt)}
-        >
-          <SparkleIcon />
-          Ask AI
-        </button>
-        <button
-          type="button"
-          className="flex min-h-[38px] cursor-pointer items-center justify-center gap-[6px] rounded-full border-0 bg-transparent px-[4px] font-satoshi text-[18px] font-medium leading-[18.2px] text-[rgba(74,67,52,1)]"
-          onClick={() => onDismissInsight(activeInsight)}
-        >
-          <svg width="12" height="12" viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M7.84601 0.713867L0.710938 7.84894M0.710938 0.713867L7.84601 7.84894" stroke="#2F2B2C" strokeWidth="1.42702" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-
-          Dismiss
-        </button>
+        <div className="flex w-full items-center gap-[8px]">
+          <button
+            type="button"
+            className="inline-flex items-center gap-[4px] rounded-[50px] border-0 bg-black px-[12px] py-[8px] font-satoshi text-[14px] font-bold leading-[1.3] text-white [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]"
+            style={{ fontFamily: "var(--font-satoshi), 'Satoshi', sans-serif", fontSize: "14px", fontWeight: 700, lineHeight: 1.3, fontFeatureSettings: "'ss03' on, 'liga' off", fontKerning: "none", WebkitFontSmoothing: "antialiased" }}
+            onClick={() => onAskAiInsight(askAiPrompt)}
+          >
+            <Image src="/insights-ask-ai.svg" alt="" width={16} height={16} />
+            Ask AI
+          </button>
+          <button
+            type="button"
+            className="inline-flex items-center gap-[4px] rounded-[50px] border border-black/[0.08] bg-transparent px-[12px] py-[8px] font-satoshi text-[14px] font-bold leading-[1.3] text-black [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]"
+            style={{ fontFamily: "var(--font-satoshi), 'Satoshi', sans-serif", fontSize: "14px", fontWeight: 700, lineHeight: 1.3, fontFeatureSettings: "'ss03' on, 'liga' off", fontKerning: "none", WebkitFontSmoothing: "antialiased" }}
+            onClick={() => onDismissInsight(activeInsight)}
+          >
+            <Image src="/insights-dismiss.svg" alt="" width={16} height={16} />
+            Dismiss
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -1964,135 +2038,151 @@ function RecentActivityPanel({
   const normalizedActivities = activities
     .map(normalizeActivity)
     .filter((activity): activity is OverviewActivity => Boolean(activity));
+  const pageSize = 3;
+  const pageCount = Math.max(1, Math.ceil(normalizedActivities.length / pageSize));
+  const [activityPage, setActivityPage] = useState(0);
+  const visibleActivities = normalizedActivities.slice(activityPage * pageSize, (activityPage + 1) * pageSize);
+
+  useEffect(() => {
+    setActivityPage((page) => Math.min(page, pageCount - 1));
+  }, [pageCount]);
 
   return (
-    <section className="relative z-[4] rounded-[20px] border border-[#804D13] bg-white px-[24px] py-[26px] max-[640px]:rounded-[16px] max-[640px]:px-[20px]">
-      <h2 className="m-0 font-satoshi text-[13px] font-bold uppercase tracking-[0.06em] text-[#6b7280]">Recent activity</h2>
-      <div className="mt-[20px] grid">
-        {normalizedActivities.map((activity, index) => (
-          <article
-            key={`${activity.title}-${index}`}
-            className={`stagger-in grid cursor-pointer grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] rounded-[8px] py-[18px] transition-colors hover:bg-black/[0.02] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}
-            // Same staggered entrance as the vault feeds; see .stagger-in in globals.css.
-            style={{ "--stagger-index": Math.min(staggerStart + index, staggerStart + 8) } as CSSProperties}
-            onClick={() => { if (activity.id != null) onOpenInteraction(Number(activity.id)); }}
+    <section
+      className="relative z-[4] flex min-h-[474px] flex-col items-start gap-[24px] overflow-hidden rounded-[16px] bg-[rgba(255,255,255,0.4)] p-[24px] backdrop-blur-[24px] max-[640px]:p-[20px]"
+      style={{
+        WebkitBackdropFilter: "blur(24px)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55), 0 8px 32px rgba(38,23,6,0.04)",
+      }}
+    >
+      <div className="flex w-full shrink-0 items-center justify-between">
+        <h2
+          className="m-0 text-[#0F172A]"
+          style={{
+            fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+            fontSize: "18px",
+            fontWeight: 700,
+            lineHeight: "24px",
+            fontFeatureSettings: "'ss03' on, 'liga' off",
+            fontKerning: "none",
+            WebkitFontSmoothing: "antialiased",
+          }}
+        >
+          Recent Activity
+        </h2>
+        <div className="flex items-start gap-[8px]" aria-label="Recent activity pages">
+          <button
+            type="button"
+            className="inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[99px] border border-[#EAEAEC] bg-white p-[8px]"
+            style={{ opacity: activityPage === 0 ? 0.5 : 1 }}
+            aria-label="Previous recent activities"
+            disabled={activityPage === 0}
+            onClick={() => setActivityPage((page) => Math.max(0, page - 1))}
           >
-            <span className={`inline-grid h-[40px] w-[40px] place-items-center rounded-[10px] ${activity.iconClass}`}>
-              {activity.icon}
-            </span>
-            <div className="min-w-0">
-              <h3 className="m-0 font-satoshi text-[16px] font-bold leading-normal tracking-[-0.16px] text-[#111827] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{activity.title}</h3>
-              <RecentActivityDescription activity={activity} />
+            <Image src="/recent-activity-chevron-left.svg" alt="" width={14} height={14} />
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-[99px] border border-[#EAEAEC] bg-white p-[8px]"
+            style={{ opacity: activityPage >= pageCount - 1 ? 0.5 : 1 }}
+            aria-label="Next recent activities"
+            disabled={activityPage >= pageCount - 1}
+            onClick={() => setActivityPage((page) => Math.min(pageCount - 1, page + 1))}
+          >
+            <Image src="/recent-activity-chevron-right.svg" alt="" width={14} height={14} />
+          </button>
+        </div>
+      </div>
+      <div className="flex w-full flex-col items-start gap-[16px]">
+        {visibleActivities.map((activity, index) => {
+          const absoluteIndex = activityPage * pageSize + index;
+          return (
+            <div key={`${activity.title}-${absoluteIndex}`} className="contents">
+              <article
+                className="stagger-in flex w-full cursor-pointer items-start gap-[12px] transition-opacity hover:opacity-80"
+                style={{ "--stagger-index": Math.min(staggerStart + absoluteIndex, staggerStart + 8) } as CSSProperties}
+                onClick={() => { if (activity.id != null) onOpenInteraction(Number(activity.id)); }}
+                onKeyDown={(event) => {
+                  if (activity.id != null && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    onOpenInteraction(Number(activity.id));
+                  }
+                }}
+                role={activity.id != null ? "link" : undefined}
+                tabIndex={activity.id != null ? 0 : -1}
+              >
+                <span className={`inline-grid h-[32px] w-[32px] shrink-0 place-items-center rounded-[8px] ${activity.iconClass}`}>
+                  {activity.icon}
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col items-start gap-[8px]">
+                  <div className="flex w-full flex-col items-start">
+                    <h3
+                      className="m-0 text-[#111827]"
+                      style={{
+                        fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+                        fontSize: "16px",
+                        fontWeight: 700,
+                        lineHeight: "normal",
+                        letterSpacing: "-0.16px",
+                        fontFeatureSettings: "'ss03' on, 'liga' off",
+                        fontKerning: "none",
+                        WebkitFontSmoothing: "antialiased",
+                      }}
+                    >
+                      {activity.title}
+                    </h3>
+                    <time
+                      className="text-[rgba(33,37,37,0.7)]"
+                      style={{
+                        fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        lineHeight: "normal",
+                        fontFeatureSettings: "'ss03' on, 'liga' off",
+                        fontKerning: "none",
+                        WebkitFontSmoothing: "antialiased",
+                      }}
+                    >
+                      {activity.date}
+                    </time>
+                  </div>
+                  <RecentActivityDescription activity={activity} />
+                </div>
+              </article>
+              {index < visibleActivities.length - 1 ? (
+                <Image src="/recent-activity-divider.svg" alt="" width={272} height={1} className="shrink-0" />
+              ) : null}
             </div>
-            <time className="pt-[2px] font-satoshi text-[12px] font-bold text-[#9ca3af] max-[640px]:text-[11px]">{activity.date}</time>
-          </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
 }
 
 function RecentActivityDescription({ activity }: { activity: OverviewActivity }) {
-  const textRef = useRef<HTMLParagraphElement | null>(null);
-  const [displayCopy, setDisplayCopy] = useState(activity.copy);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [canExpand, setCanExpand] = useState(false);
-  const [hasFetchedDetail, setHasFetchedDetail] = useState(false);
-  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
-
-  const measureOverflow = useCallback(() => {
-    const element = textRef.current;
-    if (!element) return;
-    setCanExpand(element.scrollHeight > element.clientHeight + 1);
-  }, []);
-
-  useEffect(() => {
-    setDisplayCopy(activity.copy);
-    setIsExpanded(false);
-    setHasFetchedDetail(false);
-    setIsFetchingDetail(false);
-  }, [activity.id, activity.copy]);
-
-  useLayoutEffect(() => {
-    if (isExpanded) return;
-    measureOverflow();
-  }, [displayCopy, isExpanded, measureOverflow]);
-
-  useEffect(() => {
-    if (isExpanded) return;
-
-    window.addEventListener("resize", measureOverflow);
-    return () => window.removeEventListener("resize", measureOverflow);
-  }, [isExpanded, measureOverflow]);
-
-  const handleSeeMore = async () => {
-    if (activity.id !== undefined && activity.id !== null && !hasFetchedDetail) {
-      setIsFetchingDetail(true);
-
-      try {
-        const detail = await getCrmInteraction(activity.id);
-        const fullCopy = getLongestStringField(getRecord(detail), [
-          "body",
-          "extracted_summary",
-          "description",
-          "copy",
-          "note",
-          "notes",
-          "message",
-          "text",
-        ]);
-
-        if (fullCopy && fullCopy.length > displayCopy.length) {
-          setDisplayCopy(fullCopy);
-        }
-      } catch (error) {
-        console.error("RecentActivityDescription: Failed to load interaction detail:", error);
-      } finally {
-        setHasFetchedDetail(true);
-        setIsFetchingDetail(false);
-      }
-    }
-
-    setIsExpanded(true);
-  };
-
-  if (!displayCopy) {
+  if (!activity.copy) {
     return null;
   }
 
   return (
-    <div className="relative mt-[6px]">
-      <p
-        ref={textRef}
-        className="m-0 font-satoshi text-[13px] font-normal leading-[140%] text-[#6B7280]"
-        style={
-          isExpanded
-            ? undefined
-            : {
-                display: "-webkit-box",
-                overflow: "hidden",
-                WebkitBoxOrient: "vertical",
-                WebkitLineClamp: 2,
-              }
-        }
-      >
-        {displayCopy}
-      </p>
-      {canExpand ? (
-        <button
-          type="button"
-          className="mt-[8px] inline-flex items-center gap-[8px] border-0 bg-transparent p-0 font-satoshi text-[10px] font-medium leading-[130%] tracking-normal text-[#804D13] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]"
-          style={{ fontSize: "13px" }}
-          onClick={isExpanded ? () => setIsExpanded(false) : handleSeeMore}
-          disabled={isFetchingDetail}
-        >
-          {isExpanded ? "See less" : "See more"}
-          <svg className={`h-[14px] w-[14px] transition-transform ${isExpanded ? "rotate-180" : ""}`} viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      ) : null}
-    </div>
+    <p
+      className="m-0 w-full overflow-hidden text-[rgba(13,13,13,0.8)]"
+      style={{
+        display: "-webkit-box",
+        WebkitBoxOrient: "vertical",
+        WebkitLineClamp: 3,
+        fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+        fontSize: "14px",
+        fontWeight: 400,
+        lineHeight: 1.5,
+        fontFeatureSettings: "'ss03' on, 'liga' off",
+        fontKerning: "none",
+        WebkitFontSmoothing: "antialiased",
+      }}
+    >
+      {activity.copy}
+    </p>
   );
 }
 
@@ -2189,7 +2279,7 @@ function normalizeInsight(value: unknown): OverviewInsight | null {
     id: id ?? undefined,
     title: title || body || "Insight",
     body: body && body !== title ? body : undefined,
-    timestamp: timestamp ? formatActivityDate(timestamp) : undefined,
+    timestamp: timestamp ? formatInsightDate(timestamp) : undefined,
   };
 }
 
@@ -2234,46 +2324,48 @@ function normalizeActivity(value: unknown): OverviewActivity | null {
 }
 
 function getActivityIconByName(iconName: string) {
-  const iconMap: Record<string, string> = {
+  const iconMap: Record<string, { path: string; iconClass: string; size: number }> = {
     // Meeting & Communication
-    "meeting": "/icons/interaction/ic-meeting.png",
-    "meeting_note": "/icons/interaction/ic-meeting.png",
-    "phone": "/icons/interaction/ic-meeting.png",
-    "call": "/icons/interaction/ic-meeting.png",
-    "email": "/icons/interaction/ic-email.png",
-    "message": "/icons/interaction/ic-message.png",
+    "meeting": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
+    "meeting_note": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
+    "phone": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
+    "call": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
+    "email": { path: "/recent-activity-mail.svg", iconClass: "bg-[#FEF3C7]", size: 16 },
+    "mail": { path: "/recent-activity-mail.svg", iconClass: "bg-[#FEF3C7]", size: 16 },
+    "message": { path: "/icons/interaction/ic-message.png", iconClass: "bg-transparent", size: 32 },
 
     // Financial & Documents
-    "capital": "/icons/documents/ic-capital-calls.png",
-    "capital_call": "/icons/documents/ic-capital-calls.png",
-    "distribution": "/icons/documents/ic-distribution-notices.png",
-    "payment": "/icons/documents/ic-banking.png",
-    "transfer": "/icons/documents/ic-banking.png",
-    "banking": "/icons/documents/ic-banking.png",
-    "statement": "/icons/documents/ic-statements.png",
-    "document": "/icons/interaction/ic-document.png",
+    "capital": { path: "/recent-activity-check.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
+    "capital_call": { path: "/recent-activity-check.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
+    "check": { path: "/recent-activity-check.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
+    "distribution": { path: "/icons/documents/ic-distribution-notices.png", iconClass: "bg-transparent", size: 32 },
+    "payment": { path: "/icons/documents/ic-banking.png", iconClass: "bg-transparent", size: 32 },
+    "transfer": { path: "/icons/documents/ic-banking.png", iconClass: "bg-transparent", size: 32 },
+    "banking": { path: "/icons/documents/ic-banking.png", iconClass: "bg-transparent", size: 32 },
+    "statement": { path: "/icons/documents/ic-statements.png", iconClass: "bg-transparent", size: 32 },
+    "document": { path: "/icons/interaction/ic-document.png", iconClass: "bg-transparent", size: 32 },
 
     // Legal & Compliance
-    "legal": "/icons/documents/ic-legal.png",
-    "compliance": "/icons/documents/ic-compliance.png",
-    "tax": "/icons/documents/ic-tax-documents.png",
+    "legal": { path: "/icons/documents/ic-legal.png", iconClass: "bg-transparent", size: 32 },
+    "compliance": { path: "/icons/documents/ic-compliance.png", iconClass: "bg-transparent", size: 32 },
+    "tax": { path: "/icons/documents/ic-tax-documents.png", iconClass: "bg-transparent", size: 32 },
 
     // Investment & Property
-    "investment": "/icons/documents/ic-investment-agreements.png",
-    "real_estate": "/icons/documents/ic-real-estate.png",
-    "property": "/icons/documents/ic-real-estate.png",
+    "investment": { path: "/icons/documents/ic-investment-agreements.png", iconClass: "bg-transparent", size: 32 },
+    "real_estate": { path: "/icons/documents/ic-real-estate.png", iconClass: "bg-transparent", size: 32 },
+    "property": { path: "/icons/documents/ic-real-estate.png", iconClass: "bg-transparent", size: 32 },
 
     // Other
-    "insurance": "/icons/documents/ic-insurance.png",
-    "trust": "/icons/documents/ic-trust-wills.png",
+    "insurance": { path: "/icons/documents/ic-insurance.png", iconClass: "bg-transparent", size: 32 },
+    "trust": { path: "/icons/documents/ic-trust-wills.png", iconClass: "bg-transparent", size: 32 },
   };
 
   const normalized = iconName.toLowerCase().trim();
-  const iconPath = iconMap[normalized] || "/icons/documents/ic-statements.png";
+  const iconData = iconMap[normalized] || { path: "/icons/documents/ic-statements.png", iconClass: "bg-transparent", size: 32 };
 
   return {
-    icon: <Image src={iconPath} alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-    iconClass: "bg-transparent"
+    icon: <Image src={iconData.path} alt="" width={iconData.size} height={iconData.size} style={{ objectFit: 'contain' }} />,
+    iconClass: iconData.iconClass,
   };
 }
 
@@ -2283,24 +2375,24 @@ function getActivityIcon(value: string) {
   // Meeting activities
   if (normalized.includes("meeting") || normalized.includes("meet")) {
     return {
-      icon: <Image src="/icons/interaction/ic-meeting.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-      iconClass: "bg-transparent"
+      icon: <Image src="/recent-activity-phone.svg" alt="" width={16} height={16} />,
+      iconClass: "bg-[rgba(128,77,19,0.16)]",
     };
   }
 
   // Email activities
   if (normalized.includes("mail") || normalized.includes("email")) {
     return {
-      icon: <Image src="/icons/interaction/ic-email.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-      iconClass: "bg-transparent"
+      icon: <Image src="/recent-activity-mail.svg" alt="" width={16} height={16} />,
+      iconClass: "bg-[#FEF3C7]",
     };
   }
 
   // Phone calls
   if (normalized.includes("phone") || normalized.includes("call")) {
     return {
-      icon: <Image src="/icons/interaction/ic-meeting.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-      iconClass: "bg-transparent"
+      icon: <Image src="/recent-activity-phone.svg" alt="" width={16} height={16} />,
+      iconClass: "bg-[rgba(128,77,19,0.16)]",
     };
   }
 
@@ -2315,8 +2407,8 @@ function getActivityIcon(value: string) {
   // Capital calls
   if (normalized.includes("capital")) {
     return {
-      icon: <Image src="/icons/documents/ic-capital-calls.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-      iconClass: "bg-transparent"
+      icon: <Image src="/recent-activity-check.svg" alt="" width={16} height={16} />,
+      iconClass: "bg-[rgba(128,77,19,0.16)]",
     };
   }
 
@@ -2374,7 +2466,7 @@ function AssetAllocationChart({
   totalLabel?: string;
   buckets?: Array<{ label: string; value: string; pct: string }>;
 }) {
-  const allocationColors = ["#1D761F", "#1E8AAA", "#FFC14E", "#10B981", "#C8F65C", "#14B8A6", "#8B5CF6", "#F97316", "#804D13", "#FF5733","#FFD700", "#FFA500", "#14B8D3"];
+  const allocationColors = ["#1D761F", "#1E8A4B", "#FFC14E", "#10B981", "#C8F65C", "#14B8A6", "#8B5CF6", "#F97316", "#804D13", "#FF5733", "#FFD700", "#FFA500", "#14B8D3"];
   const slices = buckets
     .map((bucket, index) => ({
       label: bucket.label || "Uncategorized",
@@ -2411,11 +2503,11 @@ function AssetAllocationChart({
     const sin = Math.sin(midAngleRad);
 
     // Chart center and radii (reduced by 30% for shorter lines)
-    const centerX = 160;
-    const centerY = 160;
-    const dotRadius = 104;  // Dot on the arc perimeter
-    const elbowRadius = 125; // Elbow point for the line (reduced from 134)
-    const labelRadius = 155;  // Label position (reduced from 180)
+    const centerX = 235.5;
+    const centerY = 161;
+    const dotRadius = 104;
+    const elbowRadius = 128;
+    const labelRadius = 198;
 
     // Calculate positions along the radial line
     const dotX = centerX + cos * dotRadius;
@@ -2485,44 +2577,58 @@ function AssetAllocationChart({
   };
 
   return (
-    <div className="relative w-full overflow-hidden rounded-[16px] bg-[#FCF9F4] px-[24px] pt-[32px] pb-[32px] shadow-[0_4px_12px_rgba(0,0,0,0.02)] max-[640px]:px-[16px] max-[640px]:pt-[24px] max-[640px]:pb-[24px]">
+    <div className="relative flex min-h-[509px] w-full flex-col items-start gap-[24px] overflow-hidden rounded-[16px] bg-[#FCF9F4] p-[24px] shadow-[0_4px_6px_rgba(0,0,0,0.02)] backdrop-blur-[2px] max-[640px]:min-h-[470px] max-[640px]:p-[20px]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[16px] opacity-70" aria-hidden="true">
-        <div className="absolute -left-[60px] top-0 h-[320px] w-[600px] opacity-40 blur-[135px]" style={{ background: "linear-gradient(180deg, rgba(255,241,163,0.8) 0%, rgba(255,241,163,0.8) 50%, rgba(255,179,134,0.8) 75%, rgba(255,111,50,0.8) 100%)" }} />
-        <div className="absolute -right-[60px] bottom-0 h-[320px] w-[600px] rotate-180 opacity-40 blur-[135px]" style={{ background: "linear-gradient(180deg, rgba(255,241,163,0.8) 0%, rgba(255,241,163,0.8) 50%, rgba(255,179,134,0.8) 75%, rgba(255,111,50,0.8) 100%)" }} />
+        <Image
+          src="/asset-allocation-glow-primary.png"
+          alt=""
+          width={1961}
+          height={1161}
+          className="absolute left-1/2 top-1/2 h-[1161px] w-[1961px] max-w-none opacity-40"
+          style={{ transform: "translate(-59%, -54%)" }}
+        />
+        <Image
+          src="/asset-allocation-glow-secondary.png"
+          alt=""
+          width={1961}
+          height={1161}
+          className="absolute left-1/2 top-1/2 h-[1161px] w-[1961px] max-w-none opacity-40"
+          style={{ transform: "translate(-45%, -34%) rotate(180deg)" }}
+        />
       </div>
 
-      <h2 className="relative z-[1] m-0 self-stretch font-satoshi text-[16px] leading-normal text-[#1A2229]" style={{ fontSize: '16px', fontStyle: 'normal', fontWeight: 600, lineHeight: 'normal', color: '#1A2229' }}>Asset allocation</h2>
+      <h2 className="relative z-[1] m-0 self-stretch font-satoshi text-[18px] font-bold leading-[24px] text-[#0F172A] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">Asset allocation</h2>
 
-      <div className="relative z-[1] mx-auto mt-[24px] aspect-square max-w-[320px] max-[640px]:max-w-[260px]">
-        <div className="absolute inset-[12%]">
+      <div className="relative z-[1] mx-auto h-[314px] w-full max-w-[471px] shrink-0">
+        <div className="absolute left-1/2 top-[calc(50%+4px)] h-[218px] w-[218px] -translate-x-1/2 -translate-y-1/2 max-[640px]:h-[200px] max-[640px]:w-[200px]">
           {hasAllocationData ? (
             <Doughnut data={chartData} options={chartOptions} />
           ) : (
-            <div className="flex h-full items-center justify-center rounded-full border border-black/10 bg-white/45 text-center font-satoshi text-[13px] text-black/45">
+            <div className="flex h-full items-center justify-center rounded-full border border-black/10 bg-white/45 text-center font-satoshi text-[13px] text-black/45 [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">
               No allocation data
             </div>
           )}
           <span className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <strong className="font-satoshi text-[28px] font-[900] leading-[1.2] text-black max-[640px]:text-[22px]">{totalLabel}</strong>
+            <strong className="font-satoshi text-[28px] font-[900] leading-[1.2] tracking-[-1.12px] text-black max-[640px]:text-[24px]">{totalLabel}</strong>
             <small className="mt-[2px] self-stretch text-center font-satoshi text-[12px] font-normal leading-[150%] tracking-[-0.24px] text-[#000]" style={{ fontFeatureSettings: "'ss02' on, 'ss03' on, 'liga' off", fontStyle: 'normal' }}>Managed assets</small>
           </span>
         </div>
 
         {/* Render all labels */}
         {hasAllocationData ? (
-          <svg className="absolute inset-0 h-full w-full overflow-visible" viewBox="0 0 320 320" fill="none" aria-hidden="true">
+          <svg className="absolute inset-0 h-full w-full overflow-visible max-[640px]:hidden" viewBox="0 0 471 314" fill="none" aria-hidden="true">
             {allocationAnnotations.map((annotation, index) => (
               <g key={`${annotation.labelText}-${index}`}>
-                <circle cx={annotation.dot.x} cy={annotation.dot.y} r="4" fill="#1A2229" />
+                <circle cx={annotation.dot.x} cy={annotation.dot.y} r="2" fill="#1A2229" />
                 <path
                   d={`M ${annotation.line.x1} ${annotation.line.y1} L ${annotation.line.x2} ${annotation.line.y2} L ${annotation.line.x3} ${annotation.line.y3}`}
                   stroke="rgba(0,0,0,0.16)"
                   strokeWidth="1"
                   fill="none"
                 />
-                <text x={annotation.label.x} y={annotation.label.y} textAnchor={annotation.label.anchor} fill="#5C6A72" fontFamily="Satoshi" fontSize="11" fontWeight="400">
+                <text x={annotation.label.x} y={annotation.label.y} textAnchor={annotation.label.anchor} fill="#5C6A72" fontFamily="Inter, sans-serif" fontSize="11" fontWeight="400">
                   <tspan x={annotation.label.x} dy="0">{annotation.labelText}</tspan>
-                  <tspan x={annotation.label.x} dy="17" fill="#1A2229" fontSize="13" fontWeight="700">{formatPercent(annotation.value)}</tspan>
+                  <tspan x={annotation.label.x} dy="17" fill="#1A2229" fontFamily="Satoshi, sans-serif" fontSize="13" fontWeight="700" style={{ fontFeatureSettings: "'ss03' on, 'liga' off" }}>{formatPercent(annotation.value)}</tspan>
                 </text>
               </g>
             ))}
@@ -2531,11 +2637,11 @@ function AssetAllocationChart({
       </div>
 
       {hasAllocationData ? (
-        <div className="relative z-[1] mt-[16px] flex flex-wrap items-center justify-center gap-[4px]">
+        <div className="absolute right-[24px] bottom-[34px] left-[24px] z-[1] flex flex-wrap items-center justify-center gap-[4px] max-[640px]:right-[20px] max-[640px]:bottom-[24px] max-[640px]:left-[20px]">
           {labels.map((label, index) => (
             <span key={label} className="inline-flex items-center gap-[8px] rounded-[20px] bg-black/[0.02] px-[8px] py-[4px]">
               <span className="h-[8px] w-[8px] rounded-full" style={{ backgroundColor: colors[index] }} />
-              <span className="font-satoshi text-[12px] font-medium text-black/80">{label}</span>
+              <span className="font-satoshi text-[12px] font-medium text-black/80 [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none]">{label}</span>
             </span>
           ))}
         </div>
