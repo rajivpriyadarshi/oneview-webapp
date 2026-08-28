@@ -67,6 +67,7 @@ type GraphFamilyMember = {
   name: string;
   partyType: string;
   relationship: string;
+  gender?: string;
   adjustedValue: number;
 };
 
@@ -761,14 +762,26 @@ function buildFlowElements(
             slug: cat.slug,
             label: cat.label,
             adjustedValue: 0,
-            items: (cat.members ?? []).map((m) => ({
-              id: String(m.id),
-              name: m.name,
-              value: m.adjustedValue,
-              imageSrc: FAMILY_IMAGES[m.relationship?.toLowerCase()] ?? "/wealth-map/family.png",
-              kindLabel: formatNodeLabel(m.partyType, "Person"),
-              detail: formatNodeLabel(m.relationship, "Family member"),
-            })),
+            items: (cat.members ?? []).map((m) => {
+              const rel = m.relationship?.toLowerCase() ?? "";
+              const gender = m.gender?.toLowerCase() ?? "";
+              const isFemale = gender === "female" || rel === "daughter" || rel === "wife";
+              let imageSrc = FAMILY_IMAGES[rel];
+              if (!imageSrc || rel === "child") {
+                imageSrc = isFemale ? "/wealth-map/child-girl.png" : "/wealth-map/child-boy.png";
+              }
+              if (rel === "spouse") {
+                imageSrc = isFemale ? "/wealth-map/female-spouse.png" : "/wealth-map/male-spouse.png";
+              }
+              return {
+                id: String(m.id),
+                name: m.name,
+                value: m.adjustedValue,
+                imageSrc: imageSrc ?? "/wealth-map/family.png",
+                kindLabel: formatNodeLabel(m.partyType, "Person"),
+                detail: formatNodeLabel(m.relationship, "Family member"),
+              };
+            }),
           };
         } else if (cat.slug === "ownership_relationships") {
           return {
