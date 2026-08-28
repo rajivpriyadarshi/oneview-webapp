@@ -226,8 +226,10 @@ export default function ClientsPage() {
               <ManagedAssetsCard clients={clients} />
               <AlertsPanel alerts={alerts} onCheckNow={(alert) => {
                 const type = alert.type?.toLowerCase();
-                if (type === "document" || type === "documents" && alert.client) {
+                if ((type === "document" || type === "documents") && alert.client) {
                   router.push(`/client?clientId=${alert.client}&tab=documents`);
+                } else if (type === "interaction" && alert.client) {
+                  router.push(`/client?clientId=${alert.client}&tab=interactions`);
                 } else if ((type === "chat" || type === "chats" || type === "message") && alert.client) {
                   router.push(`/chat?clientId=${alert.client}`);
                 } else {
@@ -250,13 +252,16 @@ export default function ClientsPage() {
               {alerts.map((alert) => {
                 const type = alert.type?.toLowerCase();
                 const isDocType = type === "document" || type === "documents";
+                const isInteractionType = type === "interaction";
                 const isChatType = type === "chat" || type === "chats" || type === "message";
-                const isClickable = (isDocType || isChatType) && alert.client;
+                const isClickable = (isDocType || isInteractionType || isChatType) && alert.client;
                 const hasAction = isClickable || (alert.cta_url && alert.cta_text);
                 const handleClick = () => {
                   setShowAlertsModal(false);
                   if (isDocType && alert.client) {
                     router.push(`/client?clientId=${alert.client}&tab=documents`);
+                  } else if (isInteractionType && alert.client) {
+                    router.push(`/client?clientId=${alert.client}&tab=interactions`);
                   } else if (isChatType && alert.client) {
                     router.push(`/chat?clientId=${alert.client}`);
                   } else {
