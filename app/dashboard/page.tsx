@@ -7,7 +7,7 @@ import { useGetCrmClientsQuery, useGetCrmAlertsQuery, useGetCrmMeetingsQuery, ty
 import { getStoredAuthToken, getStoredAdvisorProfile } from "../lib/session";
 import { apiRequest } from "../lib/apiClient";
 
-const FILTER_TABS = ["All", "Task", "Meeting", "Portfolio", "Opportunities", "Requests"] as const;
+const FILTER_TABS = ["All", "Task", "Meeting", "Portfolio", "Opportunities", "Requests", "Messages"] as const;
 type FilterTab = (typeof FILTER_TABS)[number];
 
 // The dashboard's entrance order. One table rather than numbers scattered
@@ -44,6 +44,7 @@ const ATTENTION_TYPE_MAP: Record<FilterTab, CrmAttentionItem["type"][] | null> =
   Portfolio: ["portfolio_change"],
   Opportunities: ["opportunity"],
   Requests: ["request"],
+  Messages: ["message"],
 };
 
 export default function ClientsPage() {
@@ -90,7 +91,7 @@ export default function ClientsPage() {
   const displayClients = expanded ? filteredClients : filteredClients.slice(0, 4);
 
   const filterCounts = useMemo(() => {
-    const counts: Record<FilterTab, number> = { All: clients.length, Task: 0, Meeting: 0, Portfolio: 0, Opportunities: 0, Requests: 0 };
+    const counts: Record<FilterTab, number> = { All: clients.length, Task: 0, Meeting: 0, Portfolio: 0, Opportunities: 0, Requests: 0, Messages: 0 };
     for (const c of clients) {
       if (!c.attention_item) continue;
       const t = c.attention_item.type;
@@ -99,6 +100,7 @@ export default function ClientsPage() {
       else if (t === "portfolio_change") counts.Portfolio++;
       else if (t === "opportunity") counts.Opportunities++;
       else if (t === "request") counts.Requests++;
+      else if (t === "message") counts.Messages++;
     }
     return counts;
   }, [clients]);
