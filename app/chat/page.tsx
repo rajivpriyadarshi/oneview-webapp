@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
+import { type CSSProperties, type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useLayoutEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SuggestionChip, { SUGGESTION_CHIP_CLASS, SUGGESTION_CHIP_STYLE, SuggestionChipBody } from "../components/SuggestionChip";
 import { useChat } from "@ai-sdk/react";
@@ -194,9 +194,9 @@ const TW = {
   loadingDots: "ml-0.5 inline-flex items-center gap-[3px]",
   loadingDot: "h-1 w-1 rounded-full bg-current",
   attentionContent: "flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto px-6",
-  attentionInner: "flex flex-col items-start",
+  attentionInner: "mx-auto flex w-full max-w-[720px] flex-col items-start",
   attentionTitle: "m-0 mb-[28px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word]",
-  attentionList: "grid max-w-[640px] gap-[10px] justify-items-start",
+  attentionList: "grid w-full max-w-[720px] gap-[10px] justify-items-start",
 };
 
 // Selected chat row: gradient texture washed out by 80% white, per Figma 2411:14694.
@@ -477,7 +477,7 @@ export default function ChatOnePage() {
 
       {/* Top Header Bar */}
       <header className="fixed left-[80px] right-0 top-0 z-50 flex h-[56px] items-center justify-between border-b border-black/10 bg-white/20 px-4 backdrop-blur-[32px]">
-        <h1 className="m-0 text-[22px] font-medium leading-[26.4px] text-black" style={{ fontFamily: "var(--font-butler)" }}>AI assistant</h1>
+        <h1 className="m-0 text-[22px] font-medium leading-[26.4px] text-black stagger-in" style={{ fontFamily: "var(--font-butler)", "--stagger-index": 0 } as CSSProperties}>AI assistant</h1>
       </header>
 
       {/* Main layout */}
@@ -486,7 +486,8 @@ export default function ChatOnePage() {
         <aside className={`relative h-full shrink-0 overflow-hidden border-r border-black/[0.08] bg-white transition-all duration-300 max-[900px]:hidden ${sidebarCollapsed ? "w-0 border-r-0" : "w-[280px]"}`}>
           <div className="flex h-full flex-col gap-4 overflow-y-auto overflow-x-hidden px-2 py-4">
             {/* Search input */}
-            <div className="flex shrink-0 items-center gap-2 rounded-[50px] border border-black/10 bg-white px-4 py-2">
+            {/* Search, then each section header and client row, cascade in via .stagger-in. */}
+            <div className="flex shrink-0 items-center gap-2 rounded-[50px] border border-black/10 bg-white px-4 py-2 stagger-in" style={{ "--stagger-index": 0 } as CSSProperties}>
               <input
                 type="text"
                 value={searchQuery}
@@ -504,13 +505,17 @@ export default function ChatOnePage() {
             {isLoadingClients ? (
               <div className="px-2 font-satoshi text-[12px] text-black/40">Loading clients...</div>
             ) : (
-              clientSections.map((section) => (
+              clientSections.map((section, s) => {
+                // One flat entrance sequence across sections: this section's
+                // header, then its clients, then the next section's header.
+                const base = 1 + clientSections.slice(0, s).reduce((n, x) => n + 1 + x.clients.length, 0);
+                return (
                 <div key={section.label} className="flex flex-col gap-4">
-                  <div className="flex h-4 items-center px-2">
+                  <div className="flex h-4 items-center px-2 stagger-in" style={{ "--stagger-index": Math.min(base, 12) } as CSSProperties}>
                     <span className="font-satoshi text-[10px] font-medium leading-4 text-[#6B7280]">{section.label}</span>
                   </div>
 
-                  {section.clients.map((client) => {
+                  {section.clients.map((client, ci) => {
                   const group = clientGroups.get(client.id);
                   const hasSearchQuery = searchQuery.trim().length > 0;
                   const isExpanded = hasSearchQuery ? true : (group?.isExpanded ?? false);
@@ -520,7 +525,11 @@ export default function ChatOnePage() {
                     : sessions;
                   const showNewChat = selectedClientId === client.id && !selectedSessionId;
                   return (
-                    <div key={client.id} className="flex flex-col gap-1">
+                    <div
+                      key={client.id}
+                      className="flex flex-col gap-1 stagger-in"
+                      style={{ "--stagger-index": Math.min(base + 1 + ci, 12) } as CSSProperties}
+                    >
                       {/* Client folder row. Plus + chevron only appear on hover. */}
                       <div
                         // The row is 16px tall per Figma; the ::before pad extends the
@@ -592,7 +601,8 @@ export default function ChatOnePage() {
                   );
                   })}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </aside>
@@ -617,8 +627,8 @@ export default function ChatOnePage() {
             <div className="flex flex-1 items-center justify-center font-satoshi text-[13px] text-black/50">Loading chat...</div>
           ) : !selectedSessionId && !isNewChatDraft ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
-              <img src="/chat-sidebar/icon-folder.svg" alt="" className="h-[72px] w-[72px] opacity-25" />
-              <div className="flex flex-col items-center gap-[6px]">
+              <img src="/chat-sidebar/icon-folder.svg" alt="" className="h-[72px] w-[72px] opacity-25 stagger-in" style={{ "--stagger-index": 0 } as CSSProperties} />
+              <div className="flex flex-col items-center gap-[6px] stagger-in" style={{ "--stagger-index": 1 } as CSSProperties}>
                 <p className="m-0 font-butler text-[24px] font-normal leading-[28.8px] text-black/70">Select a chat to get started</p>
                 <p className="m-0 font-satoshi text-[14px] leading-[20px] text-black/45">Pick a conversation from the sidebar, or start a new one with a client.</p>
               </div>
@@ -770,23 +780,31 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
             <div className="flex flex-1 flex-col">
               <div className={TW.attentionContent}>
                 <div className={TW.attentionInner}>
-                  <h1 className={TW.attentionTitle}>What can I help you with?</h1>
+                  {/* Title, then each chip, cascade in via .stagger-in. */}
+                  <h1 className={`${TW.attentionTitle} stagger-in`} style={{ "--stagger-index": 0 } as CSSProperties}>What can I help you with?</h1>
                   <div className={TW.attentionList}>
-                    {ATTENTION_ITEMS.map((item) => (
-                      <ThreadPrimitive.Suggestion
-                        key={item.action}
-                        prompt={item.prompt}
-                        send
-                        className={`${SUGGESTION_CHIP_CLASS} max-w-full`}
-                        style={SUGGESTION_CHIP_STYLE}
-                      >
-                        <SuggestionChipBody>{item.action}</SuggestionChipBody>
-                      </ThreadPrimitive.Suggestion>
+                    {ATTENTION_ITEMS.map((item, i) => (
+                      // Stagger on a wrapper, never the chip: an entrance
+                      // animation with `both` holds transform: none and would
+                      // kill the chip's hover lift.
+                      <div key={item.action} className="stagger-in max-w-full" style={{ "--stagger-index": i + 1 } as CSSProperties}>
+                        <ThreadPrimitive.Suggestion
+                          prompt={item.prompt}
+                          send
+                          className={`${SUGGESTION_CHIP_CLASS} max-w-full`}
+                          style={SUGGESTION_CHIP_STYLE}
+                        >
+                          <SuggestionChipBody>{item.action}</SuggestionChipBody>
+                        </ThreadPrimitive.Suggestion>
+                      </div>
                     ))}
                   </div>
                 </div>
               </div>
-              <div className="px-6 pb-[24px]">
+              <div
+                className="px-6 pb-[24px] stagger-in"
+                style={{ "--stagger-index": ATTENTION_ITEMS.length + 1 } as CSSProperties}
+              >
                 <Composer placeholder="What can I help you with?" prompts={prompts} onPromptSelect={handlePromptSelect} selectedPromptId={selectedPromptId} />
               </div>
             </div>

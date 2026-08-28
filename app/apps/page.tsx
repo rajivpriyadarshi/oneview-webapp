@@ -487,7 +487,7 @@ export default function AppsPage() {
                     <div style={{
                       color: "rgba(0,0,0,0.50)",
                       fontSize: 14,
-                      fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                      fontFamily: "var(--font-satoshi), sans-serif",
                       fontWeight: 400,
                       lineHeight: "20px",
                     }}>
@@ -503,7 +503,7 @@ export default function AppsPage() {
                         border: "none",
                         color: "white",
                         fontSize: 14,
-                        fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                        fontFamily: "var(--font-satoshi), sans-serif",
                         fontWeight: 500,
                         cursor: "pointer",
                       }}
@@ -527,7 +527,7 @@ export default function AppsPage() {
                       textAlign: "center",
                       color: "rgba(0,0,0,0.50)",
                       fontSize: 14,
-                      fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                      fontFamily: "var(--font-satoshi), sans-serif",
                       fontWeight: 400,
                       lineHeight: "20px",
                     }}>
@@ -547,7 +547,7 @@ export default function AppsPage() {
                         outline: "none",
                         resize: "vertical",
                         fontSize: 15,
-                        fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                        fontFamily: "var(--font-satoshi), sans-serif",
                         fontWeight: 400,
                         color: "black",
                         background: "white",
@@ -563,7 +563,7 @@ export default function AppsPage() {
                           background: "white",
                           color: "#374151",
                           fontSize: 14,
-                          fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                          fontFamily: "var(--font-satoshi), sans-serif",
                           fontWeight: 500,
                           cursor: "pointer",
                         }}
@@ -580,7 +580,7 @@ export default function AppsPage() {
                           background: feedbackText.trim() ? "black" : "rgba(0,0,0,0.20)",
                           color: "white",
                           fontSize: 14,
-                          fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                          fontFamily: "var(--font-satoshi), sans-serif",
                           fontWeight: 500,
                           cursor: feedbackText.trim() ? "pointer" : "default",
                         }}
@@ -598,6 +598,7 @@ export default function AppsPage() {
           {selectedCommand && (
             <div
               onClick={() => setSelectedCommand(null)}
+              className="overlay-fade-in"
               style={{
                 position: "fixed",
                 inset: 0,
@@ -611,6 +612,7 @@ export default function AppsPage() {
             >
               <div
                 onClick={(e) => e.stopPropagation()}
+                className="modal-pop-in"
                 style={{
                   width: "100%",
                   maxWidth: 400,
@@ -618,7 +620,7 @@ export default function AppsPage() {
                   paddingRight: 16,
                   paddingTop: 32,
                   paddingBottom: 32,
-                  background: "rgba(255, 255, 255, 0.80)",
+                  background: "rgba(255, 255, 255, 0.92)",
                   boxShadow: "0px 4px 34px rgba(0, 0, 0, 0.16)",
                   overflow: "hidden",
                   borderRadius: 24,
@@ -630,16 +632,20 @@ export default function AppsPage() {
                   backdropFilter: "blur(20px)",
                 }}
               >
-                <div style={{
+                {/* Title, search, then each row cascade in behind the panel. */}
+                <div className="stagger-in" style={{
                   alignSelf: "stretch",
                   textAlign: "center",
                   color: "black",
                   fontSize: 24,
-                  fontFamily: "ButlerPro, serif",
+                  // next/font/local emits a hashed family name — the literal
+                  // "ButlerPro" was silently falling back to Georgia.
+                  fontFamily: "var(--font-butler), Georgia, serif",
                   fontWeight: 400,
                   lineHeight: "28.80px",
                   wordWrap: "break-word",
-                }}>
+                  "--stagger-index": 0,
+                } as CSSProperties}>
                   Which client do you<br />want to review?
                 </div>
 
@@ -652,7 +658,7 @@ export default function AppsPage() {
                   display: "flex",
                 }}>
                   {/* Search input */}
-                  <div style={{
+                  <div className="stagger-in" style={{
                     alignSelf: "stretch",
                     padding: 16,
                     borderRadius: 16,
@@ -662,7 +668,8 @@ export default function AppsPage() {
                     alignItems: "center",
                     gap: 12,
                     display: "flex",
-                  }}>
+                    "--stagger-index": 1,
+                  } as CSSProperties}>
                     <input
                       type="text"
                       value={searchText}
@@ -673,7 +680,7 @@ export default function AppsPage() {
                         flex: "1 1 0",
                         color: "black",
                         fontSize: 15,
-                        fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                        fontFamily: "var(--font-satoshi), sans-serif",
                         fontWeight: 500,
                         border: "none",
                         outline: "none",
@@ -695,11 +702,20 @@ export default function AppsPage() {
                     flexDirection: "column",
                     gap: 4,
                   }}>
-                    {filteredClients.map((client) => (
-                      <button
+                    {filteredClients.map((client, i) => (
+                      // Entrance on the wrapper, hover lift on the row — see
+                      // .hover-lift. Capped so a long list doesn't leave the
+                      // last rows waiting seconds.
+                      <div
                         key={client.id}
+                        className="stagger-in"
+                        style={{ "--stagger-index": Math.min(i + 2, 8) } as CSSProperties}
+                      >
+                      <button
+                        className="hover-lift"
                         onClick={() => handleClientSelect(client)}
                         style={{
+                          width: "100%",
                           alignSelf: "stretch",
                           height: 64,
                           paddingLeft: 12,
@@ -743,7 +759,7 @@ export default function AppsPage() {
                             <div style={{
                               color: "#111827",
                               fontSize: 14,
-                              fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                              fontFamily: "var(--font-satoshi), sans-serif",
                               fontWeight: 500,
                               wordWrap: "break-word",
                             }}>
@@ -756,6 +772,7 @@ export default function AppsPage() {
                           </svg>
                         </div>
                       </button>
+                      </div>
                     ))}
                     {filteredClients.length === 0 && (
                       <div style={{
@@ -763,7 +780,7 @@ export default function AppsPage() {
                         textAlign: "center",
                         color: "rgba(0,0,0,0.4)",
                         fontSize: 14,
-                        fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                        fontFamily: "var(--font-satoshi), sans-serif",
                       }}>
                         No clients found
                       </div>
