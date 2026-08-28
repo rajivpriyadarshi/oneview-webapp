@@ -59,6 +59,18 @@ const WORKFLOW_PRESENTATION: Record<string, WorkflowPresentation> = {
     description:
       "Finds investment ideas matched to the client’s goals, portfolio, risk profile, and current market context.",
   },
+  "portfolio optimizer": {
+    icon: "/apps/top-movers-news.png",
+    category: "Portfolio Strategy",
+    description:
+      "Recommends portfolio changes to improve diversification, manage risk, and better align holdings with the client’s goals.",
+  },
+  "portfolio optimiser app": {
+    icon: "/apps/real-estate-value.png",
+    category: "Portfolio Optimiser App",
+    description:
+      "Matches low-cost, exchange-listed funds to the client’s goals, risk profile, and current allocation.",
+  },
   "portfolio review": {
     icon: "/apps/portfolio-review.png",
     category: "Portfolio Analysis",
@@ -76,6 +88,12 @@ const WORKFLOW_PRESENTATION: Record<string, WorkflowPresentation> = {
     category: "Real Assets",
     description:
       "Tracks property values using market data and keeps family real-estate holdings up to date.",
+  },
+  "real estate valuation": {
+    icon: "/apps/real-estate-value.png",
+    category: "Real Estate Valuation",
+    description:
+      "Refreshes stored market values for a client’s real-estate holdings using current estimates.",
   },
   "top movers news": {
     icon: "/apps/top-movers-news.png",

@@ -65,9 +65,9 @@ export default function Sidebar(_props: SidebarProps = {}) {
     }}>
       {/* Logo */}
       {/* Logo, nav, then avatar cascade in on mount via .stagger-in. */}
-      <div className="stagger-in" style={{ alignSelf: "stretch", height: 97, display: "flex", justifyContent: "center", alignItems: "center", "--stagger-index": 0 } as CSSProperties}>
+      <Link href="/dashboard" aria-label="Home" className="stagger-in" style={{ alignSelf: "stretch", height: 97, display: "flex", justifyContent: "center", alignItems: "center", textDecoration: "none", "--stagger-index": 0 } as CSSProperties}>
         <ZincLogo />
-      </div>
+      </Link>
 
       {/* Nav + avatar */}
       <div style={{ flex: 1, alignSelf: "stretch", display: "flex", flexDirection: "column", alignItems: "center", padding: "0 7px" }}>
