@@ -74,8 +74,8 @@ const WorkflowPlanContext = createContext<ExecutionPlanData | null>(null);
 
 const ATTENTION_ITEMS = [
   {
-    action: "How has the portfolio performed in the last week?",
-    prompt: "How has the portfolio performed in the last week?",
+    action: "How has the portfolio performed in the last month?",
+    prompt: "How has the portfolio performed in the last month?",
   },
   {
     action: "When is my next meeting?",
