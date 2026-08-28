@@ -10,6 +10,14 @@ import { apiRequest } from "../lib/apiClient";
 const FILTER_TABS = ["All", "Task", "Meeting", "Portfolio", "Opportunities", "Requests"] as const;
 type FilterTab = (typeof FILTER_TABS)[number];
 
+// Glassy side-panel cards, per Figma 2411:13143 (fill rgba(255,255,255,0.4)).
+const GLASS_CARD: React.CSSProperties = {
+  background: "rgba(255,255,255,0.40)",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+  border: "1px solid rgba(255,255,255,0.50)",
+};
+
 const ATTENTION_TYPE_MAP: Record<FilterTab, CrmAttentionItem["type"][] | null> = {
   All: null,
   Task: ["task"],
@@ -37,9 +45,11 @@ export default function ClientsPage() {
     if (advisor?.name) {
       setAdvisorName(advisor.name.split(" ")[0]);
     }
-    setToday(new Date().toLocaleDateString("en-US", {
-      weekday: "long", day: "numeric", month: "long", year: "numeric",
-    }));
+    // Figma 2411:12444 orders this as "Monday 10, August, 2026".
+    const now = new Date();
+    const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
+    const month = now.toLocaleDateString("en-US", { month: "long" });
+    setToday(`${weekday} ${now.getDate()}, ${month}, ${now.getFullYear()}`);
   }, [router]);
 
   const { data, isLoading, isError } = useGetCrmClientsQuery();
@@ -90,12 +100,13 @@ export default function ClientsPage() {
 
         <div style={{ position: "relative", zIndex: 1 }}>
           {/* Header */}
-          <div style={{ marginBottom: 32 }}>
+          {/* Exported from Figma 2411:12444. */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, marginBottom: 32 }}>
             {today ? (
-              <p style={{ color: "rgba(0,0,0,0.45)", fontSize: 14, fontFamily: "Satoshi Variable, sans-serif", fontWeight: 500, lineHeight: "21px", marginBottom: 4 }}>{today}</p>
+              <p style={{ color: "rgba(0,0,0,0.8)", fontSize: 14, fontFamily: "var(--font-satoshi), sans-serif", fontWeight: 500, lineHeight: 1.5, letterSpacing: "-0.14px", margin: 0 }}>{today}</p>
             ) : null}
-            <h1 style={{ fontSize: 38, fontWeight: 500, color: "black", lineHeight: "45.6px", margin: 0, fontFamily: "ButlerPro, serif" }}>
-              Welcome{advisorName ? ` ${advisorName}` : ""}
+            <h1 style={{ fontSize: 42, fontWeight: 600, color: "black", lineHeight: 1.2, letterSpacing: "-1.68px", margin: 0, fontFamily: "var(--font-butler), Georgia, serif" }}>
+              Welcome{advisorName ? `, ${advisorName}` : ""}
             </h1>
           </div>
 
@@ -107,15 +118,15 @@ export default function ClientsPage() {
                 flex: 1, background: "white",
                 borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", overflow: "hidden",
               }}>
-                {/* Header */}
+                {/* Header — Figma 2411:12586 leads with the title, count below. */}
                 <div style={{ padding: "28px 28px 0" }}>
-                  <div style={{ fontSize: 14, fontWeight: 400, color: "#475569", marginBottom: 4, fontFamily: "Satoshi, sans-serif", wordWrap: "break-word" }}>Today</div>
-                  <h2 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: 0 }}>
+                  <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0, fontFamily: "var(--font-satoshi), sans-serif" }}>In queue</h2>
+                  <div style={{ fontSize: 14, fontWeight: 400, color: "#475569", fontFamily: "var(--font-satoshi), sans-serif", wordWrap: "break-word" }}>
                     {isLoading ? "Loading..." : `${totalCount} clients needs your attention`}
-                  </h2>
+                  </div>
                 </div>
 
-                {/* Filter tabs */}
+                {/* Filter tabs — Figma 2411:12567. */}
                 <div style={{ display: "flex", gap: 8, padding: "16px 28px 20px", flexWrap: "wrap" }}>
                   {FILTER_TABS.map((tab) => {
                     const isActive = activeFilter === tab;
@@ -125,18 +136,19 @@ export default function ClientsPage() {
                         onClick={() => { setActiveFilter(tab); setExpanded(false); }}
                         style={{
                           display: "flex", alignItems: "center", gap: 6,
-                          padding: "8px 14px", borderRadius: 20,
-                          border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)",
-                          background: isActive ? "#1a1a1a" : "white",
-                          color: isActive ? "white" : "#374151",
+                          padding: "6px 14px", borderRadius: 12,
+                          border: isActive ? "1px solid transparent" : "1px solid #EFEFEF",
+                          background: isActive ? "#41240D" : "white",
+                          color: isActive ? "white" : "#111111",
                           fontSize: 13, fontWeight: 500, cursor: "pointer",
+                          fontFamily: "var(--font-satoshi), sans-serif",
                           transition: "all 0.15s ease",
                         }}
                       >
                         {tab}
                         <span style={{
-                          fontSize: 12, fontWeight: 600,
-                          color: isActive ? "rgba(255,255,255,0.7)" : "#6B7280",
+                          fontSize: isActive ? 13 : 12, fontWeight: 500,
+                          color: isActive ? "white" : "#666666",
                         }}>
                           {filterCounts[tab]}
                         </span>
@@ -199,7 +211,7 @@ export default function ClientsPage() {
             {/* Right panels */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <ManagedAssetsCard clients={clients} />
-              <AlertsPanel alerts={alerts} onViewAll={() => setShowAlertsModal(true)} onCheckNow={(alert) => {
+              <AlertsPanel alerts={alerts} onCheckNow={(alert) => {
                 const type = alert.type?.toLowerCase();
                 if (type === "document" || type === "documents" && alert.client) {
                   router.push(`/client?clientId=${alert.client}&tab=documents`);
@@ -209,7 +221,7 @@ export default function ClientsPage() {
                   router.push("/apps");
                 }
               }} />
-              <MeetingsPanel meetings={meetings} onViewAll={() => setShowMeetingsModal(true)} onMeetingClick={(clientId) => router.push(`/client?clientId=${clientId}`)} />
+              <MeetingsPanel meetings={meetings} onMeetingClick={(clientId) => router.push(`/client?clientId=${clientId}`)} />
             </div>
           </div>
         </div>
@@ -443,19 +455,76 @@ function timeAgo(isoDate: string): string {
   return `${Math.floor(diff / 86400)} days ago`;
 }
 
-function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; onViewAll: () => void; onCheckNow: (alert: CrmAlert) => void }) {
+// Figma 2411:13143 — widget rows sit on a flat rgba(0,0,0,0.02) fill.
+const PANEL_ROW: React.CSSProperties = {
+  background: "rgba(0,0,0,0.02)",
+  borderRadius: 16,
+  padding: "16px 20px",
+  display: "flex",
+  alignItems: "center",
+  gap: 16,
+};
+
+const PAGE_SIZE = 3;
+
+/**
+ * Paged widget header. Per Figma 2411:13159 the "view all" link is replaced by a
+ * chevron pair; the arrows are hidden outright when everything already fits on
+ * one page, and dimmed to 50% at either end of the range.
+ */
+function PanelHeader({ title, page, pageCount, onPage }: { title: string; page: number; pageCount: number; onPage: (page: number) => void }) {
   return (
-    <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Alerts</h3>
-        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "Satoshi Variable, sans-serif", lineHeight: "100%" }}>View all</button>
-      </div>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <h3 style={{ fontSize: 18, fontWeight: 700, color: "#0F172A", margin: 0, fontFamily: "var(--font-satoshi), sans-serif" }}>{title}</h3>
+      {pageCount > 1 && (
+        <div style={{ display: "flex", gap: 8 }}>
+          <ArrowButton direction="left" disabled={page === 0} onClick={() => onPage(page - 1)} />
+          <ArrowButton direction="right" disabled={page >= pageCount - 1} onClick={() => onPage(page + 1)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ArrowButton({ direction, disabled, onClick }: { direction: "left" | "right"; disabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={direction === "left" ? "Previous" : "Next"}
+      style={{
+        width: 32, height: 32, padding: 8, borderRadius: 99,
+        background: "white", border: "1px solid #EAEAEC",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? "default" : "pointer",
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+        <path
+          d={direction === "left" ? "M15 18L9 12L15 6" : "M9 6L15 12L9 18"}
+          stroke="#0F172A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        />
+      </svg>
+    </button>
+  );
+}
+
+function AlertsPanel({ alerts, onCheckNow }: { alerts: CrmAlert[]; onCheckNow: (alert: CrmAlert) => void }) {
+  const [page, setPage] = useState(0);
+  const pageCount = Math.ceil(alerts.length / PAGE_SIZE);
+  const visible = alerts.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
+  return (
+    <div style={{ ...GLASS_CARD, borderRadius: 16, padding: 24 }}>
+      <PanelHeader title="Alerts" page={page} pageCount={pageCount} onPage={setPage} />
 
       {alerts.length === 0 ? (
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No alerts</p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {alerts.slice(0, 3).map((alert) => {
+          {visible.map((alert) => {
             const type = alert.type?.toLowerCase();
             const isDocType = type === "document" || type === "documents";
             const isChatType = type === "chat" || type === "chats" || type === "message";
@@ -465,21 +534,21 @@ function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; on
               <div
                 key={alert.id}
                 onClick={hasAction ? () => onCheckNow(alert) : undefined}
-                style={{ display: "flex", gap: 12, alignItems: "flex-start", cursor: hasAction ? "pointer" : undefined, borderRadius: 8, padding: "16px 24px", transition: "background 0.15s", background: "#00000005" }}
-                onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.03)") : undefined}
-                onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "#00000005") : undefined}
+                style={{ ...PANEL_ROW, cursor: hasAction ? "pointer" : undefined, transition: "background 0.15s" }}
+                onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.04)") : undefined}
+                onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.02)") : undefined}
               >
                 <div style={{
-                  width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
+                  width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
                   background: (alert.cta_url && alert.cta_text && !isClickable) ? "#7F67B7" : "#39952D",
                 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
-                  <div style={{ fontSize: 12, color: "rgba(33,37,37,0.70)", marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: "#212525", opacity: 0.7, marginTop: 2 }}>
                     {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
                   </div>
                   {alert.cta_url && alert.cta_text && !isClickable && (
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "Satoshi Variable, sans-serif", marginTop: 4, display: "inline-block" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "var(--font-satoshi), sans-serif", marginTop: 16, display: "inline-block" }}>
                       {alert.cta_text}
                     </span>
                   )}
@@ -493,50 +562,44 @@ function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; on
   );
 }
 
-function MeetingsPanel({ meetings, onViewAll, onMeetingClick }: { meetings: CrmMeeting[]; onViewAll: () => void; onMeetingClick: (clientId: number) => void }) {
+function MeetingsPanel({ meetings, onMeetingClick }: { meetings: CrmMeeting[]; onMeetingClick: (clientId: number) => void }) {
+  const [page, setPage] = useState(0);
+  const pageCount = Math.ceil(meetings.length / PAGE_SIZE);
+  const visible = meetings.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+
   return (
-    <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: 0 }}>Upcoming meetings</h3>
-        <button onClick={onViewAll} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "Satoshi Variable, sans-serif", lineHeight: "100%" }}>View all</button>
-      </div>
+    <div style={{ ...GLASS_CARD, borderRadius: 16, padding: 24 }}>
+      <PanelHeader title="Upcoming meetings" page={page} pageCount={pageCount} onPage={setPage} />
       {meetings.length === 0 ? (
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No upcoming meetings</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {meetings.slice(0, 3).map((meeting, i) => {
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {visible.map((meeting) => {
             const d = new Date(meeting.scheduled_at);
             const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-            const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-            const isFirst = i === 0;
             const isClickable = meeting.client != null;
             return (
               <div
                 key={meeting.id}
                 onClick={isClickable ? () => onMeetingClick(meeting.client!) : undefined}
-                style={{
-                  borderRadius: 16, padding: 16,
-                  backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFE5, #FFFFFFE5), url('/insights.png')",
-                  backgroundSize: "cover", backgroundPosition: "center",
-                  backgroundColor: isFirst ? undefined : "#CA8C4626",
-                  display: "flex", alignItems: "center", gap: 12,
-                  cursor: isClickable ? "pointer" : "default",
-                }}
+                style={{ ...PANEL_ROW, cursor: isClickable ? "pointer" : "default" }}
               >
                 <div style={{
-                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: isFirst ? "#FDE5C3" : "#CA8C4626",
+                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                  background: "rgba(202,140,70,0.15)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
                   <MeetingIcon title={meeting.title} />
                 </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A" }}>{meeting.title}</div>
-                  {meeting.client_name && (
-                    <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>{meeting.client_name}</div>
-                  )}
-                  <div style={{ fontSize: 12, color: "#475569", marginTop: 2 }}>
-                    {dateStr} • {timeStr} • {meeting.duration_minutes} min
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0 }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{meeting.title}</div>
+                    {meeting.client_name && (
+                      <div style={{ fontSize: 12, fontWeight: 400, color: "rgba(0,0,0,0.6)" }}>{meeting.client_name}</div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 500, color: "black", opacity: 0.7 }}>
+                    {timeStr} • {meeting.duration_minutes} minutes
                   </div>
                 </div>
               </div>
@@ -592,11 +655,11 @@ function ManagedAssetsCard({ clients }: { clients: CrmClient[] }) {
     : `$${totalAssets.toFixed(0)}`;
 
   return (
-    <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px" }}>
-      <p style={{ fontSize: 12, fontWeight: 500, color: "rgba(0,0,0,0.40)", letterSpacing: "1.44px", textTransform: "uppercase", margin: "0 0 8px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>
-        Managed assets
+    <div style={{ ...GLASS_CARD, borderRadius: 16, padding: "24px" }}>
+      <p style={{ fontSize: 12, fontWeight: 500, color: "rgba(0,0,0,0.40)", letterSpacing: "1.44px", textTransform: "uppercase", margin: "0 0 6px", fontFamily: "var(--font-satoshi), sans-serif", wordWrap: "break-word" }}>
+        Managed wealth
       </p>
-      <p style={{ fontSize: 28, fontWeight: 500, color: "#111111", margin: "0 0 8px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>
+      <p style={{ fontSize: 28, fontWeight: 700, color: "#111111", margin: 0, fontFamily: "var(--font-satoshi), sans-serif", wordWrap: "break-word" }}>
         {formatted}
       </p>
       {/* <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

@@ -194,9 +194,9 @@ const TW = {
   loadingDots: "ml-0.5 inline-flex items-center gap-[3px]",
   loadingDot: "h-1 w-1 rounded-full bg-current",
   attentionContent: "flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto px-6",
-  attentionInner: "flex flex-col items-start",
+  attentionInner: "mx-auto flex w-full max-w-[720px] flex-col items-start",
   attentionTitle: "m-0 mb-[28px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word]",
-  attentionList: "grid max-w-[640px] gap-[10px] justify-items-start",
+  attentionList: "grid w-full max-w-[720px] gap-[10px] justify-items-start",
 };
 
 // Selected chat row: gradient texture washed out by 80% white, per Figma 2411:14694.

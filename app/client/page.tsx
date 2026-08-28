@@ -2585,7 +2585,7 @@ function AvatarSeed({ wide = false }: { wide?: boolean }) {
 function EmptyChatState({ onStart }: { onStart: () => void }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
-      <p className="m-0 mb-2 font-serif text-[clamp(48px,8vw,106px)] leading-none text-[#171615]">OneView</p>
+      <p className="m-0 mb-2 font-serif text-[106px] leading-none text-[#171615]">OneView</p>
       <p className="m-0 max-w-[480px] font-satoshi text-[16px] leading-normal text-[#171615]/60">Start a session with your wealth advisor.</p>
       <button type="button" className="mt-6 inline-flex min-h-[44px] items-center justify-center gap-[8px] rounded-full border border-[#171615]/15 bg-[#fffaf4] px-[18px] font-satoshi text-[13px] font-bold text-[#171615] transition hover:-translate-y-px hover:border-[#171615]/30 hover:bg-white" onClick={onStart}>
         <PlusIcon />
