@@ -1202,6 +1202,19 @@ function ClientOverview({
     validTabs.includes(tabParam as ClientTab) ? (tabParam as ClientTab) : "overview"
   );
   const [focusedInteractionId, setFocusedInteractionId] = useState<number | null>(null);
+  const [principalImage, setPrincipalImage] = useState<string>("/principal-node/others.png");
+  const clientId = client?.id ?? (requestedClientId ? Number(requestedClientId) : null);
+
+  useEffect(() => {
+    if (!clientId) return;
+    let cancelled = false;
+    getClientDetail(clientId).then((detail) => {
+      if (cancelled) return;
+      const src = getOverviewImageSrc(detail, client);
+      setPrincipalImage(src.replace("/overview/", "/principal-node/"));
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [clientId, client]);
 
   return (
     <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
@@ -1223,6 +1236,7 @@ function ClientOverview({
       {activeTab === "wealth-map" ? (
         <WealthMapTab
           clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)}
+          clientImageSrc={principalImage}
           onProfileDetails={() => setActiveTab("overview")}
         />
       ) : null}
@@ -1635,11 +1649,11 @@ function OverviewTab({
   );
 }
 
-function WealthMapTab({ clientId, onProfileDetails }: { clientId: number | null; onProfileDetails: () => void }) {
+function WealthMapTab({ clientId, clientImageSrc, onProfileDetails }: { clientId: number | null; clientImageSrc?: string; onProfileDetails: () => void }) {
   return (
     <div className="overflow-hidden bg-white" style={{ height: "calc(100vh - 52px)" }}>
       <section className="relative h-full bg-white">
-        <SourceWealthChart clientId={clientId} onProfileDetails={onProfileDetails} />
+        <SourceWealthChart clientId={clientId} clientImageSrc={clientImageSrc} onProfileDetails={onProfileDetails} />
       </section>
     </div>
   );
@@ -1726,6 +1740,7 @@ function getOverviewImageSrc(clientDetail: ClientDetailResponse | null, client: 
 
   return "/overview/others.png";
 }
+
 
 function getOverviewImageFromCountry(value: unknown) {
   if (typeof value !== "string") return null;

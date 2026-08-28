@@ -612,6 +612,7 @@ function buildFlowElements(
   onTypeGroupClick: (typeGroupKey: string) => void,
   onItemClick: (itemId: string) => void,
   onProfileDetails: () => void,
+  clientImageSrc?: string,
 ): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -631,7 +632,7 @@ function buildFlowElements(
     data: {
       name: data.client.name,
       value: formatValue(data.client.adjustedValue, data.client.currency),
-      imageSrc: "/wealth-map/uhnw-client.png",
+      imageSrc: clientImageSrc || "/wealth-map/uhnw-client.png",
       meta: `${familyMemberCount} Family Members · ${sectionKeys.length} Categories`,
       description:
         "Wealth spans businesses, investments, trusts and multiple geographies, with liquidity, concentration and succession being the most important areas to watch.",
@@ -919,10 +920,12 @@ function buildFlowElements(
 function WealthMapFlow({
   graphData,
   className,
+  clientImageSrc,
   onProfileDetails,
 }: {
   graphData: GraphResponse;
   className: string;
+  clientImageSrc?: string;
   onProfileDetails: () => void;
 }) {
   const [expandedSection, setExpandedSection] = useState<string | null>("financials");
@@ -965,8 +968,9 @@ function WealthMapFlow({
         onTypeGroupClick,
         onItemClick,
         onProfileDetails,
+        clientImageSrc,
       ),
-    [graphData, expandedSection, expandedTypeGroup, selectedItemId, onSectionClick, onTypeGroupClick, onItemClick, onProfileDetails],
+    [graphData, expandedSection, expandedTypeGroup, selectedItemId, onSectionClick, onTypeGroupClick, onItemClick, onProfileDetails, clientImageSrc],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
@@ -1023,10 +1027,12 @@ function WealthMapFlow({
 export function SourceWealthChart({
   clientId,
   className = "",
+  clientImageSrc,
   onProfileDetails,
 }: {
   clientId: number | null;
   className?: string;
+  clientImageSrc?: string;
   onProfileDetails: () => void;
 }) {
   const [graphData, setGraphData] = useState<GraphResponse | null>(null);
@@ -1090,7 +1096,7 @@ export function SourceWealthChart({
 
   return (
     <ReactFlowProvider>
-      <WealthMapFlow graphData={graphData} className={className} onProfileDetails={onProfileDetails} />
+      <WealthMapFlow graphData={graphData} className={className} clientImageSrc={clientImageSrc} onProfileDetails={onProfileDetails} />
     </ReactFlowProvider>
   );
 }
