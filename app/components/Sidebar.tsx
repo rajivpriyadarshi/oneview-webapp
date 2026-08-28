@@ -108,7 +108,7 @@ export default function Sidebar(_props: SidebarProps = {}) {
             "--stagger-index": nav.length + 1,
           } as CSSProperties}
         >
-          <span style={{ color: "white", fontSize: 15, fontFamily: "Inter", fontWeight: 600, lineHeight: 1 }}>
+          <span style={{ color: "white", fontSize: 15, fontFamily: "var(--font-satoshi), sans-serif", fontWeight: 600, lineHeight: 1 }}>
             {initial}
           </span>
         </button>
@@ -141,7 +141,7 @@ export default function Sidebar(_props: SidebarProps = {}) {
               disabled={isLoggingOut}
               style={{
                 padding: "12px 0", borderRadius: 12, border: "none", cursor: "pointer",
-                background: ACTIVE_COLOR, color: "white",
+                background: "black", color: "white",
                 fontSize: 15, fontWeight: 600,
                 opacity: isLoggingOut ? 0.7 : 1,
               }}

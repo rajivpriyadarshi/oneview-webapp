@@ -146,11 +146,13 @@ const PENDING_LOCAL_CHAT_MAX_AGE_MS = 2 * 60_000;
 
 const TW = {
   promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
-  promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
+  promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[8px] overflow-hidden max-[640px]:gap-[6px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
   promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-[#0000000A] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:brightness-95 max-[640px]:max-w-[145px] max-[640px]:truncate",
   promptChipExpand: "inline-flex h-[32px] w-[40px] shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-black transition hover:bg-white/85 [&_svg]:h-[13px] [&_svg]:w-[13px]",
-  promptMeasure: "pointer-events-none invisible absolute -z-10 flex items-center gap-[12px] whitespace-nowrap max-[640px]:gap-[8px]",
+  // Gaps must track promptChipsLeft above — this row is what the overflow
+  // measurement counts against.
+  promptMeasure: "pointer-events-none invisible absolute -z-10 flex items-center gap-[8px] whitespace-nowrap max-[640px]:gap-[6px]",
   promptMeasureChip: "inline-flex shrink-0 items-center rounded-full border border-white/60 bg-black/[0.035] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77]",
   composerWrap: "mx-auto w-full max-w-[720px] rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] pt-[6px]",
   composer: "relative mx-auto flex min-h-[56px] w-full items-center rounded-[24px] border border-black/[0.06] bg-white py-[8px] transition",
@@ -195,7 +197,9 @@ const TW = {
   loadingDot: "h-1 w-1 rounded-full bg-current",
   attentionContent: "flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto px-6",
   attentionInner: "mx-auto flex w-full max-w-[720px] flex-col items-start",
-  attentionTitle: "m-0 mb-[28px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word]",
+  // Figma 2507:22533 — ButlerPro Medium 40/1.2, -2px tracking. The tight
+  // leading is what closes the gap between the two lines.
+  attentionTitle: "m-0 mb-[28px] font-butler text-[40px] font-medium leading-[1.2] tracking-[-2px] text-black [overflow-wrap:break-word]",
   attentionList: "grid w-full max-w-[720px] gap-[10px] justify-items-start",
 };
 
@@ -981,11 +985,13 @@ function Composer({ placeholder, prompts, onPromptSelect, selectedPromptId }: { 
             {slashMatches.map((p, i) => (
               <div
                 key={p.id}
-                style={{ padding: "10px 16px", cursor: "pointer", background: i === slashIndex ? "#F2F2F2" : "transparent", display: "flex", alignItems: "center", gap: 8 }}
+                // Column and explicitly left-aligned: the empty state above
+                // centres its text, which a wrapped description would inherit.
+                style={{ padding: "10px 16px", cursor: "pointer", background: i === slashIndex ? "#F2F2F2" : "transparent", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, textAlign: "left" }}
                 onMouseEnter={() => setSlashIndex(i)}
                 onMouseDown={(e) => { e.preventDefault(); if (threadRuntime?.composer) { threadRuntime.composer.setText(p.user_message || ""); onPromptSelect?.(p); setSlashQuery(null); } }}
               >
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#804D13" }}>/{p.title}</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#804D13", whiteSpace: "nowrap" }}>/{p.title}</span>
                 {p.description && <span style={{ fontSize: 12, color: "rgba(0,0,0,0.45)" }}>{p.description}</span>}
               </div>
             ))}
