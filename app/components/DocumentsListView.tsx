@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import DocumentSearchBar from "./DocumentSearchBar";
 import { ClientLottie } from "./ClientLottie";
@@ -438,6 +439,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
   const [openMenuDocId, setOpenMenuDocId] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState("");
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
 
   const { data: documents = [], isLoading, refetch: refetchDocuments } = useListDocumentsQuery(clientId || undefined, {
     refetchOnMountOrArgChange: true,
@@ -794,12 +796,15 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
                   }}
                   onToggleMenu={() => setOpenMenuDocId(openMenuDocId === documentId ? null : documentId)}
                   onDelete={() => void handleDeleteDocument(documentId)}
+                  onViewDocument={(url) => setViewerUrl(url)}
                 />
               );
             })
           )}
         </div>
       </div>
+
+      {viewerUrl && <DocumentViewerModal url={viewerUrl} onClose={() => setViewerUrl(null)} />}
     </div>
   );
 }
@@ -814,6 +819,7 @@ function DocumentRow({
   onToggleExpand,
   onToggleMenu,
   onDelete,
+  onViewDocument,
   staggerIndex,
 }: {
   document: DocumentRecord;
@@ -825,6 +831,7 @@ function DocumentRow({
   onToggleExpand: () => void;
   onToggleMenu: () => void;
   onDelete: () => void;
+  onViewDocument: (url: string) => void;
   staggerIndex: number;
 }) {
   const documentType = getDocumentType(detailDocument);
@@ -928,17 +935,18 @@ function DocumentRow({
         <div className="expanded-body">
           <DocumentDetails document={detailDocument} isLoading={isFetchingDetail} />
           {fileUrl ? (
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
               className="interaction-view-details"
               tabIndex={isExpanded ? undefined : -1}
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onViewDocument(fileUrl);
+              }}
             >
               View document
               <Image src="/icons/interaction/fg-arrow-right.svg" alt="" width={16} height={16} />
-            </a>
+            </button>
           ) : null}
         </div>
       </div>
@@ -964,7 +972,6 @@ function DocumentDetails({ document, isLoading }: { document: DocumentRecord; is
           <p className="metadata-label">{label}</p>
           <div className="metadata-value-group">
             <p>{value}</p>
-            {/* Only a resolved field earns the tick, per Figma 2446:20983. */}
             {value && value !== "-" ? (
               <Image src="/icons/documents/fg-check-circle.svg" alt="" width={16} height={16} />
             ) : null}
@@ -972,5 +979,62 @@ function DocumentDetails({ document, isLoading }: { document: DocumentRecord; is
         </div>
       ))}
     </div>
+  );
+}
+
+function DocumentViewerModal({ url, onClose }: { url: string; onClose: () => void }) {
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 600,
+        background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 24,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 1100, height: "92vh",
+          background: "white", borderRadius: 20,
+          boxShadow: "0 24px 80px rgba(0,0,0,0.2)",
+          display: "flex", flexDirection: "column", overflow: "hidden",
+        }}
+      >
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "16px 24px", borderBottom: "1px solid rgba(0,0,0,0.08)",
+        }}>
+          <span style={{ fontSize: 16, fontWeight: 600, color: "#0F172A" }}>Document viewer</span>
+          <button
+            onClick={onClose}
+            style={{
+              width: 36, height: 36, borderRadius: "50%", border: "1px solid rgba(0,0,0,0.10)",
+              background: "white", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M12 4L4 12M4 4L12 12" stroke="#374151" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+        <iframe
+          src={url}
+          style={{ flex: 1, width: "100%", border: "none" }}
+          title="Document viewer"
+        />
+      </div>
+    </div>,
+    document.body
   );
 }

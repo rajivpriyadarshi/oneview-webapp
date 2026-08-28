@@ -101,20 +101,20 @@ const PROMPT_SUGGESTIONS_ROW2 = [
 
 const ATTENTION_ITEMS = [
   {
-    action: "Find alternatives to reduce tech exposure",
-    prompt: "Find alternatives to reduce tech exposure",
+    action: "How has the portfolio performed in the last week?",
+    prompt: "How has the portfolio performed in the last week?",
   },
   {
-    action: "Evaluation options about selling property",
-    prompt: "Evaluate options for funding a property sale versus taking a loan.",
+    action: "When is my next meeting?",
+    prompt: "When is my next meeting?",
   },
   {
-    action: "Draft an email to ask for insurance document",
-    prompt: "Draft an email asking for the updated insurance document.",
+    action: "Any upcoming liquidity needs?",
+    prompt: "Any upcoming liquidity needs?",
   },
   {
-    action: "Compare ways to fund property purchase",
-    prompt: "Compare ways to fund the upcoming $42,000 education payment.",
+    action: "Any outstanding follow-ups?",
+    prompt: "Any outstanding follow-ups?",
   },
 ];
 
