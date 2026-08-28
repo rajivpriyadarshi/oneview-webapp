@@ -3812,3 +3812,45 @@ button:disabled {
     transform: none;
   }
 }
+
+/* -----------------------------------------------------------------------------
+ * Dialog entrance.
+ *
+ * .overlay-fade-in on the scrim, .modal-pop-in on the panel: the scrim darkens
+ * while the panel rises into it. The panel's contents can then cascade with
+ * .stagger-in on top of this.
+ * -------------------------------------------------------------------------- */
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.overlay-fade-in {
+  animation: overlay-fade-in 0.2s ease both;
+}
+
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.modal-pop-in {
+  animation: modal-pop-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay-fade-in,
+  .modal-pop-in {
+    animation: none;
+  }
+}
