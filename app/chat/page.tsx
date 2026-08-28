@@ -199,7 +199,7 @@ const TW = {
   attentionInner: "mx-auto flex w-full max-w-[720px] flex-col items-start",
   // Figma 2507:22533 — ButlerPro Medium 40/1.2, -2px tracking. The tight
   // leading is what closes the gap between the two lines.
-  attentionTitle: "m-0 mb-[28px] font-butler text-[40px] font-medium leading-[1.2] tracking-[-2px] text-black [overflow-wrap:break-word]",
+  attentionTitle: "m-0 mb-[28px] font-butler text-[36px] font-medium leading-[120%] tracking-[-2px] text-black [overflow-wrap:break-word]",
   attentionList: "grid w-full max-w-[720px] gap-[10px] justify-items-start",
 };
 
