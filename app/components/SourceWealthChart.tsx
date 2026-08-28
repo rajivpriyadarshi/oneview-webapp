@@ -649,12 +649,25 @@ function buildFlowElements(
     const section = data.sections[key];
     const sectionValue = "adjustedValue" in section ? (section as { adjustedValue: number }).adjustedValue : 0;
     const categories = section.categories;
-    const itemCount = categories.reduce(
-      (total, category) => total + (category.items?.length ?? category.members?.length ?? 0),
+    const memberCount = categories.reduce(
+      (total, category) => total + (category.members?.length ?? 0),
+      0,
+    );
+    const assetCount = categories.reduce(
+      (total, category) => total + (category.items?.length ?? 0),
       0,
     );
     const isExpanded = expandedSection === key;
     const sectionY = i * SECTION_Y_SPACING;
+
+    let sectionMeta = `${categories.length} ${categories.length === 1 ? "Category" : "Categories"}`;
+    if (memberCount > 0 && assetCount > 0) {
+      sectionMeta += ` · ${assetCount} ${assetCount === 1 ? "Asset" : "Assets"} · ${memberCount} ${memberCount === 1 ? "Member" : "Members"}`;
+    } else if (memberCount > 0) {
+      sectionMeta += ` · ${memberCount} ${memberCount === 1 ? "Member" : "Members"}`;
+    } else {
+      sectionMeta += ` · ${assetCount} ${assetCount === 1 ? "Asset" : "Assets"}`;
+    }
 
     nodes.push({
       id: `section-${key}`,
@@ -663,7 +676,7 @@ function buildFlowElements(
       data: {
         badge: SECTION_META[key].badge,
         title: SECTION_LABELS[key],
-        meta: `${categories.length} Categories · ${itemCount} Assets`,
+        meta: sectionMeta,
         estimatedValue: sectionValue ? formatValue(sectionValue, data.client.currency) : "",
         imageSrc: SECTION_IMAGES[key],
         isExpanded,
@@ -807,7 +820,7 @@ function buildFlowElements(
         data: {
           badge: "CATEGORY",
           title: cat.label,
-          meta: cat.slug === "family_members" ? `${itemCount} ${itemCount === 1 ? "Member" : "Members"}` : `${itemCount} Assets`,
+          meta: cat.slug === "family_members" ? `${itemCount} ${itemCount === 1 ? "Member" : "Members"}` : `${itemCount} ${itemCount === 1 ? "Asset" : "Assets"}`,
           estimatedValue: cat.adjustedValue ? formatValue(cat.adjustedValue, data.client.currency) : "",
           imageSrc: CATEGORY_IMAGES[cat.slug] ?? "/wealth-map/holdings.png",
           isExpanded: isCatExpanded,
