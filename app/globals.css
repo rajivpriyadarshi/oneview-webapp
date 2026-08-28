@@ -220,7 +220,7 @@ button:disabled {
     min-height: 100vh;
     height: 100vh;
     overflow: hidden;
-    background: #ffffff;
+    background: #f6f6f6;
     position: relative;
   }
 
@@ -245,11 +245,11 @@ button:disabled {
   pointer-events: none;
 }
 
+/* Sits in .auth-shell's flow, not pinned to the viewport top: the gap below it
+ * stays fixed and the logo + card centre as one group at any height. */
 .zinc-logo-centered {
-  position: absolute;
-  top: 120px;
-  left: 50%;
-  transform: translateX(-50%);
+  flex-shrink: 0;
+  margin-bottom: 100px;
   z-index: 2;
   display: flex;
   align-items: center;

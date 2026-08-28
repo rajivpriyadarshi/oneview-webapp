@@ -371,13 +371,15 @@ export function AuthFlow() {
           <img src="/auth/gradient-bg.png" alt="" />
         </div>
 
-        {/* Centered Zinc logo */}
-        <div className="zinc-logo-centered">
-          <img src="/auth/logo-full.svg" alt="Zinc" className="zinc-logo-full" />
-        </div>
-
         {step === "login" ? (
           <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
+            {/* In the shell's flow, above the card — it used to be absolutely
+                positioned at top: 120px and would land on top of the heading
+                on any viewport short enough to pull the card up that far. */}
+            <div className="zinc-logo-centered">
+              <img src="/auth/logo-full.svg" alt="Zinc" className="zinc-logo-full" />
+            </div>
+
             <form className="login-card account-card" onSubmit={handleEmailSubmit}>
               <div className="auth-heading" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both" }}>
                 <h1 id="login-title">Welcome back!</h1>
