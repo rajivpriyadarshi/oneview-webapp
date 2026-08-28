@@ -30,6 +30,39 @@ export function UploadTray() {
   const { items, dismissed } = useAppSelector((s) => s.uploadTray);
   const [minimized, setMinimized] = useState(false);
 
+  const hasActiveUploads = items.some((item) => item.status === "uploading");
+
+  useEffect(() => {
+    if (!hasActiveUploads) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    const handleClick = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement)?.closest("a[href]");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+      if (anchor.getAttribute("target") === "_blank") return;
+      const isSamePage = href === pathname || href === `${pathname}?${searchParams.toString()}`;
+      if (isSamePage) return;
+      const confirmed = window.confirm("Leave site?\nChanges you made may not be saved.");
+      if (!confirmed) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener("click", handleClick, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleClick, true);
+    };
+  }, [hasActiveUploads, pathname, searchParams]);
+
   const currentClientId = searchParams.get("clientId") ?? searchParams.get("client_id");
   const visibleItems = useMemo(
     () => pathname === "/client" && currentClientId

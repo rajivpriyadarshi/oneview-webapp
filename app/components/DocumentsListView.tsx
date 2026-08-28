@@ -476,6 +476,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
     }
   }, [dispatch, documents, trayItems]);
 
+
   useEffect(() => {
     if (!expandedDocId || documents.some((document) => String(document.id) === expandedDocId)) return;
     setExpandedDocId(null);
@@ -505,12 +506,22 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
     };
   }, [openMenuDocId]);
 
+  const polledDocIdsRef = useRef<Set<string>>(new Set());
+  const prevClientIdRef = useRef(clientId);
+
   useEffect(() => {
+    if (clientId !== prevClientIdRef.current) {
+      polledDocIdsRef.current.clear();
+      prevClientIdRef.current = clientId;
+    }
     if (!clientId) return;
 
     for (const document of documents) {
       if (!isProcessing(document.processing_status)) continue;
-      void pollDocumentToTerminal(String(document.id));
+      const docId = String(document.id);
+      if (polledDocIdsRef.current.has(docId)) continue;
+      polledDocIdsRef.current.add(docId);
+      void pollDocumentToTerminal(docId);
     }
   }, [clientId, documents]);
 
@@ -590,22 +601,26 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
   function patchDocumentInList(documentId: string, status: DocumentJobStatusResponse | DocumentStatusResponse) {
     if (!clientId) return;
 
-    dispatch(api.util.updateQueryData("listDocuments", clientId, (draft) => {
-      const document = draft.find((item) => String(item.id) === documentId);
-      if (!document) return;
+    try {
+      dispatch(api.util.updateQueryData("listDocuments", clientId || undefined, (draft) => {
+        const document = draft.find((item) => String(item.id) === documentId);
+        if (!document) return;
 
-      if ("status" in status) {
-        document.processing_status = getDocumentProcessingStatusFromJob(status.status);
-        if (status.document_type) {
-          document.document_type = status.document_type;
+        if ("status" in status) {
+          document.processing_status = getDocumentProcessingStatusFromJob(status.status);
+          if (status.document_type) {
+            document.document_type = status.document_type;
+          }
+          return;
         }
-        return;
-      }
 
-      if (status.processing_status) {
-        document.processing_status = status.processing_status;
-      }
-    }));
+        if (status.processing_status) {
+          document.processing_status = status.processing_status;
+        }
+      }));
+    } catch {
+      // Cache entry may not exist yet — ignore and let refetch handle it
+    }
   }
 
   async function pollDocumentToTerminal(documentId: string, trayItemId?: string) {
@@ -694,6 +709,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
         }));
 
         void refetchDocuments();
+        polledDocIdsRef.current.add(documentId);
         void pollDocumentToTerminal(documentId, trayItem.id);
       } catch (error) {
         dispatch(patchTrayItem({
