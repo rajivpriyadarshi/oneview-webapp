@@ -195,7 +195,7 @@ function getInitials(name: string): string {
   return name.slice(0, 2).toUpperCase();
 }
 
-function formatNetWorth(amount: string | null, currency: string | null): string {
+function formatAum(amount: string | null, currency: string | null): string {
   if (!amount) return "—";
   const num = parseFloat(amount);
   if (isNaN(num)) return "—";
@@ -208,7 +208,7 @@ function formatNetWorth(amount: string | null, currency: string | null): string 
 
 function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: boolean; onNavigate: (id: number) => void }) {
   const initials = getInitials(client.display_name);
-  const netWorth = formatNetWorth(client.net_worth, client.net_worth_currency);
+  const aum = formatAum(client.net_worth, client.net_worth_currency);
   const attention = client.attention_item;
   const priority = client.priority ?? "low";
   const priorityStyle = PRIORITY_STYLES[priority];
@@ -243,7 +243,7 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>{client.display_name}</div>
           <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
-            Net worth <strong style={{ color: "#111827" }}>{netWorth}</strong>
+            AUM <strong style={{ color: "#111827" }}>{aum}</strong>
           </div>
         </div>
       </div>
