@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { type CSSProperties, useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import InteractionCard from "./InteractionCard";
 import { ClientLottie } from "./ClientLottie";
@@ -172,24 +172,37 @@ export default function InteractionsTabContent({ clientId, focusedInteractionId,
         </div>
       ) : (
         <div className="timeline-feed">
-          {Object.entries(groupedInteractions).map(([dateGroup, groupInteractions]) => (
-            <div key={dateGroup} className="timeline-group">
-              <div className="date-header">
-                <p>{dateGroup}</p>
+          {/* staggerIndex runs continuously across the date groups — a header and
+              the cards under it are one visual sequence, so restarting the count
+              per group would make later groups arrive before earlier rows. It's
+              a plain counter rather than an index because each group contributes
+              its header plus a variable number of rows. */}
+          {(() => {
+            let staggerIndex = 0;
+            return Object.entries(groupedInteractions).map(([dateGroup, groupInteractions]) => (
+              <div key={dateGroup} className="timeline-group">
+                <div className="date-header stagger-in" style={{ "--stagger-index": Math.min(staggerIndex++, 8) } as CSSProperties}>
+                  <p>{dateGroup}</p>
+                </div>
+                <div className="timeline-rows">
+                  {groupInteractions.map((interaction) => (
+                    <div
+                      key={interaction.id}
+                      ref={interaction.id === focusedInteractionId ? focusedRef : undefined}
+                      className="stagger-in"
+                      style={{ "--stagger-index": Math.min(staggerIndex++, 8) } as CSSProperties}
+                    >
+                      <InteractionCard
+                        interaction={interaction}
+                        isExpanded={expandedIds.has(interaction.id)}
+                        onToggleExpand={() => toggleExpand(interaction.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="timeline-rows">
-                {groupInteractions.map((interaction) => (
-                  <div key={interaction.id} ref={interaction.id === focusedInteractionId ? focusedRef : undefined}>
-                    <InteractionCard
-                      interaction={interaction}
-                      isExpanded={expandedIds.has(interaction.id)}
-                      onToggleExpand={() => toggleExpand(interaction.id)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+            ));
+          })()}
           {interactions.length === 0 && !loading && (
             <div className="empty-state">
               <p>No interactions found</p>

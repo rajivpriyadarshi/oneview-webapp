@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
+import { type CSSProperties, type ReactNode, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
@@ -1219,12 +1219,7 @@ function ClientOverview({
     <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
       <header className="flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
-          <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] p-0">
-            <ClientTabButton active={activeTab === "overview"} icon={<OverviewIcon />} label="Overview" onClick={() => setActiveTab("overview")} />
-            <ClientTabButton active={activeTab === "wealth-map"} icon={<WealthMapIcon />} label="Wealth map" onClick={() => setActiveTab("wealth-map")} />
-            <ClientTabButton active={activeTab === "interactions"} icon={<InteractionsIcon />} label="Interactions" onClick={() => setActiveTab("interactions")} />
-            <ClientTabButton active={activeTab === "documents"} icon={<DocumentsNavIcon />} label="Documents" onClick={() => setActiveTab("documents")} />
-          </ul>
+          <ClientTabBar activeTab={activeTab} onSelect={setActiveTab} />
         </nav>
       </header>
 
@@ -1245,28 +1240,105 @@ function ClientOverview({
   );
 }
 
+const CLIENT_TABS: { id: ClientTab; label: string; icon: ReactNode }[] = [
+  { id: "overview", label: "Overview", icon: <OverviewIcon /> },
+  { id: "wealth-map", label: "Wealth map", icon: <WealthMapIcon /> },
+  { id: "interactions", label: "Interactions", icon: <InteractionsIcon /> },
+  { id: "documents", label: "Documents", icon: <DocumentsNavIcon /> },
+];
+
+// The active #41240D pill is one shared element that slides between tabs rather
+// than a background toggled per button, so switching tabs reads as movement.
+// Its geometry has to be measured from the DOM — the labels are different
+// widths and the nav scrolls horizontally — so the buttons register themselves
+// and a layout effect copies the active one's offsetLeft/offsetWidth onto the
+// pill. `ready` gates the transition: without it the pill would animate in from
+// x=0 on first paint instead of starting under the initial tab.
+function ClientTabBar({ activeTab, onSelect }: { activeTab: ClientTab; onSelect: (tab: ClientTab) => void }) {
+  const itemsRef = useRef(new Map<ClientTab, HTMLLIElement>());
+  const [pill, setPill] = useState({ left: 0, width: 0 });
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = itemsRef.current.get(activeTab);
+      if (!el) return;
+      setPill({ left: el.offsetLeft, width: el.offsetWidth });
+    };
+
+    measure();
+    // The pill is positioned in the list's coordinate space, so it follows the
+    // nav's scroll for free; only a resize (or a font swap changing label
+    // widths) can invalidate the measurement.
+    const observer = new ResizeObserver(measure);
+    for (const el of itemsRef.current.values()) observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeTab]);
+
+  useEffect(() => {
+    // Also stays false under prefers-reduced-motion — the transition is set
+    // inline, so a `motion-reduce:` utility could not turn it off.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.requestAnimationFrame(() => setReady(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <ul className="relative m-0 flex min-w-0 list-none items-center gap-[8px] p-0">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 h-full rounded-[42px] bg-[#41240D]"
+        style={{
+          transform: `translateX(${pill.left}px)`,
+          width: pill.width,
+          opacity: pill.width ? 1 : 0,
+          transition: ready
+            ? "transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease"
+            : "none",
+        }}
+      />
+      {CLIENT_TABS.map((tab) => (
+        <ClientTabButton
+          key={tab.id}
+          active={activeTab === tab.id}
+          icon={tab.icon}
+          label={tab.label}
+          onClick={() => onSelect(tab.id)}
+          itemRef={(el) => {
+            if (el) itemsRef.current.set(tab.id, el);
+            else itemsRef.current.delete(tab.id);
+          }}
+        />
+      ))}
+    </ul>
+  );
+}
+
 function ClientTabButton({
   active,
   icon,
   label,
   onClick,
+  itemRef,
 }: {
   active: boolean;
   icon: ReactNode;
   label: string;
   onClick: () => void;
+  itemRef: (el: HTMLLIElement | null) => void;
 }) {
   return (
-    <li>
+    // z-10 so the label sits above the sliding pill in ClientTabBar.
+    <li ref={itemRef} className="relative z-10">
       <button
         type="button"
         // Per Figma 2411:15494: 8/12 padding, 5.137px icon gap, 17.124px icons,
         // 14px Satoshi Bold at -0.28px. Active is a #41240D pill (42px radius,
-        // white text); inactive is transparent with a 12px radius.
-        className={`flex shrink-0 items-center gap-[5.137px] border-0 font-satoshi whitespace-nowrap [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none] px-[12px] py-[8px] [&_svg]:h-[17.124px] [&_svg]:w-[17.124px] ${
-          active
-            ? "rounded-[42px] bg-[#41240D] text-white"
-            : "rounded-[42px] bg-transparent text-black/80 hover:bg-black/5"
+        // white text); inactive is transparent with a 12px radius. The active
+        // fill itself is the shared pill behind these buttons, so only the text
+        // colour changes here — it cross-fades as the pill arrives.
+        className={`relative flex shrink-0 items-center gap-[5.137px] rounded-[42px] border-0 bg-transparent font-satoshi whitespace-nowrap [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none] px-[12px] py-[8px] transition-colors duration-300 [&_svg]:h-[17.124px] [&_svg]:w-[17.124px] motion-reduce:transition-none ${
+          active ? "text-white" : "text-black/80 hover:bg-black/5"
         }`}
         // Inline, not Tailwind: globals.css has an unlayered `button { font: inherit }`
         // that beats layered utilities, so text-[14px]/font-bold would be ignored.
@@ -1856,7 +1928,9 @@ function RecentActivityPanel({ activities, onOpenInteraction }: { activities: un
         {normalizedActivities.map((activity, index) => (
           <article
             key={`${activity.title}-${index}`}
-            className={`grid cursor-pointer grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] rounded-[8px] py-[18px] transition-colors hover:bg-black/[0.02] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}
+            className={`stagger-in grid cursor-pointer grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] rounded-[8px] py-[18px] transition-colors hover:bg-black/[0.02] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}
+            // Same staggered entrance as the vault feeds; see .stagger-in in globals.css.
+            style={{ "--stagger-index": Math.min(index, 8) } as CSSProperties}
             onClick={() => { if (activity.id != null) onOpenInteraction(Number(activity.id)); }}
           >
             <span className={`inline-grid h-[40px] w-[40px] place-items-center rounded-[10px] ${activity.iconClass}`}>

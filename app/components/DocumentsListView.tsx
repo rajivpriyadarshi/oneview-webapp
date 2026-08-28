@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import DocumentSearchBar from "./DocumentSearchBar";
 import { ClientLottie } from "./ClientLottie";
@@ -773,7 +773,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
               No documents found
             </div>
           ) : (
-            filteredDocuments.map((document) => {
+            filteredDocuments.map((document, index) => {
               const documentId = String(document.id);
               const isExpanded = expandedDocId === documentId;
               const detailDocument = isExpanded ? (expandedDocument ?? document) : document;
@@ -781,6 +781,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
               return (
                 <DocumentRow
                   key={documentId}
+                  staggerIndex={index}
                   document={document}
                   detailDocument={detailDocument}
                   isExpanded={isExpanded}
@@ -813,6 +814,7 @@ function DocumentRow({
   onToggleExpand,
   onToggleMenu,
   onDelete,
+  staggerIndex,
 }: {
   document: DocumentRecord;
   detailDocument: DocumentRecord;
@@ -823,6 +825,7 @@ function DocumentRow({
   onToggleExpand: () => void;
   onToggleMenu: () => void;
   onDelete: () => void;
+  staggerIndex: number;
 }) {
   const documentType = getDocumentType(detailDocument);
   const fileUrl = detailDocument.file_url || detailDocument.file;
@@ -834,10 +837,12 @@ function DocumentRow({
 
   return (
     <div
-      className={`timeline-row ${isExpanded ? "expanded" : ""}`}
+      className={`timeline-row stagger-in ${isExpanded ? "expanded" : ""}`}
       role="button"
       tabIndex={0}
-      style={{ cursor: "pointer" }}
+      // Capped so a long vault doesn't leave the last rows waiting seconds;
+      // .stagger-in in globals.css turns this into the animation delay.
+      style={{ cursor: "pointer", "--stagger-index": Math.min(staggerIndex, 8) } as CSSProperties}
       onClick={onToggleExpand}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
