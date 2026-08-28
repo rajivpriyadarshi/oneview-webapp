@@ -41,7 +41,7 @@ const ATTENTION_TYPE_MAP: Record<FilterTab, CrmAttentionItem["type"][] | null> =
   All: null,
   Task: ["task"],
   Meeting: ["meeting"],
-  Portfolio: ["portfolio"],
+  Portfolio: ["portfolio_change"],
   Opportunities: ["opportunity"],
   Requests: ["request"],
 };
@@ -96,7 +96,7 @@ export default function ClientsPage() {
       const t = c.attention_item.type;
       if (t === "task") counts.Task++;
       else if (t === "meeting") counts.Meeting++;
-      else if (t === "portfolio") counts.Portfolio++;
+      else if (t === "portfolio_change") counts.Portfolio++;
       else if (t === "opportunity") counts.Opportunities++;
       else if (t === "request") counts.Requests++;
     }
@@ -452,18 +452,23 @@ function RowChevronIcon() {
 }
 
 function AttentionIcon({ type }: { type: CrmAttentionItem["type"] }) {
-  const iconType = type === "meeting" || type === "task" ? "meeting" : "message";
-  const s = ATTENTION_ICON_STYLES[iconType];
+  const s = ATTENTION_ICON_STYLES[type] ?? ATTENTION_ICON_STYLES.message;
   return (
     <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {iconType === "meeting" && (
+      {(type === "meeting" || type === "task") && (
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <rect x="1" y="2.5" width="12" height="10.5" rx="1.5" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M1 5.5H13" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M4.5 1V3.5M9.5 1V3.5" stroke={s.stroke} strokeWidth="1.2" strokeLinecap="round" />
         </svg>
       )}
-      {iconType === "message" && (
+      {type === "portfolio_change" && (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1" y="3" width="12" height="9" rx="1.5" stroke={s.stroke} strokeWidth="1.2" />
+          <path d="M5 3V2.5C5 1.94772 5.44772 1.5 6 1.5H8C8.55228 1.5 9 1.94772 9 2.5V3" stroke={s.stroke} strokeWidth="1.2" />
+        </svg>
+      )}
+      {(type === "message" || type === "opportunity" || type === "request") && (
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M1 2.5C1 1.94772 1.44772 1.5 2 1.5H12C12.5523 1.5 13 1.94772 13 2.5V9.5C13 10.0523 12.5523 10.5 12 10.5H2C1.44772 10.5 1 10.0523 1 9.5V2.5Z" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M1.5 2.5L7 7L12.5 2.5" stroke={s.stroke} strokeWidth="1.2" strokeLinecap="round" />
@@ -1021,8 +1026,12 @@ const PRIORITY_STYLES = {
   low: { bg: "#E5F7EB", color: "#218C47" },
 };
 
-const ATTENTION_ICON_STYLES = {
+const ATTENTION_ICON_STYLES: Record<string, { bg: string; stroke: string }> = {
   meeting: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
+  task: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
+  portfolio_change: { bg: "rgba(107,114,128,0.07)", stroke: "#475569" },
+  opportunity: { bg: "#F9EFDE", stroke: "#804D13" },
+  request: { bg: "#F9EFDE", stroke: "#804D13" },
   message: { bg: "#F9EFDE", stroke: "#804D13" },
 };
 

@@ -307,7 +307,7 @@ function AttentionIcon({ type }: { type: CrmAttentionItem["type"] }) {
           <path d="M4.5 1V3.5M9.5 1V3.5" stroke={s.stroke} strokeWidth="1.2" strokeLinecap="round" />
         </svg>
       )}
-      {type === "portfolio" && (
+      {type === "portfolio_change" && (
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <rect x="1" y="3" width="12" height="9" rx="1.5" stroke={s.stroke} strokeWidth="1.2" />
           <path d="M5 3V2.5C5 1.94772 5.44772 1.5 6 1.5H8C8.55228 1.5 9 1.94772 9 2.5V3" stroke={s.stroke} strokeWidth="1.2" />
@@ -337,7 +337,7 @@ const PRIORITY_STYLES = {
 const ATTENTION_ICON_STYLES: Record<string, { bg: string; stroke: string }> = {
   meeting: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
   task: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
-  portfolio: { bg: "rgba(107,114,128,0.07)", stroke: "#475569" },
+  portfolio_change: { bg: "rgba(107,114,128,0.07)", stroke: "#475569" },
   opportunity: { bg: "#F9EFDE", stroke: "#804D13" },
   request: { bg: "#F9EFDE", stroke: "#804D13" },
   message: { bg: "#F9EFDE", stroke: "#804D13" },

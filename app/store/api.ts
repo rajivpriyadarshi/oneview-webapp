@@ -25,7 +25,7 @@ import {
 import type { AuthSession, PasswordlessAuthSession, Profile, CRMAuthSession } from "../lib/realAuthApi";
 
 export type CrmAttentionItem = {
-  type: "meeting" | "task" | "portfolio" | "opportunity" | "request" | "message";
+  type: "meeting" | "task" | "portfolio_change" | "opportunity" | "request" | "message";
   id: number;
   title: string;
   subtitle: string;
