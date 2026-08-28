@@ -15,6 +15,17 @@ interface InteractionCardProps {
 // Cache for storing fetched interaction details
 const interactionDetailCache = new Map<number, Interaction & { body?: string | null }>();
 
+// Sits beside the spot on collapsed rows and at the top of the body on open
+// ones, so it never pushes the title off-centre from the icon.
+function MemoryUpdatedLine() {
+  return (
+    <div className="ai-action">
+      <Image src="/icons/interaction/fg-sparkles.svg" alt="" width={12} height={12} />
+      <span>Memory updated</span>
+    </div>
+  );
+}
+
 export default function InteractionCard({
   interaction,
   isExpanded,
@@ -24,20 +35,19 @@ export default function InteractionCard({
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hasLoadedDetail, setHasLoadedDetail] = useState(false);
+  // "spot" tiles exported from the Figma timeline rows (2446:20316 / 20368 /
+  // 20390) rather than the older pastel set — the gradient and glyph weight
+  // differ. Notes fall back to the file tile; Figma has no note glyph here.
   const getIconForSourceType = (sourceType: string): string => {
     switch (sourceType) {
       case "meeting_note":
-        return "/icons/interaction/ic-meeting.png";
+        return "/icons/interaction/fg-calendar.png";
       case "email":
-        return "/icons/interaction/ic-email.png";
+        return "/icons/interaction/fg-mail.png";
       case "document":
-        return "/icons/interaction/ic-document.png";
-      case "text_note":
-      case "call_summary":
-      case "voice_note":
-        return "/icons/interaction/ic-message.png";
+        return "/icons/interaction/fg-file.png";
       default:
-        return "/icons/interaction/ic-document.png";
+        return "/icons/interaction/fg-file.png";
     }
   };
 
@@ -153,27 +163,23 @@ export default function InteractionCard({
           <p className="interaction-subtitle">
             {detailedInteraction.subtitle}
           </p>
-          {detailedInteraction.memory_updated && (
-            <div className="ai-action">
-              <Image src="/ic-memory-updated.svg" alt="" width={12} height={12} />
-              <span>Memory updated</span>
-            </div>
-          )}
+          {detailedInteraction.memory_updated && !isExpanded && <MemoryUpdatedLine />}
         </div>
 
         <div className="row-actions">
           <span className="timestamp">{formatTimestamp(detailedInteraction.occurred_at)}</span>
           {hasExpandedContent && (
             <div className="chevron-icon" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Image src="/icons/interaction/fg-chevron-down.svg" alt="" width={16} height={16} />
             </div>
           )}
         </div>
       </div>
 
-      {isExpanded && hasExpandedContent && (
+      {/* Rendered whether or not it's open, so the shell can transition its
+          height in both directions — unmounting would skip the collapse. */}
+      {hasExpandedContent && (
+        <div className={`expanded-shell ${isExpanded ? "open" : ""}`} aria-hidden={!isExpanded}>
         <div className="expanded-body">
           {isLoadingDetail ? (
             <div className="loading-indicator" style={{ padding: "20px", textAlign: "center", color: "#6B7280", fontSize: "13px" }}>
@@ -181,6 +187,8 @@ export default function InteractionCard({
             </div>
           ) : (
             <>
+              {detailedInteraction.memory_updated && <MemoryUpdatedLine />}
+
               {detailedInteraction.extracted_summary && (
                 <p className="summary-text">{detailedInteraction.extracted_summary}</p>
               )}
@@ -227,15 +235,15 @@ export default function InteractionCard({
                     e.stopPropagation();
                     setIsModalOpen(true);
                   }}
+                  tabIndex={isExpanded ? undefined : -1}
                 >
                   View details
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M6 12L10 8L6 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <Image src="/icons/interaction/fg-arrow-right.svg" alt="" width={16} height={16} />
                 </button>
               )}
             </>
           )}
+        </div>
         </div>
       )}
 

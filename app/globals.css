@@ -46,10 +46,11 @@
 }
 
 html {
-  /* Fluid typography: scales from 14px on mobile to 18px on large screens */
-  /* 1vw = 1% of viewport width, so on 1920px screen: 1vw = 19.2px */
-  /* On 4K (3840px) screen: 1vw = 38.4px */
-  font-size: clamp(14px, 0.75vw + 0.5rem, 20px);
+  /* Fixed, not fluid. This used to be clamp(14px, 0.75vw + 0.5rem, 20px), which
+     made every rem size — and every element hitting the `font: inherit` reset
+     below — scale with viewport width, so nothing matched the fixed px sizes in
+     Figma. 16px keeps rem === the browser default the designs assume. */
+  font-size: 16px;
 }
 
 html,
@@ -101,6 +102,59 @@ button:disabled {
 
 .login-card .continue-button:disabled {
   opacity: 0.4;
+}
+
+/*
+ * Timeline feed type on <button>/<input>, unlayered for the same reason as the
+ * block above. Without this the `font: inherit` reset wins and these pick up
+ * the root `clamp()` font-size, so the labels grow with the viewport instead of
+ * holding the fixed sizes Figma 2446:20305 specifies.
+ */
+.interaction-view-details {
+  font-family: var(--font-satoshi), "Satoshi", sans-serif;
+  font-feature-settings: 'ss03' on, 'liga' off;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.28px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Documents vault type on <button>/<input> — Figma 2446:20943. Same unlayered
+   treatment; see the note above. */
+.doc-search-field input {
+  font-family: var(--font-satoshi), "Satoshi", sans-serif;
+  font-feature-settings: 'ss03' on, 'liga' off;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.12px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.doc-add-button {
+  font-family: var(--font-satoshi), "Satoshi", sans-serif;
+  font-feature-settings: 'ss03' on, 'liga' off;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.28px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.vault-sort button,
+.doc-menu button {
+  font-family: var(--font-satoshi), "Satoshi", sans-serif;
+  font-feature-settings: 'ss03' on, 'liga' off;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: normal;
+  -webkit-font-smoothing: antialiased;
 }
 
 .continue-button-wrap {
@@ -2936,105 +2990,77 @@ button:disabled {
   }
 }
 
-/* Interactions Page */
-.interactions-container {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-  padding: 32px 48px 64px;
-  background: #ffffff;
-  min-height: 100vh;
-}
-
-.search-header-container {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.search-bar {
-  display: flex;
-  padding: 12px 16px;
-  align-items: center;
-  gap: 10px;
-  flex: 1 0 0;
-  border-radius: 12px;
-  border: 1px solid #E5E7EB;
-  background: #FFF;
-}
-
-.search-bar svg {
-  flex-shrink: 0;
-  width: 16px;
-  height: 16px;
-  color: #6B7280;
-}
-
-.search-bar input {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  color: #111827;
-  background: transparent;
-}
-
-.search-bar input::placeholder {
-  color: #6B7280;
-}
-
+/* Timeline feed — Figma 2446:20305 */
 .timeline-feed {
   display: flex;
   flex-direction: column;
   width: 100%;
 }
 
+.timeline-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Figma keeps the rows in their own 8px-gap stack, separate from the header. */
+.timeline-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* No horizontal inset: Figma insets this 16px, but the rows sit flush, so the
+   label ends up visibly out of line with the cards it belongs to. */
 .date-header {
   display: flex;
-  padding-bottom: 16px;
-  padding-top: 32px;
+  padding: 32px 0 16px;
 }
 
-.date-header:first-child {
-  padding-top: 0;
-}
+/* Every header keeps its 32px, including the first: Figma's feed sits directly
+   below the search row with no gap, and the header's own top padding is what
+   separates them (same as .vault-sub-header in the documents vault). */
 
 .date-header p {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.1px;
-  text-transform: uppercase;
-  color: #7A6248;
+  font-family: 'Satoshi', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  color: #4B5563;
   line-height: normal;
   margin: 0;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
 }
 
 .timeline-row {
+  display: flex;
+  flex-direction: column;
   background: #ffffff;
-  border-bottom: 1px solid #E5E7EB;
-  transition: all 0.2s ease;
-  margin-bottom: 32px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+  transition: border-color 0.2s ease;
 }
 
-.timeline-row:last-child {
-  margin-bottom: 32px;
-}
-
+/* The 10px Figma puts between the header and the body is padding on the body
+   rather than a row gap: the body stays mounted at zero height when collapsed,
+   and a gap would still reserve space around it. */
 .timeline-row.expanded {
-  border-radius: 24px;
-  border: none;
-  background: linear-gradient(135deg, rgba(255, 249, 230, 0.3) 0%, rgba(255, 228, 240, 0.3) 100%);
-  padding: 5px 8px 10px;
-  margin-bottom: 32px;
+  border-color: #F4AD5B;
+  /* The wash is the row's image fill from Figma; the 90% white layer on top of
+     it is a separate rect there, flattened into the first gradient stop here. */
+  background-image: linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.9)),
+    url('/interaction-expanded-bg.jpg');
+  background-size: cover;
+  background-position: center;
 }
 
 .timeline-row-content {
   display: flex;
   gap: 16px;
-  align-items: flex-start;
-  padding: 20px 24px;
+  align-items: center;
+  padding: 0;
 }
 
 .icon-wrapper {
@@ -3042,12 +3068,14 @@ button:disabled {
   position: relative;
   width: 64px;
   height: 64px;
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 .icon-wrapper .interaction-icon {
   width: 64px;
   height: 64px;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 /* Document type icons */
@@ -3090,22 +3118,27 @@ button:disabled {
 
 .interaction-title {
   font-family: 'Satoshi', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 30px;
-  letter-spacing: -0.36px;
-  color: #111827;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  color: #0D0D0D;
   margin: 0;
   font-kerning: none;
   font-feature-settings: 'ss03' on, 'liga' off;
 }
 
+/* Figma sets the open row's title to Bold; every collapsed row is Medium. */
+.timeline-row.expanded .interaction-title {
+  font-weight: 700;
+}
+
 .interaction-subtitle {
   font-family: 'Satoshi', sans-serif;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 400;
   line-height: 24px;
-  color: #6B7280;
+  color: rgba(13, 13, 13, 0.7);
   margin: 0;
   font-kerning: none;
   font-feature-settings: 'ss03' on, 'liga' off;
@@ -3115,28 +3148,45 @@ button:disabled {
   display: flex;
   gap: 6px;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
+/* Open rows move this line into the body so the title/subtitle pair stays
+   vertically centred against the 64px spot, matching Figma 2446:20317 — which
+   is a 72px box holding nothing but those two lines. */
+.timeline-row.expanded .row-content {
+  min-height: 72px;
+}
+
+.row-content {
+  justify-content: center;
+  transition: min-height 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.expanded-body > .ai-action {
+  margin-top: 0;
+}
+
+.ai-action img,
 .ai-action svg {
   width: 12px;
   height: 12px;
-  color: #6B7280;
+  flex-shrink: 0;
 }
 
 .ai-action span {
   font-family: 'Satoshi', sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 20px;
-  color: #6B7280;
+  line-height: 16px;
+  color: rgba(13, 13, 13, 0.8);
   font-kerning: none;
   font-feature-settings: 'ss03' on, 'liga' off;
 }
 
 .row-actions {
   display: flex;
-  gap: 8px;
+  gap: 0;
   align-items: center;
   flex-shrink: 0;
 }
@@ -3144,28 +3194,72 @@ button:disabled {
 .timestamp {
   font-family: 'Satoshi', sans-serif;
   font-size: 12px;
-  font-weight: 400;
-  color: #9CA3AF;
+  font-weight: 500;
+  color: rgba(13, 13, 13, 0.7);
   white-space: nowrap;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
 }
 
+/* 8px of padding around a 16px glyph, per the Action 2389 component. */
 .chevron-icon {
-  width: 14px;
-  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  border-radius: 30px;
   transition: transform 0.2s ease;
 }
 
+.chevron-icon img,
 .chevron-icon svg {
-  width: 100%;
-  height: 100%;
-  color: #111827;
+  width: 16px;
+  height: 16px;
 }
 
+/* Animating to `auto` height isn't possible, so the shell is a grid whose single
+   row goes 0fr -> 1fr; the body clips to it. */
+.expanded-shell {
+  display: grid;
+  /* minmax(0, …) rather than a bare 0fr: without the explicit 0 minimum the row
+     refuses to shrink past the body's min-content height in some engines. */
+  grid-template-rows: minmax(0, 0fr);
+  transition: grid-template-rows 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.expanded-shell.open {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+/* 80px left inset lines the body up with the title: 64px spot + 16px gap. */
+/* Vertical padding is on the open state only. The grid row collapses this box's
+   height to 0, but padding still takes up space, so leaving it on would keep
+   26px of dead room under every closed row. */
 .expanded-body {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  padding: 0 24px 24px 52px;
+  padding: 0 0 0 80px;
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 200ms ease-out, padding 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.expanded-shell.open > .expanded-body {
+  padding: 10px 0 16px 80px;
+  opacity: 1;
+  transition: opacity 260ms ease-in 80ms, padding 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expanded-shell,
+  .expanded-body,
+  .expanded-shell.open > .expanded-body {
+    transition-duration: 1ms;
+  }
 }
 
 .summary-text {
@@ -3173,7 +3267,7 @@ button:disabled {
   font-size: 14px;
   font-weight: 400;
   line-height: 1.65;
-  color: #393939;
+  color: #0D0D0D;
   margin: 0;
   font-feature-settings: 'ss03' on;
 }
@@ -3193,13 +3287,15 @@ button:disabled {
 
 .section-title {
   font-family: 'Satoshi', sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 1.1px;
+  letter-spacing: 1px;
   text-transform: uppercase;
-  color: #804D13;
+  color: #6B7280;
   margin: 0;
   line-height: normal;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
 }
 
 .bullets,
@@ -3214,8 +3310,8 @@ button:disabled {
   font-family: 'Satoshi', sans-serif;
   font-size: 14px;
   font-weight: 400;
-  line-height: 1.55;
-  color: #4A3728;
+  line-height: 1.5;
+  color: #0D0D0D;
   margin: 0;
   font-feature-settings: 'ss03' on;
 }
@@ -3230,37 +3326,341 @@ button:disabled {
   font-family: 'Satoshi', sans-serif;
   font-size: 14px;
   font-weight: 400;
-  line-height: 1.55;
-  color: #4A3728;
+  line-height: 1.5;
+  color: #0D0D0D;
   margin: 0;
   font-feature-settings: 'ss03' on;
 }
 
+/* Type lives in the unlayered override block near the top of this file: the
+   `button { font: inherit }` reset there would otherwise make the label scale
+   with the root clamp() instead of holding Figma's fixed 14px. */
 .interaction-view-details {
   display: inline-flex;
+  align-self: flex-start;
   align-items: center;
   gap: 6px;
-  padding: 0;
-  margin-top: 8px;
+  padding: 8px 12px 8px 16px;
+  margin-top: 0;
   background: transparent;
-  border: none;
-  color: #111827;
-  font-family: Inter, sans-serif;
-  font-size: 13px;
-  font-style: normal;
-  font-weight: 600;
-  line-height: normal;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 50px;
+  color: #000000;
+  /* The documents vault renders this as an <a> to the file, so kill the underline
+     rather than relying on Tailwind's preflight reset winning the cascade. */
+  text-decoration: none;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .interaction-view-details:hover {
-  opacity: 0.7;
+  background: rgba(0, 0, 0, 0.03);
 }
 
+.interaction-view-details img,
 .interaction-view-details svg {
   width: 16px;
   height: 16px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Documents vault — Figma 2446:20943
+ *
+ * Deliberately builds on the interactions timeline above: .timeline-rows,
+ * .timeline-row, .icon-wrapper, .row-content, .row-actions, .chevron-icon,
+ * .expanded-shell/.expanded-body and .interaction-view-details are shared
+ * verbatim, because Figma draws both feeds from the same components. Only the
+ * pieces documents add — the pill search row, the count sub-header, and the
+ * metadata table inside an open row — are new here.
+ *
+ * Type for the <input> and the Add-document <button> lives in the unlayered
+ * block near the top of this file; the `button, input { font: inherit }` reset
+ * there beats anything declared inside @layer components.
+ * ------------------------------------------------------------------------- */
+/* Shared page shell for both vault feeds — documents and interactions. Figma
+   gives 2446:20943 and the interactions frame the same 48px side inset with the
+   search row starting 32px down, so they use one class rather than drifting. */
+.vault-container {
+  display: flex;
+  flex-direction: column;
+  padding: 32px 48px 64px;
+  background: #ffffff;
+  min-height: 100%;
+}
+
+.doc-search-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+}
+
+.doc-search-field {
+  display: flex;
+  flex: 1 0 0;
+  min-width: 0;
+  height: 36px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50px;
+  background: #ffffff;
+}
+
+.doc-search-field input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #0D0D0D;
+}
+
+.doc-search-field input::placeholder {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.doc-search-field img,
+.doc-search-field svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+/* The clear button predates this field and was absolutely positioned against
+   .search-bar; inside the pill it just takes the trailing slot the magnifier
+   would occupy. */
+.doc-search-field .search-clear-button {
+  position: static;
+  transform: none;
+  padding: 0;
+}
+
+.doc-add-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px 9px 12px;
+  border: none;
+  border-radius: 50px;
+  background: #000000;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.doc-add-button:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.doc-add-button img,
+.doc-add-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* No horizontal inset, for the same reason as .date-header: Figma insets this
+   16px but the cards below sit flush, so the label reads as misaligned. */
+.vault-sub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 32px 0 16px;
+  width: 100%;
+}
+
+.vault-sub-header p {
+  font-family: 'Satoshi', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: normal;
+  color: #4B5563;
+  margin: 0;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
+}
+
+/* Sort control sits in the sub-header's trailing slot; not in Figma, but the
+   existing tab has it and dropping it would remove working behaviour. */
+.vault-sort {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.vault-sort select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.doc-tags {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.doc-tag {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: #F3F4F6;
+  font-family: 'Satoshi', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 0.06px;
+  color: #374151;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
+}
+
+.doc-tag.alert {
+  background: #FFF0EB;
+  color: #D92206;
+}
+
+.doc-tag.review {
+  background: #FFF7E6;
+  color: #B45309;
+}
+
+.doc-tag.ok {
+  background: #ECFDF3;
+  color: #1E8A4B;
+}
+
+/* Same slot as .timestamp on an interaction row. */
+.doc-expiry {
+  font-family: 'Satoshi', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: normal;
+  color: #D92206;
+  white-space: nowrap;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
+}
+
+.metadata-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.metadata-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(13, 13, 13, 0.08);
+}
+
+/* Figma leaves the last divider off rather than closing the table. */
+.metadata-row:last-child {
+  border-bottom: none;
+}
+
+.metadata-row > .metadata-label {
+  flex-shrink: 0;
+  width: 160px;
+  font-family: 'Satoshi', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: normal;
+  color: #0D0D0D;
+  margin: 0;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
+}
+
+.metadata-value-group {
+  display: flex;
+  flex: 1 0 0;
+  min-width: 0;
+  gap: 8px;
+  align-items: center;
+}
+
+.metadata-value-group > p {
+  flex: 1 0 0;
+  min-width: 0;
+  overflow-wrap: break-word;
+  font-family: 'Satoshi', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: normal;
+  color: #0D0D0D;
+  margin: 0;
+  font-kerning: none;
+  font-feature-settings: 'ss03' on, 'liga' off;
+}
+
+.metadata-value-group img,
+.metadata-value-group svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+/* The row-level menu (delete) — no Figma counterpart, kept from the old tab. */
+.doc-menu-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  border: none;
+  border-radius: 30px;
+  background: transparent;
+  color: rgba(13, 13, 13, 0.7);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.doc-menu-button:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.doc-menu {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  z-index: 20;
+  min-width: 156px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+}
+
+.doc-menu button {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  color: #D92206;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.doc-menu button:hover {
+  background: #FFF0EB;
+}
+
+.doc-menu button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .loading-state,
@@ -3272,17 +3672,6 @@ button:disabled {
   font-family: 'Satoshi', sans-serif;
   font-size: 16px;
   color: #6B7280;
-}
-
-/* Interactions Tab Context (inside chat page) */
-.interactions-tab-container {
-  padding: 32px;
-  background: #ffffff;
-  min-height: auto;
-}
-
-.interactions-tab-container .search-header-container {
-  margin-bottom: 40px;
 }
 
 /* Lottie Loading State */
@@ -3300,11 +3689,6 @@ button:disabled {
   font-size: 16px;
   color: #6B7280;
   margin-top: 16px;
-}
-
-/* Search Clear Button */
-.search-bar {
-  position: relative;
 }
 
 .search-clear-button {

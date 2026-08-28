@@ -75,22 +75,18 @@ const ATTENTION_ITEMS = [
   {
     action: "Find alternatives to reduce tech exposure",
     prompt: "Find alternatives to reduce tech exposure",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_48%,#f4edf4_100%)]",
   },
   {
     action: "Evaluation options about selling property",
     prompt: "Evaluate options for funding a property sale versus taking a loan.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
   {
     action: "Draft an email to ask for insurance document",
     prompt: "Draft an email asking for the updated insurance document.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
   {
     action: "Compare ways to fund property purchase",
     prompt: "Compare ways to fund the upcoming $42,000 education payment.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
 ];
 
@@ -200,8 +196,10 @@ const TW = {
   attentionContent: "flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto px-6",
   attentionInner: "flex flex-col items-start",
   attentionTitle: "m-0 mb-[28px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word]",
-  attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
-  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
+  attentionList: "grid max-w-[640px] gap-[10px] justify-items-start",
+  // Same pill as the in-chat reply suggestions (TW.replyPill below) — the empty
+  // state and the thread show the same kind of chip, so they share one look.
+  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
 };
 
 // Selected chat row: gradient texture washed out by 80% white, per Figma 2411:14694.
@@ -782,11 +780,14 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
                         key={item.action}
                         prompt={item.prompt}
                         send
-                        className={`${TW.attentionSuggestion} ${item.bg}`}
-                        style={{ fontFamily: "'Cascadia Code', monospace", fontSize: 12 }}
+                        className={TW.attentionSuggestion}
+                        // Same inline guard the reply pills use: the layered
+                        // utilities lose to globals.css, so pin the background
+                        // and family here.
+                        style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace" }}
                       >
-                        <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
-                        <span style={{ background: "linear-gradient(90deg, #988267 0%, #8C6722 50%, #7D6F7E 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{item.action}</span>
+                        <span aria-hidden="true" className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
+                        <span>{item.action}</span>
                       </ThreadPrimitive.Suggestion>
                     ))}
                   </div>

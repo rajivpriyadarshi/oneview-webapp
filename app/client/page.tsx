@@ -103,22 +103,18 @@ const ATTENTION_ITEMS = [
   {
     action: "Find alternatives to reduce tech exposure",
     prompt: "Find alternatives to reduce tech exposure",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_48%,#f4edf4_100%)]",
   },
   {
     action: "Evaluation options about selling property",
     prompt: "Evaluate options for funding a property sale versus taking a loan.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
   {
     action: "Draft an email to ask for insurance document",
     prompt: "Draft an email asking for the updated insurance document.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
   {
     action: "Compare ways to fund property purchase",
     prompt: "Compare ways to fund the upcoming $42,000 education payment.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
 ];
 
@@ -194,16 +190,20 @@ const TW = {
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
   advisorHeader: "relative z-[40] flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
-  conversationBtn: "inline-flex w-full min-w-0 max-w-full cursor-pointer items-center justify-start gap-[8px] overflow-hidden rounded-xl border-0 bg-transparent px-[12px] py-[10px] text-left font-satoshi text-[14px] font-medium leading-[130%] tracking-normal text-black [&_svg]:shrink-0",
-  conversationText: "block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
+  // Not w-full: the chevron should sit right after the title, so the button
+  // hugs its content and only the text truncates once it runs out of room.
+  conversationBtn: "inline-flex min-w-0 max-w-full cursor-pointer items-center justify-start gap-[8px] overflow-hidden rounded-xl border-0 bg-transparent px-[12px] py-[10px] text-left font-satoshi text-[14px] font-medium leading-[130%] tracking-normal text-black [&_svg]:shrink-0",
+  conversationText: "block min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap",
   conversationDropdown: "absolute top-[43px] left-[-7px] z-[60] w-[238px] max-h-[50vh] overflow-y-auto rounded-[22px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] max-[640px]:left-[-4px] max-[640px]:w-[calc(100vw-64px)]",
   conversationDropdownItem: "flex min-h-[46px] w-full cursor-pointer items-center border-0 border-b border-black/10 bg-white px-[24px] text-left font-satoshi text-[13px] font-normal leading-[1.15] text-black transition last:border-b-0 hover:bg-black/[0.025]",
   conversationDropdownEmpty: "flex min-h-[46px] items-center px-[24px] font-satoshi text-[13px] font-normal text-black/40",
   advisorAddBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto pr-[14px] pl-[28px] pt-[64px] pb-[190px] max-[1180px]:pl-[20px] max-[900px]:pr-[56px] max-[900px]:pl-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
   attentionTitle: "m-0 mb-[28px] max-w-[350px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
-  attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
-  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
+  attentionList: "grid max-w-[640px] gap-[10px] justify-items-start",
+  // Same pill as the in-chat reply suggestions (TW.replyPill below) — the empty
+  // state and the thread show the same kind of chip, so they share one look.
+  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
@@ -826,10 +826,11 @@ export default function ChatPage() {
               <div className={TW.attentionList}>
                 {ATTENTION_ITEMS.map((item) => (
                   <div
-                    className={`${TW.attentionSuggestion} ${item.bg}`}
-                    // Same inline guard the chat screen uses: the layered
-                    // utilities lose to globals.css, so pin size/family here.
-                    style={{ fontFamily: "'Cascadia Code', monospace", fontSize: 12 }}
+                    className={TW.attentionSuggestion}
+                    // Same inline guard the reply pills use: the layered
+                    // utilities lose to globals.css, so pin the background and
+                    // family here.
+                    style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace" }}
                     key={item.action}
                     role="button"
                     tabIndex={0}
@@ -841,8 +842,8 @@ export default function ChatPage() {
                       }
                     }}
                   >
-                    <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
-                    <span style={{ background: "linear-gradient(90deg, #988267 0%, #8C6722 50%, #7D6F7E 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{item.action}</span>
+                    <span aria-hidden="true" className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
+                    <span>{item.action}</span>
                   </div>
                 ))}
               </div>
@@ -1519,7 +1520,9 @@ function WealthMapTab({ clientId }: { clientId: number | null }) {
 
 function DocumentsTab({ clientId }: { clientId?: number | null }) {
   return (
-    <div className="min-h-0 overflow-auto bg-white px-[32px] py-[24px]">
+    // No padding here: .vault-container owns the page inset (32/48/64),
+    // exactly like InteractionsTab below.
+    <div className="min-h-0 overflow-auto bg-white">
       <DocumentsListView clientId={clientId} />
     </div>
   );
