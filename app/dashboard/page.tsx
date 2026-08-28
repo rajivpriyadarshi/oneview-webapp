@@ -208,7 +208,7 @@ export default function ClientsPage() {
                   router.push("/apps");
                 }
               }} />
-              <MeetingsPanel meetings={meetings} onViewAll={() => setShowMeetingsModal(true)} />
+              <MeetingsPanel meetings={meetings} onViewAll={() => setShowMeetingsModal(true)} onMeetingClick={(clientId) => router.push(`/client?clientId=${clientId}`)} />
             </div>
           </div>
         </div>
@@ -279,14 +279,20 @@ export default function ClientsPage() {
                 const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
                 const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
                 const isFirst = i === 0;
+                const isClickable = meeting.client != null;
                 return (
-                  <div key={meeting.id} style={{
-                    borderRadius: 16, padding: 16,
-                    backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFE5, #FFFFFFE5), url('/insights.png')",
-                    backgroundSize: "cover", backgroundPosition: "center",
-                    backgroundColor: isFirst ? undefined : "#CA8C4626",
-                    display: "flex", alignItems: "center", gap: 12,
-                  }}>
+                  <div
+                    key={meeting.id}
+                    onClick={isClickable ? () => { setShowMeetingsModal(false); router.push(`/client?clientId=${meeting.client}`); } : undefined}
+                    style={{
+                      borderRadius: 16, padding: 16,
+                      backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFE5, #FFFFFFE5), url('/insights.png')",
+                      backgroundSize: "cover", backgroundPosition: "center",
+                      backgroundColor: isFirst ? undefined : "#CA8C4626",
+                      display: "flex", alignItems: "center", gap: 12,
+                      cursor: isClickable ? "pointer" : "default",
+                    }}
+                  >
                     <div style={{
                       width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                       background: isFirst ? "#FDE5C3" : "#CA8C4626",
@@ -486,7 +492,7 @@ function AlertsPanel({ alerts, onViewAll, onCheckNow }: { alerts: CrmAlert[]; on
   );
 }
 
-function MeetingsPanel({ meetings, onViewAll }: { meetings: CrmMeeting[]; onViewAll: () => void }) {
+function MeetingsPanel({ meetings, onViewAll, onMeetingClick }: { meetings: CrmMeeting[]; onViewAll: () => void; onMeetingClick: (clientId: number) => void }) {
   return (
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", padding: 24 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -502,14 +508,20 @@ function MeetingsPanel({ meetings, onViewAll }: { meetings: CrmMeeting[]; onView
             const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
             const dateStr = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
             const isFirst = i === 0;
+            const isClickable = meeting.client != null;
             return (
-              <div key={meeting.id} style={{
-                borderRadius: 16, padding: 16,
-                backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFE5, #FFFFFFE5), url('/insights.png')",
-                backgroundSize: "cover", backgroundPosition: "center",
-                backgroundColor: isFirst ? undefined : "#CA8C4626",
-                display: "flex", alignItems: "center", gap: 12,
-              }}>
+              <div
+                key={meeting.id}
+                onClick={isClickable ? () => onMeetingClick(meeting.client!) : undefined}
+                style={{
+                  borderRadius: 16, padding: 16,
+                  backgroundImage: isFirst ? "url('/insights.png')" : "linear-gradient(#FFFFFFE5, #FFFFFFE5), url('/insights.png')",
+                  backgroundSize: "cover", backgroundPosition: "center",
+                  backgroundColor: isFirst ? undefined : "#CA8C4626",
+                  display: "flex", alignItems: "center", gap: 12,
+                  cursor: isClickable ? "pointer" : "default",
+                }}
+              >
                 <div style={{
                   width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                   background: isFirst ? "#FDE5C3" : "#CA8C4626",
