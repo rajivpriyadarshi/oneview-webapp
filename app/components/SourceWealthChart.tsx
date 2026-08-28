@@ -736,11 +736,23 @@ function buildFlowElements(
       // Item nodes (when category is expanded)
       if (isCatExpanded) {
         if (cat.ownershipItems && cat.ownershipItems.length > 0) {
-          const totalItemHeight = (cat.ownershipItems.length - 1) * (ITEM_Y_SPACING + 80);
+          const getOwnershipCardHeight = (item: { points: string[] }) => {
+            const pointCount = item.points.length;
+            const titleHeight = 18;
+            const pointHeight = pointCount * 28;
+            const padding = 20;
+            const showMoreHeight = pointCount > 3 ? 18 : 0;
+            return titleHeight + pointHeight + padding + showMoreHeight + 30;
+          };
+
+          const cardHeights = cat.ownershipItems.map(getOwnershipCardHeight);
+          const totalItemHeight = cardHeights.reduce((sum, h) => sum + h, 0) + (cat.ownershipItems.length - 1) * 16;
           const itemStartY = catY + 23 - totalItemHeight / 2;
 
+          let cumulativeY = 0;
           cat.ownershipItems.forEach((item, ii) => {
-            const itemY = itemStartY + ii * (ITEM_Y_SPACING + 80);
+            const itemY = itemStartY + cumulativeY;
+            cumulativeY += cardHeights[ii] + 16;
 
             nodes.push({
               id: `item-${item.id}`,
