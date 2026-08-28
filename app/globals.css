@@ -3781,3 +3781,34 @@ button:disabled {
     animation: none;
   }
 }
+
+/* -----------------------------------------------------------------------------
+ * Hover lift for clickable rows and cards.
+ *
+ * Keep this on a CHILD of .stagger-in, never the same element: an entrance
+ * animation with `both` holds its `transform: none` end state indefinitely, and
+ * animations beat ordinary declarations in the cascade — so a hover transform on
+ * the same node would silently never apply.
+ * -------------------------------------------------------------------------- */
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.15s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.hover-lift:active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-lift {
+    transition: none;
+  }
+
+  .hover-lift:hover {
+    transform: none;
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useLayoutEffect, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import { useGetCrmClientsQuery, useGetCrmAlertsQuery, useGetCrmMeetingsQuery, type CrmClient, type CrmAttentionItem, type CrmAlert, type CrmMeeting } from "../store/api";
@@ -10,6 +10,20 @@ import { apiRequest } from "../lib/apiClient";
 const FILTER_TABS = ["All", "Task", "Meeting", "Portfolio", "Opportunities", "Requests"] as const;
 type FilterTab = (typeof FILTER_TABS)[number];
 
+// The dashboard's entrance order. One table rather than numbers scattered
+// through the JSX, so the sequence can be read and reordered in one place.
+// Drives .stagger-in / .stagger-fade in globals.css.
+const DASHBOARD_STAGGER = {
+  date: 0,
+  title: 1,
+  queue: 2,
+  managedWealth: 3,
+  queueRows: 3,
+  alerts: 4,
+  marketWatch: 5,
+  meetings: 5,
+};
+
 // Glassy side-panel cards, per Figma 2411:13143 (fill rgba(255,255,255,0.4)).
 const GLASS_CARD: React.CSSProperties = {
   background: "rgba(255,255,255,0.40)",
@@ -17,6 +31,11 @@ const GLASS_CARD: React.CSSProperties = {
   WebkitBackdropFilter: "blur(20px)",
   border: "1px solid rgba(255,255,255,0.50)",
 };
+
+// Main "In queue" / "Market watch" cards sit at 80% so the page glow reads
+// through them. Rows inside must stay transparent or they'd occlude it.
+const CARD_FILL = "rgba(255,255,255,0.80)";
+const ROW_HOVER_FILL = "rgba(0,0,0,0.02)";
 
 const ATTENTION_TYPE_MAP: Record<FilterTab, CrmAttentionItem["type"][] | null> = {
   All: null,
@@ -101,11 +120,11 @@ export default function ClientsPage() {
         <div style={{ position: "relative", zIndex: 1 }}>
           {/* Header */}
           {/* Exported from Figma 2411:12444. */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, marginBottom: 32 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6, marginBottom: 20 }}>
             {today ? (
-              <p style={{ color: "rgba(0,0,0,0.8)", fontSize: 14, fontFamily: "var(--font-satoshi), sans-serif", fontWeight: 500, lineHeight: 1.5, letterSpacing: "-0.14px", margin: 0 }}>{today}</p>
+              <p className="stagger-in" style={{ color: "rgba(0,0,0,0.8)", fontSize: 14, fontFamily: "var(--font-satoshi), sans-serif", fontWeight: 500, lineHeight: 1.5, letterSpacing: "-0.14px", margin: 0, "--stagger-index": DASHBOARD_STAGGER.date } as CSSProperties}>{today}</p>
             ) : null}
-            <h1 style={{ fontSize: 42, fontWeight: 600, color: "black", lineHeight: 1.2, letterSpacing: "-1.68px", margin: 0, fontFamily: "var(--font-butler), Georgia, serif" }}>
+            <h1 className="stagger-in" style={{ fontSize: 42, fontWeight: 600, color: "black", lineHeight: 1.2, letterSpacing: "-1.68px", margin: 0, fontFamily: "var(--font-butler), Georgia, serif", "--stagger-index": DASHBOARD_STAGGER.title } as CSSProperties}>
               Welcome{advisorName ? `, ${advisorName}` : ""}
             </h1>
           </div>
@@ -114,10 +133,11 @@ export default function ClientsPage() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 24, alignItems: "start" }}>
             <div className="flex flex-col gap-4">
               {/* Client queue */}
-              <div style={{
-                flex: 1, background: "white",
+              <div className="stagger-in" style={{
+                flex: 1, background: CARD_FILL,
                 borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", overflow: "hidden",
-              }}>
+                "--stagger-index": DASHBOARD_STAGGER.queue,
+              } as CSSProperties}>
                 {/* Header — Figma 2411:12586 leads with the title, count below. */}
                 <div style={{ padding: "28px 28px 0" }}>
                   <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0, fontFamily: "var(--font-satoshi), sans-serif" }}>In queue</h2>
@@ -127,34 +147,12 @@ export default function ClientsPage() {
                 </div>
 
                 {/* Filter tabs — Figma 2411:12567. */}
-                <div style={{ display: "flex", gap: 8, padding: "16px 28px 20px", flexWrap: "wrap" }}>
-                  {FILTER_TABS.map((tab) => {
-                    const isActive = activeFilter === tab;
-                    return (
-                      <button
-                        key={tab}
-                        onClick={() => { setActiveFilter(tab); setExpanded(false); }}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 6,
-                          padding: "6px 14px", borderRadius: 12,
-                          border: isActive ? "1px solid transparent" : "1px solid #EFEFEF",
-                          background: isActive ? "#41240D" : "white",
-                          color: isActive ? "white" : "#111111",
-                          fontSize: 13, fontWeight: 500, cursor: "pointer",
-                          fontFamily: "var(--font-satoshi), sans-serif",
-                          transition: "all 0.15s ease",
-                        }}
-                      >
-                        {tab}
-                        <span style={{
-                          fontSize: isActive ? 13 : 12, fontWeight: 500,
-                          color: isActive ? "white" : "#666666",
-                        }}>
-                          {filterCounts[tab]}
-                        </span>
-                      </button>
-                    );
-                  })}
+                <div style={{ padding: "16px 28px 20px" }}>
+                  <QueueFilterBar
+                    activeFilter={activeFilter}
+                    counts={filterCounts}
+                    onSelect={(tab) => { setActiveFilter(tab); setExpanded(false); }}
+                  />
                 </div>
 
                 {/* Client rows */}
@@ -173,18 +171,31 @@ export default function ClientsPage() {
                     No clients need attention right now.
                   </div>
                 )}
-                {displayClients.map((client, i) => (
-                  <ClientRow
-                    key={client.id}
-                    client={client}
-                    isLast={i === displayClients.length - 1 && (expanded || filteredClients.length <= 4)}
-                    onNavigate={(id) => router.push(`/client?clientId=${id}`)}
-                  />
-                ))}
+                {/* Keyed on the filter so switching tabs remounts the rows and
+                    replays .stagger-in — the new set cascades in rather than
+                    swapping instantly. */}
+                <div key={activeFilter}>
+                  {displayClients.map((client, i) => (
+                    <div
+                      key={client.id}
+                      className="stagger-in"
+                      // Capped so a long expanded list does not leave the last
+                      // rows waiting seconds.
+                      style={{ "--stagger-index": Math.min(i, 8) } as CSSProperties}
+                    >
+                      <ClientRow
+                        client={client}
+                        isLast={i === displayClients.length - 1 && (expanded || filteredClients.length <= 4)}
+                        onNavigate={(id) => router.push(`/client?clientId=${id}`)}
+                      />
+                    </div>
+                  ))}
+                </div>
 
                 {/* Expand all */}
                 {filteredClients.length > 4 && (
                   <div
+                    className="hover-lift"
                     onClick={() => setExpanded(!expanded)}
                     style={{
                       padding: "16px 28px",
@@ -359,18 +370,25 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
 
   return (
     <div
+      className="hover-lift"
       onClick={() => onNavigate(client.id)}
       style={{
         display: "flex", alignItems: "center", gap: 16,
         padding: "18px 28px",
         borderBottom: isLast ? "none" : "1px solid #F1F1F1",
-        background: "white",
+        // Transparent, not white: the card behind is 80% opaque and an opaque
+        // row would paint over it.
+        background: "transparent",
         cursor: "pointer",
+        // Lifts above the neighbouring rows' borders while hovered.
+        position: "relative",
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#fafafa")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+      onMouseEnter={(e) => (e.currentTarget.style.background = ROW_HOVER_FILL)}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
-      <div style={{ flex: "0 0 240px", display: "flex", alignItems: "center", gap: 14 }}>
+      {/* Wide enough for long names ("Prashanth Ranganathan") not to crowd the
+          attention column beside it. */}
+      <div style={{ flex: "0 0 300px", display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{
           width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
           backgroundImage: "linear-gradient(#FFFFFFB2, #FFFFFFB2), url('/insights.png')",
@@ -468,6 +486,98 @@ const PANEL_ROW: React.CSSProperties = {
 const PAGE_SIZE = 3;
 
 /**
+ * Queue filter chips with a pill that slides between the selected chip, the
+ * same treatment as ClientTabBar on the client page. The chips themselves are
+ * transparent (the card behind them is white, so an unselected chip still reads
+ * as white) — an opaque fill would hide the pill mid-flight.
+ */
+function QueueFilterBar({ activeFilter, counts, onSelect }: { activeFilter: FilterTab; counts: Record<FilterTab, number>; onSelect: (tab: FilterTab) => void }) {
+  const itemsRef = useRef(new Map<FilterTab, HTMLLIElement>());
+  const [pill, setPill] = useState({ left: 0, top: 0, width: 0, height: 0 });
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = itemsRef.current.get(activeFilter);
+      if (!el) return;
+      // top/height as well as left/width: the row wraps on a narrow column, and
+      // a full-height pill would then span both lines.
+      setPill({ left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight });
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    for (const el of itemsRef.current.values()) observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeFilter]);
+
+  useEffect(() => {
+    // Skips the first frame so the pill does not slide in from the left on load.
+    // Stays false under prefers-reduced-motion — the transition is inline, so a
+    // `motion-reduce:` utility could not turn it off.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.requestAnimationFrame(() => setReady(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <ul style={{ position: "relative", display: "flex", flexWrap: "wrap", gap: 8, listStyle: "none", margin: 0, padding: 0 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute", left: 0, top: 0, borderRadius: 12, background: "#41240D",
+          pointerEvents: "none",
+          transform: `translate(${pill.left}px, ${pill.top}px)`,
+          width: pill.width, height: pill.height,
+          opacity: pill.width ? 1 : 0,
+          transition: ready
+            ? "transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1), height 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease"
+            : "none",
+        }}
+      />
+      {FILTER_TABS.map((tab) => {
+        const isActive = activeFilter === tab;
+        return (
+          // z-index so the label sits above the sliding pill.
+          <li
+            key={tab}
+            style={{ position: "relative", zIndex: 1 }}
+            ref={(el) => {
+              if (el) itemsRef.current.set(tab, el);
+              else itemsRef.current.delete(tab);
+            }}
+          >
+            <button
+              onClick={() => onSelect(tab)}
+              aria-current={isActive ? "true" : undefined}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "6px 14px", borderRadius: 12,
+                border: `1px solid ${isActive ? "transparent" : "#EFEFEF"}`,
+                background: "transparent",
+                color: isActive ? "white" : "#111111",
+                fontSize: 13, fontWeight: 500, cursor: "pointer",
+                fontFamily: "var(--font-satoshi), sans-serif",
+                transition: "color 0.3s ease, border-color 0.3s ease",
+              }}
+            >
+              {tab}
+              <span style={{
+                fontSize: isActive ? 13 : 12, fontWeight: 500,
+                color: isActive ? "white" : "#666666",
+                transition: "color 0.3s ease",
+              }}>
+                {counts[tab]}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
  * Paged widget header. Per Figma 2411:13159 the "view all" link is replaced by a
  * chevron pair; the arrows are hidden outright when everything already fits on
  * one page, and dimmed to 50% at either end of the range.
@@ -490,6 +600,7 @@ function ArrowButton({ direction, disabled, onClick }: { direction: "left" | "ri
   return (
     <button
       type="button"
+      className={disabled ? undefined : "hover-lift"}
       onClick={onClick}
       disabled={disabled}
       aria-label={direction === "left" ? "Previous" : "Next"}
@@ -517,41 +628,47 @@ function AlertsPanel({ alerts, onCheckNow }: { alerts: CrmAlert[]; onCheckNow: (
   const visible = alerts.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <div style={{ ...GLASS_CARD, borderRadius: 16, padding: 24 }}>
+    <div className="stagger-in" style={{ ...GLASS_CARD, borderRadius: 16, padding: 24, "--stagger-index": DASHBOARD_STAGGER.alerts } as CSSProperties}>
       <PanelHeader title="Alerts" page={page} pageCount={pageCount} onPage={setPage} />
 
       {alerts.length === 0 ? (
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No alerts</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {visible.map((alert) => {
+        /* Keyed on the page so each chevron press replays the row cascade. */
+        <div key={page} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {visible.map((alert, i) => {
             const type = alert.type?.toLowerCase();
             const isDocType = type === "document" || type === "documents";
             const isChatType = type === "chat" || type === "chats" || type === "message";
             const isClickable = (isDocType || isChatType) && alert.client;
             const hasAction = isClickable || (alert.cta_url && alert.cta_text);
             return (
+              // Entrance on the wrapper, hover lift on the row — see .hover-lift.
               <div
                 key={alert.id}
-                onClick={hasAction ? () => onCheckNow(alert) : undefined}
-                style={{ ...PANEL_ROW, cursor: hasAction ? "pointer" : undefined, transition: "background 0.15s" }}
-                onMouseEnter={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.04)") : undefined}
-                onMouseLeave={hasAction ? (e) => (e.currentTarget.style.background = "rgba(0,0,0,0.02)") : undefined}
+                className="stagger-in"
+                style={{ "--stagger-index": DASHBOARD_STAGGER.alerts + i } as CSSProperties}
               >
-                <div style={{
-                  width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                  background: (alert.cta_url && alert.cta_text && !isClickable) ? "#7F67B7" : "#39952D",
-                }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
-                  <div style={{ fontSize: 12, color: "#212525", opacity: 0.7, marginTop: 2 }}>
-                    {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
+                <div
+                  className={hasAction ? "hover-lift" : undefined}
+                  onClick={hasAction ? () => onCheckNow(alert) : undefined}
+                  style={{ ...PANEL_ROW, cursor: hasAction ? "pointer" : undefined }}
+                >
+                  <div style={{
+                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                    background: (alert.cta_url && alert.cta_text && !isClickable) ? "#7F67B7" : "#39952D",
+                  }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
+                    <div style={{ fontSize: 12, color: "#212525", opacity: 0.7, marginTop: 2 }}>
+                      {alert.client_name ? `${alert.client_name} • ` : ""}{timeAgo(alert.created_at)}
+                    </div>
+                    {alert.cta_url && alert.cta_text && !isClickable && (
+                      <span style={{ fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "var(--font-satoshi), sans-serif", marginTop: 16, display: "inline-block" }}>
+                        {alert.cta_text}
+                      </span>
+                    )}
                   </div>
-                  {alert.cta_url && alert.cta_text && !isClickable && (
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#804D13", fontFamily: "var(--font-satoshi), sans-serif", marginTop: 16, display: "inline-block" }}>
-                      {alert.cta_text}
-                    </span>
-                  )}
                 </div>
               </div>
             );
@@ -568,38 +685,46 @@ function MeetingsPanel({ meetings, onMeetingClick }: { meetings: CrmMeeting[]; o
   const visible = meetings.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <div style={{ ...GLASS_CARD, borderRadius: 16, padding: 24 }}>
+    <div className="stagger-in" style={{ ...GLASS_CARD, borderRadius: 16, padding: 24, "--stagger-index": DASHBOARD_STAGGER.meetings } as CSSProperties}>
       <PanelHeader title="Upcoming meetings" page={page} pageCount={pageCount} onPage={setPage} />
       {meetings.length === 0 ? (
         <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center", padding: "16px 0", margin: 0 }}>No upcoming meetings</p>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {visible.map((meeting) => {
+        /* Keyed on the page so each chevron press replays the row cascade. */
+        <div key={page} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {visible.map((meeting, i) => {
             const d = new Date(meeting.scheduled_at);
             const timeStr = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
             const isClickable = meeting.client != null;
             return (
+              // Entrance on the wrapper, hover lift on the row — see .hover-lift.
               <div
                 key={meeting.id}
-                onClick={isClickable ? () => onMeetingClick(meeting.client!) : undefined}
-                style={{ ...PANEL_ROW, cursor: isClickable ? "pointer" : "default" }}
+                className="stagger-in"
+                style={{ "--stagger-index": DASHBOARD_STAGGER.meetings + i } as CSSProperties}
               >
-                <div style={{
-                  width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                  background: "rgba(202,140,70,0.15)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <MeetingIcon title={meeting.title} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{meeting.title}</div>
-                    {meeting.client_name && (
-                      <div style={{ fontSize: 12, fontWeight: 400, color: "rgba(0,0,0,0.6)" }}>{meeting.client_name}</div>
-                    )}
+                <div
+                  className={isClickable ? "hover-lift" : undefined}
+                  onClick={isClickable ? () => onMeetingClick(meeting.client!) : undefined}
+                  style={{ ...PANEL_ROW, cursor: isClickable ? "pointer" : "default" }}
+                >
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                    background: "rgba(202,140,70,0.15)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <MeetingIcon title={meeting.title} />
                   </div>
-                  <div style={{ fontSize: 12, fontWeight: 500, color: "black", opacity: 0.7 }}>
-                    {timeStr} • {meeting.duration_minutes} minutes
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0 }}>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{meeting.title}</div>
+                      {meeting.client_name && (
+                        <div style={{ fontSize: 12, fontWeight: 400, color: "rgba(0,0,0,0.6)" }}>{meeting.client_name}</div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "black", opacity: 0.7 }}>
+                      {timeStr} • {meeting.duration_minutes} minutes
+                    </div>
                   </div>
                 </div>
               </div>
@@ -655,7 +780,7 @@ function ManagedAssetsCard({ clients }: { clients: CrmClient[] }) {
     : `$${totalAssets.toFixed(0)}`;
 
   return (
-    <div style={{ ...GLASS_CARD, borderRadius: 16, padding: "24px" }}>
+    <div className="stagger-in" style={{ ...GLASS_CARD, borderRadius: 16, padding: "24px", "--stagger-index": DASHBOARD_STAGGER.managedWealth } as CSSProperties}>
       <p style={{ fontSize: 12, fontWeight: 500, color: "rgba(0,0,0,0.40)", letterSpacing: "1.44px", textTransform: "uppercase", margin: "0 0 6px", fontFamily: "var(--font-satoshi), sans-serif", wordWrap: "break-word" }}>
         Managed wealth
       </p>
@@ -765,8 +890,9 @@ function MarketWatch() {
 
   if (loading) {
     return (
-      <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>Market watch</h2>
+      <div className="stagger-in" style={{ background: CARD_FILL, borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24, "--stagger-index": DASHBOARD_STAGGER.marketWatch } as CSSProperties}>
+        {/* Matches the "In queue" heading (Figma 2411:12587): 20px Satoshi Bold. */}
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "var(--font-satoshi), sans-serif", wordWrap: "break-word" }}>Market watch</h2>
         <p style={{ fontSize: 13, color: "rgba(0,0,0,0.45)", fontFamily: "Satoshi Variable, sans-serif" }}>Loading...</p>
       </div>
     );
@@ -774,16 +900,18 @@ function MarketWatch() {
 
   if (cards.length === 0) {
     return (
-      <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>Market watch</h2>
+      <div className="stagger-in" style={{ background: CARD_FILL, borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24, "--stagger-index": DASHBOARD_STAGGER.marketWatch } as CSSProperties}>
+        {/* Matches the "In queue" heading (Figma 2411:12587): 20px Satoshi Bold. */}
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "var(--font-satoshi), sans-serif", wordWrap: "break-word" }}>Market watch</h2>
         <p style={{ fontSize: 13, color: "rgba(0,0,0,0.45)", fontFamily: "Satoshi Variable, sans-serif" }}>No market data available.</p>
       </div>
     );
   }
 
   return (
-    <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24 }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>Market watch</h2>
+    <div style={{ background: CARD_FILL, borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24 }}>
+      {/* Matches the "In queue" heading (Figma 2411:12587): 20px Satoshi Bold. */}
+      <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "var(--font-satoshi), sans-serif", wordWrap: "break-word" }}>Market watch</h2>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(cards.length, 4)}, 1fr)`, gap: 16 }}>
         {cards.map((item) => (
           <div key={item.name} style={{ borderRadius: 16, border: "1px solid rgba(0,0,0,0.06)", padding: "16px 18px", position: "relative", overflow: "hidden" }}>

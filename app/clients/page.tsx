@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import { useGetCrmClientsQuery, type CrmClient, type CrmAttentionItem } from "../store/api";
@@ -8,6 +8,19 @@ import { getStoredAuthToken } from "../lib/session";
 
 const SORT_OPTIONS = ["All priorities", "High", "Medium", "Low"] as const;
 type SortOption = (typeof SORT_OPTIONS)[number];
+
+// Entrance order for this page, mirroring DASHBOARD_STAGGER on /dashboard.
+// Drives .stagger-in in globals.css.
+const CLIENTS_STAGGER = {
+  title: 0,
+  search: 1,
+  card: 2,
+};
+
+// Matches the /dashboard queue card: 80% so the page background reads through.
+// Rows inside must stay transparent or they'd occlude it.
+const CARD_FILL = "rgba(255,255,255,0.80)";
+const ROW_HOVER_FILL = "rgba(0,0,0,0.02)";
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -37,7 +50,6 @@ export default function ClientsPage() {
     }
     return [...list].sort((a, b) => (priorityOrder[a.priority ?? "low"] ?? 2) - (priorityOrder[b.priority ?? "low"] ?? 2));
   }, [allClients, searchQuery, sortBy]);
-  const totalCount = data?.count ?? 0;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F8F8F8" }}>
@@ -53,32 +65,30 @@ export default function ClientsPage() {
 
         <div style={{ position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-          <h1 style={{ fontSize: 42, fontWeight: 600, color: "#000000", lineHeight: "50.4px", margin: 0, fontFamily: "ButlerPro, serif" }}>Client list</h1>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, borderRadius: 16, outline: "1px solid #E5E7EB", outlineOffset: -1, padding: "12px 20px" }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <circle cx="9" cy="9" r="6.5" stroke="#4B5563" strokeWidth="2" />
-              <path d="M14 14L17.5 17.5" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search a client"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ border: "none", outline: "none", fontSize: 15, color: "#111827", background: "transparent", width: 300, fontFamily: "Satoshi, sans-serif" }}
-            />
-          </div>
+          {/* next/font/local emits a hashed family name — only the CSS variable resolves. */}
+          <h1 className="stagger-in" style={{ fontSize: 42, fontWeight: 600, color: "#000000", lineHeight: "50.4px", margin: 0, fontFamily: "var(--font-butler), Georgia, serif", "--stagger-index": CLIENTS_STAGGER.title } as CSSProperties}>Client list</h1>
         </div>
 
-        <div style={{
-          background: "white",
+        <div className="stagger-in" style={{
+          background: CARD_FILL,
           borderRadius: 24, border: "1px solid rgba(0,0,0,0.10)", overflow: "hidden",
-        }}>
-          <div style={{ padding: "24px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: "#0F172A", margin: 0 }}>Client list</h2>
-              <p style={{ fontSize: 14, color: "#475569", margin: "4px 0 0" }}>
-                {isLoading ? "Loading..." : `${totalCount} clients need your attention`}
-              </p>
+          "--stagger-index": CLIENTS_STAGGER.card,
+        } as CSSProperties}>
+          {/* The card heading was a duplicate of the page h1 above — the search
+              field takes its place, with Sort still on the right. */}
+          <div style={{ padding: "24px 24px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
+            <div className="stagger-in" style={{ display: "flex", alignItems: "center", gap: 12, borderRadius: 16, outline: "1px solid #E5E7EB", outlineOffset: -1, padding: "12px 20px", background: "white", "--stagger-index": CLIENTS_STAGGER.search } as CSSProperties}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <circle cx="9" cy="9" r="6.5" stroke="#4B5563" strokeWidth="2" />
+                <path d="M14 14L17.5 17.5" stroke="#4B5563" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search a client"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ border: "none", outline: "none", fontSize: 15, color: "#111827", background: "transparent", width: 300, fontFamily: "var(--font-satoshi), sans-serif" }}
+              />
             </div>
             <div style={{ position: "relative" }}>
               <div
@@ -118,20 +128,22 @@ export default function ClientsPage() {
             </div>
           </div>
 
+          {/* Column widths track ClientRow's below — 300px for the name so long
+              names ("Prashanth Ranganathan") don't crowd the column beside it. */}
           <div style={{
-            display: "flex", gap: 16, padding: "4px 24px",
+            display: "flex", gap: 16, padding: "4px 28px",
             background: "rgba(229,231,235,0.16)", borderBottom: "1px solid rgba(0,0,0,0.08)",
           }}>
-            <div style={{ flex: "0 0 260px" }}>
+            <div style={{ flex: "0 0 300px" }}>
               <span style={colHeaderStyle}>Client</span>
             </div>
             <div style={{ flex: 1 }}>
               <span style={colHeaderStyle}>Needs attention</span>
             </div>
-            <div style={{ flex: "0 0 100px", textAlign: "center" as const }}>
+            <div style={{ flex: "0 0 80px", textAlign: "center" as const }}>
               <span style={colHeaderStyle}>Priority</span>
             </div>
-            <div style={{ flex: "0 0 40px" }} />
+            <div style={{ flex: "0 0 32px" }} />
           </div>
 
           {isError && (
@@ -149,14 +161,27 @@ export default function ClientsPage() {
               No clients need attention right now.
             </div>
           )}
-          {clients.map((client, i) => (
-            <ClientRow
-              key={client.id}
-              client={client}
-              isLast={i === clients.length - 1}
-              onNavigate={(id) => router.push(`/client?clientId=${id}`)}
-            />
-          ))}
+          {/* Keyed on the active sort so changing it remounts the rows and
+              replays .stagger-in — the new order cascades in rather than
+              swapping instantly. */}
+          <div key={sortBy}>
+            {clients.map((client, i) => (
+              <div
+                key={client.id}
+                className="stagger-in"
+                // Capped so a long list does not leave the last rows waiting
+                // seconds. Entrance on the wrapper, hover lift on the row —
+                // see .hover-lift.
+                style={{ "--stagger-index": Math.min(i, 8) } as CSSProperties}
+              >
+                <ClientRow
+                  client={client}
+                  isLast={i === clients.length - 1}
+                  onNavigate={(id) => router.push(`/client?clientId=${id}`)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
         </div>
       </main>
@@ -190,18 +215,23 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
 
   return (
     <div
+      className="hover-lift"
       onClick={() => onNavigate(client.id)}
       style={{
         display: "flex", alignItems: "center", gap: 16,
-        padding: "20px 24px",
-        borderBottom: isLast ? "none" : "1px solid #E5E7EB",
-        background: "white",
+        padding: "18px 28px",
+        borderBottom: isLast ? "none" : "1px solid #F1F1F1",
+        // Transparent, not white: the card behind is 80% opaque and an opaque
+        // row would paint over it.
+        background: "transparent",
         cursor: "pointer",
+        // Lifts above the neighbouring rows' borders while hovered.
+        position: "relative",
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#fafafa")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
+      onMouseEnter={(e) => (e.currentTarget.style.background = ROW_HOVER_FILL)}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
-      <div style={{ flex: "0 0 260px", display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ flex: "0 0 300px", display: "flex", alignItems: "center", gap: 14 }}>
         <div style={{
           width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
           backgroundImage: "linear-gradient(#FFFFFFB2, #FFFFFFB2), url('/insights.png')",
@@ -211,9 +241,9 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
           <span style={{ fontSize: 14, fontWeight: 700, color: "#4C2D08" }}>{initials}</span>
         </div>
         <div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: "#111827" }}>{client.display_name}</div>
-          <div style={{ fontSize: 14, color: "#4B5563", marginTop: 2 }}>
-            Net worth <strong>{netWorth}</strong>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>{client.display_name}</div>
+          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
+            Net worth <strong style={{ color: "#111827" }}>{netWorth}</strong>
           </div>
         </div>
       </div>
@@ -224,7 +254,7 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
             <AttentionIcon type={attention.type} />
             <div>
               <div style={{ fontSize: 14, fontWeight: 500, color: "#090D1A", lineHeight: "20px" }}>{attention.title}</div>
-              <div style={{ fontSize: 12, color: "#475569", lineHeight: "18px" }}>{attention.subtitle}</div>
+              <div style={{ fontSize: 12, color: "#6B7280", lineHeight: "18px" }}>{attention.subtitle}</div>
             </div>
           </>
         ) : (
@@ -232,11 +262,11 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
         )}
       </div>
 
-      <div style={{ flex: "0 0 100px", display: "flex", justifyContent: "center" }}>
+      <div style={{ flex: "0 0 80px", display: "flex", justifyContent: "center" }}>
         <span style={{
-          padding: "4px 6px", borderRadius: 6,
+          padding: "4px 8px", borderRadius: 6,
           background: priorityStyle.bg, color: priorityStyle.color,
-          fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "1.15px",
+          fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.8px",
         }}>
           {priority}
         </span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getStoredAdvisorProfile, clearAuthToken } from "../lib/session";
@@ -64,19 +64,27 @@ export default function Sidebar(_props: SidebarProps = {}) {
       display: "flex", flexDirection: "column", alignItems: "flex-start", paddingBottom: 20,
     }}>
       {/* Logo */}
-      <div style={{ alignSelf: "stretch", height: 97, display: "flex", justifyContent: "center", alignItems: "center" }}>
+      {/* Logo, nav, then avatar cascade in on mount via .stagger-in. */}
+      <div className="stagger-in" style={{ alignSelf: "stretch", height: 97, display: "flex", justifyContent: "center", alignItems: "center", "--stagger-index": 0 } as CSSProperties}>
         <ZincLogo />
       </div>
 
       {/* Nav + avatar */}
       <div style={{ flex: 1, alignSelf: "stretch", display: "flex", flexDirection: "column", alignItems: "center", padding: "0 7px" }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-          {nav.map(({ href, label, icon }) => {
+          {nav.map(({ href, label, icon }, i) => {
             const active = pathname === href || pathname?.startsWith(href + "/");
             return (
-              <Link key={label} href={href} aria-label={label} style={{ textDecoration: "none" }}>
+              <Link
+                key={label}
+                href={href}
+                aria-label={label}
+                className="stagger-in"
+                style={{ textDecoration: "none", "--stagger-index": i + 1 } as CSSProperties}
+              >
                 <div style={{ padding: 8 }}>
-                  <div style={{
+                  {/* Entrance on the Link, hover lift on this inner div — see .hover-lift. */}
+                  <div className="hover-lift" style={{
                     padding: 8, borderRadius: 11,
                     background: active ? "#F1ECE1" : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -92,11 +100,13 @@ export default function Sidebar(_props: SidebarProps = {}) {
         {/* Avatar */}
         <button
           onClick={() => setShowLogout(true)}
+          className="stagger-in"
           style={{
             width: 40, height: 40, borderRadius: "50%", background: ACTIVE_COLOR,
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
             border: "none", cursor: "pointer",
-          }}
+            "--stagger-index": nav.length + 1,
+          } as CSSProperties}
         >
           <span style={{ color: "white", fontSize: 15, fontFamily: "Inter", fontWeight: 600, lineHeight: 1 }}>
             {initial}

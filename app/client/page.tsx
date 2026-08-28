@@ -772,7 +772,7 @@ export default function ChatPage() {
       <ArtifactPopupProvider autoOpenEnabled={true} positioning="client-panel">
         <main className={TW.workspace}>
           <aside className={TW.advisorPanel} aria-label="Advisor chat">
-          <div className={TW.advisorHeader}>
+          <div className={`${TW.advisorHeader} stagger-in`} style={{ "--stagger-index": 0 } as CSSProperties}>
             <div className={TW.conversationMenuWrap} ref={conversationMenuRef}>
               <div
                 className={TW.conversationBtn}
@@ -819,15 +819,20 @@ export default function ChatPage() {
 
           {!isChatActive ? (
             <div className={TW.attentionContent}>
-              <h1 className={TW.attentionTitle}>What can I help<br/>you with?</h1>
+              {/* Title, then each chip, cascade in via .stagger-in. The stagger
+                  sits on a wrapper, never the chip: an entrance animation with
+                  `both` holds transform: none and would kill the chip's hover
+                  lift — see .hover-lift in globals.css. */}
+              <h1 className={`${TW.attentionTitle} stagger-in`} style={{ "--stagger-index": 1 } as CSSProperties}>What can I help<br/>you with?</h1>
               <div className={TW.attentionList}>
-                {ATTENTION_ITEMS.map((item) => (
-                  <SuggestionChip
-                    key={item.action}
-                    label={item.action}
-                    className="max-w-full"
-                    onClick={() => void startPromptChat(item.prompt)}
-                  />
+                {ATTENTION_ITEMS.map((item, i) => (
+                  <div key={item.action} className="stagger-in max-w-full" style={{ "--stagger-index": i + 2 } as CSSProperties}>
+                    <SuggestionChip
+                      label={item.action}
+                      className="max-w-full"
+                      onClick={() => void startPromptChat(item.prompt)}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -1095,7 +1100,8 @@ function ChatThread({ session, initialMessages, prompts, clientId, onPromptSubmi
         <ThreadPrimitive.Root className={TW.assistantThread}>
           <AuiIf condition={(state) => state.thread.isEmpty}>
             <div className={TW.emptyViewport}>
-              <div className={TW.emptyCopy}>
+              {/* Lands after the empty-state title and its chips above. */}
+              <div className={`${TW.emptyCopy} stagger-in`} style={{ "--stagger-index": ATTENTION_ITEMS.length + 2 } as CSSProperties}>
                 <p className={TW.emptyHeading}>Ask anything about your portfolio</p>
                 <Composer
                   placeholder="What can I help you with?"
