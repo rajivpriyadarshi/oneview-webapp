@@ -1358,6 +1358,19 @@ function ClientTabButton({
   );
 }
 
+// The overview's entrance order. One table rather than numbers scattered
+// through the JSX, so the sequence can be read and reordered in one place.
+const OVERVIEW_STAGGER = {
+  backdrop: 0,
+  name: 1,
+  subtitle: 2,
+  tags: 3,
+  aumCard: 4,
+  insights: 5,
+  recentActivity: 6,
+  recentActivityRows: 7,
+};
+
 function OverviewTab({
   client,
   clientId,
@@ -1508,23 +1521,38 @@ function OverviewTab({
 
   return (
     <div className="relative isolate min-h-0 overflow-auto bg-[#F9F8F7] pb-[48px]">
+      {/* The overview builds up in one sequence: backdrop, name, subtitle,
+          tags, the AUM card, then the side panels — and the recent-activity
+          rows carry on from where the panels leave off (see OVERVIEW_STAGGER).
+          Indices are explicit rather than derived because these are distinct
+          elements, not a list. */}
       <div
-        className="pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url('${overviewImageSrc}')` }}
+        className="stagger-fade pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url('${overviewImageSrc}')`, "--stagger-index": OVERVIEW_STAGGER.backdrop } as CSSProperties}
         aria-hidden="true"
       />
 
       <section className="relative z-[1] bg-transparent px-[36px] pb-[40px] max-[1180px]:px-[24px] max-[640px]:px-[16px]">
         <div className="relative z-[1] pt-[90px] max-[1180px]:pt-[72px] max-[640px]:pt-[48px]">
-          <h1 className="m-0 font-['ButlerPro'] text-[42px] font-semibold leading-[120%] tracking-[-0.84px] text-[#4D2E0C] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]">
+          <h1
+            className="stagger-in m-0 font-['ButlerPro'] text-[42px] font-semibold leading-[120%] tracking-[-0.84px] text-[#4D2E0C] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]"
+            style={{ "--stagger-index": OVERVIEW_STAGGER.name } as CSSProperties}
+          >
             {clientName}
           </h1>
           {clientSubtitle ? (
-            <p className="mt-[10px] mb-0 max-w-[480px] font-satoshi text-[15px] font-normal leading-[1.4] text-[#4a4038] [overflow-wrap:break-word]">
+            <p
+              className="stagger-in mt-[10px] mb-0 max-w-[480px] font-satoshi text-[15px] font-normal leading-[1.4] text-[#4a4038] [overflow-wrap:break-word]"
+              style={{ "--stagger-index": OVERVIEW_STAGGER.subtitle } as CSSProperties}
+            >
               {clientSubtitle}
             </p>
           ) : null}
-          <div className="mt-[18px] flex flex-wrap gap-[10px]" aria-label="Client tags">
+          <div
+            className="stagger-in mt-[18px] flex flex-wrap gap-[10px]"
+            style={{ "--stagger-index": OVERVIEW_STAGGER.tags } as CSSProperties}
+            aria-label="Client tags"
+          >
             <span className="inline-flex min-h-[38px] items-center rounded-full bg-[#ece7df]/90 px-[18px] font-satoshi text-[15px] font-bold text-black">{clientTagValue}</span>
             <span className="inline-flex min-h-[38px] items-center rounded-full bg-[#ece7df]/90 px-[18px] font-satoshi text-[15px] font-bold text-black">{locationTag}</span>
           </div>
@@ -1533,7 +1561,10 @@ function OverviewTab({
 
       <div className={`relative z-[2] grid gap-[16px] px-[48px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px] ${hasSidePanels ? "grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)]" : "grid-cols-1"}`}>
         <div className="grid gap-[24px]">
-          <div className="flex w-[567px] flex-col items-start gap-[32px] rounded-[16px] bg-[rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:w-full max-[640px]:px-[22px] max-[640px]:py-[26px]">
+          <div
+            className="stagger-in flex w-[567px] flex-col items-start gap-[32px] rounded-[16px] bg-[rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:w-full max-[640px]:px-[22px] max-[640px]:py-[26px]"
+            style={{ "--stagger-index": OVERVIEW_STAGGER.aumCard } as CSSProperties}
+          >
             <section className="w-full">
               <p className="m-0 font-satoshi text-[16px] font-medium text-[#4D2E0C] max-[640px]:text-[14px]">AUM</p>
               <div className="mt-[12px] flex flex-wrap items-center gap-x-[12px] gap-y-[8px]">
@@ -1566,13 +1597,23 @@ function OverviewTab({
         {hasSidePanels ? (
           <aside className="relative z-[3] grid content-start gap-[16px]">
             {hasInsights ? (
-              <InsightPanel
-                insights={visibleInsightItems}
-                onAskAiInsight={onAskAiInsight}
-                onDismissInsight={handleDismissInsight}
-              />
+              <div className="stagger-in" style={{ "--stagger-index": OVERVIEW_STAGGER.insights } as CSSProperties}>
+                <InsightPanel
+                  insights={visibleInsightItems}
+                  onAskAiInsight={onAskAiInsight}
+                  onDismissInsight={handleDismissInsight}
+                />
+              </div>
             ) : null}
-            {hasRecentActivity ? <RecentActivityPanel activities={clientDetail?.recent_activity ?? []} onOpenInteraction={onOpenInteraction} /> : null}
+            {hasRecentActivity ? (
+              <div className="stagger-in" style={{ "--stagger-index": OVERVIEW_STAGGER.recentActivity } as CSSProperties}>
+                <RecentActivityPanel
+                  activities={clientDetail?.recent_activity ?? []}
+                  onOpenInteraction={onOpenInteraction}
+                  staggerStart={OVERVIEW_STAGGER.recentActivityRows}
+                />
+              </div>
+            ) : null}
           </aside>
         ) : null}
       </div>
@@ -1916,7 +1957,17 @@ function InsightPanel({
   );
 }
 
-function RecentActivityPanel({ activities, onOpenInteraction }: { activities: unknown[]; onOpenInteraction: (id: number) => void }) {
+function RecentActivityPanel({
+  activities,
+  onOpenInteraction,
+  staggerStart = 0,
+}: {
+  activities: unknown[];
+  onOpenInteraction: (id: number) => void;
+  // Where this list picks up in the overview's entrance sequence, so the rows
+  // arrive after the panel itself rather than alongside it.
+  staggerStart?: number;
+}) {
   const normalizedActivities = activities
     .map(normalizeActivity)
     .filter((activity): activity is OverviewActivity => Boolean(activity));
@@ -1930,7 +1981,7 @@ function RecentActivityPanel({ activities, onOpenInteraction }: { activities: un
             key={`${activity.title}-${index}`}
             className={`stagger-in grid cursor-pointer grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] rounded-[8px] py-[18px] transition-colors hover:bg-black/[0.02] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}
             // Same staggered entrance as the vault feeds; see .stagger-in in globals.css.
-            style={{ "--stagger-index": Math.min(index, 8) } as CSSProperties}
+            style={{ "--stagger-index": Math.min(staggerStart + index, staggerStart + 8) } as CSSProperties}
             onClick={() => { if (activity.id != null) onOpenInteraction(Number(activity.id)); }}
           >
             <span className={`inline-grid h-[40px] w-[40px] place-items-center rounded-[10px] ${activity.iconClass}`}>

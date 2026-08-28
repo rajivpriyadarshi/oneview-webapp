@@ -3758,8 +3758,26 @@ button:disabled {
   animation-delay: calc(var(--stagger-index, 0) * 90ms);
 }
 
+/* Opacity-only variant, for things a translate would look wrong on — a
+   bleed background image, for instance, where 16px of travel reads as the
+   whole page shifting. */
+@keyframes stagger-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.stagger-fade {
+  animation: stagger-fade 0.7s ease both;
+  animation-delay: calc(var(--stagger-index, 0) * 90ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .stagger-in {
+  .stagger-in,
+  .stagger-fade {
     animation: none;
   }
 }
