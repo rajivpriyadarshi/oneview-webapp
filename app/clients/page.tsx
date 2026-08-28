@@ -243,7 +243,7 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>{client.display_name}</div>
           <div style={{ fontSize: 13, color: "#6B7280", marginTop: 2 }}>
-            AUM <strong style={{ color: "#111827" }}>{aum}</strong>
+            AUM <strong style={{ color: "#111827", fontWeight: 500 }}>{aum}</strong>
           </div>
         </div>
       </div>
