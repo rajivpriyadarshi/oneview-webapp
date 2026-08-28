@@ -272,19 +272,27 @@ function ClientRow({ client, isLast, onNavigate }: { client: CrmClient; isLast: 
         </span>
       </div>
 
+      {/* Figma 2411:12476 — chevron-right, not a diagonal arrow. */}
       <button
         onClick={(e) => { e.stopPropagation(); onNavigate(client.id); }}
         style={{
-          flex: "0 0 32px", width: 32, height: 32, borderRadius: "50%",
-          border: "1px solid rgba(0,0,0,0.08)", background: "white",
+          flex: "0 0 32px", width: 32, height: 32, padding: 8, borderRadius: 99,
+          border: "1px solid #EAEAEC", background: "white",
           display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M4 12L12 4M12 4H6M12 4V10" stroke="rgba(0,0,0,0.70)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <RowChevronIcon />
       </button>
     </div>
+  );
+}
+
+/** The row's trailing chevron, exported from Figma 2411:12478. */
+function RowChevronIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M5.25 10.5L8.75 7L5.25 3.5" stroke="#111112" strokeWidth="2" strokeLinecap="round" />
+    </svg>
   );
 }
 
