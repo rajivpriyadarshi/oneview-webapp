@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import PopupAnimStyles, { POPUP_CARD_CLASS, POPUP_SCRIM_CLASS } from "./PopupAnimStyles";
 
 type PasswordPromptModalProps = {
   isOpen: boolean;
@@ -35,9 +36,11 @@ export function PasswordPromptModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[80] grid place-items-center bg-black/40 p-6" role="presentation" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[80] grid place-items-center p-6" role="presentation" onClick={(e) => e.stopPropagation()}>
+      <PopupAnimStyles />
+      <div aria-hidden className={`${POPUP_SCRIM_CLASS} pointer-events-none fixed inset-0 bg-black/40`} />
       <div
-        className="w-full max-w-[440px] rounded-[20px] bg-white p-7 shadow-[0_24px_80px_rgba(0,0,0,0.22)]"
+        className={`${POPUP_CARD_CLASS} relative z-[1] w-full max-w-[440px] rounded-[20px] bg-white p-7 shadow-[0_24px_80px_rgba(0,0,0,0.22)]`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="password-prompt-title"

@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
+import { type CSSProperties, type ReactNode, createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useChat } from "@ai-sdk/react";
@@ -103,22 +103,18 @@ const ATTENTION_ITEMS = [
   {
     action: "Find alternatives to reduce tech exposure",
     prompt: "Find alternatives to reduce tech exposure",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_48%,#f4edf4_100%)]",
   },
   {
     action: "Evaluation options about selling property",
     prompt: "Evaluate options for funding a property sale versus taking a loan.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
   {
     action: "Draft an email to ask for insurance document",
     prompt: "Draft an email asking for the updated insurance document.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
   {
     action: "Compare ways to fund property purchase",
     prompt: "Compare ways to fund the upcoming $42,000 education payment.",
-    bg: "bg-[linear-gradient(100deg,#fff7ed_0%,#fbf4dc_50%,#f4edf4_100%)]",
   },
 ];
 
@@ -194,17 +190,21 @@ const TW = {
   advisorPanel: "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-r border-black/10 bg-white max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)] max-[900px]:grid-rows-[auto_auto_auto]",
   advisorHeader: "relative z-[40] flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-visible border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[640px]:px-[12px]",
   conversationMenuWrap: "relative min-w-0 flex-1 overflow-visible text-left",
-  conversationBtn: "inline-flex w-full min-w-0 max-w-full cursor-pointer items-center justify-start gap-[8px] overflow-hidden rounded-xl border-0 bg-transparent px-[12px] py-[10px] text-left font-satoshi text-[14px] font-medium leading-[130%] tracking-normal text-black [&_svg]:shrink-0",
-  conversationText: "block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap",
+  // Not w-full: the chevron should sit right after the title, so the button
+  // hugs its content and only the text truncates once it runs out of room.
+  conversationBtn: "inline-flex min-w-0 max-w-full cursor-pointer items-center justify-start gap-[8px] overflow-hidden rounded-xl border-0 bg-transparent px-[12px] py-[10px] text-left font-satoshi text-[14px] font-medium leading-[130%] tracking-normal text-black [&_svg]:shrink-0",
+  conversationText: "block min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap",
   conversationDropdown: "absolute top-[43px] left-[-7px] z-[60] w-[238px] max-h-[50vh] overflow-y-auto rounded-[22px] border border-black/10 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.14)] max-[640px]:left-[-4px] max-[640px]:w-[calc(100vw-64px)]",
   conversationDropdownItem: "flex min-h-[46px] w-full cursor-pointer items-center border-0 border-b border-black/10 bg-white px-[24px] text-left font-satoshi text-[13px] font-normal leading-[1.15] text-black transition last:border-b-0 hover:bg-black/[0.025]",
   conversationDropdownEmpty: "flex min-h-[46px] items-center px-[24px] font-satoshi text-[13px] font-normal text-black/40",
   advisorAddBtn: "inline-grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full border-0 bg-transparent text-black hover:bg-black/5 [&_svg]:h-[15px] [&_svg]:w-[15px]",
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto pr-[14px] pl-[28px] pt-[64px] pb-[190px] max-[1180px]:pl-[20px] max-[900px]:pr-[56px] max-[900px]:pl-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
   attentionTitle: "m-0 mb-[28px] max-w-[350px] font-butler text-[32px] font-normal leading-[38.4px] tracking-normal text-black [overflow-wrap:break-word] max-[640px]:max-w-[300px]",
-  attentionList: "grid max-w-[640px] gap-[14px] justify-items-start",
-  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-[10px] rounded-[9px] px-[14px] py-[9px] text-left font-['Cascadia_Code',monospace] text-[12px] font-normal leading-[1.2] text-[#8b6230] transition hover:brightness-[0.97]",
-  promptChipsRow: "mb-[10px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] p-[10px] pt-[8px] pb-[0px]",
+  attentionList: "grid max-w-[640px] gap-[10px] justify-items-start",
+  // Same pill as the in-chat reply suggestions (TW.replyPill below) — the empty
+  // state and the thread show the same kind of chip, so they share one look.
+  attentionSuggestion: "inline-flex max-w-full cursor-pointer items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
+  promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[12px] overflow-hidden max-[640px]:gap-[8px]",
   promptChipsLeftExpanded: "!overflow-visible flex-wrap",
   promptChip: "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-[#0000000A] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07] max-[640px]:max-w-[145px] max-[640px]:truncate",
@@ -229,7 +229,7 @@ const TW = {
   scrollToBottom: "hidden data-[state=visible]:inline-grid absolute left-1/2 top-[-16px] h-9 w-9 -translate-x-1/2 -translate-y-full place-items-center rounded-full border border-white/60 bg-white/85 text-[#171615] shadow-[0_2px_12px_rgba(0,0,0,0.12)] backdrop-blur-xl",
   errorBanner: "mx-auto mb-[10px] w-full rounded-lg border border-[#973022]/20 bg-white/70 px-[12px] py-[10px] font-satoshi text-[13px] text-[#8f2415]",
   composerDock: "absolute right-0 bottom-0 left-0 z-10 bg-transparent px-[22px] max-[1180px]:px-[20px] max-[900px]:px-[20px] max-[640px]:px-[14px]",
-  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] p-[1px] pt-[10px]",
+  composerWrap: "w-full rounded-[30px] bg-[#F7F7F7] max-[640px]:rounded-[28px] p-[1px] pt-[6px]",
   composer: "relative mx-auto flex min-h-[80px] w-full items-center rounded-[28px] border border-black/[0.06] bg-white py-[8px] transition rounded-[24px] ",
   composerThinking: "ring-1 ring-[#b37f40]/40",
   composerInputRow: "flex-1 min-w-0 px-[14px] max-[1180px]:px-[18px] max-[640px]:px-[14px]",
@@ -244,16 +244,18 @@ const TW = {
   messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
   messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
   messageContent: "max-w-full [overflow-wrap:anywhere] rounded-lg font-satoshi text-[13px] leading-relaxed text-black",
-  userMessageContent: "rounded-[20px_20px_4px_20px] border border-white/50 bg-[#ede8df] px-[16px] py-[14px] text-black shadow-[0_2px_4px_rgba(0,0,0,0.04)]",
+  // Self-contained (not layered on messageContent) so its 14px type isn't
+  // fighting that block's text-[13px]. Matches the full chat screen.
+  userMessageContent: "max-w-full [overflow-wrap:anywhere] rounded-[20px_20px_0_20px] bg-[#F3F3F3] p-[16px] font-satoshi text-[14px] font-medium leading-[1.5] tracking-[-0.16px] text-[#0D0D0D]",
   assistantMessageContent: "py-1",
   messageStack: "max-w-full",
   replySuggestions: "mt-3 mb-1.5 flex max-w-full flex-col items-start gap-[10px]",
-  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[12px] py-[10px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
+  replyPill: "inline-flex items-center gap-2.5 rounded-[12px] border border-white px-[8px] py-[6px] text-left text-[12px] font-normal leading-[16px] text-[#4C2D08] [word-wrap:break-word] transition hover:-translate-y-px hover:brightness-[0.97]",
   messageControls: "mt-2 inline-flex items-center gap-1.5",
   inlineControls: "inline-flex items-center gap-1.5 text-[#171615]/50",
   actionBtn: "inline-grid h-[30px] w-[30px] place-items-center rounded-full border border-white/60 bg-white/50 text-[#171615]/60 shadow-sm backdrop-blur transition hover:-translate-y-px hover:bg-white/70 hover:text-[#171615]",
   branchCount: "font-satoshi text-[12px] font-bold tabular-nums",
-  markdown: "[overflow-wrap:anywhere] font-satoshi text-[14px] leading-[18.9px] text-black/90 [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
+  markdown: "[overflow-wrap:anywhere] font-satoshi text-[14px] leading-[1.5] tracking-[-0.16px] text-[#0D0D0D] [&_a]:text-[#0e5f5b] [&_a]:underline [&_a]:underline-offset-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[#0e5f5b]/20 [&_blockquote]:pl-[14px] [&_blockquote]:text-[#171615]/70 [&_code]:rounded [&_code]:bg-[#171615]/10 [&_code]:px-[6px] [&_code]:py-[2px] [&_code]:font-mono [&_code]:text-[0.88em] [&_h1]:mb-[10px] [&_h1]:text-[1em] [&_h1]:font-bold [&_h2]:mb-[10px] [&_h2]:text-[1em] [&_h2]:font-bold [&_h3]:mb-[10px] [&_h3]:text-[1em] [&_h3]:font-bold [&_li]:my-[4px] [&_ol]:mb-[16px] [&_ol]:list-decimal [&_ol]:pl-[20px] [&_p]:mb-[16px] [&_pre]:mb-[16px] [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-[#171615]/10 [&_pre]:p-[12px] [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_strong]:font-bold [&_table]:mb-[16px] [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-[#171615]/10 [&_td]:p-[8px] [&_th]:border [&_th]:border-[#171615]/10 [&_th]:bg-white/60 [&_th]:p-[8px] [&_th]:text-left [&_th]:font-bold [&_ul]:mb-[16px] [&_ul]:list-disc [&_ul]:pl-[20px] [&>*:last-child]:mb-0",
   toolGroup: "my-3 overflow-hidden rounded-[10px] border border-[#0e5f5b]/10 bg-white/70",
   toolSummary: "flex cursor-pointer list-none items-center justify-between gap-2.5 px-3.5 py-3 select-none [&::-webkit-details-marker]:hidden",
   toolLabel: "inline-flex items-center gap-[8px] font-satoshi text-[12px] font-bold text-[#0e5f5b] [&_svg]:transition-transform",
@@ -824,7 +826,11 @@ export default function ChatPage() {
               <div className={TW.attentionList}>
                 {ATTENTION_ITEMS.map((item) => (
                   <div
-                    className={`${TW.attentionSuggestion} ${item.bg}`}
+                    className={TW.attentionSuggestion}
+                    // Same inline guard the reply pills use: the layered
+                    // utilities lose to globals.css, so pin the background and
+                    // family here.
+                    style={{ backgroundImage: "linear-gradient(#FFFFFFCC, #FFFFFFCC), url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", fontFamily: "'Cascadia Code', monospace" }}
                     key={item.action}
                     role="button"
                     tabIndex={0}
@@ -836,8 +842,8 @@ export default function ChatPage() {
                       }
                     }}
                   >
-                    <span aria-hidden="true" className="text-[#6b5c3b]">&rarr;</span>
-                    <span style={{ background: "linear-gradient(90deg, #988267 0%, #8C6722 50%, #7D6F7E 100%)", backgroundClip: "text", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{item.action}</span>
+                    <span aria-hidden="true" className="shrink-0 text-[12px] text-[#4C2D08]/60">&rarr;</span>
+                    <span>{item.action}</span>
                   </div>
                 ))}
               </div>
@@ -1213,12 +1219,7 @@ function ClientOverview({
     <section className="relative grid h-screen min-w-0 overflow-hidden grid-rows-[auto_minmax(0,1fr)] bg-[#F9F8F7] max-[900px]:h-auto max-[900px]:min-h-[calc(100vh-66px)]" aria-label="Client overview">
       <header className="flex h-[55px] min-w-0 items-center justify-between gap-[12px] overflow-hidden border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px] max-[900px]:sticky max-[900px]:top-0 max-[900px]:z-20 max-[640px]:px-[12px]">
         <nav className="no-scrollbar min-w-0 flex-1 overflow-x-auto" aria-label="Client sections">
-          <ul className="m-0 flex min-w-0 list-none items-center gap-[8px] pt-[10px] pb-[10px] px-0">
-            <ClientTabButton active={activeTab === "overview"} icon={<OverviewIcon />} label="Overview" onClick={() => setActiveTab("overview")} />
-            <ClientTabButton active={activeTab === "wealth-map"} icon={<WealthMapIcon />} label="Wealth map" onClick={() => setActiveTab("wealth-map")} />
-            <ClientTabButton active={activeTab === "interactions"} icon={<InteractionsIcon />} label="Interactions" onClick={() => setActiveTab("interactions")} />
-            <ClientTabButton active={activeTab === "documents"} icon={<DocumentsNavIcon />} label="Documents" onClick={() => setActiveTab("documents")} />
-          </ul>
+          <ClientTabBar activeTab={activeTab} onSelect={setActiveTab} />
         </nav>
       </header>
 
@@ -1239,30 +1240,113 @@ function ClientOverview({
   );
 }
 
+const CLIENT_TABS: { id: ClientTab; label: string; icon: ReactNode }[] = [
+  { id: "overview", label: "Overview", icon: <OverviewIcon /> },
+  { id: "wealth-map", label: "Wealth map", icon: <WealthMapIcon /> },
+  { id: "interactions", label: "Interactions", icon: <InteractionsIcon /> },
+  { id: "documents", label: "Documents", icon: <DocumentsNavIcon /> },
+];
+
+// The active #41240D pill is one shared element that slides between tabs rather
+// than a background toggled per button, so switching tabs reads as movement.
+// Its geometry has to be measured from the DOM — the labels are different
+// widths and the nav scrolls horizontally — so the buttons register themselves
+// and a layout effect copies the active one's offsetLeft/offsetWidth onto the
+// pill. `ready` gates the transition: without it the pill would animate in from
+// x=0 on first paint instead of starting under the initial tab.
+function ClientTabBar({ activeTab, onSelect }: { activeTab: ClientTab; onSelect: (tab: ClientTab) => void }) {
+  const itemsRef = useRef(new Map<ClientTab, HTMLLIElement>());
+  const [pill, setPill] = useState({ left: 0, width: 0 });
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = itemsRef.current.get(activeTab);
+      if (!el) return;
+      setPill({ left: el.offsetLeft, width: el.offsetWidth });
+    };
+
+    measure();
+    // The pill is positioned in the list's coordinate space, so it follows the
+    // nav's scroll for free; only a resize (or a font swap changing label
+    // widths) can invalidate the measurement.
+    const observer = new ResizeObserver(measure);
+    for (const el of itemsRef.current.values()) observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeTab]);
+
+  useEffect(() => {
+    // Also stays false under prefers-reduced-motion — the transition is set
+    // inline, so a `motion-reduce:` utility could not turn it off.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = window.requestAnimationFrame(() => setReady(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
+  return (
+    <ul className="relative m-0 flex min-w-0 list-none items-center gap-[8px] p-0">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute left-0 top-0 h-full rounded-[42px] bg-[#41240D]"
+        style={{
+          transform: `translateX(${pill.left}px)`,
+          width: pill.width,
+          opacity: pill.width ? 1 : 0,
+          transition: ready
+            ? "transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), width 0.38s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease"
+            : "none",
+        }}
+      />
+      {CLIENT_TABS.map((tab) => (
+        <ClientTabButton
+          key={tab.id}
+          active={activeTab === tab.id}
+          icon={tab.icon}
+          label={tab.label}
+          onClick={() => onSelect(tab.id)}
+          itemRef={(el) => {
+            if (el) itemsRef.current.set(tab.id, el);
+            else itemsRef.current.delete(tab.id);
+          }}
+        />
+      ))}
+    </ul>
+  );
+}
+
 function ClientTabButton({
   active,
   icon,
   label,
   onClick,
+  itemRef,
 }: {
   active: boolean;
   icon: ReactNode;
   label: string;
   onClick: () => void;
+  itemRef: (el: HTMLLIElement | null) => void;
 }) {
   return (
-    <li>
+    // z-10 so the label sits above the sliding pill in ClientTabBar.
+    <li ref={itemRef} className="relative z-10">
       <button
         type="button"
-        className={`shrink-0 rounded-xl border-0 font-satoshi text-[14px] leading-[130%] tracking-normal whitespace-nowrap text-black [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none] [&_svg]:h-[16px] [&_svg]:w-[16px] ${active ? "" : "hover:bg-black/5"}`}
+        // Per Figma 2411:15494: 8/12 padding, 5.137px icon gap, 17.124px icons,
+        // 14px Satoshi Bold at -0.28px. Active is a #41240D pill (42px radius,
+        // white text); inactive is transparent with a 12px radius. The active
+        // fill itself is the shared pill behind these buttons, so only the text
+        // colour changes here — it cross-fades as the pill arrives.
+        className={`relative flex shrink-0 items-center gap-[5.137px] rounded-[42px] border-0 bg-transparent font-satoshi whitespace-nowrap [overflow-wrap:break-word] [font-feature-settings:'ss03'_on,'liga'_off] [font-kerning:none] px-[12px] py-[8px] transition-colors duration-300 [&_svg]:h-[17.124px] [&_svg]:w-[17.124px] motion-reduce:transition-none ${
+          active ? "text-white" : "text-black/80 hover:bg-black/5"
+        }`}
+        // Inline, not Tailwind: globals.css has an unlayered `button { font: inherit }`
+        // that beats layered utilities, so text-[14px]/font-bold would be ignored.
         style={{
-          display: "flex",
-          padding: "10px 12px",
-          alignItems: "center",
-          gap: "8px",
-          background: active ? "rgba(162, 144, 118, 0.20)" : "rgba(162, 144, 118, 0.00)",
-          fontSize: "14px",
-          fontWeight: active ? 700 : 500,
+          fontSize: "14px", fontWeight: 700, lineHeight: 1.3, letterSpacing: "-0.28px",
+          // globals.css only sets this on a few scoped selectors, so without it
+          // macOS subpixel rendering makes Bold look heavier than Figma does.
+          WebkitFontSmoothing: "antialiased",
         }}
         aria-current={active ? "page" : undefined}
         onClick={onClick}
@@ -1273,6 +1357,19 @@ function ClientTabButton({
     </li>
   );
 }
+
+// The overview's entrance order. One table rather than numbers scattered
+// through the JSX, so the sequence can be read and reordered in one place.
+const OVERVIEW_STAGGER = {
+  backdrop: 0,
+  name: 1,
+  subtitle: 2,
+  tags: 3,
+  aumCard: 4,
+  insights: 5,
+  recentActivity: 6,
+  recentActivityRows: 7,
+};
 
 function OverviewTab({
   client,
@@ -1424,23 +1521,38 @@ function OverviewTab({
 
   return (
     <div className="relative isolate min-h-0 overflow-auto bg-[#F9F8F7] pb-[48px]">
+      {/* The overview builds up in one sequence: backdrop, name, subtitle,
+          tags, the AUM card, then the side panels — and the recent-activity
+          rows carry on from where the panels leave off (see OVERVIEW_STAGGER).
+          Indices are explicit rather than derived because these are distinct
+          elements, not a list. */}
       <div
-        className="pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url('${overviewImageSrc}')` }}
+        className="stagger-fade pointer-events-none absolute right-0 top-0 z-0 aspect-[3556/1776] w-[80%] overflow-hidden bg-[#F9F8F7] bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url('${overviewImageSrc}')`, "--stagger-index": OVERVIEW_STAGGER.backdrop } as CSSProperties}
         aria-hidden="true"
       />
 
       <section className="relative z-[1] bg-transparent px-[36px] pb-[40px] max-[1180px]:px-[24px] max-[640px]:px-[16px]">
         <div className="relative z-[1] pt-[90px] max-[1180px]:pt-[72px] max-[640px]:pt-[48px]">
-          <h1 className="m-0 font-['ButlerPro'] text-[42px] font-semibold leading-[120%] tracking-[-0.84px] text-[#4D2E0C] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]">
+          <h1
+            className="stagger-in m-0 font-['ButlerPro'] text-[42px] font-semibold leading-[120%] tracking-[-0.84px] text-[#4D2E0C] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]"
+            style={{ "--stagger-index": OVERVIEW_STAGGER.name } as CSSProperties}
+          >
             {clientName}
           </h1>
           {clientSubtitle ? (
-            <p className="mt-[10px] mb-0 max-w-[480px] font-satoshi text-[15px] font-normal leading-[1.4] text-[#4a4038] [overflow-wrap:break-word]">
+            <p
+              className="stagger-in mt-[10px] mb-0 max-w-[480px] font-satoshi text-[15px] font-normal leading-[1.4] text-[#4a4038] [overflow-wrap:break-word]"
+              style={{ "--stagger-index": OVERVIEW_STAGGER.subtitle } as CSSProperties}
+            >
               {clientSubtitle}
             </p>
           ) : null}
-          <div className="mt-[18px] flex flex-wrap gap-[10px]" aria-label="Client tags">
+          <div
+            className="stagger-in mt-[18px] flex flex-wrap gap-[10px]"
+            style={{ "--stagger-index": OVERVIEW_STAGGER.tags } as CSSProperties}
+            aria-label="Client tags"
+          >
             <span className="inline-flex min-h-[38px] items-center rounded-full bg-[#ece7df]/90 px-[18px] font-satoshi text-[15px] font-bold text-black">{clientTagValue}</span>
             <span className="inline-flex min-h-[38px] items-center rounded-full bg-[#ece7df]/90 px-[18px] font-satoshi text-[15px] font-bold text-black">{locationTag}</span>
           </div>
@@ -1449,7 +1561,10 @@ function OverviewTab({
 
       <div className={`relative z-[2] grid gap-[16px] px-[48px] max-[1180px]:grid-cols-1 max-[1180px]:px-[24px] max-[640px]:px-[16px] ${hasSidePanels ? "grid-cols-[minmax(0,1.55fr)_minmax(300px,0.88fr)]" : "grid-cols-1"}`}>
         <div className="grid gap-[24px]">
-          <div className="flex w-[567px] flex-col items-start gap-[32px] rounded-[16px] bg-[rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:w-full max-[640px]:px-[22px] max-[640px]:py-[26px]">
+          <div
+            className="stagger-in flex w-[567px] flex-col items-start gap-[32px] rounded-[16px] bg-[rgba(255,255,255,0.90)] px-[24px] pt-[32px] pb-[20px] backdrop-blur-[2px] max-[640px]:w-full max-[640px]:px-[22px] max-[640px]:py-[26px]"
+            style={{ "--stagger-index": OVERVIEW_STAGGER.aumCard } as CSSProperties}
+          >
             <section className="w-full">
               <p className="m-0 font-satoshi text-[16px] font-medium text-[#4D2E0C] max-[640px]:text-[14px]">AUM</p>
               <div className="mt-[12px] flex flex-wrap items-center gap-x-[12px] gap-y-[8px]">
@@ -1482,13 +1597,23 @@ function OverviewTab({
         {hasSidePanels ? (
           <aside className="relative z-[3] grid content-start gap-[16px]">
             {hasInsights ? (
-              <InsightPanel
-                insights={visibleInsightItems}
-                onAskAiInsight={onAskAiInsight}
-                onDismissInsight={handleDismissInsight}
-              />
+              <div className="stagger-in" style={{ "--stagger-index": OVERVIEW_STAGGER.insights } as CSSProperties}>
+                <InsightPanel
+                  insights={visibleInsightItems}
+                  onAskAiInsight={onAskAiInsight}
+                  onDismissInsight={handleDismissInsight}
+                />
+              </div>
             ) : null}
-            {hasRecentActivity ? <RecentActivityPanel activities={clientDetail?.recent_activity ?? []} onOpenInteraction={onOpenInteraction} /> : null}
+            {hasRecentActivity ? (
+              <div className="stagger-in" style={{ "--stagger-index": OVERVIEW_STAGGER.recentActivity } as CSSProperties}>
+                <RecentActivityPanel
+                  activities={clientDetail?.recent_activity ?? []}
+                  onOpenInteraction={onOpenInteraction}
+                  staggerStart={OVERVIEW_STAGGER.recentActivityRows}
+                />
+              </div>
+            ) : null}
           </aside>
         ) : null}
       </div>
@@ -1508,7 +1633,9 @@ function WealthMapTab({ clientId }: { clientId: number | null }) {
 
 function DocumentsTab({ clientId }: { clientId?: number | null }) {
   return (
-    <div className="min-h-0 overflow-auto bg-white px-[32px] py-[24px]">
+    // No padding here: .vault-container owns the page inset (32/48/64),
+    // exactly like InteractionsTab below.
+    <div className="min-h-0 overflow-auto bg-white">
       <DocumentsListView clientId={clientId} />
     </div>
   );
@@ -1830,7 +1957,17 @@ function InsightPanel({
   );
 }
 
-function RecentActivityPanel({ activities, onOpenInteraction }: { activities: unknown[]; onOpenInteraction: (id: number) => void }) {
+function RecentActivityPanel({
+  activities,
+  onOpenInteraction,
+  staggerStart = 0,
+}: {
+  activities: unknown[];
+  onOpenInteraction: (id: number) => void;
+  // Where this list picks up in the overview's entrance sequence, so the rows
+  // arrive after the panel itself rather than alongside it.
+  staggerStart?: number;
+}) {
   const normalizedActivities = activities
     .map(normalizeActivity)
     .filter((activity): activity is OverviewActivity => Boolean(activity));
@@ -1842,7 +1979,9 @@ function RecentActivityPanel({ activities, onOpenInteraction }: { activities: un
         {normalizedActivities.map((activity, index) => (
           <article
             key={`${activity.title}-${index}`}
-            className={`grid cursor-pointer grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] rounded-[8px] py-[18px] transition-colors hover:bg-black/[0.02] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}
+            className={`stagger-in grid cursor-pointer grid-cols-[40px_minmax(0,1fr)_auto] gap-[14px] rounded-[8px] py-[18px] transition-colors hover:bg-black/[0.02] ${index === 0 ? "pt-0" : ""} ${index === normalizedActivities.length - 1 ? "" : "border-b border-[#e5e7eb]"}`}
+            // Same staggered entrance as the vault feeds; see .stagger-in in globals.css.
+            style={{ "--stagger-index": Math.min(staggerStart + index, staggerStart + 8) } as CSSProperties}
             onClick={() => { if (activity.id != null) onOpenInteraction(Number(activity.id)); }}
           >
             <span className={`inline-grid h-[40px] w-[40px] place-items-center rounded-[10px] ${activity.iconClass}`}>
@@ -2682,11 +2821,13 @@ function Composer({ placeholder, agent, prompts, onPromptSelect, selectedPromptI
           {slashMatches.map((p, i) => (
             <div
               key={p.id}
-              style={{ padding: "10px 16px", cursor: "pointer", background: i === slashIndex ? "#F2F2F2" : "transparent", display: "flex", alignItems: "center", gap: 8 }}
+              // Column, not row: the panel is too narrow to keep the title on
+              // the same line without wrapping it mid-name.
+              style={{ padding: "10px 16px", cursor: "pointer", background: i === slashIndex ? "#F2F2F2" : "transparent", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}
               onMouseEnter={() => setSlashIndex(i)}
               onMouseDown={(e) => { e.preventDefault(); if (threadRuntime?.composer) { threadRuntime.composer.setText(p.user_message || ""); onPromptSelect?.(p); setSlashQuery(null); } }}
             >
-              <span style={{ fontSize: 13, fontWeight: 600, color: "#804D13" }}>/{p.title}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#804D13", whiteSpace: "nowrap" }}>/{p.title}</span>
               {p.description && <span style={{ fontSize: 12, color: "rgba(0,0,0,0.45)" }}>{p.description}</span>}
             </div>
           ))}
@@ -2752,7 +2893,7 @@ function ThreadThinking() {
 function UserMessage() {
   return (
     <MessagePrimitive.Root className={TW.messageUser}>
-      <div className={`${TW.messageContent} ${TW.userMessageContent}`}>
+      <div className={TW.userMessageContent}>
         <MessagePrimitive.Parts />
       </div>
     </MessagePrimitive.Root>

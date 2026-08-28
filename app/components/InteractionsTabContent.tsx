@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { type CSSProperties, useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import InteractionCard from "./InteractionCard";
 import { ClientLottie } from "./ClientLottie";
 import { listClientInteractions } from "../lib/wealthCrmApi";
@@ -113,14 +114,14 @@ export default function InteractionsTabContent({ clientId, focusedInteractionId,
       const date = new Date(interaction.occurred_at);
       const interactionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
+      // Sentence case, not caps: Figma 2446:20307 reads "Today • 18 Jul 2026".
       let groupKey: string;
       if (interactionDate.getTime() === today.getTime()) {
-        const formatted = date.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
-        groupKey = `TODAY • ${formatted.toUpperCase()}`;
+        groupKey = `Today • ${date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`;
       } else if (interactionDate.getTime() === yesterday.getTime()) {
-        groupKey = "YESTERDAY";
+        groupKey = "Yesterday";
       } else {
-        groupKey = date.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }).toUpperCase();
+        groupKey = date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
       }
 
       if (!groups[groupKey]) {
@@ -135,21 +136,21 @@ export default function InteractionsTabContent({ clientId, focusedInteractionId,
   const groupedInteractions = groupInteractionsByDate(interactions);
 
   return (
-    <div className="interactions-container interactions-tab-container">
-      <div className="search-header-container">
-        <div className="search-bar">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+    <div className="vault-container">
+      {/* Same pill field as the documents vault — Figma puts an identical 36px
+          search row at the top of both feeds, so they share the markup and CSS
+          instead of each carrying its own. */}
+      <div className="doc-search-row">
+        <div className="doc-search-field">
           <input
             type="text"
             placeholder="Search notes, people, entities, or keywords..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          {searchQuery && (
+          {searchQuery ? (
             <button
+              type="button"
               className="search-clear-button"
               onClick={() => setSearchQuery("")}
               aria-label="Clear search"
@@ -158,6 +159,8 @@ export default function InteractionsTabContent({ clientId, focusedInteractionId,
                 <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
+          ) : (
+            <Image src="/icons/documents/fg-search.svg" alt="" width={16} height={16} />
           )}
         </div>
       </div>
@@ -169,22 +172,37 @@ export default function InteractionsTabContent({ clientId, focusedInteractionId,
         </div>
       ) : (
         <div className="timeline-feed">
-          {Object.entries(groupedInteractions).map(([dateGroup, groupInteractions]) => (
-            <div key={dateGroup}>
-              <div className="date-header">
-                <p>{dateGroup}</p>
-              </div>
-              {groupInteractions.map((interaction) => (
-                <div key={interaction.id} ref={interaction.id === focusedInteractionId ? focusedRef : undefined}>
-                  <InteractionCard
-                    interaction={interaction}
-                    isExpanded={expandedIds.has(interaction.id)}
-                    onToggleExpand={() => toggleExpand(interaction.id)}
-                  />
+          {/* staggerIndex runs continuously across the date groups — a header and
+              the cards under it are one visual sequence, so restarting the count
+              per group would make later groups arrive before earlier rows. It's
+              a plain counter rather than an index because each group contributes
+              its header plus a variable number of rows. */}
+          {(() => {
+            let staggerIndex = 0;
+            return Object.entries(groupedInteractions).map(([dateGroup, groupInteractions]) => (
+              <div key={dateGroup} className="timeline-group">
+                <div className="date-header stagger-in" style={{ "--stagger-index": Math.min(staggerIndex++, 8) } as CSSProperties}>
+                  <p>{dateGroup}</p>
                 </div>
-              ))}
-            </div>
-          ))}
+                <div className="timeline-rows">
+                  {groupInteractions.map((interaction) => (
+                    <div
+                      key={interaction.id}
+                      ref={interaction.id === focusedInteractionId ? focusedRef : undefined}
+                      className="stagger-in"
+                      style={{ "--stagger-index": Math.min(staggerIndex++, 8) } as CSSProperties}
+                    >
+                      <InteractionCard
+                        interaction={interaction}
+                        isExpanded={expandedIds.has(interaction.id)}
+                        onToggleExpand={() => toggleExpand(interaction.id)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ));
+          })()}
           {interactions.length === 0 && !loading && (
             <div className="empty-state">
               <p>No interactions found</p>

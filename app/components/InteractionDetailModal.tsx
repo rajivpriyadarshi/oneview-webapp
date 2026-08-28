@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import PopupAnimStyles, { POPUP_CARD_CLASS, POPUP_SCRIM_CLASS } from "./PopupAnimStyles";
 
 interface InteractionDetailModalProps {
   isOpen: boolean;
@@ -44,19 +45,22 @@ export default function InteractionDetailModal({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[600] overflow-y-auto p-[24px] backdrop-blur-[2px]"
-      style={
-        showGradientBackground
-          ? {
-              background: "linear-gradient(125deg, rgba(255,244,216,0.80) 0%, rgba(255,203,48,0.78) 30%, rgba(246,155,205,0.80) 64%, rgba(224,211,247,0.80) 100%)",
-            }
-          : {
-              background: "rgba(0, 0, 0, 0.4)",
-            }
-      }
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-[600] overflow-y-auto p-[24px]" onClick={onClose}>
+      <PopupAnimStyles />
+      {/* Its own layer so the scrim can fade independently of the card. */}
+      <div
+        aria-hidden
+        className={`${POPUP_SCRIM_CLASS} pointer-events-none fixed inset-0 backdrop-blur-[2px]`}
+        style={
+          showGradientBackground
+            ? {
+                background: "linear-gradient(125deg, rgba(255,244,216,0.80) 0%, rgba(255,203,48,0.78) 30%, rgba(246,155,205,0.80) 64%, rgba(224,211,247,0.80) 100%)",
+              }
+            : {
+                background: "rgba(0, 0, 0, 0.4)",
+              }
+        }
+      />
       <button
         type="button"
         className="fixed right-[24px] top-[20px] z-[2] flex h-[40px] w-[40px] items-center justify-center rounded-full border border-black/10 bg-white text-black/80 shadow-[0_6px_22px_rgba(0,0,0,0.10)] transition hover:bg-white/90 hover:text-black"
@@ -66,9 +70,9 @@ export default function InteractionDetailModal({
         <CloseIcon />
       </button>
 
-      <div className="mx-auto flex min-h-full w-full max-w-[760px] items-center py-[72px] max-[720px]:py-[56px]">
+      <div className="relative z-[1] mx-auto flex min-h-full w-full max-w-[760px] items-center py-[72px] max-[720px]:py-[56px]">
         <div
-          className="w-full rounded-[28px] bg-white px-[32px] py-[28px] shadow-[0_24px_90px_rgba(79,45,8,0.16)] max-[640px]:rounded-[22px] max-[640px]:px-[24px]"
+          className={`${POPUP_CARD_CLASS} w-full rounded-[28px] bg-white px-[32px] py-[28px] shadow-[0_24px_90px_rgba(79,45,8,0.16)] max-[640px]:rounded-[22px] max-[640px]:px-[24px]`}
           onClick={(e) => e.stopPropagation()}
         >
           <h2 className="m-0 mb-[24px] font-satoshi text-[24px] font-bold leading-[1.3] text-[#111827]">

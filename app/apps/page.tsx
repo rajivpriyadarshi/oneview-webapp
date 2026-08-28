@@ -38,12 +38,61 @@ type WorkflowCommandsResponse = {
 };
 
 const WORKFLOW_ICONS = [
-  "/portfolio-review.png",
-  "/meeting-preparation.png",
-  "/opportunity-finder.png",
-  "/real-estate-value.png",
-  "/top-movers-news.png",
+  "/apps/opportunity-finder.png",
+  "/apps/portfolio-review.png",
+  "/apps/meeting-preparation.png",
+  "/apps/real-estate-value.png",
+  "/apps/top-movers-news.png",
 ];
+
+type WorkflowPresentation = {
+  icon: string;
+  category: string;
+  description: string;
+};
+
+// Icon, category tag and copy per app, keyed by workflow name (lowercased).
+const WORKFLOW_PRESENTATION: Record<string, WorkflowPresentation> = {
+  "opportunity finder": {
+    icon: "/apps/opportunity-finder.png",
+    category: "Investment Ideas",
+    description:
+      "Finds investment ideas matched to the client’s goals, portfolio, risk profile, and current market context.",
+  },
+  "portfolio review": {
+    icon: "/apps/portfolio-review.png",
+    category: "Portfolio Analysis",
+    description:
+      "Continuously monitors portfolios and family events for breaches, upcoming obligations, and items needing attention.",
+  },
+  "meeting preparation": {
+    icon: "/apps/meeting-preparation.png",
+    category: "Client Meetings",
+    description:
+      "Builds a concise brief using client history, recent interactions, portfolio changes, open items, and active alerts.",
+  },
+  "real estate value": {
+    icon: "/apps/real-estate-value.png",
+    category: "Real Assets",
+    description:
+      "Tracks property values using market data and keeps family real-estate holdings up to date.",
+  },
+  "top movers news": {
+    icon: "/apps/top-movers-news.png",
+    category: "Portfolio Intelligence",
+    description:
+      "Surfaces the biggest moves across client portfolios and explains the news, events, and market developments driving them.",
+  },
+};
+
+function getPresentation(cmd: WorkflowCommand, index: number): WorkflowPresentation {
+  const preset = WORKFLOW_PRESENTATION[cmd.name.trim().toLowerCase()];
+  return {
+    icon: preset?.icon ?? WORKFLOW_ICONS[index % WORKFLOW_ICONS.length],
+    category: preset?.category ?? cmd.name,
+    description: preset?.description ?? cmd.description,
+  };
+}
 
 export default function AppsPage() {
   const router = useRouter();
@@ -114,35 +163,55 @@ export default function AppsPage() {
             backgroundRepeat: "no-repeat",
           }} />
 
-          {/* Title */}
-          <h1 style={{
+          {/* Title + subtitle */}
+          <div style={{
             position: "relative",
             zIndex: 1,
+            width: "100%",
+            maxWidth: 760,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             textAlign: "center",
-            color: "black",
-            fontSize: 48,
-            fontFamily: "ButlerPro, serif",
-            fontWeight: 400,
-            lineHeight: "57.6px",
-            wordWrap: "break-word",
             marginTop: 60,
-            marginBottom: 28,
+            marginBottom: 40,
           }}>
-            Apps to simplify your workflows
-          </h1>
+            <h1 style={{
+              margin: 0,
+              color: "black",
+              fontSize: 42,
+              fontFamily: "var(--font-butler-semibold), var(--font-butler), serif",
+              fontWeight: 600,
+              lineHeight: 1.2,
+              letterSpacing: "-1.68px",
+              wordWrap: "break-word",
+            }}>
+              Discover Apps
+            </h1>
+            <p style={{
+              margin: 0,
+              color: "rgba(0, 0, 0, 0.8)",
+              fontSize: 14,
+              fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+              fontFeatureSettings: "'ss03' on",
+              fontWeight: 500,
+              lineHeight: 1.5,
+              letterSpacing: "-0.14px",
+            }}>
+              Simplify your workflows with apps
+            </p>
+          </div>
 
           {/* Cards container */}
           <div style={{
             position: "relative",
             zIndex: 1,
             width: "100%",
-            maxWidth: 859,
+            maxWidth: 760,
             background: "transparent",
-            borderRadius: 24,
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            padding: "32px 64px",
           }}>
             {loading ? (
               <div style={{ padding: 40, color: "rgba(0,0,0,0.4)", fontFamily: "Satoshi, sans-serif", fontSize: 14 }}>
@@ -155,29 +224,28 @@ export default function AppsPage() {
             ) : (
             <div style={{
               width: "100%",
-              maxWidth: 732,
               flexDirection: "column",
               justifyContent: "flex-start",
               alignItems: "flex-start",
-              gap: 24,
-              display: "inline-flex",
+              gap: 8,
+              display: "flex",
             }}>
-              {commands.map((cmd, i) => (
+              {commands.map((cmd, i) => {
+                const { icon, category, description } = getPresentation(cmd, i);
+                return (
                 <div
                   key={cmd.command}
+                  className="app-card"
                   style={{
                     width: "100%",
-                    height: 112,
-                    paddingTop: 16,
-                    paddingBottom: 16,
-                    borderRadius: 16,
+                    padding: 24,
                     justifyContent: "flex-start",
                     alignItems: "center",
                     gap: 32,
-                    display: "inline-flex",
+                    display: "flex",
                   }}
                 >
-                  <div style={{ flex: "1 1 0", justifyContent: "flex-start", alignItems: "center", gap: 16, display: "flex" }}>
+                  <div style={{ flex: "1 1 0", minWidth: 0, justifyContent: "flex-start", alignItems: "center", gap: 16, display: "flex" }}>
                     {/* Icon */}
                     <div style={{
                       width: 96,
@@ -187,59 +255,63 @@ export default function AppsPage() {
                       flexShrink: 0,
                     }}>
                       <img
-                        src={WORKFLOW_ICONS[i % WORKFLOW_ICONS.length]}
+                        src={icon}
                         alt={cmd.name}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
                     </div>
 
                     {/* Text content */}
-                    <div style={{ flex: "1 1 0", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start", gap: 12, display: "inline-flex" }}>
-                      <div style={{ alignSelf: "stretch", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start", gap: 2, display: "flex" }}>
+                    <div style={{ flex: "1 1 0", minWidth: 0, flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start", gap: 8, display: "flex" }}>
+                      <div style={{ alignSelf: "stretch", flexDirection: "column", justifyContent: "flex-start", alignItems: "flex-start", gap: 4, display: "flex" }}>
                         <div style={{
                           alignSelf: "stretch",
                           color: "black",
                           fontSize: 18,
-                          fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                          fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+                          fontFeatureSettings: "'ss03' on",
                           fontWeight: 700,
-                          lineHeight: "21.6px",
+                          lineHeight: 1.2,
+                          letterSpacing: "-0.6px",
                           wordWrap: "break-word",
                         }}>
                           {cmd.name}
                         </div>
                         <div style={{
                           alignSelf: "stretch",
-                          color: "rgba(0, 0, 0, 0.50)",
+                          color: "rgba(0, 0, 0, 0.8)",
                           fontSize: 14,
-                          fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                          fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+                          fontFeatureSettings: "'ss03' on",
                           fontWeight: 400,
-                          lineHeight: "18.2px",
+                          lineHeight: 1.6,
                           wordWrap: "break-word",
                         }}>
-                          {cmd.description}
+                          {description}
                         </div>
                       </div>
-                      <div style={{ justifyContent: "flex-start", alignItems: "center", gap: 8, display: "inline-flex" }}>
+                      <div style={{ justifyContent: "flex-start", alignItems: "center", display: "flex" }}>
                         <div style={{
                           paddingLeft: 8,
                           paddingRight: 8,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          background: "#F2F2F2",
+                          paddingTop: 5,
+                          paddingBottom: 5,
+                          // Figma layer stack: gradient texture over #E1DEF8, softened by 80% white.
+                          background:
+                            "linear-gradient(0deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.80) 100%), url('/gradient-texture.jpg') center / cover no-repeat, #E1DEF8",
                           borderRadius: 6,
                           justifyContent: "center",
                           alignItems: "center",
-                          gap: 10,
                           display: "flex",
                         }}>
                           <div style={{
-                            color: "#00000066",
+                            color: "rgba(65, 36, 13, 0.7)",
                             fontSize: 12,
                             fontFamily: "Cascadia Code, monospace",
                             fontWeight: 400,
-                            wordWrap: "break-word",
+                            whiteSpace: "nowrap",
                           }}>
-                            {cmd.name}
+                            {category}
                           </div>
                         </div>
                       </div>
@@ -250,36 +322,38 @@ export default function AppsPage() {
                   <button
                     onClick={() => handleRunClick(cmd)}
                     style={{
-                      paddingLeft: 16,
+                      flexShrink: 0,
+                      paddingLeft: 12,
                       paddingRight: 16,
-                      paddingTop: 12,
-                      paddingBottom: 12,
+                      paddingTop: 8,
+                      paddingBottom: 8,
                       background: "black",
-                      borderRadius: 28,
+                      borderRadius: 50,
                       justifyContent: "center",
                       alignItems: "center",
-                      gap: 10,
+                      gap: 6,
                       display: "flex",
                       border: "none",
                       cursor: "pointer",
                     }}
                   >
-                    <svg width="11" height="14" viewBox="0 0 11 14" fill="none">
-                      <path d="M0.664062 2.08057C0.664062 1.43313 0.664062 1.10941 0.799056 0.930962C0.916659 0.775503 1.09641 0.679302 1.29099 0.667684C1.51435 0.654348 1.78371 0.833916 2.32241 1.19305L9.33278 5.86663C9.77791 6.16338 10.0005 6.31176 10.078 6.49878C10.1458 6.66228 10.1458 6.84603 10.078 7.00954C10.0005 7.19655 9.77791 7.34493 9.33278 7.64167L2.32241 12.3153C1.7837 12.6744 1.51435 12.854 1.29099 12.8406C1.09641 12.829 0.916659 12.7328 0.799056 12.5773C0.664062 12.3989 0.664062 12.0752 0.664062 11.4277V2.08057Z" stroke="white" strokeWidth="1.33333" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                    <img src="/apps/icon-play.svg" alt="" width={16} height={16} style={{ display: "block", width: 16, height: 16 }} />
                     <span style={{
                       color: "white",
-                      fontSize: 12,
-                      fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+                      fontSize: 14,
+                      fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+                      fontFeatureSettings: "'ss03' on",
                       fontWeight: 500,
-                      lineHeight: "18px",
-                      wordWrap: "break-word",
+                      lineHeight: 1.3,
+                      letterSpacing: "-0.28px",
+                      whiteSpace: "nowrap",
                     }}>
                       Run
                     </span>
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
             )}
           </div>
@@ -292,32 +366,34 @@ export default function AppsPage() {
               zIndex: 1,
               marginTop: 32,
               marginBottom: 48,
-              paddingLeft: 24,
+              height: 56,
+              minWidth: 72,
+              paddingLeft: 16,
               paddingRight: 24,
               paddingTop: 16,
               paddingBottom: 16,
               background: "transparent",
-              borderRadius: 30,
-              outline: "1px rgba(0, 0, 0, 0.08) solid",
-              outlineOffset: "-1px",
-              border: "none",
+              borderRadius: 36,
+              border: "1px solid rgba(0, 0, 0, 0.08)",
               justifyContent: "center",
               alignItems: "center",
-              gap: 10,
+              gap: 8,
               display: "inline-flex",
               cursor: "pointer",
             }}
           >
+            <img src="/apps/icon-request-app.svg" alt="" width={24} height={24} style={{ display: "block", width: 24, height: 24 }} />
             <span style={{
               textAlign: "center",
               color: "black",
-              fontSize: 18,
-              fontFamily: "Satoshi Variable, Satoshi, sans-serif",
+              fontSize: 16,
+              fontFamily: "var(--font-satoshi), Satoshi, sans-serif",
+              fontFeatureSettings: "'ss03' on",
               fontWeight: 700,
-              lineHeight: "21.6px",
-              wordWrap: "break-word",
+              lineHeight: "24px",
+              whiteSpace: "nowrap",
             }}>
-              Request a new App
+              Request a new app
             </span>
           </button>
           {/* Feedback modal */}

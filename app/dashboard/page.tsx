@@ -80,8 +80,10 @@ export default function ClientsPage() {
       <main style={{ flex: 1, position: "relative", overflow: "hidden", padding: "48px 40px", marginLeft: 80 }}>
         <div style={{
           position: "absolute", inset: 0,
-          backgroundImage: "url('/dashboard-bg.png')",
-          backgroundSize: "cover", backgroundPosition: "center", backgroundRepeat: "no-repeat",
+          // Exported from Figma 2486:7304.
+          backgroundColor: "#F8F8F8",
+          backgroundImage: "url('/dashboard-bg-glow.jpg')",
+          backgroundSize: "cover", backgroundPosition: "top center", backgroundRepeat: "no-repeat",
           pointerEvents: "none", zIndex: 0,
         }} />
 

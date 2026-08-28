@@ -379,7 +379,10 @@ export function AuthFlow() {
         {step === "login" ? (
           <section className="auth-shell auth-shell-card" aria-labelledby="login-title">
             <form className="login-card account-card" onSubmit={handleEmailSubmit}>
-              <h1 id="login-title" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both" }}>Login to your account</h1>
+              <div className="auth-heading" style={{ animation: "fadeInUp 0.6s ease-out 0.1s both" }}>
+                <h1 id="login-title">Welcome back!</h1>
+                <p className="auth-subtitle">Login to your account</p>
+              </div>
 
               {/* Google sign-in temporarily disabled - preserved for future use
               <button
@@ -435,41 +438,13 @@ export function AuthFlow() {
               </button>
             </div>
 
-            <button className="continue-button" type="submit" disabled={isSubmitting || !email || !password} style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}>
-              Login
-            </button>
+            <div className="continue-button-wrap" style={{ animation: "fadeInUp 0.6s ease-out 0.55s both" }}>
+              <button className="continue-button" type="submit" disabled={isSubmitting || !email || !password}>
+                Continue
+              </button>
+            </div>
 
             {error ? <p className="form-error">{error}</p> : null}
-
-            <p className="terms" style={{ animation: "fadeInUp 0.6s ease-out 0.85s both" }}>
-              By continuing, you agree to Zinc&apos;s {" "}
-              <a
-                href="/terms"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  trackClick({
-                    buttonName: trackingEventsMap.authPage.CLICK_TERMS_OF_SERVICE,
-                    pageName: trackingEventsMap.authPage.PAGE,
-                  });
-                }}
-              >
-                Terms of Service
-              </a> and
-              acknowledge their <a
-                href="/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  trackClick({
-                    buttonName: trackingEventsMap.authPage.CLICK_PRIVACY_POLICY,
-                    pageName: trackingEventsMap.authPage.PAGE,
-                  });
-                }}
-              >
-                Privacy Policy
-              </a>.
-            </p>
           </form>
         </section>
       ) : null}

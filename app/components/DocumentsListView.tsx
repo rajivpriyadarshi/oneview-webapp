@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import DocumentSearchBar from "./DocumentSearchBar";
 import { ClientLottie } from "./ClientLottie";
@@ -22,13 +22,6 @@ const DOCUMENT_STATUS_POLL_INTERVAL_MS = 15000;
 const DOCUMENT_STATUS_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 type SortOption = "Most recent" | "Oldest first" | "A-Z" | "Z-A";
-
-function formatFileSize(bytes?: number | null) {
-  if (!bytes || bytes < 0) return "-";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -65,18 +58,12 @@ function getStatusLabel(status?: string | null) {
   return formatLabel(status);
 }
 
-function getStatusVariant(status?: string | null) {
+// Modifier on .doc-tag (Figma 2446:21016). Returns "" for the neutral grey pill.
+function getStatusTagVariant(status?: string | null) {
   const normalized = status?.toLowerCase();
-  if (!normalized || normalized === "processed" || normalized === "completed" || normalized === "complete") {
-    return "bg-green-50 text-green-700 border-green-200";
-  }
-  if (normalized === "failed" || normalized === "error") {
-    return "bg-red-50 text-red-700 border-red-200";
-  }
-  if (normalized === "needs_review" || normalized === "review") {
-    return "bg-amber-50 text-amber-700 border-amber-200";
-  }
-  return "bg-gray-50 text-gray-700 border-gray-200";
+  if (isError(normalized)) return "alert";
+  if (isReview(normalized)) return "review";
+  return "";
 }
 
 function isProcessing(status?: string | null) {
@@ -102,27 +89,40 @@ function formatLabel(value: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+// "spot" tiles exported from the Figma vault rows (2446:20963 / 21007 / 21029 /
+// 21043 / 21057 / 21071) — the same orange-gradient 64px tile the interactions
+// timeline uses, with a different glyph per family. The older pastel
+// `ic-*.png` set is a different visual language and is no longer used here.
+// Figma only draws six glyphs, so several families share one; the ordering
+// below matters, since the first substring hit wins.
+const DOCUMENT_SPOTS: [string, string][] = [
+  ["insurance", "/icons/documents/spot-verified.png"],
+  ["certificate", "/icons/documents/spot-verified.png"],
+  ["trust", "/icons/documents/spot-book.png"],
+  ["will", "/icons/documents/spot-book.png"],
+  ["deed", "/icons/documents/spot-book.png"],
+  ["legal", "/icons/documents/spot-book.png"],
+  ["agreement", "/icons/documents/spot-agreement.png"],
+  ["contract", "/icons/documents/spot-agreement.png"],
+  ["lease", "/icons/documents/spot-agreement.png"],
+  ["property", "/icons/documents/spot-agreement.png"],
+  ["real estate", "/icons/documents/spot-agreement.png"],
+  ["statement", "/icons/documents/spot-chart.png"],
+  ["portfolio", "/icons/documents/spot-chart.png"],
+  ["holding", "/icons/documents/spot-chart.png"],
+  ["banking", "/icons/documents/spot-chart.png"],
+  ["valuation", "/icons/documents/spot-chart.png"],
+  ["kyc", "/icons/documents/spot-folder-lock.png"],
+  ["identity", "/icons/documents/spot-folder-lock.png"],
+  ["custodian", "/icons/documents/spot-folder-lock.png"],
+  ["compliance", "/icons/documents/spot-folder-lock.png"],
+  ["account opening", "/icons/documents/spot-folder-lock.png"],
+];
+
 function getDocumentTypeIconPath(documentType: string): string {
-  const documentTypeToIcon: Record<string, string> = {
-    banking: "/icons/documents/ic-banking.png",
-    capital: "/icons/documents/ic-capital-calls.png",
-    compliance: "/icons/documents/ic-compliance.png",
-    corporate: "/icons/documents/ic-corporate-entity.png",
-    distribution: "/icons/documents/ic-distribution-notices.png",
-    insurance: "/icons/documents/ic-insurance.png",
-    investment: "/icons/documents/ic-investment-agreements.png",
-    investments: "/icons/documents/ic-statements.png",
-    kyc: "/icons/documents/ic-identity-kyc.png",
-    legal: "/icons/documents/ic-legal.png",
-    loan: "/icons/documents/ic-loans-credit.png",
-    property: "/icons/documents/ic-real-estate.png",
-    statement: "/icons/documents/ic-statements.png",
-    tax: "/icons/documents/ic-tax-documents.png",
-    trust: "/icons/documents/ic-trust-wills.png",
-  };
   const normalizedType = documentType.toLowerCase();
-  const match = Object.entries(documentTypeToIcon).find(([key]) => normalizedType.includes(key));
-  return match?.[1] || "/icons/documents/ic-statements.png";
+  const match = DOCUMENT_SPOTS.find(([key]) => normalizedType.includes(key));
+  return match?.[1] || "/icons/documents/spot-statement.png";
 }
 
 function getUploadedDocumentId(response: BrokerStatementUploadResponse) {
@@ -323,6 +323,40 @@ function extractDocumentDate(document: DocumentRecord) {
   return singleDate ? formatDocumentDate(singleDate) : "-";
 }
 
+// Figma 2446:20967 reads "Fidelity Brokerage Account • Received on 18 Aug 2026" —
+// provider first, then when it arrived. Falls back to the document type when the
+// provider is unknown, so the line never starts with a bare bullet.
+function buildRowSubtitle(document: DocumentRecord) {
+  const provider = extractProvider(document);
+  const lead = provider !== "-" ? provider : getDocumentType(document);
+  return [lead, `Received on ${formatDate(document.created_at)}`].filter(Boolean).join(" • ");
+}
+
+const EXPIRY_WARNING_DAYS = 60;
+
+// Not every document has one; when it does and it lands inside the warning
+// window, the row picks up Figma's "Expires Soon" tag plus the red date in the
+// trailing slot where an interaction row shows its timestamp.
+function extractExpiry(document: DocumentRecord) {
+  const raw = findStringByKeys(document.metadata, [
+    "expiry_date",
+    "expiration_date",
+    "valid_until",
+    "renewal_date",
+    "coverage_end",
+  ]);
+  if (!raw) return null;
+
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const daysAway = Math.ceil((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  return {
+    label: `Expires ${formatDocumentDate(raw)}`,
+    isSoon: daysAway <= EXPIRY_WARNING_DAYS,
+  };
+}
+
 function formatDocumentDateRange(start: string, end: string) {
   const formattedStart = formatDocumentDate(start);
   const formattedEnd = formatDocumentDate(end);
@@ -444,6 +478,30 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
     if (!expandedDocId || documents.some((document) => String(document.id) === expandedDocId)) return;
     setExpandedDocId(null);
   }, [documents, expandedDocId]);
+
+  // Dismiss the row's ⋮ menu on an outside click or Escape. pointerdown rather
+  // than click, so the menu is gone before the row's own onClick can toggle the
+  // card open; the trigger and popup both live inside [data-doc-menu], which is
+  // how an inside click is excluded (the trigger keeps its own toggle).
+  useEffect(() => {
+    if (!openMenuDocId) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-doc-menu]")) return;
+      setOpenMenuDocId(null);
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenMenuDocId(null);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openMenuDocId]);
 
   useEffect(() => {
     if (!clientId) return;
@@ -662,43 +720,41 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto max-w-7xl px-6 py-8">
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          accept={DOCUMENT_ACCEPT}
-          multiple
-          onChange={handleFileChange}
-        />
+    <div className="vault-container">
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept={DOCUMENT_ACCEPT}
+        multiple
+        onChange={handleFileChange}
+      />
 
-        <DocumentSearchBar
-          value={searchQuery}
-          onChange={setSearchQuery}
-          onAddDocument={handleAddDocument}
-        />
+      <DocumentSearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        onAddDocument={handleAddDocument}
+      />
 
-        {uploadError ? (
-          <p className="mb-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-            {uploadError}
-          </p>
-        ) : null}
+      {uploadError ? (
+        <p className="mt-4 rounded-xl border border-red-100 bg-red-50 px-4 py-3 font-satoshi text-[14px] font-medium text-red-700">
+          {uploadError}
+        </p>
+      ) : null}
 
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-sm text-gray-600">
+      {/* Same shell as the interactions timeline (Figma 2446:20952), so the
+          cards, spots and expand animation are shared rather than re-declared. */}
+      <div className="timeline-feed">
+        <div className="vault-sub-header">
+          <p>
             {isLoading ? "" : `${filteredDocuments.length} document${filteredDocuments.length !== 1 ? "s" : ""}`}
           </p>
-          <div className="relative">
-            <button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50">
+          <div className="vault-sort">
+            <button type="button" className="flex items-center gap-[6px] rounded-full border-0 bg-transparent px-[10px] py-[6px] text-[rgba(13,13,13,0.7)]">
               <span>Sort: {sortBy}</span>
-              <img src="/icons/documents/chevron-down.svg" alt="Sort" className="h-4 w-4" />
+              <Image src="/icons/interaction/fg-chevron-down.svg" alt="" width={16} height={16} />
             </button>
-            <select
-              value={sortBy}
-              onChange={(event) => setSortBy(event.target.value as SortOption)}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            >
+            <select value={sortBy} onChange={(event) => setSortBy(event.target.value as SortOption)}>
               <option value="Most recent">Most recent</option>
               <option value="Oldest first">Oldest first</option>
               <option value="A-Z">A-Z</option>
@@ -707,15 +763,17 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="timeline-rows">
           {isLoading ? (
-            <div className="grid min-h-[220px] place-items-center rounded-2xl border border-gray-200 bg-white p-8">
+            <div className="grid min-h-[220px] place-items-center rounded-[16px] border border-black/[0.08] bg-white p-8">
               <ClientLottie src="/loader.json" style={{ width: 120, height: 120 }} />
             </div>
           ) : filteredDocuments.length === 0 ? (
-            <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">No documents found</div>
+            <div className="rounded-[16px] border border-black/[0.08] bg-white p-8 text-center font-satoshi text-[14px] text-[rgba(13,13,13,0.7)]">
+              No documents found
+            </div>
           ) : (
-            filteredDocuments.map((document) => {
+            filteredDocuments.map((document, index) => {
               const documentId = String(document.id);
               const isExpanded = expandedDocId === documentId;
               const detailDocument = isExpanded ? (expandedDocument ?? document) : document;
@@ -723,6 +781,7 @@ export default function DocumentsListView({ clientId }: { clientId?: number | st
               return (
                 <DocumentRow
                   key={documentId}
+                  staggerIndex={index}
                   document={document}
                   detailDocument={detailDocument}
                   isExpanded={isExpanded}
@@ -755,6 +814,7 @@ function DocumentRow({
   onToggleExpand,
   onToggleMenu,
   onDelete,
+  staggerIndex,
 }: {
   document: DocumentRecord;
   detailDocument: DocumentRecord;
@@ -765,108 +825,124 @@ function DocumentRow({
   onToggleExpand: () => void;
   onToggleMenu: () => void;
   onDelete: () => void;
+  staggerIndex: number;
 }) {
   const documentType = getDocumentType(detailDocument);
   const fileUrl = detailDocument.file_url || detailDocument.file;
+  const statusVariant = getStatusTagVariant(document.processing_status);
+  // The happy path shows no pill at all, as in Figma — the tag slot is there to
+  // surface processing, review and failure states.
+  const showStatusTag = statusVariant !== "" || isProcessing(document.processing_status);
+  const expiry = extractExpiry(detailDocument);
 
   return (
-    <article className={`rounded-2xl border bg-white transition-all ${isExpanded ? "border-2 border-gray-900" : "border-gray-200"}`}>
-      <div
-        className="block w-full cursor-pointer p-6 text-left"
-        role="button"
-        tabIndex={0}
-        onClick={onToggleExpand}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onToggleExpand();
-          }
-        }}
-      >
-        <div className="flex items-start gap-4">
-          <div className="flex h-[52px] w-[52px] flex-shrink-0 items-center justify-center">
-            <Image src={getDocumentTypeIconPath(documentType)} alt="" width={52} height={52} style={{ objectFit: "contain" }} />
-          </div>
+    <div
+      className={`timeline-row stagger-in ${isExpanded ? "expanded" : ""}`}
+      role="button"
+      tabIndex={0}
+      // Capped so a long vault doesn't leave the last rows waiting seconds;
+      // .stagger-in in globals.css turns this into the animation delay.
+      style={{ cursor: "pointer", "--stagger-index": Math.min(staggerIndex, 8) } as CSSProperties}
+      onClick={onToggleExpand}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onToggleExpand();
+        }
+      }}
+    >
+      <div className="timeline-row-content">
+        <div className="icon-wrapper">
+          <Image
+            src={getDocumentTypeIconPath(documentType)}
+            alt=""
+            width={64}
+            height={64}
+            className="interaction-icon"
+          />
+        </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <h3 className="mb-1 text-base font-semibold text-gray-900">{getDisplayName(document)}</h3>
-                <p className="mb-3 text-sm text-gray-600">
-                  {formatFileSize(document.file_size)} · Uploaded {formatDate(document.created_at)}
-                </p>
+        <div className="row-content">
+          <h3 className="interaction-title">{getDisplayName(document)}</h3>
+          <p className="interaction-subtitle">{buildRowSubtitle(document)}</p>
+          {showStatusTag || (expiry?.isSoon && !isExpanded) ? (
+            <div className="doc-tags">
+              {showStatusTag ? (
+                <span className={`doc-tag ${statusVariant}`}>{getStatusLabel(document.processing_status)}</span>
+              ) : null}
+              {expiry?.isSoon && !isExpanded ? <span className="doc-tag alert">Expires Soon</span> : null}
+            </div>
+          ) : null}
+        </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700">
-                    {getDocumentType(document)}
-                  </span>
-                  <span className={`inline-flex items-center rounded-md border px-2.5 py-1 text-xs font-medium ${getStatusVariant(document.processing_status)}`}>
-                    {getStatusLabel(document.processing_status)}
-                  </span>
-                  {document.broker ? <span className="text-xs text-gray-500">{formatLabel(document.broker)}</span> : null}
-                </div>
-              </div>
+        <div className="row-actions">
+          {expiry && !isExpanded ? (
+            <span className={expiry.isSoon ? "doc-expiry" : "timestamp"}>{expiry.label}</span>
+          ) : null}
 
-              <div className="relative flex flex-shrink-0 items-center gap-2">
-                {isExpanded && fileUrl ? (
-                  <a
-                    href={fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-[26px] border border-[#E8E8E8] bg-white px-[14px] py-[6px] text-sm font-medium text-black transition-colors hover:bg-gray-50"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    View document
-                  </a>
-                ) : null}
+          {/* data-doc-menu marks the trigger + popup as one region, so the
+              document-level dismiss listener can tell an inside click from an
+              outside one without a ref per row. */}
+          <div className="relative flex items-center" data-doc-menu>
+            <button
+              type="button"
+              className="doc-menu-button"
+              aria-label="Document actions"
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleMenu();
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8" cy="3" r="1.25" fill="currentColor" />
+                <circle cx="8" cy="8" r="1.25" fill="currentColor" />
+                <circle cx="8" cy="13" r="1.25" fill="currentColor" />
+              </svg>
+            </button>
 
+            {isMenuOpen ? (
+              <div className="doc-menu">
                 <button
                   type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-gray-50"
-                  aria-label="Document actions"
+                  disabled={isDeleting}
                   onClick={(event) => {
                     event.stopPropagation();
-                    onToggleMenu();
+                    onDelete();
                   }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="8" cy="3" r="1" fill="currentColor" />
-                    <circle cx="8" cy="8" r="1" fill="currentColor" />
-                    <circle cx="8" cy="13" r="1" fill="currentColor" />
-                  </svg>
+                  Delete document
                 </button>
-
-                {isMenuOpen ? (
-                  <div className="absolute right-10 top-9 z-20 min-w-[148px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.14)]">
-                    <button
-                      type="button"
-                      disabled={isDeleting}
-                      className="block w-full px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onDelete();
-                      }}
-                    >
-                      Delete document
-                    </button>
-                  </div>
-                ) : null}
-
-                <span className="flex h-8 w-8 items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}>
-                    <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
               </div>
-            </div>
-
-            {isExpanded ? (
-              <DocumentDetails document={detailDocument} isLoading={isFetchingDetail} />
             ) : null}
+          </div>
+
+          <div className="chevron-icon" style={{ transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)" }}>
+            <Image src="/icons/interaction/fg-chevron-down.svg" alt="" width={16} height={16} />
           </div>
         </div>
       </div>
-    </article>
+
+      {/* Mounted whether or not it's open, so the shared .expanded-shell grid can
+          animate the height in both directions. */}
+      <div className={`expanded-shell ${isExpanded ? "open" : ""}`} aria-hidden={!isExpanded}>
+        <div className="expanded-body">
+          <DocumentDetails document={detailDocument} isLoading={isFetchingDetail} />
+          {fileUrl ? (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="interaction-view-details"
+              tabIndex={isExpanded ? undefined : -1}
+              onClick={(event) => event.stopPropagation()}
+            >
+              View document
+              <Image src="/icons/interaction/fg-arrow-right.svg" alt="" width={16} height={16} />
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -879,17 +955,22 @@ function DocumentDetails({ document, isLoading }: { document: DocumentRecord; is
   ];
 
   return (
-    <div className="mt-6 border-t border-gray-200 pt-6">
-      {isLoading ? <p className="mb-4 text-sm text-gray-500">Loading document details...</p> : null}
-      <div className="divide-y divide-gray-100">
-        {fields.map(([label, value]) => (
-          <div key={label} className="grid grid-cols-[180px_minmax(0,1fr)_24px] items-center gap-4 py-4 max-sm:grid-cols-[1fr_24px]">
-            <p className="m-0 text-sm text-gray-500 max-sm:col-span-2">{label}</p>
-            <p className="m-0 break-words text-sm font-medium text-gray-900">{value}</p>
-            <img src="/icons/documents/check-circle.svg" alt="" className="h-5 w-5 justify-self-end" />
+    <div className="metadata-table">
+      {isLoading ? (
+        <p className="m-0 py-[10px] font-satoshi text-[13px] text-[#6B7280]">Loading document details...</p>
+      ) : null}
+      {fields.map(([label, value]) => (
+        <div key={label} className="metadata-row">
+          <p className="metadata-label">{label}</p>
+          <div className="metadata-value-group">
+            <p>{value}</p>
+            {/* Only a resolved field earns the tick, per Figma 2446:20983. */}
+            {value && value !== "-" ? (
+              <Image src="/icons/documents/fg-check-circle.svg" alt="" width={16} height={16} />
+            ) : null}
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
