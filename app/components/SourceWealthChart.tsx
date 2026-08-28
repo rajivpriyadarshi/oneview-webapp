@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ReactFlow,
-  Background,
   Controls,
   useNodesState,
   useEdgesState,
@@ -243,141 +242,220 @@ function getAssetImage(assetType: string, name: string): string {
   return "/wealth-map/holdings.png";
 }
 
+function formatNodeLabel(value: string | undefined, fallback: string): string {
+  if (!value) return fallback;
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function getClientInitials(name: string): string {
+  const nameParts = name.trim().split(/\s+/).filter(Boolean);
+  if (nameParts.length === 0) return "";
+  if (nameParts.length === 1) return nameParts[0].slice(0, 2).toUpperCase();
+  return `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase();
+}
+
 // --- Custom Node Components ---
 
 const FONT_FAMILY = "'Satoshi Variable', Satoshi, sans-serif";
 
-function ClientNode({ data }: { data: { name: string; value: string; imageSrc: string } }) {
+function NodeTypeLabel({
+  children,
+  selected,
+  selectedBackground = "#41240d",
+}: {
+  children: string;
+  selected: boolean;
+  selectedBackground?: string;
+}) {
   return (
-    <div style={{ fontFamily: FONT_FAMILY, position: "relative" }}>
+    <div
+      style={{
+        alignSelf: "flex-start",
+        background: selected ? selectedBackground : "rgba(65, 36, 13, 0.16)",
+        borderRadius: 8,
+        color: selected ? "#fff" : "#41240d",
+        fontSize: 10.37,
+        fontWeight: 700,
+        letterSpacing: 0.622,
+        lineHeight: "13.827px",
+        padding: "4px 6px",
+        textTransform: "uppercase",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ClientNode({
+  data,
+}: {
+  data: {
+    name: string;
+    value: string;
+    imageSrc: string;
+    meta: string;
+    description: string;
+    onProfileDetails: () => void;
+  };
+}) {
+  const initials = getClientInitials(data.name);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", fontFamily: FONT_FAMILY, gap: 8, width: 328 }}>
+      <NodeTypeLabel selected>CLIENT</NodeTypeLabel>
       <div
         style={{
-          position: "absolute",
-          top: -20,
-          left: 0,
-          background: "#050505",
-          color: "#fff",
-          fontSize: 9,
-          fontWeight: 800,
-          padding: "2px 8px",
-          borderRadius: 4,
-          letterSpacing: 0.5,
-        }}
-      >
-        CLIENT
-      </div>
-      <div
-        style={{
-          width: 155,
-          height: 192,
-          background: "#1b1207",
-          border: "1.8px solid #9b5c09",
-          borderRadius: 11,
-          overflow: "hidden",
-          boxShadow: "0 7px 14px rgba(65, 44, 18, 0.24)",
+          background: "#1b1202",
+          border: "2px solid #bd7323",
+          borderRadius: 24,
+          boxShadow: "0 8px 8px rgba(0, 0, 0, 0.25)",
+          padding: 16,
           position: "relative",
         }}
       >
-        <div style={{ width: "100%", height: 80, overflow: "hidden", borderRadius: "9px 9px 0 0" }}>
+        <div style={{ height: 169, overflow: "hidden", borderRadius: 16, position: "relative", width: 294 }}>
           <img
             src={data.imageSrc}
             alt={data.name}
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
-        </div>
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: "30px 10px 14px",
-            background: "linear-gradient(to bottom, rgba(22,13,3,0) 0%, rgba(22,13,3,0.84) 34%, rgba(16,10,2,0.98) 100%)",
-          }}
-        >
-          <div style={{ color: "#fff", fontWeight: 800, fontSize: 13 }}>{data.name}</div>
-          <div style={{ color: "#f3d585", fontWeight: 500, fontSize: 10, marginTop: 4 }}>
-            Adjusted value: {data.value}
+          <div
+            aria-hidden="true"
+            style={{
+              background: "rgba(45, 159, 22, 0.79)",
+              inset: 0,
+              mixBlendMode: "overlay",
+              position: "absolute",
+            }}
+          />
+          <div
+            aria-hidden="true"
+            style={{
+              color: "#fff",
+              fontSize: 80,
+              fontWeight: 900,
+              left: "50%",
+              lineHeight: 1.2,
+              position: "absolute",
+              textAlign: "center",
+              textShadow: "0 4px 4px rgba(0, 0, 0, 0.24)",
+              top: 37,
+              transform: "translateX(-50%)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {initials}
           </div>
+          <div
+            style={{
+              background: "linear-gradient(180deg, rgba(27,18,2,0) 45%, rgba(27,18,2,0.72) 100%)",
+              inset: 0,
+              position: "absolute",
+            }}
+          />
         </div>
-        <div
-          style={{
-            position: "absolute",
-            bottom: 10,
-            right: 10,
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: "#4caf15",
-            boxShadow: "0 0 6px rgba(76, 175, 21, 0.42)",
-          }}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+          <div>
+            <div style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: "24px" }}>{data.name}</div>
+            <div style={{ color: "#fdfbb1", fontSize: 12, fontWeight: 500, lineHeight: "18px" }}>
+              Adjusted value: {data.value}
+            </div>
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 500, lineHeight: "18px" }}>
+            {data.meta}
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 14, fontWeight: 400, lineHeight: "20px" }}>
+            {data.description}
+          </div>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              data.onProfileDetails();
+            }}
+            style={{
+              alignItems: "center",
+              alignSelf: "flex-start",
+              background: "#ffb01d",
+              border: 0,
+              borderRadius: 32,
+              color: "#000",
+              display: "flex",
+              fontFamily: "Inter, sans-serif",
+              fontSize: 11.987,
+              fontWeight: 600,
+              gap: 4,
+              letterSpacing: -0.48,
+              lineHeight: "17.124px",
+              padding: "8px 12px",
+            }}
+          >
+            Profile details
+            <img src="/wealth-map/arrow-circle-right-black.svg" alt="" aria-hidden="true" style={{ height: 16, width: 16 }} />
+          </button>
+        </div>
       </div>
       <Handle type="source" position={Position.Right} style={{ background: "transparent", border: "none" }} />
     </div>
   );
 }
 
-function SectionNode({ data }: { data: { title: string; subtitle: string; imageSrc: string; badge: string; isExpanded: boolean; onClick: () => void } }) {
+type CategoryNodeData = {
+  badge: string;
+  title: string;
+  meta: string;
+  estimatedValue: string;
+  imageSrc: string;
+  isExpanded: boolean;
+  onClick: () => void;
+};
+
+function CategoryCard({ data }: { data: CategoryNodeData }) {
   return (
-    <div style={{ fontFamily: FONT_FAMILY, position: "relative", cursor: "pointer" }} onClick={data.onClick}>
+    <div
+      style={{ cursor: "pointer", display: "flex", flexDirection: "column", fontFamily: FONT_FAMILY, gap: 8, width: 328 }}
+      onClick={data.onClick}
+    >
       <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
+      <NodeTypeLabel selected={data.isExpanded}>{data.badge}</NodeTypeLabel>
       <div
         style={{
-          position: "absolute",
-          top: -18,
-          left: 0,
-          background: data.isExpanded ? "#7a6840" : "#aeb9b6",
-          color: "#fff",
-          fontSize: 8,
-          fontWeight: 800,
-          padding: "2px 8px",
-          borderRadius: 4,
-          letterSpacing: 0.4,
-        }}
-      >
-        {data.badge}
-      </div>
-      <div
-        style={{
-          width: 180,
-          height: 52,
-          background: data.isExpanded ? "#fdf6ee" : "#ffffff",
-          border: data.isExpanded ? "1.6px solid #8b6b3a" : "1px solid rgba(0,0,0,0.1)",
-          borderRadius: 9,
-          display: "flex",
           alignItems: "center",
-          padding: "0 12px",
-          boxShadow: data.isExpanded ? "0 4px 12px rgba(30,28,24,0.12)" : "0 4px 8px rgba(30,28,24,0.08)",
-          gap: 10,
-          transition: "all 0.2s ease",
+          background: data.isExpanded ? "rgba(254, 243, 223, 0.5)" : "rgba(255, 254, 252, 0.5)",
+          backdropFilter: "blur(12px) saturate(120%)",
+          border: data.isExpanded ? "2px solid #804d13" : "2px solid #d2d2d2",
+          borderRadius: 24,
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.25)",
+          display: "flex",
+          gap: 16,
+          padding: 16,
+          transition: "background-color 160ms ease, border-color 160ms ease",
+          WebkitBackdropFilter: "blur(12px) saturate(120%)",
+          width: 328,
         }}
       >
         <div
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: "50%",
+            borderRadius: 62,
+            height: 65,
             overflow: "hidden",
             flexShrink: 0,
+            width: 72,
           }}
         >
           <img src={data.imageSrc} alt={data.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 12, color: "#111" }}>{data.title}</div>
-          <div style={{ fontWeight: 500, fontSize: 9, color: "rgba(17,17,17,0.62)", marginTop: 1 }}>{data.subtitle}</div>
-        </div>
-        <div
-          style={{
-            color: data.isExpanded ? "#8b6b3a" : "#999",
-            fontSize: 12,
-            fontWeight: 700,
-            transition: "transform 0.2s ease",
-            transform: data.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
-          }}
-        >
-          &#x203A;
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", minWidth: 0 }}>
+          <div style={{ color: "#000", fontSize: 20, fontWeight: 900, lineHeight: "24px" }}>{data.title}</div>
+          <div style={{ color: "rgba(0,0,0,0.64)", fontSize: 12, fontWeight: 500, lineHeight: "18px" }}>{data.meta}</div>
+          {data.estimatedValue && (
+            <div style={{ color: "rgba(0,0,0,0.87)", fontSize: 12, fontWeight: 500, lineHeight: "20px", marginTop: 4 }}>
+              Estimated value: <span style={{ fontWeight: 700 }}>{data.estimatedValue}</span>
+            </div>
+          )}
         </div>
       </div>
       <Handle type="source" position={Position.Right} style={{ background: "transparent", border: "none" }} />
@@ -385,105 +463,84 @@ function SectionNode({ data }: { data: { title: string; subtitle: string; imageS
   );
 }
 
-function TypeGroupNode({ data }: { data: { title: string; subtitle: string; imageSrc: string; count: number; isExpanded: boolean; accent: string; onClick: () => void } }) {
+function SectionNode({ data }: { data: CategoryNodeData }) {
+  return <CategoryCard data={data} />;
+}
+
+function TypeGroupNode({ data }: { data: CategoryNodeData }) {
+  return <CategoryCard data={data} />;
+}
+
+function ItemNode({
+  data,
+}: {
+  data: {
+    name: string;
+    value: string;
+    status?: string;
+    imageSrc: string;
+    kindLabel: string;
+    detail?: string;
+    isSelected: boolean;
+    onClick: () => void;
+  };
+}) {
   return (
-    <div style={{ fontFamily: FONT_FAMILY, position: "relative", cursor: "pointer" }} onClick={data.onClick}>
+    <div
+      onClick={data.onClick}
+      style={{ cursor: "pointer", display: "flex", flexDirection: "column", fontFamily: FONT_FAMILY, gap: 8, width: 417 }}
+    >
       <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
-      <div
-        style={{
-          width: 190,
-          minHeight: 46,
-          background: data.isExpanded ? "#fdf6ee" : "#ffffff",
-          border: data.isExpanded ? `1.4px solid ${data.accent}` : "0.8px solid rgba(0,0,0,0.08)",
-          borderRadius: 8,
-          display: "flex",
-          alignItems: "center",
-          padding: "6px 10px",
-          boxShadow: data.isExpanded ? "0 3px 10px rgba(30,28,24,0.10)" : "0 3px 6px rgba(30,28,24,0.06)",
-          gap: 8,
-          transition: "all 0.2s ease",
-        }}
-      >
-        <div style={{ position: "relative", flexShrink: 0 }}>
-          <div
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: "50%",
-              overflow: "hidden",
-            }}
-          >
-            <img src={data.imageSrc} alt={data.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              top: -4,
-              right: -6,
-              width: 14,
-              height: 14,
-              borderRadius: "50%",
-              background: data.accent,
-              color: "#fff",
-              fontSize: 8,
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            {data.count}
-          </div>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 11, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: "1.3" }}>{data.title}</div>
-          <div style={{ fontWeight: 500, fontSize: 9, color: "rgba(17,17,17,0.55)", marginTop: 1 }}>{data.subtitle}</div>
-        </div>
+      <NodeTypeLabel selected={data.isSelected} selectedBackground="#4d2e0c">ASSET</NodeTypeLabel>
+      <div style={{ alignItems: "center", display: "flex", gap: 16, width: data.isSelected ? 412 : 417 }}>
         <div
           style={{
-            color: data.isExpanded ? data.accent : "#aaa",
-            fontSize: 11,
-            fontWeight: 700,
             flexShrink: 0,
-            transition: "transform 0.2s ease",
-            transform: data.isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+            height: 156,
+            position: "relative",
+            width: 88,
           }}
         >
-          &#x203A;
+          <img
+            src={data.imageSrc}
+            alt={data.name}
+            style={{
+              borderRadius: 16,
+              boxShadow: data.isSelected ? "0 0 0 2px #804d13" : "none",
+              display: "block",
+              height: 156,
+              objectFit: "cover",
+              position: "relative",
+              width: 88,
+            }}
+          />
         </div>
-      </div>
-      <Handle type="source" position={Position.Right} style={{ background: "transparent", border: "none" }} />
-    </div>
-  );
-}
-
-function ItemNode({ data }: { data: { name: string; value: string; status?: string; imageSrc: string } }) {
-  const statusColor = data.status === "Valued" ? "#1a8f4a" : data.status === "Stale" ? "#d4a017" : "#d44";
-  const statusIcon = data.status === "Valued" ? "✓" : data.status === "Stale" ? "⏱" : "⊘";
-
-  return (
-    <div style={{ fontFamily: FONT_FAMILY, display: "flex", alignItems: "center", gap: 8 }}>
-      <Handle type="target" position={Position.Left} style={{ background: "transparent", border: "none" }} />
-      <div
-        style={{
-          width: 44,
-          height: 52,
-          borderRadius: 8,
-          overflow: "hidden",
-          flexShrink: 0,
-          boxShadow: "0 3px 8px rgba(30,28,24,0.18)",
-        }}
-      >
-        <img src={data.imageSrc} alt={data.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-      </div>
-      <div style={{ maxWidth: 130 }}>
-        <div style={{ fontWeight: 800, fontSize: 11, color: "#111", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: "1.3" }}>{data.name}</div>
-        <div style={{ fontWeight: 500, fontSize: 9, color: "#777", marginTop: 2 }}>{data.value}</div>
-        {data.status && (
-          <div style={{ fontWeight: 600, fontSize: 9, color: statusColor, marginTop: 2 }}>
-            {statusIcon} {data.status}
+        <div style={{ display: "flex", flex: 1, flexDirection: "column", gap: 17, minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ color: "#804d13", fontSize: 12, fontWeight: 700, letterSpacing: 1.2, lineHeight: "18px", textTransform: "uppercase" }}>
+              {data.kindLabel}
+            </div>
+            <div style={{ color: "#000", fontSize: 20, fontWeight: 900, lineHeight: "24px" }}>{data.name}</div>
+            {data.detail && (
+              <div style={{ color: "rgba(0,0,0,0.64)", fontSize: 12, fontWeight: 500, lineHeight: "18px" }}>{data.detail}</div>
+            )}
+            {data.value && (
+              <div style={{ color: "rgba(0,0,0,0.87)", fontSize: 12, fontWeight: 500, lineHeight: "20px" }}>
+                Value: <span style={{ fontWeight: data.isSelected ? 700 : 500 }}>{data.value}</span>
+              </div>
+            )}
           </div>
-        )}
+          {!data.isSelected && data.status === "Valued" ? (
+            <div style={{ alignItems: "center", color: "#15803d", display: "flex", fontSize: 12, fontWeight: 700, gap: 4, lineHeight: "18px" }}>
+              <img src="/wealth-map/check-green.svg" alt="" aria-hidden="true" style={{ height: 12, width: 12 }} />
+              Valued
+            </div>
+          ) : !data.isSelected && data.status ? (
+            <div style={{ color: "rgba(0,0,0,0.64)", fontSize: 12, fontWeight: 700, lineHeight: "18px" }}>
+              {data.status}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );
@@ -539,19 +596,22 @@ const nodeTypes: NodeTypes = {
 // --- Layout builder ---
 
 const X_CLIENT = 0;
-const X_SECTION = 300;
-const X_TYPEGROUP = 580;
-const X_ITEM = 850;
-const SECTION_Y_SPACING = 100;
-const TYPEGROUP_Y_SPACING = 80;
-const ITEM_Y_SPACING = 72;
+const X_SECTION = 560;
+const X_TYPEGROUP = 1120;
+const X_ITEM = 1680;
+const SECTION_Y_SPACING = 176;
+const TYPEGROUP_Y_SPACING = 176;
+const ITEM_Y_SPACING = 224;
 
 function buildFlowElements(
   data: GraphResponse,
   expandedSection: string | null,
   expandedTypeGroup: string | null,
+  selectedItemId: string | null,
   onSectionClick: (sectionKey: string) => void,
   onTypeGroupClick: (typeGroupKey: string) => void,
+  onItemClick: (itemId: string) => void,
+  onProfileDetails: () => void,
 ): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
@@ -561,23 +621,34 @@ function buildFlowElements(
   const totalSectionHeight = (sectionKeys.length - 1) * SECTION_Y_SPACING;
   const clientY = totalSectionHeight / 2;
 
+  const familyCategories = data.sections.familyAndOwnership.categories;
+  const familyMemberCount = familyCategories.find((category) => category.slug === "family_members")?.members?.length ?? 0;
+
   nodes.push({
     id: "client",
     type: "clientNode",
-    position: { x: X_CLIENT, y: clientY - 96 },
+    position: { x: X_CLIENT, y: clientY - 216 },
     data: {
       name: data.client.name,
       value: formatValue(data.client.adjustedValue, data.client.currency),
       imageSrc: "/wealth-map/uhnw-client.png",
+      meta: `${familyMemberCount} Family Members · ${sectionKeys.length} Categories`,
+      description:
+        "Wealth spans businesses, investments, trusts and multiple geographies, with liquidity, concentration and succession being the most important areas to watch.",
+      onProfileDetails,
     },
     draggable: false,
   });
 
   // Section nodes
   sectionKeys.forEach((key, i) => {
-    const meta = SECTION_META[key];
     const section = data.sections[key];
     const sectionValue = "adjustedValue" in section ? (section as { adjustedValue: number }).adjustedValue : 0;
+    const categories = section.categories;
+    const itemCount = categories.reduce(
+      (total, category) => total + (category.items?.length ?? category.members?.length ?? 0),
+      0,
+    );
     const isExpanded = expandedSection === key;
     const sectionY = i * SECTION_Y_SPACING;
 
@@ -586,10 +657,11 @@ function buildFlowElements(
       type: "sectionNode",
       position: { x: X_SECTION, y: sectionY },
       data: {
+        badge: SECTION_META[key].badge,
         title: SECTION_LABELS[key],
-        subtitle: sectionValue ? formatValue(sectionValue, data.client.currency) : "",
+        meta: `${categories.length} Categories · ${itemCount} Assets`,
+        estimatedValue: sectionValue ? formatValue(sectionValue, data.client.currency) : "",
         imageSrc: SECTION_IMAGES[key],
-        badge: meta.badge,
         isExpanded,
         onClick: () => onSectionClick(key),
       },
@@ -613,7 +685,15 @@ function buildFlowElements(
   if (expandedSection) {
     const section = data.sections[expandedSection as keyof typeof data.sections];
 
-    type DisplayItem = { id: string; name: string; value: number; status?: string; imageSrc: string };
+    type DisplayItem = {
+      id: string;
+      name: string;
+      value: number;
+      status?: string;
+      imageSrc: string;
+      kindLabel: string;
+      detail?: string;
+    };
     type OwnershipDisplayItem = { id: string; title: string; points: string[] };
     type DisplayCategory = { slug: string; label: string; adjustedValue: number; items: DisplayItem[]; ownershipItems?: OwnershipDisplayItem[] };
 
@@ -643,6 +723,13 @@ function buildFlowElements(
             value: (item as { adjustedValue: number }).adjustedValue,
             status: (item as { status?: string }).status,
             imageSrc,
+            kindLabel:
+              "type" in item && item.type === "asset"
+                ? formatNodeLabel((item as GraphAssetItem).assetType, "Asset")
+                : "type" in item && item.type === "liability"
+                  ? formatNodeLabel((item as GraphLiabilityItem).liabilityType, "Liability")
+                  : "Account",
+            detail: "type" in item && item.type === "account" ? (item as GraphAccountItem).institution : undefined,
           };
         }),
       }));
@@ -659,6 +746,8 @@ function buildFlowElements(
               name: m.name,
               value: m.adjustedValue,
               imageSrc: FAMILY_IMAGES[m.relationship?.toLowerCase()] ?? "/wealth-map/family.png",
+              kindLabel: formatNodeLabel(m.partyType, "Person"),
+              detail: formatNodeLabel(m.relationship, "Family member"),
             })),
           };
         } else if (cat.slug === "ownership_relationships") {
@@ -689,6 +778,8 @@ function buildFlowElements(
                 name: ci.name,
                 value: ci.adjustedValue ?? 0,
                 imageSrc,
+                kindLabel: formatNodeLabel(ci.partyType, "Entity"),
+                detail: ci.relationship ? formatNodeLabel(ci.relationship, "") : undefined,
               };
             }),
           };
@@ -710,12 +801,12 @@ function buildFlowElements(
         type: "typeGroupNode",
         position: { x: X_TYPEGROUP, y: catY },
         data: {
+          badge: "CATEGORY",
           title: cat.label,
-          subtitle: cat.adjustedValue ? formatValue(cat.adjustedValue, data.client.currency) : "",
+          meta: `${itemCount} Assets`,
+          estimatedValue: cat.adjustedValue ? formatValue(cat.adjustedValue, data.client.currency) : "",
           imageSrc: CATEGORY_IMAGES[cat.slug] ?? "/wealth-map/holdings.png",
-          count: itemCount,
           isExpanded: isCatExpanded,
-          accent: "#8b6b3a",
           onClick: () => onTypeGroupClick(fullCatKey),
         },
         draggable: false,
@@ -795,6 +886,10 @@ function buildFlowElements(
                 value: item.value ? formatValue(item.value, data.client.currency) : "",
                 status: statusLabel,
                 imageSrc: item.imageSrc,
+                kindLabel: item.kindLabel,
+                detail: item.detail,
+                isSelected: selectedItemId === item.id,
+                onClick: () => onItemClick(item.id),
               },
               draggable: false,
             });
@@ -824,12 +919,15 @@ function buildFlowElements(
 function WealthMapFlow({
   graphData,
   className,
+  onProfileDetails,
 }: {
   graphData: GraphResponse;
   className: string;
+  onProfileDetails: () => void;
 }) {
   const [expandedSection, setExpandedSection] = useState<string | null>("financials");
   const [expandedTypeGroup, setExpandedTypeGroup] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const { fitView } = useReactFlow();
 
   const onSectionClick = useCallback(
@@ -837,6 +935,7 @@ function WealthMapFlow({
       setExpandedSection((prev) => {
         if (prev === sectionKey) return null;
         setExpandedTypeGroup(null);
+        setSelectedItemId(null);
         return sectionKey;
       });
     },
@@ -845,14 +944,29 @@ function WealthMapFlow({
 
   const onTypeGroupClick = useCallback(
     (typeGroupKey: string) => {
+      setSelectedItemId(null);
       setExpandedTypeGroup((prev) => (prev === typeGroupKey ? null : typeGroupKey));
     },
     [],
   );
 
+  const onItemClick = useCallback((itemId: string) => {
+    setSelectedItemId((previous) => (previous === itemId ? null : itemId));
+  }, []);
+
   const { nodes: flowNodes, edges: flowEdges } = useMemo(
-    () => buildFlowElements(graphData, expandedSection, expandedTypeGroup, onSectionClick, onTypeGroupClick),
-    [graphData, expandedSection, expandedTypeGroup, onSectionClick, onTypeGroupClick],
+    () =>
+      buildFlowElements(
+        graphData,
+        expandedSection,
+        expandedTypeGroup,
+        selectedItemId,
+        onSectionClick,
+        onTypeGroupClick,
+        onItemClick,
+        onProfileDetails,
+      ),
+    [graphData, expandedSection, expandedTypeGroup, selectedItemId, onSectionClick, onTypeGroupClick, onItemClick, onProfileDetails],
   );
 
   const [nodes, setNodes, onNodesChange] = useNodesState(flowNodes);
@@ -868,11 +982,13 @@ function WealthMapFlow({
       fitView({ padding: 0.2, duration: 300 });
     }, 50);
     return () => clearTimeout(timer);
-  }, [expandedSection, expandedTypeGroup, fitView]);
+  }, [expandedSection, expandedTypeGroup, selectedItemId, fitView]);
 
   return (
-    <div className={`h-full w-full ${className}`} style={{ fontFamily: FONT_FAMILY }}>
+    <div className={`relative h-full w-full overflow-hidden ${className}`} style={{ fontFamily: FONT_FAMILY }}>
+      <div className="wealth-map-screen-grid" aria-hidden="true" />
       <ReactFlow
+        className="relative z-[1]"
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
@@ -888,7 +1004,6 @@ function WealthMapFlow({
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="rgba(74, 65, 56, 0.24)" gap={46} size={2.7} variant={"dots" as any} />
         <Controls
           showInteractive={false}
           style={{
@@ -905,7 +1020,15 @@ function WealthMapFlow({
 
 // --- Main Export ---
 
-export function SourceWealthChart({ clientId, className = "" }: { clientId: number | null; className?: string }) {
+export function SourceWealthChart({
+  clientId,
+  className = "",
+  onProfileDetails,
+}: {
+  clientId: number | null;
+  className?: string;
+  onProfileDetails: () => void;
+}) {
   const [graphData, setGraphData] = useState<GraphResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -967,7 +1090,7 @@ export function SourceWealthChart({ clientId, className = "" }: { clientId: numb
 
   return (
     <ReactFlowProvider>
-      <WealthMapFlow graphData={graphData} className={className} />
+      <WealthMapFlow graphData={graphData} className={className} onProfileDetails={onProfileDetails} />
     </ReactFlowProvider>
   );
 }

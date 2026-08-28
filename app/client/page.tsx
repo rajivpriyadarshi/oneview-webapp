@@ -199,7 +199,7 @@ const TW = {
   conversationDropdownEmpty: "flex min-h-[46px] items-center px-[24px] font-satoshi text-[13px] font-normal text-black/40",
   advisorAddBtn: "inline-grid h-[36px] w-[36px] shrink-0 place-items-center rounded-[12px] border border-black/[0.08] bg-transparent text-black transition hover:bg-black/[0.03] [&_svg]:h-[16px] [&_svg]:w-[16px]",
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto px-[20px] pt-[64px] pb-[190px] max-[900px]:px-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
-  attentionTitle: "m-0 mb-[20px] max-w-[394px] font-butler text-[40px] font-medium leading-[48px] tracking-[-2px] text-black [overflow-wrap:break-word] max-[640px]:max-w-[320px] max-[640px]:text-[36px] max-[640px]:leading-[43.2px] max-[640px]:tracking-[-1.6px]",
+  attentionTitle: "m-0 mb-[20px] max-w-[394px] font-butler-medium text-[40px] font-medium leading-[48px] tracking-[-2px] text-black [font-feature-settings:'kern'_on,'liga'_on] [font-kerning:normal] [font-variant-ligatures:normal] [overflow-wrap:break-word] max-[640px]:max-w-[320px] max-[640px]:text-[36px] max-[640px]:leading-[43.2px] max-[640px]:tracking-[-1.6px]",
   attentionList: "grid max-w-[394px] gap-[8px] justify-items-start",
   promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[8px] overflow-hidden max-[640px]:gap-[6px]",
@@ -1220,7 +1220,12 @@ function ClientOverview({
           onOpenInteraction={(id) => { setFocusedInteractionId(id); setActiveTab("interactions"); }}
         />
       ) : null}
-      {activeTab === "wealth-map" ? <WealthMapTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
+      {activeTab === "wealth-map" ? (
+        <WealthMapTab
+          clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)}
+          onProfileDetails={() => setActiveTab("overview")}
+        />
+      ) : null}
       {activeTab === "interactions" ? <InteractionsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} isLoadingClient={isLoadingClient} focusedInteractionId={focusedInteractionId} onFocusHandled={() => setFocusedInteractionId(null)} /> : null}
       {activeTab === "documents" ? <DocumentsTab clientId={client?.id ?? (requestedClientId ? Number(requestedClientId) : null)} /> : null}
       <ArtifactPopup />
@@ -1537,7 +1542,7 @@ function OverviewTab({
         <div className="relative z-[1] flex w-full max-w-[540px] flex-col items-start gap-[16px] pt-[80px] max-[1180px]:pt-[72px] max-[640px]:pt-[48px]">
           <div className="flex w-full flex-col items-start">
             <h1
-              className="stagger-in m-0 w-full font-['ButlerPro'] text-[42px] font-semibold leading-[1.2] tracking-[-0.84px] text-[#261706] [font-feature-settings:'liga'_off] [overflow-wrap:break-word] max-[640px]:text-[34px]"
+              className="stagger-in m-0 w-full font-butler-semibold text-[42px] font-semibold leading-[1.2] tracking-[-0.84px] text-[#261706] [font-feature-settings:'kern'_on,'liga'_off] [font-kerning:normal] [font-variant-ligatures:none] [overflow-wrap:break-word] max-[640px]:text-[34px]"
               style={{ "--stagger-index": OVERVIEW_STAGGER.name } as CSSProperties}
             >
               {clientName}
@@ -1630,11 +1635,11 @@ function OverviewTab({
   );
 }
 
-function WealthMapTab({ clientId }: { clientId: number | null }) {
+function WealthMapTab({ clientId, onProfileDetails }: { clientId: number | null; onProfileDetails: () => void }) {
   return (
     <div className="overflow-hidden bg-white" style={{ height: "calc(100vh - 52px)" }}>
       <section className="relative h-full bg-white">
-        <SourceWealthChart clientId={clientId} />
+        <SourceWealthChart clientId={clientId} onProfileDetails={onProfileDetails} />
       </section>
     </div>
   );
