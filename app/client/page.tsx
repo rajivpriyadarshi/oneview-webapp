@@ -199,7 +199,7 @@ const TW = {
   conversationDropdownEmpty: "flex min-h-[46px] items-center px-[24px] font-satoshi text-[13px] font-normal text-black/40",
   advisorAddBtn: "inline-grid h-[36px] w-[36px] shrink-0 place-items-center rounded-[12px] border border-black/[0.08] bg-transparent text-black transition hover:bg-black/[0.03] [&_svg]:h-[16px] [&_svg]:w-[16px]",
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto px-[20px] pt-[64px] pb-[190px] max-[900px]:px-[56px] max-[900px]:pt-[64px] max-[900px]:pb-[210px] max-[640px]:px-[16px] max-[640px]:pt-[48px] max-[640px]:pb-[170px]",
-  attentionTitle: "m-0 mb-[20px] max-w-[394px] font-butler text-[36px] font-medium leading-[120%] tracking-[-2px] text-black [overflow-wrap:break-word] max-[640px]:max-w-[320px] max-[640px]:text-[32px] max-[640px]:tracking-[-1.6px]",
+  attentionTitle: "m-0 mb-[20px] max-w-[394px] font-butler text-[40px] font-medium leading-[48px] tracking-[-2px] text-black [overflow-wrap:break-word] max-[640px]:max-w-[320px] max-[640px]:text-[36px] max-[640px]:leading-[43.2px] max-[640px]:tracking-[-1.6px]",
   attentionList: "grid max-w-[394px] gap-[8px] justify-items-start",
   promptChipsRow: "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px] pb-[0px]",
   promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[8px] overflow-hidden max-[640px]:gap-[6px]",
