@@ -15,16 +15,6 @@ interface InteractionCardProps {
 // Cache for storing fetched interaction details
 const interactionDetailCache = new Map<number, Interaction & { body?: string | null }>();
 
-// Sits beside the spot on collapsed rows and at the top of the body on open
-// ones, so it never pushes the title off-centre from the icon.
-function MemoryUpdatedLine() {
-  return (
-    <div className="ai-action">
-      <Image src="/icons/interaction/fg-sparkles.svg" alt="" width={12} height={12} />
-      <span>Memory updated</span>
-    </div>
-  );
-}
 
 export default function InteractionCard({
   interaction,
@@ -53,31 +43,7 @@ export default function InteractionCard({
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const interactionDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-    const diffTime = today.getTime() - interactionDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      // Today - show time
-      return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
-    } else {
-      // Other days - show date
-      return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
-    }
-  };
-
-  const getDirectionArrow = (direction: string) => {
-    switch (direction) {
-      case "client_to_advisor":
-        return " → ";
-      case "advisor_to_client":
-        return " ← ";
-      default:
-        return " • ";
-    }
+    return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   };
 
   const hasExpandedContent =
@@ -161,9 +127,8 @@ export default function InteractionCard({
         <div className="row-content">
           <h3 className="interaction-title">{detailedInteraction.subject}</h3>
           <p className="interaction-subtitle">
-            {detailedInteraction.subtitle}
+            {detailedInteraction.source_type_display}
           </p>
-          {detailedInteraction.memory_updated && !isExpanded && <MemoryUpdatedLine />}
         </div>
 
         <div className="row-actions">
@@ -187,8 +152,6 @@ export default function InteractionCard({
             </div>
           ) : (
             <>
-              {detailedInteraction.memory_updated && <MemoryUpdatedLine />}
-
               {detailedInteraction.extracted_summary && (
                 <p className="summary-text">{detailedInteraction.extracted_summary}</p>
               )}

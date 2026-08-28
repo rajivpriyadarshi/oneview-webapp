@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import PopupAnimStyles, { POPUP_CARD_CLASS, POPUP_SCRIM_CLASS } from "./PopupAnimStyles";
 
 interface InteractionDetailModalProps {
@@ -26,6 +27,12 @@ export default function InteractionDetailModal({
   body,
   showGradientBackground = false,
 }: InteractionDetailModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -40,14 +47,13 @@ export default function InteractionDetailModal({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
-  if (!isOpen) {
+  if (!isOpen || !mounted) {
     return null;
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[600] overflow-y-auto p-[24px]" onClick={onClose}>
       <PopupAnimStyles />
-      {/* Its own layer so the scrim can fade independently of the card. */}
       <div
         aria-hidden
         className={`${POPUP_SCRIM_CLASS} pointer-events-none fixed inset-0 backdrop-blur-[2px]`}
@@ -83,6 +89,7 @@ export default function InteractionDetailModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
