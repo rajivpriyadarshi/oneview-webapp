@@ -188,7 +188,10 @@ export default function ClientsPage() {
                       <ClientRow
                         client={client}
                         isLast={i === displayClients.length - 1 && (expanded || filteredClients.length <= 4)}
-                        onNavigate={(id) => router.push(`/client?clientId=${id}`)}
+                        onNavigate={(id) => {
+                          const tab = client.attention_item?.type === "message" ? "interactions" : undefined;
+                          router.push(`/client?clientId=${id}${tab ? `&tab=${tab}` : ""}`);
+                        }}
                       />
                     </div>
                   ))}
