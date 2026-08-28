@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "../components/Sidebar";
 import { useGetCrmClientsQuery, useGetCrmAlertsQuery, useGetCrmMeetingsQuery, type CrmClient, type CrmAttentionItem, type CrmAlert, type CrmMeeting } from "../store/api";
 import { getStoredAuthToken, getStoredAdvisorProfile } from "../lib/session";
+import { apiRequest } from "../lib/apiClient";
 
 const FILTER_TABS = ["All", "Task", "Meeting", "Portfolio", "Opportunities", "Requests"] as const;
 type FilterTab = (typeof FILTER_TABS)[number];
@@ -99,8 +100,8 @@ export default function ClientsPage() {
           </div>
 
           {/* Two-column layout */}
-          <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-            {/* <div className="flex flex-col gap-4"> */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: 24, alignItems: "start" }}>
+            <div className="flex flex-col gap-4">
               {/* Client queue */}
               <div style={{
                 flex: 1, background: "white",
@@ -192,11 +193,11 @@ export default function ClientsPage() {
                 )}
               </div>
               {/* Market watch */}
-              {/* <MarketWatch /> */}
-            {/* </div> */}
+              <MarketWatch />
+            </div>
 
             {/* Right panels */}
-            <div style={{ flex: "0 0 360px", display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <ManagedAssetsCard clients={clients} />
               <AlertsPanel alerts={alerts} onViewAll={() => setShowAlertsModal(true)} onCheckNow={(alert) => {
                 const type = alert.type?.toLowerCase();
@@ -610,47 +611,118 @@ function ManagedAssetsCard({ clients }: { clients: CrmClient[] }) {
   );
 }
 
-const MARKET_DATA = [
-  {
-    name: "S&P Futures",
-    value: "$7,686.00",
-    change: "0.08%",
-    delta: "-$6.00",
-    color: "#9B1B1B",
-    points: [50,48,46,44,42,40,38,36,35,34,34,35,36,35,34,33,34,35,36,35],
-  },
-  {
-    name: "NASDAQ Fut.",
-    value: "$29,245.00",
-    change: "0.11%",
-    delta: "-$31.75",
-    color: "#9B1B1B",
-    points: [52,50,48,45,42,40,38,36,34,32,31,30,30,30,31,30,30,30,30,30],
-  },
-  {
-    name: "Dow Futures",
-    value: "$53,634.00",
-    change: "0.02%",
-    delta: "-$11.00",
-    color: "#1B7A3D",
-    points: [30,28,26,24,22,20,18,18,19,20,22,24,25,26,27,28,28,27,28,28],
-  },
-  {
-    name: "VIX",
-    value: "15.46",
-    change: "2.46%",
-    delta: "-0.39",
-    color: "#9B1B1B",
-    points: [60,55,48,40,35,30,28,26,25,25,26,27,28,28,29,30,30,31,31,31],
-  },
-];
+type PriceHistoryTicker = {
+  ticker: string;
+  prices: { date: string; close: number }[];
+};
+
+const TICKER_LABELS: Record<string, string> = {
+  SPY: "S&P Futures",
+  DIA: "Dow Futures",
+  QQQ: "NASDAQ Fut.",
+};
+
+type MarketCardData = {
+  name: string;
+  value: string;
+  change: string;
+  delta: string;
+  color: string;
+  points: number[];
+};
+
+function buildMarketCards(tickers: PriceHistoryTicker[]): MarketCardData[] {
+  return tickers.map((t) => {
+    const prices = t.prices.map((p) => p.close);
+    if (prices.length < 2) {
+      return {
+        name: TICKER_LABELS[t.ticker] ?? t.ticker,
+        value: prices.length > 0 ? `$${prices[prices.length - 1].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-",
+        change: "-",
+        delta: "-",
+        color: "#6B7280",
+        points: prices,
+      };
+    }
+    const latest = prices[prices.length - 1];
+    const first = prices[0];
+    const diff = latest - first;
+    const pct = ((diff / first) * 100).toFixed(2);
+    const isPositive = diff >= 0;
+    return {
+      name: TICKER_LABELS[t.ticker] ?? t.ticker,
+      value: `$${latest.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      change: `${Math.abs(Number(pct)).toFixed(2)}%`,
+      delta: `${isPositive ? "+" : "-"} $${Math.abs(diff).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      color: isPositive ? "#1B7A3D" : "#9B1B1B",
+      points: prices,
+    };
+  });
+}
 
 function MarketWatch() {
+  const [cards, setCards] = useState<MarketCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const today = new Date();
+    const from = new Date(today);
+    from.setMonth(from.getMonth() - 1);
+    const toStr = today.toISOString().slice(0, 10);
+    const fromStr = from.toISOString().slice(0, 10);
+
+    apiRequest<{ history: Record<string, Record<string, number>> }>(
+      `/price-history/?tickers=SPY,DIA,QQQ&from=${fromStr}&to=${toStr}`,
+    )
+      .then((raw) => {
+        if (cancelled) return;
+        const history = raw?.history;
+        if (!history || typeof history !== "object") {
+          setCards([]);
+          return;
+        }
+        const data: PriceHistoryTicker[] = Object.entries(history).map(([ticker, datePrices]) => ({
+          ticker,
+          prices: Object.entries(datePrices)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([date, close]) => ({ date, close })),
+        }));
+        setCards(buildMarketCards(data));
+      })
+      .catch((err) => {
+        console.error("MarketWatch: Failed to load price history:", err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>Market watch</h2>
+        <p style={{ fontSize: 13, color: "rgba(0,0,0,0.45)", fontFamily: "Satoshi Variable, sans-serif" }}>Loading...</p>
+      </div>
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>Market watch</h2>
+        <p style={{ fontSize: 13, color: "rgba(0,0,0,0.45)", fontFamily: "Satoshi Variable, sans-serif" }}>No market data available.</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: "white", borderRadius: 24, border: "1px solid rgba(0,0,0,0.08)", padding: "28px", marginBottom: 24 }}>
       <h2 style={{ fontSize: 16, fontWeight: 700, color: "#0F172A", margin: "0 0 20px", fontFamily: "Satoshi Variable, sans-serif", wordWrap: "break-word" }}>Market watch</h2>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
-        {MARKET_DATA.map((item) => (
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(cards.length, 4)}, 1fr)`, gap: 16 }}>
+        {cards.map((item) => (
           <div key={item.name} style={{ borderRadius: 16, border: "1px solid rgba(0,0,0,0.06)", padding: "16px 18px", position: "relative", overflow: "hidden" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
               <span style={{ fontSize: 14, fontWeight: 500, color: "#27251E", fontFamily: "Satoshi Variable, sans-serif", lineHeight: "20px" }}>{item.name}</span>
@@ -669,12 +741,16 @@ function MarketWatch() {
 }
 
 function Sparkline({ points, color }: { points: number[]; color: string }) {
+  if (points.length < 2) return null;
   const w = 200;
   const h = 48;
   const max = Math.max(...points);
   const min = Math.min(...points);
   const range = max - min || 1;
   const step = w / (points.length - 1);
+  const midVal = (points[0] + points[points.length - 1]) / 2;
+  const midY = h - ((midVal - min) / range) * (h - 8) - 4;
+  const uid = `sp-${color.replace("#", "")}-${points.length}`;
 
   const pathD = points
     .map((p, i) => {
@@ -686,22 +762,33 @@ function Sparkline({ points, color }: { points: number[]; color: string }) {
 
   const areaD = `${pathD} L${w},${h} L0,${h} Z`;
 
-  const midY = h - ((points[0] - min + (points[points.length - 1] - min)) / 2 / range) * (h - 8) - 4;
-
   return (
     <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display: "block" }}>
-      <line x1="0" y1={midY} x2={w} y2={midY} stroke="rgba(0,0,0,0.12)" strokeWidth="1" strokeDasharray="4 3" />
       <defs>
-        <linearGradient id={`grad-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        <linearGradient id={`${uid}-green`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1B7A3D" stopOpacity="0.15" />
+          <stop offset="100%" stopColor="#1B7A3D" stopOpacity="0.02" />
         </linearGradient>
+        <linearGradient id={`${uid}-red`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#9B1B1B" stopOpacity="0.02" />
+          <stop offset="100%" stopColor="#9B1B1B" stopOpacity="0.15" />
+        </linearGradient>
+        <clipPath id={`${uid}-above`}>
+          <rect x="0" y="0" width={w} height={midY} />
+        </clipPath>
+        <clipPath id={`${uid}-below`}>
+          <rect x="0" y={midY} width={w} height={h - midY} />
+        </clipPath>
       </defs>
-      <path d={areaD} fill={`url(#grad-${color.replace("#", "")})`} />
-      <path d={pathD} fill="none" stroke={color} strokeWidth="1.5" />
+      <line x1="0" y1={midY} x2={w} y2={midY} stroke="rgba(0,0,0,0.12)" strokeWidth="1" strokeDasharray="4 3" />
+      <path d={areaD} fill={`url(#${uid}-green)`} clipPath={`url(#${uid}-above)`} />
+      <path d={pathD} fill="none" stroke="#1B7A3D" strokeWidth="1.5" clipPath={`url(#${uid}-above)`} />
+      <path d={pathD} fill="none" stroke="#9B1B1B" strokeWidth="1.5" clipPath={`url(#${uid}-below)`} />
     </svg>
   );
 }
+
+
 
 function ModalOverlay({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
