@@ -1639,6 +1639,7 @@ function OverviewTab({
                   activities={clientDetail?.recent_activity ?? []}
                   onOpenInteraction={onOpenInteraction}
                   staggerStart={OVERVIEW_STAGGER.recentActivityRows}
+                  allInsightsDismissed={!hasInsights}
                 />
               </div>
             ) : null}
@@ -2044,12 +2045,12 @@ function RecentActivityPanel({
   activities,
   onOpenInteraction,
   staggerStart = 0,
+  allInsightsDismissed = false,
 }: {
   activities: unknown[];
   onOpenInteraction: (id: number) => void;
-  // Where this list picks up in the overview's entrance sequence, so the rows
-  // arrive after the panel itself rather than alongside it.
   staggerStart?: number;
+  allInsightsDismissed?: boolean;
 }) {
   const normalizedActivities = activities
     .map(normalizeActivity)
@@ -2065,7 +2066,7 @@ function RecentActivityPanel({
 
   return (
     <section
-      className="relative z-[4] flex min-h-[474px] flex-col items-start gap-[24px] overflow-hidden rounded-[16px] bg-[rgba(255,255,255,0.4)] p-[24px] backdrop-blur-[24px] max-[640px]:p-[20px]"
+      className={`relative z-[4] flex min-h-[474px] flex-col items-start gap-[24px] overflow-hidden rounded-[16px] p-[24px] backdrop-blur-[24px] max-[640px]:p-[20px] ${allInsightsDismissed ? "bg-[rgba(255,255,255,0.8)]" : "bg-[rgba(255,255,255,0.4)]"}`}
       style={{
         WebkitBackdropFilter: "blur(24px)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.55), 0 8px 32px rgba(38,23,6,0.04)",
