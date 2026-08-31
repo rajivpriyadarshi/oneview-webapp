@@ -2903,7 +2903,7 @@ function Composer({ placeholder, agent, prompts, onPromptSelect, selectedPromptI
               <div
                 key={p.id}
                 className={TW.promptChip}
-                style={selectedPromptId === p.id ? { backgroundImage: "url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", border: "1px solid transparent" } : undefined}
+                style={selectedPromptId === p.id ? { backgroundImage: "url('/insights.png')", backgroundSize: "cover", backgroundPosition: "center", backgroundColor: "#f0e4d4", border: "none" } : undefined}
                 role="button"
                 tabIndex={0}
                 onClick={() => { onPromptSelect?.(p); if (selectedPromptId !== p.id && p.user_message && threadRuntime?.composer) { threadRuntime.composer.setText(p.user_message); window.requestAnimationFrame(() => { document.querySelector<HTMLTextAreaElement>("[data-chat-composer-input]")?.focus(); }); } else if (selectedPromptId === p.id && threadRuntime?.composer) { threadRuntime.composer.setText(""); } }}
