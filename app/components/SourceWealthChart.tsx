@@ -359,10 +359,20 @@ function ClientNode({
           />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
-          <div>
-            <div style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: "24px" }}>{data.name}</div>
-            <div style={{ color: "#fdfbb1", fontSize: 12, fontWeight: 500, lineHeight: "18px" }}>
-              Adjusted value: {data.value}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+              backgroundImage: "linear-gradient(#FFFFFFB2, #FFFFFFB2), url('/insights.png')",
+              backgroundSize: "cover", backgroundPosition: "center",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "#4C2D08" }}>{initials}</span>
+            </div>
+            <div>
+              <div style={{ color: "#fff", fontSize: 20, fontWeight: 900, lineHeight: "24px" }}>{data.name}</div>
+              <div style={{ color: "#fdfbb1", fontSize: 12, fontWeight: 500, lineHeight: "18px" }}>
+                Adjusted value: {data.value}
+              </div>
             </div>
           </div>
           <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: 500, lineHeight: "18px" }}>

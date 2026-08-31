@@ -335,9 +335,9 @@ const PRIORITY_STYLES = {
 };
 
 const ATTENTION_ICON_STYLES: Record<string, { bg: string; stroke: string }> = {
-  meeting: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
-  task: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
-  portfolio_change: { bg: "rgba(107,114,128,0.07)", stroke: "#475569" },
+  meeting: { bg: "#F9EFDE", stroke: "#804D13" },
+  task: { bg: "#F9EFDE", stroke: "#804D13" },
+  portfolio_change: { bg: "#F9EFDE", stroke: "#804D13" },
   opportunity: { bg: "#F9EFDE", stroke: "#804D13" },
   request: { bg: "#F9EFDE", stroke: "#804D13" },
   message: { bg: "#F9EFDE", stroke: "#804D13" },

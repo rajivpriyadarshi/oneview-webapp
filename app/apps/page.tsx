@@ -160,7 +160,7 @@ export default function AppsPage() {
     }
     setSelectedCommand(null);
     router.push(
-      `/client?clientId=${client.id}&prompt=${encodeURIComponent(selectedCommand.command)}&workflow_tool=${encodeURIComponent(selectedCommand.tool_name)}`
+      `/client?clientId=${client.id}&prompt=${encodeURIComponent(`Run ${selectedCommand.name}`)}&workflow_tool=${encodeURIComponent(selectedCommand.tool_name)}`
     );
   }
 
