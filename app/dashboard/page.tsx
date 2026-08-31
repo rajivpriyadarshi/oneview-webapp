@@ -65,11 +65,12 @@ export default function ClientsPage() {
     if (advisor?.name) {
       setAdvisorName(advisor.name.split(" ")[0]);
     }
-    // Figma 2411:12444 orders this as "Monday 10, August, 2026".
     const now = new Date();
     const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
     const month = now.toLocaleDateString("en-US", { month: "long" });
-    setToday(`${weekday} ${now.getDate()}, ${month}, ${now.getFullYear()}`);
+    const day = now.getDate();
+    const ordinal = day % 10 === 1 && day !== 11 ? "st" : day % 10 === 2 && day !== 12 ? "nd" : day % 10 === 3 && day !== 13 ? "rd" : "th";
+    setToday(`${weekday}, ${day}${ordinal} ${month}, ${now.getFullYear()}`);
   }, [router]);
 
   const { data, isLoading, isError } = useGetCrmClientsQuery();
@@ -278,7 +279,7 @@ export default function ClientsPage() {
                 >
                   <div style={{
                     width: 8, height: 8, borderRadius: "50%", marginTop: 4, flexShrink: 0,
-                    background: (alert.cta_url && alert.cta_text && !isClickable) ? "#7F67B7" : "#39952D",
+                    background: "#39952D",
                   }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
@@ -659,8 +660,9 @@ function AlertsPanel({ alerts, onCheckNow }: { alerts: CrmAlert[]; onCheckNow: (
           {visible.map((alert, i) => {
             const type = alert.type?.toLowerCase();
             const isDocType = type === "document" || type === "documents";
+            const isInteractionType = type === "interaction";
             const isChatType = type === "chat" || type === "chats" || type === "message";
-            const isClickable = (isDocType || isChatType) && alert.client;
+            const isClickable = (isDocType || isInteractionType || isChatType) && alert.client;
             const hasAction = isClickable || (alert.cta_url && alert.cta_text);
             return (
               // Entrance on the wrapper, hover lift on the row — see .hover-lift.
@@ -676,7 +678,7 @@ function AlertsPanel({ alerts, onCheckNow }: { alerts: CrmAlert[]; onCheckNow: (
                 >
                   <div style={{
                     width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                    background: (alert.cta_url && alert.cta_text && !isClickable) ? "#7F67B7" : "#39952D",
+                    background: "#39952D",
                   }} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{alert.title}</div>
@@ -1034,9 +1036,9 @@ const PRIORITY_STYLES = {
 };
 
 const ATTENTION_ICON_STYLES: Record<string, { bg: string; stroke: string }> = {
-  meeting: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
-  task: { bg: "rgba(239,68,68,0.08)", stroke: "#EF4444" },
-  portfolio_change: { bg: "rgba(107,114,128,0.07)", stroke: "#475569" },
+  meeting: { bg: "#F9EFDE", stroke: "#804D13" },
+  task: { bg: "#F9EFDE", stroke: "#804D13" },
+  portfolio_change: { bg: "#F9EFDE", stroke: "#804D13" },
   opportunity: { bg: "#F9EFDE", stroke: "#804D13" },
   request: { bg: "#F9EFDE", stroke: "#804D13" },
   message: { bg: "#F9EFDE", stroke: "#804D13" },
