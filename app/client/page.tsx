@@ -2340,45 +2340,89 @@ function normalizeActivity(value: unknown): OverviewActivity | null {
   };
 }
 
+// The eleven "interaction icons" spot tiles from Figma (frame 2689:7799) are the
+// icon vocabulary for the activity feed: Meeting, Email, Message, Documents,
+// Portfolio, Alerts, Tasks, Financial events, Family update, Asset update, AI
+// update. Every activity type resolves to the nearest of those eleven so the
+// feed reads as one set — the older flat recent-activity-*.svg glyphs and the
+// pastel /icons/documents tiles are a different, outgoing style.
+const ACTIVITY_TILE = {
+  meeting: "/icons/interaction/ic-meeting.png",
+  email: "/icons/interaction/ic-email.png",
+  message: "/icons/interaction/ic-message.png",
+  document: "/icons/interaction/ic-document.png",
+  portfolio: "/icons/interaction/ic-portfolio.png",
+  alerts: "/icons/interaction/ic-alerts.png",
+  tasks: "/icons/interaction/ic-tasks.png",
+  events: "/icons/interaction/ic-events.png",
+  family: "/icons/interaction/ic-family-updates.png",
+  asset: "/icons/interaction/ic-asset-update.png",
+  ai: "/icons/interaction/ic-ai-update.png",
+} as const;
+
+function tile(path: string) {
+  return { path, iconClass: "bg-transparent", size: 32 };
+}
+
 function getActivityIconByName(iconName: string) {
   const iconMap: Record<string, { path: string; iconClass: string; size: number }> = {
     // Meeting & Communication
-    "meeting": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "meeting_note": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "phone": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "call": { path: "/recent-activity-phone.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "email": { path: "/recent-activity-mail.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "mail": { path: "/recent-activity-mail.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "message": { path: "/icons/interaction/ic-message.png", iconClass: "bg-transparent", size: 32 },
+    "meeting": tile(ACTIVITY_TILE.meeting),
+    "meeting_note": tile(ACTIVITY_TILE.meeting),
+    "phone": tile(ACTIVITY_TILE.meeting),
+    "call": tile(ACTIVITY_TILE.meeting),
+    "email": tile(ACTIVITY_TILE.email),
+    "mail": tile(ACTIVITY_TILE.email),
+    "message": tile(ACTIVITY_TILE.message),
 
-    // Financial & Documents
-    "capital": { path: "/recent-activity-check.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "capital_call": { path: "/recent-activity-check.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "check": { path: "/recent-activity-check.svg", iconClass: "bg-[rgba(128,77,19,0.16)]", size: 16 },
-    "distribution": { path: "/icons/documents/ic-distribution-notices.png", iconClass: "bg-transparent", size: 32 },
-    "payment": { path: "/icons/documents/ic-banking.png", iconClass: "bg-transparent", size: 32 },
-    "transfer": { path: "/icons/documents/ic-banking.png", iconClass: "bg-transparent", size: 32 },
-    "banking": { path: "/icons/documents/ic-banking.png", iconClass: "bg-transparent", size: 32 },
-    "statement": { path: "/icons/documents/ic-statements.png", iconClass: "bg-transparent", size: 32 },
-    "document": { path: "/icons/interaction/ic-document.png", iconClass: "bg-transparent", size: 32 },
+    // Financial events
+    "capital": tile(ACTIVITY_TILE.events),
+    "capital_call": tile(ACTIVITY_TILE.events),
+    "check": tile(ACTIVITY_TILE.events),
+    "distribution": tile(ACTIVITY_TILE.events),
+    "payment": tile(ACTIVITY_TILE.events),
+    "transfer": tile(ACTIVITY_TILE.events),
+    "banking": tile(ACTIVITY_TILE.events),
+    "event": tile(ACTIVITY_TILE.events),
+    "financial_event": tile(ACTIVITY_TILE.events),
 
-    // Legal & Compliance
-    "legal": { path: "/icons/documents/ic-legal.png", iconClass: "bg-transparent", size: 32 },
-    "compliance": { path: "/icons/documents/ic-compliance.png", iconClass: "bg-transparent", size: 32 },
-    "tax": { path: "/icons/documents/ic-tax-documents.png", iconClass: "bg-transparent", size: 32 },
+    // Documents
+    "statement": tile(ACTIVITY_TILE.document),
+    "document": tile(ACTIVITY_TILE.document),
+    "legal": tile(ACTIVITY_TILE.document),
+    "compliance": tile(ACTIVITY_TILE.document),
+    "tax": tile(ACTIVITY_TILE.document),
+    "investment": tile(ACTIVITY_TILE.document),
+    "trust": tile(ACTIVITY_TILE.document),
 
-    // Investment & Property
-    "investment": { path: "/icons/documents/ic-investment-agreements.png", iconClass: "bg-transparent", size: 32 },
-    "real_estate": { path: "/icons/documents/ic-real-estate.png", iconClass: "bg-transparent", size: 32 },
-    "property": { path: "/icons/documents/ic-real-estate.png", iconClass: "bg-transparent", size: 32 },
+    // Portfolio & Alerts
+    "portfolio": tile(ACTIVITY_TILE.portfolio),
+    "alert": tile(ACTIVITY_TILE.alerts),
+    "alerts": tile(ACTIVITY_TILE.alerts),
+    "risk": tile(ACTIVITY_TILE.alerts),
 
-    // Other
-    "insurance": { path: "/icons/documents/ic-insurance.png", iconClass: "bg-transparent", size: 32 },
-    "trust": { path: "/icons/documents/ic-trust-wills.png", iconClass: "bg-transparent", size: 32 },
+    // Tasks
+    "task": tile(ACTIVITY_TILE.tasks),
+    "tasks": tile(ACTIVITY_TILE.tasks),
+
+    // Family
+    "family": tile(ACTIVITY_TILE.family),
+    "family_update": tile(ACTIVITY_TILE.family),
+
+    // Assets & Property
+    "asset": tile(ACTIVITY_TILE.asset),
+    "asset_update": tile(ACTIVITY_TILE.asset),
+    "real_estate": tile(ACTIVITY_TILE.asset),
+    "property": tile(ACTIVITY_TILE.asset),
+    "insurance": tile(ACTIVITY_TILE.asset),
+
+    // AI
+    "ai": tile(ACTIVITY_TILE.ai),
+    "ai_update": tile(ACTIVITY_TILE.ai),
   };
 
   const normalized = iconName.toLowerCase().trim();
-  const iconData = iconMap[normalized] || { path: "/icons/documents/ic-statements.png", iconClass: "bg-transparent", size: 32 };
+  const iconData = iconMap[normalized] || tile(ACTIVITY_TILE.document);
 
   return {
     icon: <Image src={iconData.path} alt="" width={iconData.size} height={iconData.size} style={{ objectFit: 'contain' }} />,
@@ -2389,67 +2433,48 @@ function getActivityIconByName(iconName: string) {
 function getActivityIcon(value: string) {
   const normalized = value.toLowerCase();
 
-  // Meeting activities
-  if (normalized.includes("meeting") || normalized.includes("meet")) {
-    return {
-      icon: <Image src="/recent-activity-phone.svg" alt="" width={16} height={16} />,
-      iconClass: "bg-[rgba(128,77,19,0.16)]",
-    };
+  const spot = (path: string) => ({
+    icon: <Image src={path} alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
+    iconClass: "bg-transparent",
+  });
+
+  // Meeting activities (calls included — Figma has no separate phone tile)
+  if (normalized.includes("meeting") || normalized.includes("meet")) return spot(ACTIVITY_TILE.meeting);
+  if (normalized.includes("phone") || normalized.includes("call")) return spot(ACTIVITY_TILE.meeting);
+
+  // Email & messaging
+  if (normalized.includes("mail") || normalized.includes("email")) return spot(ACTIVITY_TILE.email);
+  if (normalized.includes("message") || normalized.includes("chat")) return spot(ACTIVITY_TILE.message);
+
+  // Financial events
+  if (
+    normalized.includes("distribution") ||
+    normalized.includes("capital") ||
+    normalized.includes("payment") ||
+    normalized.includes("transfer") ||
+    normalized.includes("bank")
+  ) {
+    return spot(ACTIVITY_TILE.events);
   }
 
-  // Email activities
-  if (normalized.includes("mail") || normalized.includes("email")) {
-    return {
-      icon: <Image src="/recent-activity-mail.svg" alt="" width={16} height={16} />,
-      iconClass: "bg-[rgba(128,77,19,0.16)]",
-    };
-  }
+  // Portfolio, alerts & tasks
+  if (normalized.includes("portfolio")) return spot(ACTIVITY_TILE.portfolio);
+  if (normalized.includes("alert") || normalized.includes("risk")) return spot(ACTIVITY_TILE.alerts);
+  if (normalized.includes("task")) return spot(ACTIVITY_TILE.tasks);
 
-  // Phone calls
-  if (normalized.includes("phone") || normalized.includes("call")) {
-    return {
-      icon: <Image src="/recent-activity-phone.svg" alt="" width={16} height={16} />,
-      iconClass: "bg-[rgba(128,77,19,0.16)]",
-    };
-  }
+  // Family
+  if (normalized.includes("family")) return spot(ACTIVITY_TILE.family);
 
-  // Distribution activities
-  if (normalized.includes("distribution")) {
-    return {
-      icon: <Image src="/icons/documents/ic-distribution-notices.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-      iconClass: "bg-transparent"
-    };
-  }
-
-  // Capital calls
-  if (normalized.includes("capital")) {
-    return {
-      icon: <Image src="/recent-activity-check.svg" alt="" width={16} height={16} />,
-      iconClass: "bg-[rgba(128,77,19,0.16)]",
-    };
-  }
-
-  // Banking/Payment/Transfer activities
-  if (normalized.includes("payment") || normalized.includes("transfer") || normalized.includes("bank")) {
-    return {
-      icon: <Image src="/icons/documents/ic-banking.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-      iconClass: "bg-transparent"
-    };
+  // Assets & property
+  if (normalized.includes("asset") || normalized.includes("property") || normalized.includes("estate")) {
+    return spot(ACTIVITY_TILE.asset);
   }
 
   // Document activities
-  if (normalized.includes("document") || normalized.includes("file")) {
-    return {
-      icon: <Image src="/icons/interaction/ic-document.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-      iconClass: "bg-transparent"
-    };
-  }
+  if (normalized.includes("document") || normalized.includes("file")) return spot(ACTIVITY_TILE.document);
 
-  // Default to statements icon for other activities
-  return {
-    icon: <Image src="/icons/documents/ic-statements.png" alt="" width={32} height={32} style={{ objectFit: 'contain' }} />,
-    iconClass: "bg-transparent"
-  };
+  // Default to the documents tile for other activities
+  return spot(ACTIVITY_TILE.document);
 }
 
 function getStringField(record: Record<string, unknown>, keys: string[]) {

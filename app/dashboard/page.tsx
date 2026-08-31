@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useLayoutEffect, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Sidebar from "../components/Sidebar";
 import { useGetCrmClientsQuery, useGetCrmAlertsQuery, useGetCrmMeetingsQuery, type CrmClient, type CrmAttentionItem, type CrmAlert, type CrmMeeting } from "../store/api";
 import { getStoredAuthToken, getStoredAdvisorProfile } from "../lib/session";
@@ -325,13 +326,7 @@ export default function ClientsPage() {
                       cursor: isClickable ? "pointer" : "default",
                     }}
                   >
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                      background: isFirst ? "#FDE5C3" : "#CA8C4626",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                    }}>
-                      <MeetingIcon title={meeting.title} />
-                    </div>
+                    <MeetingIcon title={meeting.title} size={36} />
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A" }}>{meeting.title}</div>
                       {meeting.client_name && (
@@ -730,13 +725,7 @@ function MeetingsPanel({ meetings, onMeetingClick }: { meetings: CrmMeeting[]; o
                   onClick={isClickable ? () => onMeetingClick(meeting.client!) : undefined}
                   style={{ ...PANEL_ROW, cursor: isClickable ? "pointer" : "default" }}
                 >
-                  <div style={{
-                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                    background: "rgba(202,140,70,0.15)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <MeetingIcon title={meeting.title} />
-                  </div>
+                  <MeetingIcon title={meeting.title} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0 }}>
                     <div>
                       <div style={{ fontSize: 14, fontWeight: 700, color: "black" }}>{meeting.title}</div>
@@ -758,26 +747,24 @@ function MeetingsPanel({ meetings, onMeetingClick }: { meetings: CrmMeeting[]; o
   );
 }
 
-function MeetingIcon({ title }: { title: string }) {
+// The "interaction icons" spot tiles from Figma (frame 2689:7799) — self-contained
+// 64px gradient tiles, so no wrapper background here. A portfolio review gets the
+// pie-chart tile; everything else, onboarding included, gets the calendar tile
+// since the Figma set has no people glyph.
+function MeetingIcon({ title, size = 40 }: { title: string; size?: number }) {
   const t = title.toLowerCase();
-  if (t.includes("portfolio")) {
-    return (
-      <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
-        <path d="M15.0011 19V3C15.0011 2.46957 14.7904 1.96086 14.4153 1.58579C14.0402 1.21071 13.5314 1 13.001 1H9.00064C8.47016 1 7.96142 1.21071 7.58631 1.58579C7.21121 1.96086 7.00048 2.46957 7.00048 3V19M3.00016 5H19.0014C20.1061 5 21.0016 5.89543 21.0016 7V17C21.0016 18.1046 20.1061 19 19.0014 19H3.00016C1.8955 19 1 18.1046 1 17V7C1 5.89543 1.8955 5 3.00016 5Z" stroke="black" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  if (t.includes("onboard") || t.includes("new client")) {
-    return (
-      <svg width="22" height="20" viewBox="0 0 22 20" fill="none">
-        <path d="M15.0011 19V17C15.0011 15.9391 14.5797 14.9217 13.8295 14.1716C13.0792 13.4214 12.0618 13 11.0008 13H5.00032C3.93937 13 2.92187 13.4214 2.17167 14.1716C1.42146 14.9217 1 15.9391 1 17V19M18.0014 6V12M21.0016 9H15.0011M12.0009 5C12.0009 7.20914 10.2099 9 8.00056 9C5.79124 9 4.00024 7.20914 4.00024 5C4.00024 2.79086 5.79124 1 8.00056 1C10.2099 1 12.0009 2.79086 12.0009 5Z" stroke="black" strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    );
-  }
+  const src = t.includes("portfolio")
+    ? "/icons/interaction/ic-portfolio.png"
+    : "/icons/interaction/ic-meeting.png";
+
   return (
-    <svg width="16" height="20" viewBox="0 0 16 20" fill="none">
-      <path d="M1 19V13M8.0008 19V1M15.0016 19V7" stroke="black" strokeWidth="2" strokeLinecap="round" />
-    </svg>
+    <Image
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      style={{ borderRadius: 10, flexShrink: 0, objectFit: "contain" }}
+    />
   );
 }
 
