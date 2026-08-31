@@ -333,24 +333,6 @@ function ClientNode({
             }}
           />
           <div
-            aria-hidden="true"
-            style={{
-              color: "#fff",
-              fontSize: 80,
-              fontWeight: 900,
-              left: "50%",
-              lineHeight: 1.2,
-              position: "absolute",
-              textAlign: "center",
-              textShadow: "0 4px 4px rgba(0, 0, 0, 0.24)",
-              top: 37,
-              transform: "translateX(-50%)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {initials}
-          </div>
-          <div
             style={{
               background: "linear-gradient(180deg, rgba(27,18,2,0) 45%, rgba(27,18,2,0.72) 100%)",
               inset: 0,
