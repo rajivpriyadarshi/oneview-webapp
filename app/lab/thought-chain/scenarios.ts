@@ -33,23 +33,57 @@ export const SCENARIOS: Scenario[] = [
       },
       {
         id: "privacy-guard",
+        kind: "system",
+        glyph: "shield",
+        systemLabel: "System · Privacy",
         verb: "Ran",
         label: "Privacy Guard",
         bullets: [
           "Detected PII in retrieved client data",
+          {
+            kind: "mask",
+            // Fabricated, but shaped like the real thing — Singapore NRIC,
+            // local mobile format. raw and masked must be the same length or
+            // the wipe jitters; see MaskItem.
+            items: [
+              { key: "Account no.", raw: "8821-4471-0093", masked: "••••-••••-0093" },
+              { key: "NRIC", raw: "S8412996J", masked: "S•••••96J" },
+              { key: "Email", raw: "p.kumar@meridian-fo.sg", masked: "•••••••@meridian-fo.sg" },
+              { key: "Mobile", raw: "+65 9123 4478", masked: "+65 •••• 4478" },
+            ],
+          },
           "Masked account identifiers and unnecessary personal details",
         ],
-        icon: "/chat-workflow/risk-alerts.png",
       },
       {
         id: "reasoning-router",
+        kind: "system",
+        glyph: "router",
+        systemLabel: "System · Routing",
         verb: "Used",
         label: "Reasoning Router",
         bullets: [
           "Classified task as portfolio performance analysis",
-          "Selected Quantitative Reasoning · Medium effort",
+          {
+            kind: "route",
+            from: "Portfolio performance",
+            to: "Quantitative Reasoning",
+          },
+          // Deliberately not sorted by fit, and the winner is not the largest
+          // model — the point of showing the evaluation is that it looks like a
+          // judgement, not a lookup.
+          {
+            kind: "model-select",
+            label: "Candidate models",
+            candidates: [
+              { name: "Haiku 4.5", note: "too shallow for numerics", fit: 0.34 },
+              { name: "Sonnet 5", note: "best depth-to-latency fit", fit: 0.91 },
+              { name: "Opus 5", note: "over-provisioned for task", fit: 0.68 },
+            ],
+            chosen: "Sonnet 5",
+          },
+          "Selected Sonnet 5 · Memory effort Medium",
         ],
-        icon: "/chat-workflow/meeting-prep.png",
       },
       {
         id: "portfolio-analyzer",

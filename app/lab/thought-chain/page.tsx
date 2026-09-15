@@ -22,7 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import Sidebar from "../../components/Sidebar";
 import SuggestionChip from "../../components/SuggestionChip";
 import MarkdownContent from "../../components/MarkdownContent";
-import { ThoughtChain, type ThoughtProgress } from "./ThoughtChain";
+import { ThoughtChain, detailDwellMs, type ThoughtProgress } from "./ThoughtChain";
 import { SCENARIOS, DEFAULT_SCENARIO_ID, type Scenario } from "./scenarios";
 
 /* ------------------------------------------------------------------ timing */
@@ -66,23 +66,38 @@ function buildFrames(scenario: Scenario, staggerBullets: boolean): Frame[] {
     { label: "Thinking", progress: { stepIndex: -1, bulletIndex: 0, done: false }, showAnswer: false, delayMs: 0 },
   ];
 
+  /** Dwell owed to the previous step's final detail line. */
+  let lastBulletDwellMs = 0;
+
   scenario.steps.forEach((step, i) => {
     frames.push({
       label: `${step.label} — header`,
       progress: { stepIndex: i, bulletIndex: 0, done: false },
       showAnswer: false,
-      delayMs: i === 0 ? TIMING.thinking : TIMING.stepGap,
+      delayMs: i === 0 ? TIMING.thinking : Math.max(TIMING.stepGap, lastBulletDwellMs),
     });
+    lastBulletDwellMs = 0;
 
     if (staggerBullets) {
       step.bullets.forEach((_, bi) => {
+        // A detail line that animates itself has to be allowed to finish: the
+        // redaction sweep and the model evaluation both run longer than the
+        // normal bullet gap, and releasing the next line over the top of them
+        // reads as the trace getting ahead of itself.
+        const previous = bi > 0 ? step.bullets[bi - 1] : undefined;
+        const base = bi === 0 ? TIMING.stepHeader : TIMING.bullet;
+
         frames.push({
           label: `${step.label} — bullet ${bi + 1}`,
           progress: { stepIndex: i, bulletIndex: bi + 1, done: false },
           showAnswer: false,
-          delayMs: bi === 0 ? TIMING.stepHeader : TIMING.bullet,
+          delayMs: previous ? Math.max(base, detailDwellMs(previous)) : base,
         });
       });
+
+      // Same for the last line, before the next step's header moves in.
+      const tail = step.bullets.at(-1);
+      if (tail) lastBulletDwellMs = detailDwellMs(tail);
     }
   });
 
@@ -90,7 +105,7 @@ function buildFrames(scenario: Scenario, staggerBullets: boolean): Frame[] {
     label: "Chain complete",
     progress: { stepIndex: scenario.steps.length, bulletIndex: 0, done: true },
     showAnswer: false,
-    delayMs: TIMING.stepGap,
+    delayMs: Math.max(TIMING.stepGap, lastBulletDwellMs),
   });
   frames.push({
     label: "Answer",
@@ -273,6 +288,7 @@ export default function ThoughtChainLabPage() {
                           progress={frame?.progress ?? { stepIndex: -1, bulletIndex: 0, done: false }}
                           staggerBullets={staggerBullets}
                           collapseInactive={collapseInactive}
+                          speed={speed}
                         />
 
                         {answerText ? (
