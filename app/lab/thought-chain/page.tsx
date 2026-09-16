@@ -19,11 +19,15 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import Link from "next/link";
 import Sidebar from "../../components/Sidebar";
+import MockClientOverview from "../MockClientOverview";
 import SuggestionChip from "../../components/SuggestionChip";
-import MarkdownContent from "../../components/MarkdownContent";
+import { AnnotatedAnswer } from "./AnnotatedAnswer";
 import { ThoughtChain, detailDwellMs, type ThoughtProgress } from "./ThoughtChain";
 import { SCENARIOS, DEFAULT_SCENARIO_ID, type Scenario } from "./scenarios";
+import { InspectResponsePanel, ResponseGrounding } from "./ResponseGrounding";
+import { GROUNDINGS, GROUNDING_LEVELS, type GroundingLevel } from "./grounding";
 
 /* ------------------------------------------------------------------ timing */
 
@@ -127,6 +131,14 @@ export default function ThoughtChainLabPage() {
   const [stepMode, setStepMode] = useState(false);
   const [showOverview, setShowOverview] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(true);
+  const [groundingLevel, setGroundingLevel] = useState<GroundingLevel>("well-grounded");
+  const [showGrounding, setShowGrounding] = useState(true);
+  const [showAnnotations, setShowAnnotations] = useState(true);
+  /**
+   * Owned here rather than inside <ResponseGrounding> because the panel is
+   * mounted beside the chat column, not next to the pill that opens it.
+   */
+  const [inspecting, setInspecting] = useState(false);
 
   /** null = empty state (nothing sent yet). */
   const [sentPrompt, setSentPrompt] = useState<string | null>(null);
@@ -145,10 +157,13 @@ export default function ThoughtChainLabPage() {
   const isRunning = sentPrompt !== null && frameIndex < frames.length - 1;
   const viewportRef = useRef<HTMLDivElement>(null);
 
+  // The panel closes on anything that invalidates the answer it describes,
+  // otherwise it would reappear by itself the moment the next run finished.
   const reset = useCallback(() => {
     setSentPrompt(null);
     setFrameIndex(-1);
     setAnswerWords(0);
+    setInspecting(false);
   }, []);
 
   const start = useCallback((prompt: string) => {
@@ -156,6 +171,7 @@ export default function ThoughtChainLabPage() {
     setFrameIndex(0);
     setAnswerWords(0);
     setComposerText("");
+    setInspecting(false);
   }, []);
 
   const replay = useCallback(() => {
@@ -224,6 +240,12 @@ export default function ThoughtChainLabPage() {
   const isEmpty = sentPrompt === null;
   const showThinking = frame !== null && frame.progress.stepIndex < 0;
   const answerText = frame?.showAnswer ? answerWordList.slice(0, answerWords).join("") : "";
+  /**
+   * The marker waits for the last word. Grounding describes the whole answer,
+   * so showing it against a half-streamed one would be claiming more than the
+   * answer has said yet.
+   */
+  const answerComplete = Boolean(frame?.showAnswer) && answerWords >= answerWordList.length;
 
   return (
     <div className={TW.shell}>
@@ -292,7 +314,18 @@ export default function ThoughtChainLabPage() {
                         />
 
                         {answerText ? (
-                          <MarkdownContent className={TW.markdown}>{answerText}</MarkdownContent>
+                          <AnnotatedAnswer
+                            className={TW.markdown}
+                            markdown={answerText}
+                            annotations={showAnnotations ? scenario.annotations : undefined}
+                          />
+                        ) : null}
+
+                        {answerComplete && showGrounding ? (
+                          <ResponseGrounding
+                            level={groundingLevel}
+                            onInspect={() => setInspecting(true)}
+                          />
                         ) : null}
                       </div>
                     </div>
@@ -363,6 +396,15 @@ export default function ThoughtChainLabPage() {
               </div>
             </div>
           </div>
+
+          {/* Inside the chat panel so it hinges off that column's right edge and
+              tracks its width, but absolutely positioned, so it overlays the
+              overview instead of squeezing the thread. */}
+          <InspectResponsePanel
+            level={groundingLevel}
+            open={inspecting && answerComplete && showGrounding}
+            onClose={() => setInspecting(false)}
+          />
         </aside>
 
         {showOverview ? <MockClientOverview /> : null}
@@ -373,6 +415,12 @@ export default function ThoughtChainLabPage() {
         onToggleOpen={() => setControlsOpen((v) => !v)}
         scenarioId={scenarioId}
         onScenarioChange={selectScenario}
+        groundingLevel={groundingLevel}
+        onGroundingLevelChange={setGroundingLevel}
+        showGrounding={showGrounding}
+        onShowGroundingChange={setShowGrounding}
+        showAnnotations={showAnnotations}
+        onShowAnnotationsChange={setShowAnnotations}
         speed={speed}
         onSpeedChange={setSpeed}
         staggerBullets={staggerBullets}
@@ -408,6 +456,12 @@ function ControlBar({
   onToggleOpen,
   scenarioId,
   onScenarioChange,
+  groundingLevel,
+  onGroundingLevelChange,
+  showGrounding,
+  onShowGroundingChange,
+  showAnnotations,
+  onShowAnnotationsChange,
   speed,
   onSpeedChange,
   staggerBullets,
@@ -432,6 +486,12 @@ function ControlBar({
   onToggleOpen: () => void;
   scenarioId: string;
   onScenarioChange: (id: string) => void;
+  groundingLevel: GroundingLevel;
+  onGroundingLevelChange: (level: GroundingLevel) => void;
+  showGrounding: boolean;
+  onShowGroundingChange: (value: boolean) => void;
+  showAnnotations: boolean;
+  onShowAnnotationsChange: (value: boolean) => void;
   speed: number;
   onSpeedChange: (speed: number) => void;
   staggerBullets: boolean;
@@ -467,9 +527,12 @@ function ControlBar({
   return (
     <div className="fixed right-4 bottom-4 z-[100] w-[300px] rounded-[16px] border border-white/10 bg-[#1a1a1a]/95 p-4 font-satoshi text-white shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-[12px] font-bold tracking-[0.06em] uppercase text-white/50">
-          Thought chain sim
-        </span>
+        {/* The only way out of a prototype that fills the viewport. Lives in the
+            control bar rather than on the mocked chrome, so it can't be mistaken
+            for part of the product. */}
+        <Link href="/lab" className="text-[12px] font-bold tracking-[0.06em] uppercase text-white/50 transition-colors hover:text-white">
+          ← Chat transparency
+        </Link>
         <button type="button" onClick={onToggleOpen} className="text-[16px] leading-none text-white/40 hover:text-white">
           ×
         </button>
@@ -487,6 +550,26 @@ function ControlBar({
           ))}
         </select>
       </label>
+
+      {/* Grounding is a property of the answer, not of the run, so it gets its
+          own control rather than three more entries in the scenario list —
+          every scenario can be shown at any of the three levels. */}
+      <div className="mb-3">
+        <span className={CTRL.label}>Grounding</span>
+        <div className="flex gap-1">
+          {GROUNDING_LEVELS.map((level) => (
+            <button
+              key={level}
+              type="button"
+              onClick={() => onGroundingLevelChange(level)}
+              title={GROUNDINGS[level].verdict}
+              className={`${CTRL.segment} ${groundingLevel === level ? CTRL.segmentOn : ""}`}
+            >
+              {GROUNDINGS[level].label.split(" ")[0]}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="mb-3">
         <span className={CTRL.label}>Speed</span>
@@ -530,6 +613,8 @@ function ControlBar({
         <Toggle label="Step mode (manual frames)" value={stepMode} onChange={onStepModeChange} />
         <Toggle label="Collapse inactive steps" value={collapseInactive} onChange={onCollapseInactiveChange} />
         <Toggle label="Stagger bullets" value={staggerBullets} onChange={onStaggerBulletsChange} />
+        <Toggle label="Show grounding marker" value={showGrounding} onChange={onShowGroundingChange} />
+        <Toggle label="Underline masked PII" value={showAnnotations} onChange={onShowAnnotationsChange} />
         <Toggle label="Show client panel" value={showOverview} onChange={onShowOverviewChange} />
       </div>
     </div>
@@ -565,69 +650,6 @@ const CTRL = {
   segmentOn: "!border-[#b37f40] !bg-[#b37f40]/25 !text-white",
   button: "rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-[11px] text-white/85 transition hover:bg-white/15",
 };
-
-/* --------------------------------------------------------- mock right pane */
-
-/**
- * A static stand-in for ClientOverview. Present only so the chain is reviewed
- * at its real width against real neighbouring colour — none of it is wired up.
- */
-function MockClientOverview() {
-  return (
-    <section className="relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-[#F9F8F7]" aria-label="Client overview (mock)">
-      <header className="flex h-[54px] items-center gap-2 border-b border-black/10 bg-white/70 px-4 backdrop-blur-[12px]">
-        <span className="inline-flex items-center gap-2 rounded-full bg-[#432411] px-4 py-2 font-satoshi text-[13px] font-medium text-white">
-          Overview
-        </span>
-        <span className="inline-flex items-center gap-2 rounded-full px-4 py-2 font-satoshi text-[13px] text-black/60">
-          Wealth map
-        </span>
-        <span className="ml-auto rounded-full bg-black/5 px-3 py-1 font-satoshi text-[11px] text-black/40">
-          mock — not wired
-        </span>
-      </header>
-
-      <div className="overflow-y-auto px-[40px] py-[36px]">
-        <h1 className="m-0 font-butler-medium text-[44px] leading-[1.1] tracking-[-1.5px] text-[#432411]">
-          Prashanth Kumar
-        </h1>
-        <p className="mt-3 max-w-[520px] font-satoshi text-[15px] leading-[24px] text-black/60">
-          Singapore-based family office with concentrated technology equity, private
-          investments, trust structures and multi-currency exposure.
-        </p>
-        <span className="mt-4 inline-flex rounded-full bg-black/[0.06] px-4 py-2 font-satoshi text-[13px] font-medium text-[#171615]">
-          Singapore
-        </span>
-
-        <div className="mt-8 max-w-[520px] rounded-[24px] bg-white p-[28px] shadow-[0_2px_20px_rgba(0,0,0,0.04)]">
-          <p className="m-0 font-satoshi text-[13px] font-bold tracking-[0.08em] uppercase text-[#804D13]">AUM</p>
-          <p className="mt-2 mb-0 flex items-baseline gap-3 font-satoshi text-[40px] font-bold tracking-[-1px] text-[#171615]">
-            $33.3 M
-            <span className="font-satoshi text-[15px] font-medium text-[#1a7f4b]">↗ +3.8%</span>
-          </p>
-
-          <p className="mt-7 mb-0 font-satoshi text-[12px] font-bold tracking-[0.08em] uppercase text-black/40">
-            At a glance
-          </p>
-          <dl className="m-0 mt-2">
-            {[
-              ["Segment", "Family office"],
-              ["Client since", "2016"],
-              ["Family", "4 members"],
-              ["Tax residency", "Singapore"],
-              ["Risk profile", "Growth"],
-            ].map(([key, value]) => (
-              <div key={key} className="flex items-center justify-between border-b border-black/[0.07] py-[14px] last:border-b-0">
-                <dt className="font-satoshi text-[15px] text-black/70">{key}</dt>
-                <dd className="m-0 font-satoshi text-[15px] font-medium text-[#171615]">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 /* ------------------------------------------------------------------ styles */
 

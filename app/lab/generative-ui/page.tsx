@@ -1,0 +1,796 @@
+"use client";
+
+/**
+ * /lab/generative-ui — the pipeline, driven by a real question.
+ *
+ * Same surface as `../dynamic-ui`: the advisor chat on the left, the client overview
+ * on the right, and the generated view opening over it. The chrome is copied
+ * class-for-class from that prototype (which copied it from app/client/page.tsx) so
+ * the two can be compared without the shell being a variable — a copy on purpose, so
+ * editing this lab cannot move a real screen.
+ *
+ * What is different is everything behind the send button. That prototype asked a
+ * model for a finished document and animated it in. Here the query goes through nine
+ * layers (./pipeline.ts), the model never sees a component name, the layout is chosen
+ * by rules, and the result is validated before it is allowed on screen. Three things
+ * on this page exist to make that visible rather than merely true:
+ *
+ *   - **The stage list** is the real pipeline reporting itself, each line filled in
+ *     with what that layer actually did — the keys it fetched, the recipe it chose,
+ *     the verdict it reached (§13).
+ *   - **The Answer / View toggle** is always there, and the answer is always the
+ *     first thing the chat says. Rich UI is an enhancement, never the source of
+ *     truth (§14).
+ *   - **Inspect** shows the composer's trace, the validator's issues and anything
+ *     dropped. A page nobody can interrogate is a page whose rules are decorative.
+ *
+ * This file owns state and pacing only. No layout decision is taken here.
+ */
+
+import React, { type CSSProperties } from "react";
+import Link from "next/link";
+import Sidebar from "../../components/Sidebar";
+import SuggestionChip from "../../components/SuggestionChip";
+import MockClientOverview from "../MockClientOverview";
+import { CLIENT } from "../dynamic-ui/clientBook";
+import { INK, LABEL } from "./chrome";
+import { run, type RunResult, type Stage, type Turn as HistoryTurn } from "./pipeline";
+import { NarrativeFallback, SpecRenderer } from "./SpecRenderer";
+
+const SUBJECT = CLIENT.name;
+
+const PROMPTS = [
+  { id: "review", label: "Portfolio review", prompt: `How is ${SUBJECT.split(" ")[0]}'s portfolio doing?` },
+  { id: "compare", label: "Compare holdings", prompt: "Compare his two biggest holdings" },
+  { id: "liquidity", label: "Liquidity", prompt: "How would he fund the property purchase?" },
+  { id: "lookup", label: "Lookup", prompt: "Who is his relationship manager?" },
+];
+
+/**
+ * How long one top-level area takes to land.
+ *
+ * Matched to the renderer's build animation (720ms frame + 620ms delay before the
+ * content unblurs, ~1.6s in total), so the next area starts arriving while the last
+ * one is settling rather than after it has finished.
+ */
+const REVEAL_MS = 1150;
+
+/**
+ * The one or two sentences that introduce a generated view in the chat.
+ *
+ * The report's own summary if it wrote one — it is the semantic layer's statement of
+ * what the answer says — and the answer's opening sentences otherwise. Never a
+ * paraphrase: both are text somebody upstream already committed to.
+ */
+function lead(summary: string | undefined, answer: string): string {
+  const written = summary?.trim();
+  if (written && written.length > 24) return written;
+  const sentences = answer.trim().split(/(?<=[.?!])\s+/);
+  return sentences.slice(0, 2).join(" ") || answer;
+}
+
+type ChatTurn = {
+  id: number;
+  role: "user" | "assistant";
+  text: string;
+  /** The card that reopens the view. Absent on text-only answers. */
+  widget?: { title: string; recipe: string; degraded: boolean };
+  thinking?: boolean;
+  /**
+   * Why this turn is not what you would expect — the stand-in answered, or the
+   * follow-up rebuilt rather than edited. In the chat, not behind Inspect: a
+   * degradation nobody can see is a degradation nobody can debug.
+   */
+  note?: string;
+};
+
+export default function GenerativeUILab() {
+  const [turns, setTurns] = React.useState<ChatTurn[]>([]);
+  const [composerText, setComposerText] = React.useState("");
+  const [busy, setBusy] = React.useState(false);
+  const [stages, setStages] = React.useState<Stage[]>([]);
+  const [result, setResult] = React.useState<RunResult | null>(null);
+  const [open, setOpen] = React.useState(false);
+  const [showAnswer, setShowAnswer] = React.useState(false);
+  const [inspecting, setInspecting] = React.useState(false);
+  /** How many top-level areas of the current view have landed. See `placing` below. */
+  const [placed, setPlaced] = React.useState(0);
+
+  const viewportRef = React.useRef<HTMLDivElement>(null);
+  const nextId = React.useRef(1);
+  const isEmpty = turns.length === 0;
+
+  React.useEffect(() => {
+    const node = viewportRef.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  }, [turns, busy]);
+
+  const send = React.useCallback(
+    async (raw: string) => {
+      const query = raw.trim();
+      if (!query || busy) return;
+
+      /* The transcript the pipeline passes to the model: text only, never widgets. */
+      const history: HistoryTurn[] = turns
+        .filter((turn) => !turn.thinking)
+        .map((turn) => ({ role: turn.role, text: turn.text }));
+
+      const userId = nextId.current++;
+      const replyId = nextId.current++;
+      setTurns((was) => [
+        ...was,
+        { id: userId, role: "user", text: query },
+        { id: replyId, role: "assistant", text: "", thinking: true },
+      ]);
+      setComposerText("");
+      setBusy(true);
+      setStages([]);
+      setResult(null);
+      setShowAnswer(false);
+      setPlaced(0);
+      /*
+       * The panel does not open on send.
+       *
+       * Until layer 1 has decided, nobody knows whether this question has a page
+       * behind it — "who is his RM" does not. Opening a sheet over the client
+       * overview at send time promises a view before the decision that produces one
+       * exists, and then takes it away. So the wait lives in the chat, and the panel
+       * opens on the first stage that reports `surface === "view"`.
+       */
+      setOpen(false);
+
+      const outcome = await run(query, [...history, { role: "user", text: query }], (next, surface) => {
+        setStages(next);
+        if (surface === "view") setOpen(true);
+      });
+
+      setResult(outcome);
+      setBusy(false);
+      /* A view that failed validation opens on its answer, not on an empty sheet. */
+      if (outcome.kind === "fallback") setShowAnswer(true);
+      if (outcome.kind === "text") setOpen(false);
+
+      /*
+       * Two things a reader is entitled to know without opening Inspect, because both
+       * of them explain an answer that looks wrong:
+       *
+       *   - the stand-in wrote this, so the words are a fixture and two questions of
+       *     the same shape produce the same prose;
+       *   - a follow-up re-ran the whole pipeline instead of editing the last view,
+       *     because conversational editing (§11) is designed and not yet wired.
+       */
+      const why: string[] = [];
+      if (outcome.via === "local") {
+        why.push(`Written by the local stand-in — ${outcome.notes[0] ?? "the model was not reachable"}`);
+      }
+      if (history.length > 0 && outcome.kind !== "text") {
+        why.push("Follow-ups build a new page rather than editing the last one.");
+      }
+
+      setTurns((was) =>
+        was.map((turn) =>
+          turn.id === replyId
+            ? {
+                ...turn,
+                thinking: false,
+                /*
+                 * A view's chat turn is a lead, not the whole answer.
+                 *
+                 * Printing four paragraphs on the left and then the same four
+                 * paragraphs' worth of structure on the right says everything twice
+                 * and leaves the reader deciding which one to read. The chat hands
+                 * over to the page; the full prose is one tab away on it.
+                 *
+                 * §14 is untouched by this: the answer is still written before any
+                 * structure exists, still carried verbatim on the spec, and still
+                 * reachable in one click. What changed is which copy leads.
+                 */
+                text: outcome.kind === "view" ? lead(outcome.report.summary, outcome.answer) : outcome.answer,
+                note: why.length > 0 ? why.join(" ") : undefined,
+                widget:
+                  outcome.kind === "text"
+                    ? undefined
+                    : {
+                        title: outcome.kind === "view" ? outcome.report.title : (outcome.report?.title ?? "Report"),
+                        recipe: outcome.kind === "view" ? outcome.recipeId : "the answer",
+                        degraded: outcome.kind === "fallback",
+                      },
+              }
+            : turn,
+        ),
+      );
+    },
+    [busy, turns],
+  );
+
+  const reset = React.useCallback(() => {
+    setTurns([]);
+    setStages([]);
+    setResult(null);
+    setBusy(false);
+    setOpen(false);
+    setComposerText("");
+    setPlaced(0);
+  }, []);
+
+  const via = result?.via;
+  const spec = result?.kind === "view" ? result.spec : undefined;
+  const report = result && result.kind !== "text" ? result.report : undefined;
+
+  /*
+   * The assembly.
+   *
+   * A validated spec does not arrive area by area — it arrives whole, because layer 8
+   * has to see all of it before any of it can be shown. So this is a reveal, not a
+   * stream, and it is honest about which: the areas land in the order the recipe put
+   * them in, one every REVEAL_MS, and the renderer plays each one's build animation as
+   * it appears.
+   *
+   * Worth spending the second and a half on. The composed page is the claim this whole
+   * architecture makes, and watching it come together one area at a time is what shows
+   * a reader that a page has a *shape* someone decided — rather than a block of output
+   * that appeared all at once and might as well have been HTML from a model.
+   */
+  const total = spec?.root.length ?? 0;
+  React.useEffect(() => {
+    if (!spec) {
+      setPlaced(0);
+      return;
+    }
+    setPlaced(1);
+    let landed = 1;
+    const timer = window.setInterval(() => {
+      landed += 1;
+      setPlaced(landed);
+      if (landed >= spec.root.length) window.clearInterval(timer);
+    }, REVEAL_MS);
+    return () => window.clearInterval(timer);
+  }, [spec]);
+
+  const placing = spec !== undefined && placed < total;
+
+  return (
+    <div className={TW.shell}>
+      <Sidebar />
+      <main className={TW.workspace}>
+        {/* ------------------------------------------------------------ chat */}
+        <aside className={TW.advisorPanel} aria-label="Advisor chat (simulated)">
+          <div className={TW.advisorHeader}>
+            <div className={TW.conversationBtn}>
+              <span className={TW.conversationText}>
+                {isEmpty ? "New conversation" : (report?.title ?? "Conversation")}
+              </span>
+              <ChevronDownIcon />
+            </div>
+            <div className="flex shrink-0 items-center gap-[8px]">
+              <Link
+                href="/lab"
+                className="font-satoshi text-[11px] font-bold uppercase tracking-[0.08em] text-black/35 transition-colors hover:text-black"
+              >
+                Lab
+              </Link>
+              <button type="button" className={TW.advisorAddBtn} aria-label="New conversation" onClick={reset}>
+                <PlusIcon />
+              </button>
+            </div>
+          </div>
+
+          {isEmpty ? (
+            <div className={TW.attentionContent}>
+              <h1 className={`${TW.attentionTitle} stagger-in`} style={{ "--stagger-index": 1 } as CSSProperties}>
+                What can I help<br />you with?
+              </h1>
+              <div className={TW.attentionList}>
+                {PROMPTS.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="stagger-in max-w-full"
+                    style={{ "--stagger-index": index + 2 } as CSSProperties}
+                  >
+                    <SuggestionChip label={item.prompt} className="max-w-full" onClick={() => send(item.prompt)} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className={`${TW.threadArea} ${isEmpty ? "" : TW.threadAreaFull}`}>
+            <div className={TW.thread}>
+              {!isEmpty ? (
+                <div className={TW.messageViewport} ref={viewportRef}>
+                  {turns.map((turn) =>
+                    turn.role === "user" ? (
+                      <div key={turn.id} className={TW.messageUser}>
+                        <div className={TW.userMessageContent}>{turn.text}</div>
+                      </div>
+                    ) : (
+                      <div key={turn.id} className={TW.messageAssistant}>
+                        <div className={TW.messageStack}>
+                          <div className={TW.assistantMessageContent}>
+                            {turn.thinking ? (
+                              <ChatStages stages={stages} />
+                            ) : (
+                              turn.text.split(/\n{2,}/).map((paragraph, index) => (
+                                <p key={index} className={index === 0 ? "m-0" : "mt-[10px] mb-0"}>
+                                  {paragraph}
+                                </p>
+                              ))
+                            )}
+                            {turn.note ? (
+                              <p className="mt-[10px] mb-0 font-satoshi text-[11px] leading-[16px] text-black/35">
+                                {turn.note}
+                              </p>
+                            ) : null}
+                            {turn.widget ? (
+                              <ViewWidget
+                                title={turn.widget.title}
+                                recipe={turn.widget.recipe}
+                                degraded={turn.widget.degraded}
+                                onOpen={() => setOpen(true)}
+                              />
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : null}
+
+              <div className={isEmpty ? TW.composerDockEmpty : TW.composerDock}>
+                <div className={TW.composerWrap}>
+                  <div className={TW.promptChipsRow}>
+                    <div className={TW.promptChipsLeft}>
+                      {PROMPTS.map((item) => (
+                        <div
+                          key={item.id}
+                          className={TW.promptChip}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setComposerText(item.prompt)}
+                        >
+                          /{item.label}
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" className={TW.promptChipExpand} aria-label="Expand prompts">
+                      <ChevronDownIcon />
+                    </button>
+                  </div>
+
+                  <form
+                    className={`${TW.composer} ${busy ? TW.composerThinking : ""}`}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      send(composerText);
+                    }}
+                  >
+                    <div className={TW.composerInputRow}>
+                      <textarea
+                        className={TW.composerInput}
+                        rows={1}
+                        placeholder={isEmpty ? "What can I help you with?" : "Ask a follow-up..."}
+                        value={composerText}
+                        onChange={(event) => setComposerText(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" && !event.shiftKey) {
+                            event.preventDefault();
+                            send(composerText);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex shrink-0 items-center px-[16px]">
+                      <button
+                        type="submit"
+                        className={TW.sendBtn}
+                        disabled={!composerText.trim() || busy}
+                        aria-label="Send message"
+                      >
+                        <ArrowUpIcon />
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* ------------------------------- right-hand surface: the same client
+            overview every lab shows, with the generated view opening over it. */}
+        <MockClientOverview>
+          <div className="absolute right-[20px] bottom-[18px] z-[90] flex items-center gap-[14px] rounded-full border border-black/[0.07] bg-white/85 px-[14px] py-[8px] shadow-[0_6px_22px_rgba(0,0,0,0.06)] backdrop-blur-[8px]">
+            {via ? (
+              <span
+                className="font-satoshi text-[10px] font-semibold uppercase tracking-[0.12em]"
+                style={{ color: via === "model" ? "#7F4E0B" : "#8a8a8a" }}
+                title={
+                  via === "model"
+                    ? "The plan, answer and report came from the model"
+                    : "No model key set — the plan, answer and report came from the local stand-in analyst. Composition and validation are the same either way."
+                }
+              >
+                {via === "model" ? "live model" : "local"}
+              </span>
+            ) : null}
+            {result?.kind === "view" ? (
+              <span className="font-satoshi text-[11px] tracking-[-0.11px] text-black/40">{result.recipeId}</span>
+            ) : null}
+          </div>
+
+          {open && (result || stages.length > 0) ? (
+            <div className="absolute inset-0 z-[80]">
+              <div aria-hidden className="gu-backdrop absolute inset-0 bg-[#F5F1EA]/[0.94] backdrop-blur-[2px]" />
+              <div className="absolute inset-0 overflow-y-auto">
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  aria-label="Close view"
+                  className="absolute top-[16px] right-[20px] z-[2] grid h-[36px] w-[36px] place-items-center rounded-full border border-black/10 bg-white text-black/70 shadow-[0_6px_22px_rgba(0,0,0,0.10)] transition hover:text-black"
+                >
+                  ✕
+                </button>
+                <div className="relative z-[1] mx-auto w-full max-w-[860px] px-[28px] py-[56px] max-[900px]:px-[18px]">
+                  <div className="gu-card relative overflow-hidden rounded-[24px] bg-white px-[26px] py-[24px] shadow-[0_24px_80px_rgba(58,35,9,0.14)]">
+                    <div aria-hidden className="absolute top-0 right-0 left-0 h-[3px] bg-[#7F4E0B]/[0.08]">
+                      <div
+                        className="h-full bg-[linear-gradient(90deg,#C79A4A,#7F4E0B)] transition-[width] duration-500 ease-out"
+                        style={{
+                          // The bar keeps running while the areas land, so it finishes
+                          // when the page does rather than when the data does.
+                          width: placing
+                            ? `${(placed / total) * 100}%`
+                            : result
+                              ? "100%"
+                              : `${Math.min(stages.length / 6, 0.92) * 100}%`,
+                        }}
+                      />
+                    </div>
+
+                    {result ? (
+                      <>
+                        <div className="mb-[18px] flex items-center gap-[8px]">
+                          <Toggle active={!showAnswer} onClick={() => setShowAnswer(false)} disabled={!spec}>
+                            View
+                          </Toggle>
+                          <Toggle active={showAnswer} onClick={() => setShowAnswer(true)}>
+                            Answer
+                          </Toggle>
+                          <span className="ml-auto" />
+                          {placing && !showAnswer ? (
+                            <span className="font-satoshi text-[11px] tracking-[-0.11px] text-black/35">
+                              Assembling · {placed}/{total}
+                            </span>
+                          ) : null}
+                          <Toggle active={inspecting} onClick={() => setInspecting((was) => !was)}>
+                            Inspect
+                          </Toggle>
+                        </div>
+
+                        {inspecting ? <Inspector result={result} /> : null}
+
+                        {spec && !showAnswer ? (
+                          <SpecRenderer spec={spec} report={report} bundle={result.bundle} revealed={placed} />
+                        ) : (
+                          <NarrativeFallback title={report?.title} narrative={result.answer} />
+                        )}
+
+                        {result.kind === "fallback" && !inspecting ? (
+                          <p className="mt-[16px] font-satoshi text-[11px] text-black/40">
+                            The composed view did not pass validation, so this is the answer. {result.reason}
+                          </p>
+                        ) : null}
+                      </>
+                    ) : (
+                      <StagePanel stages={stages} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </MockClientOverview>
+      </main>
+
+      <style>{`
+        @keyframes gu-backdrop-in { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes gu-card-in {
+          from { opacity: 0; transform: translateY(18px) scale(0.97); filter: blur(6px) }
+          to { opacity: 1; transform: none; filter: blur(0) }
+        }
+        @keyframes gu-line-in { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+        @keyframes gu-pulse {
+          0%, 100% { opacity: 0.35; transform: scale(0.85) }
+          50% { opacity: 1; transform: scale(1) }
+        }
+        .gu-backdrop { animation: gu-backdrop-in 300ms ease-out both }
+        .gu-card { animation: gu-card-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both }
+        .gu-line { animation: gu-line-in 260ms ease-out both }
+        .gu-pulse { animation: gu-pulse 900ms ease-in-out infinite }
+        @media (prefers-reduced-motion: reduce) {
+          .gu-backdrop, .gu-card, .gu-line { animation-duration: 1ms }
+          .gu-pulse { animation: none }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------- stages */
+
+/**
+ * The pipeline, reporting itself.
+ *
+ * Each line is a layer that is running or has run, and its detail is what that layer
+ * actually decided — not a phrase chosen to fill the wait. §13: real loading stages,
+ * because the stages are real.
+ */
+function StagePanel({ stages }: { stages: Stage[] }) {
+  return (
+    <div className="flex flex-col gap-[10px] py-[8px]">
+      <span className={LABEL}>Working</span>
+      {stages.map((stage, index) => {
+        const done = stage.detail !== undefined;
+        return (
+          <div key={stage.id} className="gu-line flex items-baseline gap-[9px]" style={{ animationDelay: `${index * 40}ms` }}>
+            <span
+              className={`mt-[5px] inline-block h-[6px] w-[6px] shrink-0 rounded-full ${done ? "" : "gu-pulse"}`}
+              style={{ background: done ? "#7F4E0B" : "#C79A4A" }}
+            />
+            <span className="font-satoshi text-[13px]" style={{ color: done ? INK : "rgba(0,0,0,0.45)" }}>
+              {stage.label}
+              {stage.detail ? <span className="text-black/40"> · {stage.detail}</span> : null}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The same list, compressed to one line, for while the chat waits. */
+function ChatStages({ stages }: { stages: Stage[] }) {
+  const current = stages[stages.length - 1];
+  return (
+    <p className="m-0 flex items-center gap-[6px] font-satoshi text-[13px] text-black/45">
+      <span className="gu-pulse inline-block h-[6px] w-[6px] rounded-full bg-[#7F4E0B]" />
+      {current?.label ?? "Thinking"}...
+    </p>
+  );
+}
+
+/* ------------------------------------------------------------------- widget */
+
+function ViewWidget({
+  title,
+  recipe,
+  degraded,
+  onOpen,
+}: {
+  title: string;
+  recipe: string;
+  degraded: boolean;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="mt-[10px] block w-full cursor-pointer rounded-[16px] border-0 p-[1.5px] text-left transition hover:-translate-y-px"
+      style={{
+        backgroundImage: degraded
+          ? "linear-gradient(120deg, rgba(0,0,0,0.10), rgba(0,0,0,0.05))"
+          : "linear-gradient(120deg, rgba(255,190,106,0.95), rgba(246,224,177,0.55) 45%, rgba(210,122,196,0.8))",
+      }}
+    >
+      <span className="block rounded-[14.5px] bg-white px-[14px] py-[16px]">
+        <span className="flex items-center justify-between gap-[14px]">
+          <span className="min-w-0">
+            <span className="mb-[3px] block font-satoshi text-[10px] font-medium uppercase tracking-[0.14em] text-black/50">
+              {degraded ? "Answer" : recipe}
+            </span>
+            <span className="block truncate font-satoshi text-[15px] font-semibold leading-[1.25] tracking-[-0.15px] text-[#7b674f]">
+              {title}
+            </span>
+          </span>
+          <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[9px] bg-[linear-gradient(135deg,#ffe7a4_0%,#f7b73f_46%,#e9bdd8_100%)] font-satoshi text-[13px] text-[#a46100]">
+            ›
+          </span>
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/* ---------------------------------------------------------------- inspector */
+
+function Toggle({
+  active,
+  disabled,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`rounded-full px-[12px] py-[5px] font-satoshi text-[11px] transition-colors disabled:opacity-35 ${
+        active ? "bg-black/85 text-white" : "border border-black/10 text-black/50 hover:text-black/80"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/**
+ * Why the page looks the way it does.
+ *
+ * The composer's trace is the argument for every arrangement it chose, and the
+ * validator's issues are what it would have rejected. Both are in the artifacts
+ * already; this only puts them on screen.
+ */
+function Inspector({ result }: { result: RunResult }) {
+  const rows: [string, string][] = [
+    ["Task", `${result.plan.taskType.replace(/_/g, " ")} → ${result.plan.surface}`],
+    ["Because", result.plan.because],
+    ["Data", Object.keys(result.bundle.values).join(", ") || "none"],
+    ...(result.kind === "view"
+      ? ([
+          ["Recipe", result.recipeId],
+          ["Areas", result.ia.areas.map((area) => `${area.heading} (${area.arrangement})`).join(", ")],
+        ] as [string, string][])
+      : []),
+  ];
+
+  const trace = result.kind === "view" ? result.ia.trace : [];
+  const issues = result.kind === "text" ? [] : result.issues;
+
+  return (
+    <div className="mb-[20px] flex flex-col gap-[8px] rounded-[12px] border border-black/8 bg-black/[0.015] px-[14px] py-[12px]">
+      {rows.map(([label, value]) => (
+        <div key={label} className="flex gap-[10px]">
+          <span className={`${LABEL} w-[64px] shrink-0`}>{label}</span>
+          <span className="font-satoshi text-[11px] leading-[1.5] text-black/60">{value}</span>
+        </div>
+      ))}
+
+      {trace.length > 0 ? (
+        <div className="flex gap-[10px]">
+          <span className={`${LABEL} w-[64px] shrink-0`}>Rules</span>
+          <ul className="flex flex-col gap-[2px]">
+            {trace.map((entry, index) => (
+              <li key={index} className="font-satoshi text-[11px] text-black/45">
+                {entry.rule} · {entry.because}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {issues.length > 0 ? (
+        <div className="flex gap-[10px]">
+          <span className={`${LABEL} w-[64px] shrink-0`}>Checks</span>
+          <ul className="flex flex-col gap-[2px]">
+            {issues.map((issue, index) => (
+              <li key={index} className="font-satoshi text-[11px] text-black/45">
+                <span className="uppercase tracking-[0.06em]">{issue.severity}</span> · {issue.code} · {issue.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {result.notes.length > 0 ? (
+        <div className="flex gap-[10px]">
+          <span className={`${LABEL} w-[64px] shrink-0`}>Notes</span>
+          <ul className="flex flex-col gap-[2px]">
+            {result.notes.map((note, index) => (
+              <li key={index} className="font-satoshi text-[11px] text-black/45">
+                {note}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ styles */
+
+/**
+ * Copied from ../dynamic-ui/page.tsx, which copied it from app/client/page.tsx. A
+ * copy on purpose: editing the lab must never be able to move the real panel.
+ */
+const TW = {
+  shell: "h-screen overflow-hidden bg-white text-[#171615]",
+  workspace:
+    "relative ml-[80px] grid h-screen grid-cols-[434px_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(360px,420px)_minmax(0,1fr)] max-[900px]:grid-cols-1",
+  advisorPanel:
+    "relative grid h-screen min-w-0 grid-rows-[auto_minmax(0,1fr)] border-r border-black/10 bg-white",
+  advisorHeader:
+    "relative z-[40] flex h-[54px] min-w-0 items-center justify-between gap-[12px] border-b border-black/10 bg-white/70 px-[16px] backdrop-blur-[12px]",
+  conversationBtn:
+    "inline-flex min-w-0 max-w-full items-center justify-start gap-[5px] overflow-hidden rounded-[10px] py-[8px] font-satoshi text-[14px] font-bold leading-[130%] tracking-[-0.28px] text-black [&_svg]:h-[16px] [&_svg]:w-[16px] [&_svg]:shrink-0",
+  conversationText: "block min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap",
+  advisorAddBtn:
+    "inline-grid h-[36px] w-[36px] shrink-0 place-items-center rounded-[12px] border border-black/[0.08] bg-transparent text-black transition hover:bg-black/[0.03] [&_svg]:h-[16px] [&_svg]:w-[16px]",
+  attentionContent: "flex min-h-0 flex-col justify-center overflow-auto px-[20px] pt-[64px] pb-[190px]",
+  attentionTitle:
+    "m-0 mb-[20px] max-w-[394px] font-butler-medium text-[40px] font-medium leading-[48px] tracking-[-2px] text-black",
+  attentionList: "grid max-w-[394px] justify-items-start gap-[8px]",
+
+  threadArea: "absolute right-[17px] bottom-[16px] left-[16px] z-[5]",
+  threadAreaFull: "top-[54px] !right-0 !left-0",
+  thread: "relative flex h-full min-h-0 flex-col overflow-hidden",
+
+  messageViewport: "relative min-h-0 flex-1 overflow-y-auto pt-[24px] pr-[44px] pb-[176px] pl-[22px]",
+  messageUser: "mb-[18px] flex w-full justify-end gap-2.5",
+  messageAssistant: "mb-[18px] flex w-full justify-start gap-2.5",
+  messageStack: "w-full max-w-full",
+  userMessageContent:
+    "max-w-full [overflow-wrap:anywhere] rounded-[20px_20px_0_20px] bg-[#F3F3F3] p-[16px] font-satoshi text-[14px] font-medium leading-[1.5] tracking-[-0.16px] text-[#0D0D0D]",
+  assistantMessageContent:
+    "max-w-full [overflow-wrap:anywhere] py-1 font-satoshi text-[13px] leading-relaxed text-black",
+
+  composerDock: "absolute right-0 bottom-0 left-0 z-10 px-[22px]",
+  composerDockEmpty: "relative z-10",
+  composerWrap: "w-full rounded-[20px] border border-white bg-[#f7f7f7] p-[1px] pt-[6px]",
+  composer:
+    "relative mx-auto flex min-h-[74px] w-full items-center rounded-[24px] border border-black/[0.06] bg-white/90 py-[10px] shadow-[0_2px_10px_rgba(0,0,0,0.06)] transition",
+  composerThinking: "ring-1 ring-[#b37f40]/40",
+  composerInputRow: "min-w-0 flex-1 px-[24px]",
+  composerInput:
+    "h-auto min-h-0 w-full resize-none border-0 bg-transparent p-0 font-satoshi text-[16px] font-normal leading-[1.35] tracking-[-0.16px] text-black outline-none placeholder:text-black/60",
+  sendBtn:
+    "inline-grid h-[38px] w-[38px] shrink-0 place-items-center rounded-full border-0 bg-black p-0 text-white transition hover:-translate-y-px hover:bg-[#2d2926] disabled:opacity-100 [&_svg]:h-[24px] [&_svg]:w-[24px]",
+
+  promptChipsRow:
+    "mb-[6px] flex items-center justify-between gap-[4px] overflow-hidden rounded-[22px] px-[10px] pt-[4px]",
+  promptChipsLeft: "flex min-w-0 flex-1 items-center gap-[8px] overflow-hidden",
+  promptChip:
+    "inline-flex min-w-0 shrink-0 cursor-pointer items-center rounded-full border border-white/60 bg-[#0000000A] px-[11px] py-[7px] font-satoshi text-[12px] font-normal leading-[16.2px] text-[#5d6b77] transition hover:bg-black/[0.07]",
+  promptChipExpand:
+    "inline-flex h-[32px] w-[40px] shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/60 text-black transition hover:bg-white/85 [&_svg]:h-[13px] [&_svg]:w-[13px]",
+};
+
+/* ------------------------------------------------------------------- icons */
+
+function ChevronDownIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ArrowUpIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="11" fill="currentColor" opacity="0.001" />
+      <path
+        d="M12 18V7M12 7l-5 5M12 7l5 5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
