@@ -62,6 +62,16 @@ export const RecipeSlotSchema = z.object({
    */
   moreHeadings: z.array(z.string().min(1)).optional(),
   /**
+   * This slot continues the one before it: its areas get no heading and no number.
+   *
+   * For the case where a section is a second look at the previous one rather than a new
+   * topic — the concentration a rally created belongs *inside* "what drove the change",
+   * and giving it its own numbered heading would tell the reader there is one more thing
+   * to read than there is. The section's own takeaway carries the link, so nothing is
+   * unlabelled; what is dropped is the claim that a new subject has started.
+   */
+  continuation: z.boolean().optional(),
+  /**
    * Semantic types this slot will take. `"*"` accepts anything and exists for the
    * one honest catch-all case — an overview whose content is not known in advance.
    */
@@ -153,6 +163,23 @@ const ANALYTICAL_REPORT: ViewRecipe = {
       maxAreas: 2,
     },
     /*
+     * What the drivers did to the shape of the book, read as a row.
+     *
+     * The same rally that earns the return is usually the thing that concentrates the
+     * portfolio, and the reference puts those two facts under one number for that reason:
+     * the position, its weight over time and the warning are three readings of a single
+     * claim. Hence `continuation` — no heading of its own — and `grid`, so the three land
+     * side by side instead of as three stacked blocks that each look like news.
+     */
+    {
+      id: "whyDetail",
+      accepts: ["risk"],
+      required: false,
+      maxAreas: 1,
+      continuation: true,
+      arrangement: "grid",
+    },
+    /*
      * Where things stand, after why they moved.
      *
      * This slot is new and it is the fix for an ordering problem, not a cosmetic addition.
@@ -167,7 +194,17 @@ const ANALYTICAL_REPORT: ViewRecipe = {
       moreHeadings: ["How it is invested", "What is in the book"],
       accepts: ["allocation", "comparison", "identity"],
       required: false,
-      maxAreas: 3,
+      maxAreas: 2,
+      /*
+       * Side by side, not one after the other.
+       *
+       * How the money is spread and what it is actually in are the same question asked at
+       * two resolutions, and the reader moves between them — "14% cash" means one thing
+       * next to a list led by a single stock and another thing next to a list of bond
+       * funds. Stacked, that comparison costs a scroll; tabbed, it costs a click and the
+       * reader has to remember the other half.
+       */
+      arrangement: "split",
     },
     {
       id: "risks",
@@ -193,6 +230,9 @@ const ANALYTICAL_REPORT: ViewRecipe = {
       accepts: ["liquidity", "commitments"],
       required: false,
       maxAreas: 2,
+      /* A transfer and the dates around it are one statement in two halves: what has to
+         move, and when the things it waits on happen. */
+      arrangement: "grid",
     },
     {
       id: "actions",

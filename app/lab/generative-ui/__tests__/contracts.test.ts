@@ -354,15 +354,16 @@ describe("registry fitness — the thresholds ported from prototype 1", () => {
   });
 
   /*
-   * Narrowed from the ported threshold, on purpose. Prototype 1 gave the donut
-   * everything up to six parts; a donut answers "how big is this against that" worse
-   * than any other chart, because arc lengths do not compare and the figures end up in
-   * a legend away from the shape. So it keeps only the case where the split itself is
-   * the claim — two or three parts — and bars take the rest.
+   * The ported threshold, kept: up to six parts is a donut, past six is bars.
+   *
+   * An allocation is asked "what is this made of", where the claim is the split itself and
+   * the reader has to see it is a whole — so the segments earn their place as long as each
+   * is still wide enough to name and print a figure against. Six is where that stops.
    */
-  it("draws three parts as a donut and four as bars", () => {
+  it("draws six parts as a donut and seven as bars", () => {
     expect(bestFor("chart", composition(3), context)?.id).toBe("AllocationDonut");
-    expect(bestFor("chart", composition(4), context)?.id).toBe("BarChart");
+    expect(bestFor("chart", composition(6), context)?.id).toBe("AllocationDonut");
+    expect(bestFor("chart", composition(7), context)?.id).toBe("BarChart");
     expect(bestFor("chart", composition(8), context)?.id).toBe("BarChart");
   });
 

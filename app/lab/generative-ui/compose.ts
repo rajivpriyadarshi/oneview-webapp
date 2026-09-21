@@ -413,11 +413,19 @@ export function planIA(report: SemanticReport, intent: IntentPlan): IAResult {
      */
     const nth = (used.get(slot.id) ?? 1) - 1;
     const structural = nth === 0 ? slot.defaultHeading : slot.moreHeadings?.[nth - 1];
-    const heading = safeHeading(
-      structural,
-      asHeading(group[0].question),
-      SEMANTIC_HEADINGS[group[0].semanticType],
-    );
+    /*
+     * A continuation slot has no heading at all, on purpose.
+     *
+     * Some of what a section says is a second look at the section before it — the
+     * concentration the rally created is part of "what drove the change", not a ninth thing
+     * to read — and a heading would make it a new topic in the reader's count. So the
+     * recipe can declare a slot that continues its neighbour: no name, no number, the
+     * section's own one-line takeaway carrying the link. It is still its own area, so the
+     * composer's rules about form and arrangement apply unchanged.
+     */
+    const heading = slot.continuation
+      ? undefined
+      : safeHeading(structural, asHeading(group[0].question), SEMANTIC_HEADINGS[group[0].semanticType]);
 
     areas.push({
       id: `area_${slot.id}_${areas.length}`,
@@ -1032,7 +1040,9 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
    */
   const titleFor = (section: SemanticSection, index: number): string =>
     sections.length === 1
-      ? area.heading
+      ? /* A continuation area has no heading of its own, so the card takes the name of what
+           it is about — which is what `regionName` is for. */
+        (area.heading ?? regionName(section, index))
       : area.arrangement === "split"
         ? regionName(section, index)
         : asHeading(section.question);
@@ -1089,6 +1099,36 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
     ];
   } else {
     body = per.flatMap((entry) => entry.nodes);
+    /*
+     * One section's several nodes arrive wrapped in a Stack — see `nodesForSection`, which
+     * has to return a single node so a tab or a pane can hold it. Inside an area that is
+     * itself a column that wrapper means nothing, and it hides the count from the two
+     * rules below, both of which are about how many things there are. So look through it.
+     * Only here: in a tab or a pane the Stack is load-bearing.
+     */
+    const blocks =
+      body.length === 1 && body[0].component === "Stack" && (body[0].children?.length ?? 0) > 1
+        ? body[0].children ?? body
+        : body;
+    /*
+     * A grid the recipe asked for, over whatever the section produced.
+     *
+     * The other grid in this file (below) is a rule about content — several things flagged
+     * are a set. This one is a rule about *place*: some slots hold a row rather than a
+     * column, because what belongs there is two or three readings of one thing and stacking
+     * them full width would make each look like a separate claim. Columns follow the count,
+     * capped at four, and a single node is left alone — a one-column grid is a div.
+     */
+    if (area.arrangement === "grid" && blocks.length >= 2 && blocks.length <= 4) {
+      body = [
+        {
+          id: uid(build, `row_${area.id}`),
+          component: "Grid",
+          props: { columns: blocks.length as 2 | 3 | 4 },
+          children: blocks,
+        },
+      ];
+    }
   }
 
   /* Provenance and methodology open collapsed. The brief's disclosure rule, and the
@@ -1142,14 +1182,20 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
    * a chart and a table side by side at half width are both unreadable.
    */
   const called: ComponentId[] = ["RiskAlert", "Recommendation"];
-  const flags = body.filter((node) => called.includes(node.component));
-  if (flags.length >= 2 && flags.length === body.length && flags.length <= 6) {
+  /* Through the section's own Stack wrapper, for the reason given where `blocks` is
+     computed above: four flags in a column are four flags, whoever is holding them. */
+  const candidates =
+    body.length === 1 && body[0].component === "Stack" && (body[0].children?.length ?? 0) > 1
+      ? body[0].children ?? body
+      : body;
+  const flags = candidates.filter((node) => called.includes(node.component));
+  if (flags.length >= 2 && flags.length === candidates.length && flags.length <= 6) {
     body = [
       {
         id: uid(build, `fg_${area.id}`),
         component: "Grid",
         props: { columns: 2 },
-        children: body,
+        children: candidates,
       },
     ];
   }
@@ -1161,7 +1207,7 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
        is shown; it never carries the words — see `Section.takeaway` in ./registry.ts. */
     sectionId: sections[0].id,
     props: {
-      heading: safeHeading(area.heading),
+      ...(area.heading ? { heading: safeHeading(area.heading) } : {}),
       /* The analysis's own line about the section, where it wrote one. Sections sharing
          an area are siblings of one question, so the first one's line describes the area.
          Unless the opening panel already printed it — see `Builder.openingTakeaway`. */
@@ -1363,7 +1409,9 @@ export function composeView(
    */
   let numbered = 0;
   for (const node of body) {
-    if (node.component === "Section" || node.component === "WhatToWatch") {
+    /* A section with no heading is a continuation of the one above it, so it takes no
+       number — see `continuation` in ./recipes.ts. */
+    if ((node.component === "Section" || node.component === "WhatToWatch") && node.props.heading) {
       numbered += 1;
       node.props.index = numbered;
     }
@@ -1396,10 +1444,28 @@ export function composeView(
     }
   }
 
+  /*
+   * The closing passage, where the analysis wrote one.
+   *
+   * Last in reading order and outside the numbering, for the same reason the sources are:
+   * it is not an eighth thing to read, it is the end of the note. Placed unconditionally
+   * where `report.outlook` exists and omitted where it does not — the composer decides the
+   * card is there, never what it says (`source: "outlook"`, see ./semantic.ts).
+   */
+  const closing: UINode[] = report.outlook
+    ? [
+        {
+          id: uid(build, "outlook"),
+          component: "Prose",
+          props: { heading: "Looking ahead", variant: "outlook", source: "outlook" },
+        },
+      ]
+    : [];
+
   const spec: UISpec = {
     id: `view_${report.reportType}`,
     recipe: ia.recipeId,
-    root: [header, ...band, ...body],
+    root: [header, ...band, ...body, ...closing],
     narrative: report.narrative,
     meta: {
       reportId: report.title,

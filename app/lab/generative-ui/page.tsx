@@ -507,7 +507,7 @@ export default function GenerativeUILab() {
                 {/* 940px, and generous inner padding. The measure is the document's
                     most consequential setting: at 860px with 26px of padding the
                     four-up figure strip could not breathe and every table wrapped. */}
-                <div className="relative z-[1] mx-auto w-full max-w-[940px] px-[28px] py-[48px] max-[900px]:px-[16px]">
+                <div className="relative z-[1] mx-auto w-full max-w-[1200px] px-[28px] py-[48px] max-[900px]:px-[16px]">
                   <div className="gu-card relative overflow-hidden rounded-[20px] bg-white px-[44px] py-[38px] shadow-[0_24px_80px_rgba(58,35,9,0.14)] max-[900px]:px-[20px]">
                     <div aria-hidden className="absolute top-0 right-0 left-0 h-[3px] bg-[#7F4E0B]/[0.08]">
                       <div

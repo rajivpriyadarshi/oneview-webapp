@@ -126,6 +126,20 @@ export const SemanticReportSchema = z.object({
   /** The answer in one or two sentences. Also the text fallback's headline. */
   summary: z.string().min(1),
   sections: z.array(SemanticSectionSchema),
+  /**
+   * The closing paragraph, and who is signing it.
+   *
+   * A filed note ends by saying where this is heading and who stands behind it, and that
+   * is not a finding: it makes no measurement, it is not about one section, and it would
+   * be wrong as a card. It is the report's own writing, like `summary` — which is why it
+   * lives here and reaches the page by reference (`source: "outlook"`), never as a prop.
+   *
+   * Optional, because most answers do not close; a query about one holding has no outlook
+   * and inventing one would be the composer writing prose.
+   */
+  outlook: z
+    .object({ text: z.string().min(1), signature: z.string().min(1).max(120).optional() })
+    .optional(),
   relations: z.array(SemanticRelationSchema).optional(),
   /**
    * The pass-1 prose answer, kept whole and unmodified.

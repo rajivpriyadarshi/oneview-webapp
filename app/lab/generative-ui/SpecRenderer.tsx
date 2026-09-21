@@ -90,8 +90,11 @@ function claimFinding(
  * `source: "summary"` — a reference, the same shape of promise `dataKey` makes about the
  * bundle — and resolution reads the live value here.
  */
-const reportText = (node: UINode, report: SemanticReport | undefined): string | undefined => {
+const reportText = (node: UINode, report: SemanticReport | undefined): unknown => {
   const source = node.props.source;
+  /* The closing paragraph and its signature, as the pair the report wrote them as — two
+     strings, resolved together, because they are one passage with a name under it. */
+  if (source === "outlook") return report?.outlook;
   /*
    * The one line worth pulling out beside the summary.
    *

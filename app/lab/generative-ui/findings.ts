@@ -189,6 +189,18 @@ export const TransitionFindingSchema = FindingMetaSchema.extend({
   to: z.string().min(1),
   sentiment: SentimentSchema,
   note: z.string().optional(),
+  /**
+   * The size of the move and where it stands, for the case where the transition is a
+   * *transfer* rather than a revaluation: money leaving one position for another.
+   *
+   * Both optional because most transitions have neither — "21% → 29%" is the whole claim
+   * and an amount would be an invention. Where the analysis does know them, they are what
+   * turns two labels and an arrow into something a reader can act on, and they are
+   * pre-formatted for the same reason every other figure here is: wording is the
+   * analysis's call, not a component's.
+   */
+  amount: z.string().min(1).optional(),
+  status: z.string().min(1).optional(),
 });
 export type TransitionFinding = z.infer<typeof TransitionFindingSchema>;
 

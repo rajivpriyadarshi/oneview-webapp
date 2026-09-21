@@ -261,6 +261,7 @@ function checkNode(
     node.props.source === "summary" ||
     node.props.source === "narrative" ||
     node.props.source === "takeaway" ||
+    node.props.source === "outlook" ||
     // The headline strip: figures reached through `headlineFigures`, not carried.
     node.props.source === "key_figures";
   if (spec.requiresData && !bound) {
@@ -409,8 +410,23 @@ function checkHeuristics(spec: UISpec, bundle: DataBundle, issues: ValidationIss
         const key = signatureOf(kid);
         bySignature.set(key, [...(bySignature.get(key) ?? []), kid]);
       }
+      /*
+       * A bounded grid of callouts is a set, not card soup.
+       *
+       * Four things flagged, two columns, each with its own severity and its own sentence
+       * of why it matters: the reader counts them at a glance and reads the serious one
+       * first. A table of the same four would put the prose in cells and drop the colour
+       * that carries the severity — so the repair this rule proposes would make it worse.
+       * The composer only builds this container where *every* child is a callout, and
+       * caps it; past the cap the original objection stands.
+       */
+      const calloutGrid =
+        node.component === "Grid" &&
+        kids.length <= 4 &&
+        kids.every((kid) => kid.component === "RiskAlert" || kid.component === "Recommendation");
+      const limit = calloutGrid ? 4 : LIMITS.maxIdenticalSiblings;
       for (const [, group] of bySignature) {
-        if (group.length <= LIMITS.maxIdenticalSiblings) continue;
+        if (group.length <= limit) continue;
         issues.push({
           code: "identical_siblings",
           severity: "error",

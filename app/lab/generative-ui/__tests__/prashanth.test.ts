@@ -57,10 +57,10 @@ describe("the pinned report satisfies its own contracts", () => {
 });
 
 describe("every section reaches the page", () => {
-  it("places all nine sections inside the recipe's area budget", () => {
-    // The regression: eight areas against a seven-area recipe, where placement is
-    // first-fit in slot order, so the loser is whatever sits in the last slot — the
-    // sources. Silent, and invisible on screen.
+  it("leaves nothing unplaced", () => {
+    // The regression: more areas than the recipe has slots, where placement is first-fit
+    // in slot order, so the loser is whatever sits in the last slot — the sources.
+    // Silent, and invisible on screen.
     const { unplaced } = composeView(PRASHANTH_REPORT, PRASHANTH_PLAN, PRASHANTH_BUNDLE);
     expect(unplaced).toEqual([]);
   });
@@ -74,10 +74,69 @@ describe("every section reaches the page", () => {
     expect(plan.areas.length).toBeLessThanOrEqual(RECIPES.AnalyticalReport.maxAreas);
   });
 
-  it("makes the two views of the listed book one area rather than two tables", () => {
+  it("reads the split and the holdings behind it as one area, side by side", () => {
+    /* Two sections the report marked as answering the same question — what the book is
+       made of, and what is in it — so they belong in one area rather than as two
+       consecutive tables with a heading each. */
     const { plan } = planIA(PRASHANTH_REPORT, PRASHANTH_PLAN);
     const shared = plan.areas.find((area) => area.sectionIds.includes("s.holdings"));
-    expect(shared?.sectionIds).toEqual(["s.holdings", "s.custody"]);
+    expect(shared?.sectionIds).toEqual(["s.allocation", "s.holdings"]);
+    expect(shared?.arrangement).toBe("split");
+  });
+});
+
+describe("the page has the shape the report was designed to have", () => {
+  const areas = () => {
+    const { spec } = composed();
+    return spec.root.filter(
+      (node) => node.component === "Section" || node.component === "WhatToWatch",
+    );
+  };
+
+  it("numbers seven topics, and lets the eighth band continue the one above it", () => {
+    /* The concentration band is a second reading of the drivers, not a new question, so it
+       carries no heading and takes no number — see `continuation` in ../recipes.ts. Eight
+       bands, seven headings, and the headings are what the reader counts. */
+    const headed = areas().filter((node) => node.props.heading);
+    expect(areas()).toHaveLength(8);
+    expect(headed).toHaveLength(7);
+    expect(headed.map((node) => node.props.index)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it("lays the flagged set out as a grid rather than a column of paragraphs", () => {
+    const attention = areas().find((node) => node.sectionId === "s.attention");
+    const grid = attention?.children?.[0];
+    expect(grid?.component).toBe("Grid");
+    expect(grid?.props.columns).toBe(2);
+    expect(grid?.children?.map((kid) => kid.component)).toEqual([
+      "RiskAlert",
+      "RiskAlert",
+      "RiskAlert",
+      "RiskAlert",
+    ]);
+  });
+
+  it("closes on the written outlook, by reference and not by copy", () => {
+    const { spec } = composed();
+    const last = spec.root[spec.root.length - 1];
+    expect(last.component).toBe("Prose");
+    expect(last.props.source).toBe("outlook");
+    /* The words are nowhere in the spec, which is the whole point of `source` — the same
+       promise `dataKey` makes about the bundle. */
+    expect(JSON.stringify(spec.root)).not.toContain(PRASHANTH_REPORT.outlook?.text);
+
+    const { container } = render(
+      React.createElement(SpecRenderer, { spec, report: PRASHANTH_REPORT, bundle: PRASHANTH_BUNDLE }),
+    );
+    expect(container.textContent).toContain(PRASHANTH_REPORT.outlook?.text);
+    expect(container.textContent).toContain(PRASHANTH_REPORT.outlook?.signature);
+  });
+
+  it("sets the capital call beside the dates it depends on", () => {
+    const coming = areas().find((node) => node.sectionId === "s.coming");
+    const grid = coming?.children?.[0];
+    expect(grid?.component).toBe("Grid");
+    expect(grid?.children?.map((kid) => kid.component)).toEqual(["CapitalFlow", "Timeline"]);
   });
 });
 

@@ -118,8 +118,11 @@ export const IAAreaSchema = z.object({
   /**
    * The area's heading, derived from the shared question of its sections —
    * "Performance drivers" for contributors + detractors.
+   *
+   * Absent where the recipe's slot is a continuation of the one before it: the area is
+   * still an area, it just does not start a new topic. See `continuation` in ./recipes.ts.
    */
-  heading: z.string().min(1),
+  heading: z.string().min(1).optional(),
   /** Sections grouped into this area, in reading order. */
   sectionIds: z.array(z.string()).min(1),
   /** Position among areas. Lower reads first. */

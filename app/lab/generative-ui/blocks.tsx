@@ -20,10 +20,10 @@
  * §9 constraint and not a style preference.
  */
 
-import { AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, Info, Landmark, Target } from "lucide-react";
 import React from "react";
 import { Block } from "./chrome";
-import { RHYTHM, SEVERITY, TYPE, pill, toneOf, type SeverityName } from "./ds";
+import { RHYTHM, SEVERITY, SURFACE, TYPE, pill, toneOf, type SeverityName } from "./ds";
 import type {
   ChecklistFinding,
   FlagFinding,
@@ -184,6 +184,66 @@ export function TransitionBlock({ finding }: { finding: TransitionFinding }) {
         <span className={pill(tone)}>{finding.sentiment === "negative" ? "Watch" : "Moved"}</span>
       </div>
       {finding.note ? <Detail text={finding.note} /> : null}
+    </div>
+  );
+}
+
+/**
+ * A transfer: where the money comes from, where it is going, how much and what is
+ * outstanding.
+ *
+ * `TransitionBlock` above says "21% → 29%" — one thing, twice, at two moments. This says
+ * two *different* things and a movement between them, which is why it is a card rather than
+ * a line: the reader's question is not "what changed" but "what has to happen", and the
+ * answer is the pair plus the status. Drawn only when the analysis supplied both the amount
+ * and the status; see `CapitalFlow.fit` in ./registry.ts.
+ *
+ * The two ends are deliberately the same ink at two weights rather than two hues. A source
+ * and a destination are not good and bad, and colouring them would say they were.
+ */
+function FlowEnd({ mark, role, name }: { mark: typeof Landmark; role: string; name: string }) {
+  const hex = SEVERITY.info.hex;
+  return (
+    <div className="flex min-w-0 flex-1 items-start gap-[10px]">
+      <span
+        className="mt-[1px] grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full"
+        style={{ background: `${hex}14`, color: hex }}
+        aria-hidden
+      >
+        {React.createElement(mark, { className: "h-[15px] w-[15px]", strokeWidth: 1.8 })}
+      </span>
+      <span className="min-w-0">
+        <span className={`${TYPE.caption} block`}>{role}</span>
+        <span className={`${TYPE.cell} mt-[1px] block font-medium`}>{name}</span>
+      </span>
+    </div>
+  );
+}
+
+export function CapitalFlowBlock({ finding }: { finding: TransitionFinding }) {
+  return (
+    <div className={`flex h-full flex-col ${SURFACE.panel}`}>
+      <div className={TYPE.sectionTitle}>{finding.subjectLabel}</div>
+      <div className="mt-[16px] flex items-start gap-[12px]">
+        <FlowEnd mark={Landmark} role="From" name={finding.from} />
+        <ArrowRight className="mt-[8px] h-[15px] w-[15px] shrink-0 text-black/25" strokeWidth={1.8} aria-hidden />
+        <FlowEnd mark={Target} role="To" name={finding.to} />
+      </div>
+      <div className="mt-[18px] flex flex-wrap gap-x-[40px] gap-y-[10px]">
+        {finding.amount ? (
+          <div>
+            <div className={TYPE.caption}>Amount</div>
+            <div className={`${TYPE.cell} mt-[2px] font-medium tabular-nums`}>{finding.amount}</div>
+          </div>
+        ) : null}
+        {finding.status ? (
+          <div>
+            <div className={TYPE.caption}>Status</div>
+            <div className={`${TYPE.cell} mt-[2px] font-medium`}>{finding.status}</div>
+          </div>
+        ) : null}
+      </div>
+      {finding.note ? <div className="mt-[12px]"><Detail text={finding.note} /></div> : null}
     </div>
   );
 }

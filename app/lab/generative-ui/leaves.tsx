@@ -28,6 +28,7 @@ import { Sparkles } from "lucide-react";
 import type React from "react";
 import { RENDERER_COMPONENTS } from "../dynamic-ui/renderers";
 import {
+  CapitalFlowBlock,
   ChecklistBlock,
   FlagBlock,
   NarrativeBlock,
@@ -236,12 +237,18 @@ const escape = (input: Resolved, what: string): React.ReactNode =>
  * answer. Anything richer belongs to the fallback renderer, not here.
  */
 function Prose({ props, finding, value }: Resolved) {
+  /* The closing passage resolves to a pair rather than a string — text plus the name under
+     it. Both are the report's own words; see `outlook` in ./semantic.ts. */
+  const pair =
+    value && typeof value === "object" && "text" in value
+      ? (value as { text: string; signature?: string })
+      : undefined;
   const passage =
     finding && "text" in finding && typeof finding.text === "string"
       ? finding.text
       : typeof value === "string"
         ? value
-        : undefined;
+        : pair?.text;
   if (!passage) return <Empty what="No passage to show." />;
 
   const variant = str(props.variant) ?? "body";
@@ -265,6 +272,27 @@ function Prose({ props, finding, value }: Resolved) {
    * The tone is `TONE.positive` because a readout is a conclusion, not a warning, and the
    * severity palette is reserved for things that need attention. No hue is chosen here.
    */
+  /*
+   * The closing passage, and the name under it.
+   *
+   * A tinted band rather than a washed panel, and it sits at the foot of the page, so it
+   * reads as the end of a note rather than a second answer. The signature is set as a
+   * caption above a hairline — small, because it is attribution and not a claim.
+   */
+  if (variant === "outlook") {
+    return (
+      <div className={`${SURFACE.inset} px-[20px] py-[18px]`}>
+        {heading ? <div className={`${TYPE.sectionTitle} mb-[8px]`}>{heading}</div> : null}
+        {paragraphs}
+        {pair?.signature ? (
+          <div className={`mt-[14px] border-t pt-[10px] ${SURFACE.hairline} ${TYPE.caption}`}>
+            {pair.signature}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   if (variant === "readout") {
     const hex = TONE.positive.hex;
     return (
@@ -1110,6 +1138,13 @@ const recommendation: Leaf = (input) =>
     escape(input, "No recommendation.")
   );
 
+const capitalFlow: Leaf = (input) =>
+  input.finding?.kind === "transition" ? (
+    <CapitalFlowBlock finding={input.finding} />
+  ) : (
+    escape(input, "No transfer to show.")
+  );
+
 const checklist: Leaf = (input) =>
   input.finding?.kind === "checklist" ? <ChecklistBlock finding={input.finding} /> : escape(input, "No open items.");
 
@@ -1142,6 +1177,7 @@ export const LEAF_COMPONENTS: Record<Exclude<ComponentId, LayoutId>, Leaf> = {
 
   InsightCard: insight,
   RiskAlert: flag,
+  CapitalFlow: capitalFlow,
   Recommendation: recommendation,
   NewsImpact,
   Checklist: checklist,

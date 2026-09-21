@@ -91,19 +91,19 @@ export const PRASHANTH_PLAN: IntentPlan = {
   because: "A full balance sheet — what it is worth, how it is invested, what is borrowed and what is owed next.",
   dataRequests: [
     { key: "networth.total", tool: "portfolio.summary", args: { clientId: "prashanth-ranganathan" }, required: true },
-    { key: "networth.series", tool: "performance.series", args: { clientId: "prashanth-ranganathan" }, required: false },
     { key: "perf.indexed", tool: "performance.series", args: { clientId: "prashanth-ranganathan", indexed: true }, required: false },
     { key: "perf.returns", tool: "performance.series", args: { clientId: "prashanth-ranganathan", periods: true }, required: false },
     { key: "activity.timeline", tool: "meetings.recent", args: { clientId: "prashanth-ranganathan", since: "2026-06-28" }, required: false },
     { key: "alloc.class", tool: "portfolio.allocation", args: { clientId: "prashanth-ranganathan", by: "assetClass" }, required: true },
     { key: "holdings.positions", tool: "portfolio.holdings", args: { clientId: "prashanth-ranganathan" }, required: true },
-    { key: "custody.securities", tool: "portfolio.holdings", args: { clientId: "prashanth-ranganathan", by: "custodian" }, required: false },
+    { key: "holdings.nvda.weight", tool: "portfolio.holdings", args: { clientId: "prashanth-ranganathan", symbol: "NVDA", history: true }, required: false },
     { key: "private.marks", tool: "portfolio.holdings", args: { clientId: "prashanth-ranganathan", kind: "private" }, required: false },
     { key: "digital.holdings", tool: "portfolio.holdings", args: { clientId: "prashanth-ranganathan", kind: "digital" }, required: false },
     { key: "risk.concentration", tool: "performance.risk", args: { clientId: "prashanth-ranganathan" }, required: false },
     { key: "debt.facilities", tool: "liabilities.facilities", args: { clientId: "prashanth-ranganathan" }, required: true },
     { key: "liquidity.available", tool: "portfolio.summary", args: { clientId: "prashanth-ranganathan", view: "liquidity" }, required: false },
     { key: "commit.privatecredit", tool: "goals.list", args: { clientId: "prashanth-ranganathan", horizon: "short" }, required: false },
+    { key: "commit.timeline", tool: "goals.list", args: { clientId: "prashanth-ranganathan", horizon: "short", dated: true }, required: false },
     { key: "actions.open", tool: "meetings.recent", args: { clientId: "prashanth-ranganathan" }, required: false },
     { key: "evidence.sources", tool: "documents.list", args: { clientId: "prashanth-ranganathan" }, required: false },
   ],
@@ -123,11 +123,6 @@ export const PRASHANTH_BUNDLE: DataBundle = {
       value: "US$55.4m",
       delta: { label: "+US$2.2m since 28 June", value: 2.18 },
     },
-    "networth.series": [
-      { label: "28 Jun", value: 53.25 },
-      { label: "28 Jul", value: 53.99 },
-      { label: "27 Aug", value: 55.43 },
-    ],
     "perf.indexed": [
       { label: "Dec", value: 100 },
       { label: "Jan", value: 101.9 },
@@ -190,11 +185,24 @@ export const PRASHANTH_BUNDLE: DataBundle = {
       { name: "NVIDIA", marketValue: 3.57, cost: 2.88, gain: 0.69 },
       { name: "US Treasury bills", marketValue: 1.42, cost: 1.42, gain: 0 },
     ],
-    "custody.securities": [
-      { name: "LGT Bank", value: 8.96 },
-      { name: "UBS", value: 6.62 },
-      { name: "Interactive Brokers", value: 5.95 },
-      { name: "Goldman Sachs", value: 3.69 },
+    /*
+     * NVIDIA's share of the listed book, month by month.
+     *
+     * Read off the same custody snapshots as `perf.indexed`, on the same nine dates, so the
+     * weight and the return are two views of one history rather than two estimates. It is
+     * here rather than derived because deriving it would mean this file dividing one figure
+     * by another, and nothing downstream of layer 2 is allowed to do arithmetic on a fact.
+     */
+    "holdings.nvda.weight": [
+      { label: "Dec", value: 9.1 },
+      { label: "Jan", value: 9.6 },
+      { label: "Feb", value: 9.4 },
+      { label: "Mar", value: 10.5 },
+      { label: "Apr", value: 11.3 },
+      { label: "May", value: 12.2 },
+      { label: "Jun", value: 12 },
+      { label: "Jul", value: 13.4 },
+      { label: "Aug", value: 14.2 },
     ],
     "private.marks": [
       { name: "Acme Technologies", value: 0.5 },
@@ -239,6 +247,25 @@ export const PRASHANTH_BUNDLE: DataBundle = {
       fundingSource: "Goldman Sachs Treasury bill position",
       available: 0.19,
     },
+    /*
+     * The dates the two open structural items depend on.
+     *
+     * Quarters rather than dates because that is what the file supports: the call has a
+     * deadline, the trust does not, and writing "12 November" for something waiting on a
+     * third party's paperwork would be a figure this analysis cannot stand behind. No
+     * amount on the first row either — the capital-flow card beside it states the size, and
+     * saying it twice would leave the reader checking the two against each other.
+     */
+    "commit.timeline": [
+      { when: "Q3 2026", name: "GS Private Credit capital call", display: "Funded from the Goldman Treasury bills" },
+      { when: "Q4 2026", name: "Withers to complete the intermediary trust", display: "Enables the LGT transfer" },
+      {
+        when: "Q4 2026 – Q1 2027",
+        name: "LGT asset transfer",
+        display: "Subject to trust completion",
+        confidence: "medium",
+      },
+    ],
     "actions.open": [
       { text: "Review the LGT discretionary mandate against benchmark", state: "todo", owner: "Advisory" },
       { text: "Fund the US$500k GS Private Credit Partners IV call", state: "doing", due: "by 15 September" },
@@ -267,19 +294,19 @@ export const PRASHANTH_BUNDLE: DataBundle = {
   },
   provenance: {
     "networth.total": { tool: "portfolio.summary", asOf: PRASHANTH_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
-    "networth.series": { tool: "performance.series", asOf: PRASHANTH_AS_OF, sources: [...FAMILY_OFFICE, "Performance estimate"] },
     "perf.indexed": { tool: "performance.series", asOf: "2026-08-31T00:00:00+08:00", sources: ["Performance estimate"] },
     "perf.returns": { tool: "performance.series", asOf: "2026-08-31T00:00:00+08:00", sources: ["Performance estimate"] },
     "activity.timeline": { tool: "meetings.recent", asOf: "2026-08-27T00:00:00+08:00", sources: [...FAMILY_OFFICE, "Quarterly review meeting note"] },
     "alloc.class": { tool: "portfolio.allocation", asOf: PRASHANTH_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
     "holdings.positions": { tool: "portfolio.holdings", asOf: PRASHANTH_AS_OF, sources: CUSTODY },
-    "custody.securities": { tool: "portfolio.holdings", asOf: PRASHANTH_AS_OF, sources: CUSTODY },
+    "holdings.nvda.weight": { tool: "portfolio.holdings", asOf: PRASHANTH_AS_OF, sources: CUSTODY },
     "private.marks": { tool: "portfolio.holdings", asOf: PRASHANTH_AS_OF, sources: FAMILY_OFFICE },
     "digital.holdings": { tool: "portfolio.holdings", asOf: PRASHANTH_AS_OF, sources: ["Sygnum Custody"] },
     "risk.concentration": { tool: "performance.risk", asOf: PRASHANTH_AS_OF, sources: CUSTODY },
     "debt.facilities": { tool: "liabilities.facilities", asOf: PRASHANTH_AS_OF, sources: FAMILY_OFFICE },
     "liquidity.available": { tool: "portfolio.summary", asOf: PRASHANTH_AS_OF, sources: CUSTODY },
     "commit.privatecredit": { tool: "goals.list", asOf: "2026-08-07T00:00:00+08:00", sources: ["Quarterly review meeting note"] },
+    "commit.timeline": { tool: "goals.list", asOf: "2026-08-07T00:00:00+08:00", sources: ["Quarterly review meeting note"] },
     "actions.open": { tool: "meetings.recent", asOf: "2026-08-07T00:00:00+08:00", sources: ["Quarterly review meeting note"] },
     "evidence.sources": { tool: "documents.list", asOf: PRASHANTH_AS_OF, sources: FAMILY_OFFICE },
   },
@@ -307,14 +334,14 @@ Two structural items are unresolved rather than urgent. The LGT asset transfer t
 /* ========================================================================== */
 
 /**
- * Nine sections, which the composer groups into eight areas: `s.holdings` and
- * `s.custody` ask the same question and carry sibling `groups`, so they arrive as one
- * area read one view at a time rather than as two tables of the same portfolio.
+ * Eleven sections, which the composer groups into nine areas and numbers as seven.
  *
- * Eight is the AnalyticalReport budget, deliberately. Designing this report is what
- * showed the recipe's old ceiling of seven could not hold a balance-sheet analysis and
- * its sources at the same time — see the note on `maxAreas` in ./recipes.ts. Sections
- * were not thinned to fit a number; the number was wrong by one for this shape.
+ * Three of the groupings are the interesting ones, and all three are declared here rather
+ * than guessed downstream: `s.drivers` and `s.returns` contrast, so the chart and the table
+ * behind it read side by side; `s.allocation` and `s.holdings` answer the same question at
+ * two resolutions, so the donut and the position list do the same; and `s.nvda` lands in a
+ * continuation slot, so the concentration the rally produced reads as part of "what drove
+ * the change" instead of as an eighth thing to read.
  *
  * Exactly one section is `primary`. Four *findings* are `primary`, and in document
  * order they are the four the headline strip lifts to the top of the page: net worth,
@@ -331,8 +358,18 @@ export const PRASHANTH_REPORT: SemanticReport = {
   summary:
     "Net worth is US$55.4m, up US$2.2m since June on a private-book revaluation rather than a return. The listed portfolio is concentrated in five instruments, and the US$500k private credit call due 15 September is US$310k short of its approved funding source.",
   narrative: PRASHANTH_ANSWER,
+  /* Where this is heading, in one paragraph, and the name behind it. Nothing here is a new
+     fact: the funding gap, the trust and the concentration are all findings above, said once
+     more as the shape of the next quarter rather than as things to check. */
+  outlook: {
+    text: "The quarter ahead is administrative rather than strategic. Funding the private credit call closes the only dated item, the intermediary trust should complete in October and clear the way for the LGT transfer, and the concentration in the listed book is worth trimming into strength rather than on a deadline. Nothing in this balance sheet needs to change quickly.",
+    signature: "Prepared by Rajiv Menon, Relationship Manager — reviewed 7 August 2026",
+  },
   relations: [
-    { kind: "answers_same_question", sectionIds: ["s.holdings", "s.custody"] },
+    /* How it is spread and what it is in are one question at two resolutions, which is why
+       they arrive as one area — and the `state` slot fixes that area as a split, so neither
+       is hidden behind the other. */
+    { kind: "answers_same_question", sectionIds: ["s.allocation", "s.holdings"] },
     /* The chart and the table are the same claim read two ways — the shape of the year and
        the numbers behind it — so neither may be hidden behind the other. That is what makes
        the composer set them side by side rather than stack them or tab them; see
@@ -347,7 +384,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       question: "What is the balance sheet worth?",
       importance: "primary",
       takeaway: "Up on the quarter, but the rise is a revaluation rather than a return.",
-      dataKeys: ["networth.total", "networth.series"],
+      dataKeys: ["networth.total", "liquidity.available", "debt.facilities"],
       findings: [
         {
           kind: "metric",
@@ -381,6 +418,42 @@ export const PRASHANTH_REPORT: SemanticReport = {
           basis: "listed securities, against a 60/40 global benchmark",
           delta: { label: "+2.8pp vs benchmark", value: 2.8, sentiment: "positive" },
         },
+        /*
+         * Liquidity and borrowing sit here, beside the net worth they qualify, and not in a
+         * section of their own further down.
+         *
+         * They are two of the four figures the page opens on, and the strip reads them from
+         * wherever they are — but where they are is not arbitrary. Both are statements about
+         * the same balance sheet as the tile above: what of it can be spent, and what of it
+         * is owed. A separate "borrowing" section put the two halves of one sentence eight
+         * hundred pixels apart.
+         */
+        {
+          kind: "metric",
+          id: "f.liquid",
+          emphasis: "primary",
+          confidence: 0.96,
+          sources: CUSTODY,
+          subject: "Liquidity",
+          label: "Liquid assets",
+          value: "US$2.6m",
+          basis: "cash and Treasury bills, before selling a position",
+        },
+        {
+          kind: "metric",
+          id: "f.debt",
+          emphasis: "primary",
+          confidence: 0.97,
+          sources: FAMILY_OFFICE,
+          subject: "Borrowing",
+          label: "Total borrowing",
+          /* The facility-level split is in the basis line rather than in two metrics of its
+             own. A mortgage and a margin loan drawn as cards beside the total are the same
+             claim three times; as a line under the total they are the arithmetic behind it. */
+          value: "US$4.6m",
+          basis:
+            "a US$3.3m Dalvey Road mortgage at 3.85% and a US$0.9m margin facility at 5.25% — 7.7% of assets, with a US$2.0m PRTR guarantee to LGT outside it",
+        },
       ],
     },
 
@@ -400,7 +473,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       question: "What changed?",
       importance: "secondary",
       takeaway: "Four developments since the 7 August review.",
-      dataKeys: ["activity.timeline", "networth.series"],
+      dataKeys: ["activity.timeline"],
       findings: [
         {
           kind: "narrative",
@@ -410,23 +483,6 @@ export const PRASHANTH_REPORT: SemanticReport = {
           sources: [...FAMILY_OFFICE, "Quarterly review meeting note"],
           subject: "Since the last review",
           text: "The remark and the approved call both date from the first half of August. The LGT transfer is the only item still outstanding, and it waits on a third party rather than on a decision here.",
-        },
-        {
-          kind: "trend",
-          id: "f.networth.series",
-          emphasis: "secondary",
-          confidence: 0.9,
-          sources: [...FAMILY_OFFICE, "Performance estimate"],
-          subject: "Net worth",
-          label: "Net worth, US$m",
-          series: {
-            name: "Net worth",
-            points: [
-              { label: "28 Jun", value: 53.25 },
-              { label: "28 Jul", value: 53.99 },
-              { label: "27 Aug", value: 55.43 },
-            ],
-          },
         },
       ],
     },
@@ -574,13 +630,83 @@ export const PRASHANTH_REPORT: SemanticReport = {
       ],
     },
 
-    /* ---------------------------------------------------------- 3. allocation */
+    /* ------------------------------- 3, continued. what the rally concentrated */
+    /*
+     * The other half of the performance story, and deliberately not its own section number.
+     *
+     * The rally that produced the return is the same rally that made one position 14% of the
+     * listed book, so this reads as a continuation of "what drove the change" rather than as
+     * a new topic — three readings of one claim: the position, its weight over the year, and
+     * what is wrong with it. See `whyDetail` in ./recipes.ts for the slot that says so.
+     */
+    {
+      id: "s.nvda",
+      semanticType: "risk",
+      question: "What has that done to the shape of the book?",
+      importance: "secondary",
+      takeaway: "The same market rally has concentrated the listed book in a single name.",
+      dataKeys: ["risk.concentration", "holdings.nvda.weight"],
+      findings: [
+        {
+          kind: "metric",
+          id: "f.nvda.weight",
+          emphasis: "primary",
+          confidence: 0.96,
+          sources: CUSTODY,
+          subject: "NVIDIA position",
+          label: "NVIDIA position",
+          value: "14.2%",
+          basis: "of the listed book — US$3.6m, held at all four custodians",
+          delta: { label: "+5.1pp since December", value: 5.1, sentiment: "negative" },
+        },
+        {
+          kind: "trend",
+          id: "f.nvda.history",
+          emphasis: "secondary",
+          confidence: 0.94,
+          sources: CUSTODY,
+          subject: "Portfolio weight over time",
+          label: "Weight of the listed book, %",
+          series: {
+            name: "NVIDIA",
+            points: [
+              { label: "Dec", value: 9.1 },
+              { label: "Jan", value: 9.6 },
+              { label: "Feb", value: 9.4 },
+              { label: "Mar", value: 10.5 },
+              { label: "Apr", value: 11.3 },
+              { label: "May", value: 12.2 },
+              { label: "Jun", value: 12 },
+              { label: "Jul", value: 13.4 },
+              { label: "Aug", value: 14.2 },
+            ],
+          },
+        },
+        {
+          kind: "flag",
+          id: "f.nvda",
+          emphasis: "secondary",
+          confidence: 0.95,
+          sources: CUSTODY,
+          subject: "Concentration",
+          severity: "warn",
+          subjectLabel: "High concentration",
+          detail:
+            "NVIDIA is 14.2% of the listed book against the 5–10% a single position would normally hold, and it is split across LGT, UBS, Interactive Brokers and Goldman Sachs — so no one custodian statement shows it whole, which is why the overweight was easy to under-read.",
+        },
+      ],
+    },
+
+    /* --------------------------------------------- 4. where things stand, two ways */
     {
       id: "s.allocation",
       semanticType: "allocation",
       question: "How is the balance sheet made up?",
       importance: "secondary",
       takeaway: "Six asset classes, and the unlisted book drove most of the quarter's gain.",
+      /* The name of the *view*, which is what a split pane titles each half with. Without it
+         both halves would be titled with the question they share. */
+      groups: ["Asset allocation"],
       dataKeys: ["alloc.class", "private.marks", "digital.holdings"],
       findings: [
         {
@@ -600,41 +726,24 @@ export const PRASHANTH_REPORT: SemanticReport = {
             { label: "Cash", value: 0.02 },
           ],
         },
-        {
-          kind: "transition",
-          id: "f.privatemark",
-          emphasis: "secondary",
-          confidence: 0.93,
-          sources: FAMILY_OFFICE,
-          subject: "Private investments",
-          subjectLabel: "Unlisted book",
-          from: "US$1.6m",
-          to: "US$2.4m",
-          sentiment: "positive",
-          note: "Nine positions remarked on 13 August. This revaluation, not a return, is most of the US$2.2m rise in net worth.",
-        },
-        {
-          kind: "metric",
-          id: "f.digital",
-          emphasis: "secondary",
-          confidence: 0.94,
-          sources: ["Sygnum Custody"],
-          subject: "Digital assets",
-          label: "Digital assets",
-          value: "US$3.5m",
-          basis: "on a US$0.7m cost basis, in Sygnum custody",
-        },
+        /*
+         * The remark on the unlisted book and the digital custody figure used to be findings
+         * of their own here, and both were true twice: the revaluation is already the 13
+         * August row of `activity.timeline` and the reason this section's takeaway says what
+         * it says, and digital assets are a segment of the split above. Carrying them again
+         * as cards turned the allocation view into a stack of three unrelated claims where
+         * the question is one — how the balance sheet is made up.
+         */
       ],
     },
 
-    /* ------------------------------------------ 4 & 5. the listed book, two views */
     {
       id: "s.holdings",
       semanticType: "comparison",
       question: "Where is the listed portfolio, and what is in it?",
       importance: "secondary",
-      takeaway: "Five instruments hold the entire listed book.",
-      groups: ["By position"],
+      takeaway: "Five instruments hold the entire listed book, across four custodians.",
+      groups: ["Top 5 holdings"],
       dataKeys: ["holdings.positions"],
       findings: [
         {
@@ -690,117 +799,51 @@ export const PRASHANTH_REPORT: SemanticReport = {
         },
       ],
     },
+    /* ----------------------------------------------- 5. what needs attention */
+    /*
+     * Four items, written as four flags on purpose.
+     *
+     * Two of them — the concentration and the funding shortfall — are stated elsewhere on the
+     * page too, and that is the reference's own arrangement rather than an oversight: §3 shows
+     * *how* the concentration happened, this asks what to do about it. The rule the composer
+     * enforces is that a *figure* is drawn once; a claim may be argued in more than one place.
+     *
+     * Every detail line ends with what the item costs the reader if it is left — "Why it
+     * matters" — because a list of four warnings with no consequences attached is a list the
+     * reader ranks by tone of voice. The bold run is markdown the analysis wrote; the
+     * component does not add it.
+     */
     {
-      id: "s.custody",
-      semanticType: "comparison",
-      question: "Where is the listed portfolio, and what is in it?",
-      importance: "secondary",
-      takeaway: "The same five instruments at four banks — one portfolio in four places.",
-      groups: ["By custodian"],
-      dataKeys: ["custody.securities"],
-      findings: [
-        {
-          kind: "comparison",
-          id: "f.custody",
-          emphasis: "secondary",
-          confidence: 0.98,
-          sources: CUSTODY,
-          subject: "Custodians",
-          label: "Listed securities by custodian",
-          measure: "Market value",
-          entities: [
-            { name: "LGT Bank", value: 8.96, display: "US$9.0m" },
-            { name: "UBS", value: 6.62, display: "US$6.6m" },
-            { name: "Interactive Brokers", value: 5.95, display: "US$6.0m" },
-            { name: "Goldman Sachs", value: 3.69, display: "US$3.7m" },
-          ],
-        },
-        {
-          kind: "narrative",
-          id: "f.mirrored",
-          emphasis: "secondary",
-          confidence: 0.9,
-          sources: CUSTODY,
-          subject: "Custodians",
-          text: "All four custodians hold the same five instruments in roughly the same proportions, so the four mandates are one portfolio in four places rather than four strategies. Diversification across custodians is not diversification of risk.",
-        },
-      ],
-    },
-
-    /* ------------------------------------------------------- 6. concentration */
-    {
-      id: "s.concentration",
+      id: "s.attention",
       semanticType: "risk",
-      question: "Where is the portfolio concentrated?",
+      question: "What needs attention?",
       importance: "secondary",
-      takeaway: "Three names dominate the listed book, and one of them is held four times over.",
-      dataKeys: ["risk.concentration", "holdings.positions"],
+      takeaway: "Four items to review, one of them dated.",
+      dataKeys: ["risk.concentration", "commit.privatecredit", "holdings.positions"],
       findings: [
         {
           kind: "flag",
-          id: "f.nvda",
+          id: "f.att.concentration",
           emphasis: "primary",
           confidence: 0.95,
           sources: CUSTODY,
           subject: "Concentration",
           severity: "warn",
-          subjectLabel: "NVIDIA, held four times over",
+          subjectLabel: "Single-name concentration",
           detail:
-            "US$3.6m and 14.2% of listed securities, split across LGT, UBS, Interactive Brokers and Goldman Sachs. No single custodian statement shows the whole position, which is why the overweight has been easy to under-read. Prashanth has raised it himself.",
+            "Apple, Microsoft and NVIDIA are 57% of the listed book, and the Vanguard S&P 500 holding adds to the same three names again. **Why it matters:** on a look-through basis the single-name exposure is higher than the position list shows, and it was not visible on any one custodian statement.",
         },
         {
-          kind: "metric",
-          id: "f.fiveinstruments",
+          kind: "flag",
+          id: "f.att.mandate",
           emphasis: "secondary",
-          confidence: 0.98,
-          sources: CUSTODY,
-          subject: "Concentration",
-          label: "Instruments in the listed book",
-          value: "5",
-          basis: "across US$25.2m and four custodians",
-        },
-        {
-          kind: "narrative",
-          id: "f.singlename",
-          emphasis: "secondary",
-          confidence: 0.92,
-          sources: CUSTODY,
-          subject: "Concentration",
-          text: "Apple, Microsoft and NVIDIA together are US$14.3m, 57% of the listed book, and the Vanguard S&P 500 holding adds to the same three names again. On a look-through basis the single-name exposure is higher than the position list suggests.",
-        },
-      ],
-    },
-
-    /* --------------------------------------------------- 7. funding and debt */
-    {
-      id: "s.funding",
-      semanticType: "liquidity",
-      question: "What is borrowed, and can the September call be funded?",
-      importance: "secondary",
-      takeaway: "Borrowing is modest; the September call is not covered by cash alone.",
-      dataKeys: ["liquidity.available", "debt.facilities", "commit.privatecredit"],
-      findings: [
-        {
-          kind: "metric",
-          id: "f.liquid",
-          emphasis: "primary",
-          confidence: 0.96,
-          sources: CUSTODY,
-          subject: "Liquidity",
-          label: "Liquid assets",
-          value: "US$2.6m",
-          basis: "cash and Treasury bills, before selling a position",
-        },
-        {
-          kind: "metric",
-          id: "f.debt",
-          emphasis: "primary",
-          confidence: 0.97,
-          sources: FAMILY_OFFICE,
-          subject: "Borrowing",
-          label: "Total borrowing",
-          value: "US$4.6m",
-          basis: "7.7% of assets, excluding the PRTR guarantee",
+          confidence: 0.85,
+          sources: ["Quarterly review meeting note"],
+          subject: "Mandates",
+          severity: "warn",
+          subjectLabel: "LGT discretionary mandate",
+          detail:
+            "The largest mandate at US$9.0m was recorded as outperforming, but the file holds no mandate-level return series. **Why it matters:** the claim has not been checked against benchmark, and it is the mandate carrying the most money.",
         },
         {
           kind: "flag",
@@ -812,7 +855,53 @@ export const PRASHANTH_REPORT: SemanticReport = {
           severity: "critical",
           subjectLabel: "The September call is short of its funding source",
           detail:
-            "The US$500k GS Private Credit Partners IV call was approved on the basis of funding from the Goldman Treasury bill position, which is US$190k. US$310k has to come from the Treasury bills at the other three custodians, which total US$1.2m, or from cash.",
+            "The US$500k GS Private Credit Partners IV call was approved on the basis of funding from the Goldman Treasury bill position, which is US$190k. **Why it matters:** US$310k has to come from the Treasury bills at the other three custodians, which total US$1.2m, or from cash, and the date is not flexible.",
+        },
+        {
+          kind: "flag",
+          id: "f.att.trust",
+          emphasis: "secondary",
+          confidence: 0.9,
+          sources: FAMILY_OFFICE,
+          subject: "Trust",
+          severity: "warn",
+          subjectLabel: "Trust transfer dependency",
+          detail:
+            "The LGT asset transfer waits on Withers completing the intermediary trust, expected in October. **Why it matters:** until it completes, custody and the transfer timetable are both outside this office's control.",
+        },
+      ],
+    },
+
+    /* ------------------------------------------------------- 6. what is coming */
+    /*
+     * The transfer and the dates it depends on, which is a different question from the one
+     * above: not "is this a problem" but "what happens next, and when".
+     *
+     * The dated rows are data (`commit.timeline`) rather than findings, for the same reason
+     * the activity chronology is: three dates are one list, and writing each as a claim of
+     * its own would make three arguments out of a schedule.
+     */
+    {
+      id: "s.coming",
+      semanticType: "commitments",
+      question: "What is coming, and what does it wait on?",
+      importance: "secondary",
+      takeaway: "One call to fund, and a transfer waiting on a trust.",
+      dataKeys: ["commit.privatecredit", "commit.timeline"],
+      findings: [
+        {
+          kind: "transition",
+          id: "f.flow",
+          emphasis: "primary",
+          confidence: 0.94,
+          sources: ["Quarterly review meeting note", ...CUSTODY],
+          subject: "Capital flow",
+          subjectLabel: "Capital flow — private credit allocation",
+          from: "Goldman Treasury bills",
+          to: "GS Private Credit Partners IV",
+          sentiment: "neutral",
+          amount: "US$500k",
+          status: "Funding required",
         },
         {
           kind: "requirement",
@@ -820,45 +909,11 @@ export const PRASHANTH_REPORT: SemanticReport = {
           emphasis: "secondary",
           confidence: 0.96,
           sources: ["Quarterly review meeting note"],
-          subject: "Commitments",
+          subject: "Key timeline",
           amount: "US$500k",
           purpose: "GS Private Credit Partners IV",
           deadline: "by 15 September 2026",
           note: "Approved. Low flexibility on the date.",
-        },
-        {
-          kind: "metric",
-          id: "f.mortgage",
-          emphasis: "secondary",
-          confidence: 0.97,
-          sources: FAMILY_OFFICE,
-          subject: "Borrowing",
-          label: "Mortgage",
-          value: "US$3.3m",
-          basis: "41% of the Dalvey Road valuation, at 3.85%",
-        },
-        {
-          kind: "metric",
-          id: "f.margin",
-          emphasis: "secondary",
-          confidence: 0.97,
-          sources: FAMILY_OFFICE,
-          subject: "Borrowing",
-          label: "Margin facility",
-          value: "US$0.9m",
-          basis: "3.6% of listed securities, at 5.25%",
-        },
-        {
-          kind: "flag",
-          id: "f.guarantee",
-          emphasis: "secondary",
-          confidence: 0.95,
-          sources: FAMILY_OFFICE,
-          subject: "Borrowing",
-          severity: "info",
-          subjectLabel: "US$2.0m guarantee outside the borrowing total",
-          detail:
-            "PRTR Holdings has guaranteed US$2.0m to LGT. It is not drawn and not in the US$4.6m, but it is a claim on the balance sheet and belongs in any leverage discussion.",
         },
       ],
     },

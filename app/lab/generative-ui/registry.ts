@@ -69,6 +69,7 @@ export const ComponentIdSchema = z.enum([
   // intelligence
   "InsightCard",
   "RiskAlert",
+  "CapitalFlow",
   "Recommendation",
   "NewsImpact",
   "WhatToWatch",
@@ -107,6 +108,7 @@ const LEAVES: ComponentId[] = [
   "BulletSummary",
   "InsightCard",
   "RiskAlert",
+  "CapitalFlow",
   "Recommendation",
   "NewsImpact",
   "Checklist",
@@ -227,7 +229,16 @@ export const REGISTRY: ComponentRegistry = {
     description: "A titled group of related content. The unit of the reader's scan.",
     category: "layout",
     propsSchema: z.object({
-      heading,
+      /**
+       * Optional, because a section can be a continuation.
+       *
+       * The reference report runs one topic across two bands — the drivers, then the
+       * concentration those drivers produced — and the second band takes no heading and no
+       * number, because starting a new numbered topic there would claim it is a new
+       * question when it is the same one, read further. A heading-less Section renders as
+       * the rule and the content, which is exactly that. See `continuation` in ./recipes.ts.
+       */
+      heading: heading.optional(),
       caption,
       /**
        * Print the section's own one-line takeaway under the heading.
@@ -604,11 +615,11 @@ export const REGISTRY: ComponentRegistry = {
       }
       if (finding.kind === "composition") {
         const n = finding.parts.length;
-        // The default for an allocation, not the overflow case it used to be. Bars
-        // share a baseline and carry their own printed figure, so four shares or
-        // twelve read the same way; above twelve the labels stop fitting and a table
-        // wins. Two or three parts hand back to the donut.
-        return n >= 4 && n <= 12 ? 0.92 : n >= 2 ? 0.5 : 0;
+        // The overflow case for a split: bars share a baseline and carry their own
+        // printed figure, so seven shares or twelve read the same way, where seven
+        // donut segments do not. Above twelve the labels stop fitting and a table
+        // wins; six or fewer hand back to the donut.
+        return n >= 7 && n <= 12 ? 0.92 : n >= 2 ? 0.5 : 0;
       }
       return 0;
     },
@@ -624,21 +635,21 @@ export const REGISTRY: ComponentRegistry = {
     variants: ["plain", "labelled"],
     sizes: ["sm", "md"],
     useWhen: "A whole split two or three ways, where the split itself is the claim.",
-    useInsteadWhen: [{ condition: "four or more parts", prefer: "BarChart" }],
+    useInsteadWhen: [{ condition: "more than six parts", prefer: "BarChart" }],
     children: { allowed: "none" },
     requiresData: true,
     /*
-     * Deliberately narrow, and narrowed *down* from two-to-six.
+     * Two to six parts, with the figures in the legend beside the shape.
      *
-     * A donut is the worst common chart for the question an allocation view is actually
-     * asked — "how big is this one against that one" — because comparing arc lengths is
-     * hard and the numbers end up in a legend away from the shape. It earns its place
-     * only when the claim is the split itself ("two thirds equities") and there are few
-     * enough parts to read at a glance. Past three, bars with the figure printed above
-     * each one answer the same question better, so they take the default.
+     * The objection to a donut is real — arc lengths compare badly, and for "how big is
+     * this against that" bars win. But an allocation view is not asked that question; it
+     * is asked "what is this made of", where the claim is the split itself and the one
+     * thing the reader must see is that it is a whole. Six segments with their own
+     * printed percentages read at a glance; past six the segments get too thin to name,
+     * and bars take over.
      */
     fit: (finding) =>
-      finding.kind === "composition" && finding.parts.length >= 2 && finding.parts.length <= 3 ? 0.9 : 0,
+      finding.kind === "composition" && finding.parts.length >= 2 && finding.parts.length <= 6 ? 0.94 : 0,
   },
 
   ExposureHeatmap: {
@@ -678,7 +689,7 @@ export const REGISTRY: ComponentRegistry = {
     category: "intelligence",
     propsSchema: z.object({
       heading: heading.optional(),
-      variant: z.enum(["lead", "body", "note", "readout", "aside"]).optional(),
+      variant: z.enum(["lead", "body", "note", "readout", "aside", "outlook"]).optional(),
       /**
        * Which piece of the report's own writing to render, when the passage is not a
        * finding. A reference, not the text — see `reportText` in ./SpecRenderer.tsx.
@@ -687,11 +698,11 @@ export const REGISTRY: ComponentRegistry = {
        * a prop because it is a sentence the analysis wrote, and a composer that could
        * type it could type a different one.
        */
-      source: z.enum(["summary", "narrative", "takeaway"]).optional(),
+      source: z.enum(["summary", "narrative", "takeaway", "outlook"]).optional(),
     }),
     accepts: ["narrative", "transition"],
     implements: ["prose"],
-    variants: ["lead", "body", "note", "readout", "aside"],
+    variants: ["lead", "body", "note", "readout", "aside", "outlook"],
     sizes: ["md"],
     useWhen: "The claim is a sentence. Explanation, context, or the reasoning behind a figure.",
     useInsteadWhen: [
@@ -778,6 +789,28 @@ export const REGISTRY: ComponentRegistry = {
     children: { allowed: "none" },
     requiresData: true,
     fit: (finding) => (finding.kind === "flag" ? 1 : finding.kind === "transition" && finding.sentiment === "negative" ? 0.5 : 0),
+  },
+
+  CapitalFlow: {
+    id: "CapitalFlow",
+    description: "Money moving from one position to another: source, destination, size, status.",
+    category: "intelligence",
+    propsSchema: z.object({ heading: heading.optional() }),
+    accepts: ["transition"],
+    implements: ["callout"],
+    variants: [],
+    sizes: ["md", "lg"],
+    useWhen: "A transfer with a funding source and a destination, where the reader's question is what has to happen.",
+    useInsteadWhen: [
+      // A revaluation has no source and no destination; it is the same position, later.
+      { condition: "the move is a revaluation rather than a transfer", prefer: "InsightCard" },
+    ],
+    children: { allowed: "none" },
+    requiresData: true,
+    /* Only when the analysis knows the size and the state. Without them this draws two
+       labels and an arrow, which `InsightCard` already does in a sentence. */
+    fit: (finding) =>
+      finding.kind === "transition" && finding.amount !== undefined && finding.status !== undefined ? 1 : 0,
   },
 
   Recommendation: {
