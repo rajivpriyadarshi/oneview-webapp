@@ -536,6 +536,38 @@ function bindingFor(section: SemanticSection, bundle: DataBundle): string | unde
 }
 
 /**
+ * The dated list in a section, where it declared one.
+ *
+ * A schedule is chosen from the *finding* — a requirement is something due — but the key
+ * the section's nodes bind to is whichever of its `dataKeys` resolved first, and on the
+ * commitments section that is `commit.privatecredit`: one object, no dates. So the schedule
+ * beside the capital flow found nothing to draw, fell back to rendering its own finding as
+ * a line of text, and the three dates the section exists to state — the call, the trust, the
+ * transfer — never reached the page while their key sat in the bundle unread.
+ *
+ * Narrow on purpose: it answers "which of the keys this section already declared holds dated
+ * rows", and returns nothing when none does, in which case the caller keeps the section's
+ * ordinary binding and the leaf's own fallback still applies. It cannot reach a key the
+ * analysis did not name.
+ */
+const DATE_FIELDS = ["date", "when", "due"] as const;
+
+function datedKey(section: SemanticSection, bundle: DataBundle): string | undefined {
+  return section.dataKeys.find((key) => {
+    const value = bundle.values[key];
+    return (
+      Array.isArray(value) &&
+      value.some(
+        (row) =>
+          row !== null &&
+          typeof row === "object" &&
+          DATE_FIELDS.some((field) => typeof (row as Record<string, unknown>)[field] === "string"),
+      )
+    );
+  });
+}
+
+/**
  * Presentation props, and only presentation props.
  *
  * Every string here is a label, a heading or a name; every number is a count or a
@@ -803,7 +835,10 @@ function nodesForSection(
   ): UINode | null => {
     const component = componentFor(form, finding, section, siblings);
     const spec = specOf(component);
-    if (spec.requiresData && !binding) return null;
+    /* A schedule binds the section's dated rows, not its first resolving key — see
+       `datedKey`. Every other component keeps the section's own binding. */
+    const key = (component === "Timeline" ? datedKey(section, build.bundle) : undefined) ?? binding;
+    if (spec.requiresData && !key) return null;
 
     const node: UINode = {
       id: uid(build, `n_${section.id}`),
@@ -811,7 +846,7 @@ function nodesForSection(
       props: propsFor(component, finding, section, emphasis, label),
       sectionId: section.id,
       because: emphasis.because,
-      ...(binding ? { dataKey: binding } : {}),
+      ...(key ? { dataKey: key } : {}),
     };
     build.created.push(node);
     return node;

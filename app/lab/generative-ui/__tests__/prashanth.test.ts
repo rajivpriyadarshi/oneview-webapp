@@ -142,6 +142,27 @@ describe("the page has the shape the report was designed to have", () => {
     expect(grid?.component).toBe("Grid");
     expect(grid?.children?.map((kid) => kid.component)).toEqual(["CapitalFlow", "Timeline"]);
   });
+
+  it("binds the schedule to the dated rows rather than to the section's first key", () => {
+    /*
+     * The section declares `commit.privatecredit` first and it is one object with no dates,
+     * so the schedule found nothing to draw, fell back to printing its own finding as a line
+     * of text, and the three dates the section exists to state never reached the page. See
+     * `datedKey` in ../compose.ts.
+     */
+    const coming = areas().find((node) => node.sectionId === "s.coming");
+    const schedule = coming?.children?.[0]?.children?.[1];
+    expect(schedule?.dataKey).toBe("commit.timeline");
+
+    const { spec } = composed();
+    const { container } = render(
+      React.createElement(SpecRenderer, { spec, report: PRASHANTH_REPORT, bundle: PRASHANTH_BUNDLE }),
+    );
+    const text = container.textContent ?? "";
+    for (const row of ["Q3 2026", "Q4 2026 – Q1 2027", "Withers to complete the intermediary trust"]) {
+      expect(text, row).toContain(row);
+    }
+  });
 });
 
 describe("the frozen analysis does not weaken the guarantees", () => {

@@ -20,6 +20,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React from "react";
+import { createPortal } from "react-dom";
 import { InSection, LABEL, Rule } from "./chrome";
 import { RHYTHM, SURFACE, TYPE } from "./ds";
 import type { LayoutId } from "./leaves";
@@ -57,6 +58,24 @@ export type Container = (input: ContainerInput) => React.ReactNode;
 
 const str = (value: unknown): string | undefined =>
   typeof value === "string" && value.length > 0 ? value : undefined;
+
+/**
+ * Where a control that belongs to a section's content can put itself on the section's own
+ * heading line.
+ *
+ * The carousel's prev/next pair is the case this exists for. The pair is the carousel's — it
+ * holds the scroll position and the disabled state — but the *row* it belongs on is the
+ * section's, beside the heading, where every other document puts the controls for the thing
+ * underneath. Rendered where it lives, it took a line of its own between the takeaway and
+ * the cards, which read as a third piece of furniture and pushed the cards down.
+ *
+ * So `Section` publishes a host element and the control portals into it. A DOM portal rather
+ * than an element passed up through state: the buttons stay inside the carousel's React tree,
+ * so their handlers and their state need no lifting, and there is no render loop from a
+ * parent storing a child's output. Before mount the host is null and the control renders in
+ * place, which is also what a section without a heading gets.
+ */
+const SectionAside = React.createContext<HTMLElement | null>(null);
 
 /* ------------------------------------------------------------------- header */
 
@@ -109,14 +128,23 @@ const PageHeader: Container = ({ props, docTitle }) => (
 const Section: Container = ({ props, children, takeaway }) => {
   const heading = str(props.heading);
   const caption = takeaway ?? str(props.caption);
+  /* The right end of the heading line, offered to the content. See `SectionAside`. */
+  const [aside, setAside] = React.useState<HTMLDivElement | null>(null);
   return (
     <section className={props.variant === "bordered" ? `${SURFACE.inset} py-[20px]` : undefined}>
-      {heading ? <h2 className={TYPE.areaTitle}>{heading}</h2> : null}
-      {caption ? <p className={`${TYPE.areaCaption} mt-[4px]`}>{caption}</p> : null}
+      <div className="flex items-end justify-between gap-[24px]">
+        <div className="min-w-0">
+          {heading ? <h2 className={TYPE.areaTitle}>{heading}</h2> : null}
+          {caption ? <p className={`${TYPE.areaCaption} mt-[4px]`}>{caption}</p> : null}
+        </div>
+        <div ref={setAside} className="shrink-0" />
+      </div>
       {/* Declares what it printed, so a leaf inside it does not print the same words
           again. See `InSection` in ./chrome.tsx. */}
       <InSection heading={heading}>
-        <div className={`${heading || caption ? "mt-[20px]" : ""} ${RHYTHM.block}`}>{children}</div>
+        <SectionAside.Provider value={aside}>
+          <div className={`${heading || caption ? "mt-[16px]" : ""} ${RHYTHM.block}`}>{children}</div>
+        </SectionAside.Provider>
       </InSection>
     </section>
   );
@@ -144,7 +172,12 @@ const Grid: Container = ({ props, children }) => (
     {children.map((child, index) => (
       // Index keys are safe here: the child list is positional and its order is
       // fixed by the spec, and the real identity lives on the node ids one level down.
-      <div key={index} className="min-w-0">
+      //
+      // A flex column with a `flex-1` child, rather than `h-full` on the child: the cell
+      // stretches to the row either way, but a percentage height resolves against it only
+      // sometimes, which is why a donut beside a five-row table left one panel stopping
+      // short of the other. `flex-1` needs no definite height to fill the cell.
+      <div key={index} className="flex min-w-0 flex-col [&>*]:flex-1">
         {child}
       </div>
     ))}
@@ -167,13 +200,27 @@ const Grid: Container = ({ props, children }) => (
  * convenience over that, not the mechanism, which is why they can be disabled at the ends
  * without the content becoming unreachable.
  *
- * `perView` is the only prop, and it is a count, not a width. See `Carousel` in
+ * `perView` is the only prop, and it is a count rather than a width — it sets how far a
+ * button moves and what the counter says, not how wide a card is. See `Carousel` in
  * ./registry.ts for why the child cap matters more than the styling.
  */
-const PER_VIEW: Record<number, string> = {
-  2: "basis-full md:basis-[calc((100%-24px)/2)]",
-  3: "basis-full md:basis-[calc((100%-48px)/3)]",
-};
+
+/**
+ * One card, 400px, and every card in the rail the same height as the tallest.
+ *
+ * A fixed width rather than a fraction of the rail, because a rail is not a grid: the card
+ * is a fixed object the reader scrolls past, and sizing it off the container made the same
+ * four risks four different shapes depending on how wide the chat pane happened to be. At
+ * 400px the measure holds around 55 characters, which is where the prose in a flag reads.
+ *
+ * The height is the part that was visibly wrong: `h-full` on the card resolved against a
+ * wrapper with no height of its own, so a two-line flag stopped short beside a six-line one
+ * and the two read as different kinds of thing. The wrapper is a flex column and the card is
+ * `flex-1`, which is the one arrangement that stretches without needing a measured height.
+ *
+ * `min()` so a rail narrower than one card still shows a whole card rather than a clipped one.
+ */
+const CARD = "flex w-[min(400px,100%)] shrink-0 snap-start flex-col [&>*]:flex-1";
 
 function CarouselView({ props, children }: ContainerInput) {
   const per = Number(props.perView) === 3 ? 3 : 2;
@@ -203,42 +250,47 @@ function CarouselView({ props, children }: ContainerInput) {
   const last = Math.max(count - per, 0);
   const first = Math.min(at, last);
   const shown = Math.min(first + per, count);
+  const host = React.useContext(SectionAside);
+
+  const controls =
+    count > per ? (
+      <div className="flex items-center gap-[10px]">
+        <span className={`${TYPE.caption} tabular-nums`}>
+          {first + 1}–{shown} of {count}
+        </span>
+        {([-1, 1] as const).map((direction) => {
+          const Mark = direction === -1 ? ChevronLeft : ChevronRight;
+          const spent = direction === -1 ? first <= 0 : first >= last;
+          return (
+            <button
+              key={direction}
+              type="button"
+              onClick={() => move(direction)}
+              disabled={spent}
+              aria-label={direction === -1 ? "Previous" : "Next"}
+              className={`grid h-[28px] w-[28px] place-items-center rounded-full border transition-colors ${SURFACE.hairline} ${
+                spent ? "opacity-35" : "hover:bg-black/[0.04]"
+              }`}
+            >
+              <Mark className="h-[14px] w-[14px] text-[#52525b]" strokeWidth={1.8} aria-hidden />
+            </button>
+          );
+        })}
+      </div>
+    ) : null;
 
   return (
     <div className="flex flex-col gap-[12px]">
-      {count > per ? (
-        <div className="flex items-center justify-end gap-[10px]">
-          <span className={`${TYPE.caption} tabular-nums`}>
-            {first + 1}–{shown} of {count}
-          </span>
-          {([-1, 1] as const).map((direction) => {
-            const Mark = direction === -1 ? ChevronLeft : ChevronRight;
-            const spent = direction === -1 ? first <= 0 : first >= last;
-            return (
-              <button
-                key={direction}
-                type="button"
-                onClick={() => move(direction)}
-                disabled={spent}
-                aria-label={direction === -1 ? "Previous" : "Next"}
-                className={`grid h-[28px] w-[28px] place-items-center rounded-full border transition-colors ${SURFACE.hairline} ${
-                  spent ? "opacity-35" : "hover:bg-black/[0.04]"
-                }`}
-              >
-                <Mark className="h-[14px] w-[14px] text-[#52525b]" strokeWidth={1.8} aria-hidden />
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+      {/* On the section's heading line where there is one, in place where there is not. */}
+      {controls ? (host ? createPortal(controls, host) : <div className="flex justify-end">{controls}</div>) : null}
       <div
         ref={rail}
         onScroll={onScroll}
-        className="-mx-[2px] flex snap-x snap-mandatory gap-[24px] overflow-x-auto px-[2px] pb-[4px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-mx-[2px] flex snap-x snap-mandatory items-stretch gap-[24px] overflow-x-auto px-[2px] pb-[4px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {children.map((child, index) => (
           // Positional, like Grid's: identity lives on the node ids one level down.
-          <div key={index} className={`min-w-0 shrink-0 snap-start ${PER_VIEW[per]}`}>
+          <div key={index} className={CARD}>
             {child}
           </div>
         ))}
@@ -264,8 +316,10 @@ const SplitPane: Container = ({ props, slots }) => (
             wrong, because the short one is a one-line takeaway by design.
 
             `only-child` deliberately: where a pane stacks several blocks, their heights are
-            their own business and stretching them would distribute the slack arbitrarily. */}
-        <div className="flex flex-1 flex-col gap-[12px] [&>*:only-child]:h-full">
+            their own business and stretching them would distribute the slack arbitrarily.
+
+            `flex-1` on the child rather than `h-full`, for the reason given in `Grid`. */}
+        <div className="flex flex-1 flex-col gap-[12px] [&>*:only-child]:flex-1">
           {slots[side] ?? null}
         </div>
       </div>
