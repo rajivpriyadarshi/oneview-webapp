@@ -593,7 +593,15 @@ export const PRASHANTH_REPORT: SemanticReport = {
           emphasis: "secondary",
           confidence: 0.6,
           sources: ["Quarterly review meeting note"],
-          subject: "Portfolio performance",
+          subject: "LGT mandate",
+          /*
+           * Its own heading, because the passage is not a second reading of the chart above
+           * it — it is the caveat on the chart. Both findings carried the subject "Portfolio
+           * performance" and neither brought a heading, so the composer titled the chart and
+           * the paragraph with the same two words one line apart, and the paragraph appeared
+           * to be about the whole portfolio when it is about one mandate.
+           */
+          heading: "What is not yet verified",
           text: "The LGT mandate is the largest at US$9.0m and the quarterly review recorded it as outperforming, but the file holds no mandate-level return series, so that has not been verified against benchmark. It remains an open action.",
         },
       ],

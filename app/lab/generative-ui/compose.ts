@@ -1087,6 +1087,33 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
       },
     ];
   } else if (area.arrangement === "split" && per.length === 2) {
+    /*
+     * A passage comes out of the pane and runs under it.
+     *
+     * A chart and a table are read side by side — that is what a split is for. A paragraph
+     * is read along a line, and a paragraph stacked under a chart inside one pane gets the
+     * chart's column width: half measure, four short lines, and the whole other half of the
+     * page left blank beside it because the table opposite has already ended. So prose is
+     * lifted to the full width below the pane, where it reads as the commentary on both
+     * sides rather than as a footnote to one.
+     *
+     * Never when a pane is *only* prose — then the passage is that side of the comparison
+     * and moving it would empty the pane.
+     */
+    const lift = (nodes: UINode[]): { pane: UINode[]; below: UINode[] } => {
+      /* A section's several nodes arrive already wrapped in a Stack — see `nodesForSection`.
+         Look through it, as the grid rules below do, or the passage is invisible here. */
+      const inner =
+        nodes.length === 1 && nodes[0].component === "Stack" && (nodes[0].children?.length ?? 0) > 1
+          ? nodes[0].children ?? nodes
+          : nodes;
+      const kept = inner.filter((node) => node.component !== "Prose");
+      return kept.length === 0 || kept.length === inner.length
+        ? { pane: nodes, below: [] }
+        : { pane: kept, below: inner.filter((node) => node.component === "Prose") };
+    };
+    const left = lift(per[0].nodes);
+    const right = lift(per[1].nodes);
     body = [
       {
         id: uid(build, "split"),
@@ -1094,8 +1121,10 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
         /* No pane labels: `titleFor` has already given each side's card its own title, and a
            label above a titled card is the same name twice. */
         props: { ratio: "even" },
-        slots: { left: region(per[0].nodes), right: region(per[1].nodes) },
+        slots: { left: region(left.pane), right: region(right.pane) },
       },
+      ...left.below,
+      ...right.below,
     ];
   } else {
     body = per.flatMap((entry) => entry.nodes);
