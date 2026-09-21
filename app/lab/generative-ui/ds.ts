@@ -73,8 +73,15 @@ export const TYPE = {
    * answer, and the answer is the part the brief calls the source of truth.
    */
   body: "font-satoshi text-[15px] leading-[1.65] text-black/75",
-  /** The lead paragraph. Same family, slightly larger, same colour. */
-  bodyLead: "font-satoshi text-[16px] leading-[1.65] text-black/75",
+  /**
+   * The lead paragraph — the readout, and the takeaway beside it.
+   *
+   * 14px, not larger than the running body: a lead passage is set wide, at a generous
+   * measure, inside a washed panel, and those three things already mark it as the opening.
+   * Size on top of that made the first paragraph of the report the largest text on the page
+   * after the title, which crowded the headings underneath it.
+   */
+  bodyLead: "font-satoshi text-[14px] leading-[1.65] text-black/75",
 
   /**
    * A label above a figure, or a table header.
