@@ -32,8 +32,15 @@
  * needing size alone to carry it, which is what lets `sectionTitle` be quiet.
  */
 export const TYPE = {
-  /** The report's name. Serif, because it is the only thing at this level. */
-  docTitle: "font-butler text-[32px] leading-[1.15] tracking-[-0.01em] text-[#171615]",
+  /**
+   * The report's name. Serif, because it is the only thing at this level.
+   *
+   * Butler Medium with the Overview page's tight tracking, which is the face the app
+   * already sets a client's name in — a report about Prashanth and the Overview tab's
+   * header of Prashanth should not be two different typefaces one tab apart. Only the ink
+   * differs: the report keeps the document's near-black rather than the Overview's brown.
+   */
+  docTitle: "font-butler-medium text-[32px] leading-[1.1] tracking-[-0.034em] text-[#171615]",
   /** One line under the title saying what the report is for. */
   docSubtitle: "font-satoshi text-[16px] leading-[1.5] text-black/45",
 
@@ -46,11 +53,12 @@ export const TYPE = {
    * likely to be the next thing you should read. A reader needs to see the spine from
    * across the room and the joints within a section up close, and those are two roles.
    *
-   * Sans at 800 rather than serif: the serif title at the top of the page is the one
+   * Sans at 600 rather than serif: the serif title at the top of the page is the one
    * typeface contrast the document makes, and repeating it seven times down the page spent
-   * that contrast on the furniture. Weight carries a heading at this size on its own.
+   * that contrast on the furniture. Weight carries a heading at this size on its own — and
+   * at 18px it does so without the heading needing to be a third of the way to the title.
    */
-  areaTitle: "font-satoshi text-[23px] font-extrabold leading-[1.25] tracking-[-0.015em] text-[#171615]",
+  areaTitle: "font-satoshi text-[18px] font-semibold leading-[1.3] tracking-[-0.015em] text-[#171615]",
   /** One line under a section heading, saying what the section is about. */
   areaCaption: "font-satoshi text-[14px] leading-[1.5] text-black/45",
 
