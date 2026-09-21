@@ -65,9 +65,12 @@ describe("every section reaches the page", () => {
     expect(unplaced).toEqual([]);
   });
 
-  it("uses eight of the eight areas available, so there is no slack to rely on", () => {
+  it("places every section, and stays inside the recipe's ceiling while doing it", () => {
+    /* Nine areas against a ceiling of ten. The count is asserted because the failure it
+       guards is silent: a section that does not fit a slot is dropped, and a dropped
+       section looks exactly like a section the analysis never wrote. */
     const { plan } = planIA(PRASHANTH_REPORT, PRASHANTH_PLAN);
-    expect(plan.areas).toHaveLength(8);
+    expect(plan.areas).toHaveLength(9);
     expect(plan.areas.length).toBeLessThanOrEqual(RECIPES.AnalyticalReport.maxAreas);
   });
 

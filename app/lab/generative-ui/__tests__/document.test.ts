@@ -231,10 +231,17 @@ describe("the figures follow the summary", () => {
   it("puts a strip of figures third, after the header and the summary", () => {
     const { spec } = composeView(report, REVIEW_INTENT, REVIEW_BUNDLE);
     if (!spec) throw new Error("composed no spec");
-    expect(spec.root.map((node) => node.component).slice(0, 3)).toEqual(["PageHeader", "Prose", "MetricStrip"]);
+    /* Third in reading order rather than third at the root: where the recipe has a headline
+       slot the summary and the strip are folded into that section, so the two live one level
+       down under "The readout". The order the reader meets them in is the promise. */
+    const content = spec.root
+      .flatMap((node) => walk(node))
+      .filter((node) => !["Section", "SplitPane", "Stack"].includes(node.component));
+    expect(content.map((node) => node.component).slice(0, 3)).toEqual(["PageHeader", "Prose", "MetricStrip"]);
     // A reference, not the figures: the strip names the rule, the renderer resolves it.
-    expect(spec.root[2].props.source).toBe("key_figures");
-    expect(JSON.stringify(spec.root[2])).not.toContain("33.3");
+    const strip = content[2];
+    expect(strip.props.source).toBe("key_figures");
+    expect(JSON.stringify(strip)).not.toContain("33.3");
   });
 
   it("selects by emphasis, caps at four, and needs two before it is a strip at all", () => {
@@ -242,7 +249,10 @@ describe("the figures follow the summary", () => {
     // One figure is not a set. It stays in its section rather than becoming a lone tile.
     const single: SemanticReport = { ...report, sections: [report.sections[1]] };
     expect(headlineFigures(single)).toEqual([]);
-    expect(composeView(single, REVIEW_INTENT, REVIEW_BUNDLE).spec?.root[2]?.component).not.toBe("MetricStrip");
+    const components = (composeView(single, REVIEW_INTENT, REVIEW_BUNDLE).spec?.root ?? [])
+      .flatMap((node) => walk(node))
+      .map((node) => node.component);
+    expect(components).not.toContain("MetricStrip");
   });
 
   it("moves the figures rather than copying them, so none is printed twice", () => {

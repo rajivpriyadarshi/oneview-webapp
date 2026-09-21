@@ -139,13 +139,10 @@ const ANALYTICAL_REPORT: ViewRecipe = {
     {
       id: "whatChanged",
       defaultHeading: "What changed",
-      moreHeadings: ["Current portfolio state", "How it is invested"],
-      accepts: ["performance", "allocation", "activity", "comparison"],
+      moreHeadings: ["How it is performing"],
+      accepts: ["activity", "performance"],
       required: false,
-      // Three, not two: movement, benchmark and composition are all "what changed",
-      // and at two the third one — usually composition — was being squeezed out of a
-      // portfolio review by a benchmark chart. The page budget still binds.
-      maxAreas: 3,
+      maxAreas: 2,
     },
     {
       id: "why",
@@ -155,13 +152,45 @@ const ANALYTICAL_REPORT: ViewRecipe = {
       required: false,
       maxAreas: 2,
     },
+    /*
+     * Where things stand, after why they moved.
+     *
+     * This slot is new and it is the fix for an ordering problem, not a cosmetic addition.
+     * The allocation and the holdings used to share the `whatChanged` slot, which put them
+     * *before* the attribution — so the page said what the book is invested in, and only
+     * then why it moved. Slot order is page order, so the only way to read "movement →
+     * attribution → position" is to give the position its own slot after `why`.
+     */
+    {
+      id: "state",
+      defaultHeading: "Current portfolio state",
+      moreHeadings: ["How it is invested", "What is in the book"],
+      accepts: ["allocation", "comparison", "identity"],
+      required: false,
+      maxAreas: 3,
+    },
     {
       id: "risks",
       defaultHeading: "What needs attention",
-      /* The reference's sixth section. Borrowing and the funding calendar land in this
-         slot after the exposure does, and "what is coming" is what they are. */
-      moreHeadings: ["What's coming"],
-      accepts: ["risk", "liquidity", "commitments"],
+      moreHeadings: ["Other exposures"],
+      accepts: ["risk"],
+      required: false,
+      maxAreas: 2,
+    },
+    /*
+     * What is owed, and when.
+     *
+     * Split out of `risks`, which used to take liquidity and commitments as well. Bundling
+     * them cost the distinction the reader most needs at this point in the page: an
+     * exposure is a judgement about the shape of the book, and a capital call is a date.
+     * Putting a dated obligation under "what needs attention" also lost the reference's
+     * own sixth section, which asks a different question — not "is this risky" but "what
+     * is coming".
+     */
+    {
+      id: "coming",
+      defaultHeading: "What's coming",
+      accepts: ["liquidity", "commitments"],
       required: false,
       maxAreas: 2,
     },
@@ -181,14 +210,14 @@ const ANALYTICAL_REPORT: ViewRecipe = {
       disclosure: "collapsed",
     },
   ],
-  // Eight, not seven. Seven was tuned on a quarterly performance review, where the
-  // whole report is one side of the balance sheet. A full analysis has both sides —
-  // what it is worth, how it is invested, what is borrowed, what is owed next — and at
-  // seven the area that lost was `provenance`, because it sits last in slot order and
+  // Ten. It was eight, tuned when this recipe had five content slots; it now has seven,
+  // because attribution, position and the forward calendar each got their own — so eight
+  // meant the page filled before the sources and the closing actions were placed, and
   // placement is first-fit. Dropping the sources and the currency assumptions off a
-  // financial document to save a row is the wrong trade. The slot caps still bind, so
-  // this buys one more area, not a longer page.
-  maxAreas: 8,
+  // financial document to save a row is the wrong trade. The slot caps still bind and
+  // still add up to more than this, so the ceiling is doing its job: it buys the shape
+  // room to be complete, not licence to be long.
+  maxAreas: 10,
 };
 
 /**

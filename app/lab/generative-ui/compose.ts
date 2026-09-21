@@ -175,6 +175,16 @@ function formOf(finding: Finding): { form: PresentationForm; chartOf?: ChartInte
 
 function formFor(section: SemanticSection): { form: PresentationForm; chartOf?: ChartIntent } {
   if (section.semanticType === "evidence") return { form: "key_value" };
+  /*
+   * An activity section is a chronology, by definition of what the analysis put in it.
+   *
+   * The rule is about the *section*, not the finding, which is why it cannot be derived
+   * from `formOf` — "what changed since the last review" is four dated events, and the
+   * findings describing them are ordinary narratives and transitions that would otherwise
+   * resolve to paragraphs and callouts. A column of four callouts loses the one thing the
+   * reader is asking for here, which is the order they happened in.
+   */
+  if (section.semanticType === "activity") return { form: "timeline" };
 
   const finding = dominant(section);
   if (!finding) return { form: "prose" };
@@ -1010,6 +1020,23 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
     (section) => area.presentation[section.id]?.disclosure === "collapsed",
   );
 
+  /*
+   * What a section's own card is called, inside an area that holds several.
+   *
+   * A split is the case where the question is the wrong answer. Both sections in one share
+   * it — that is what put them in the same area — so passing it down titled both cards
+   * "What drove the change", which is also the heading directly above them. `regionName` is
+   * the name of the *view*: "Portfolio performance", "Returns summary". Tabs keep the
+   * question, because there the view's name is already on the tab and a card repeating it
+   * would be the same words twice a line apart.
+   */
+  const titleFor = (section: SemanticSection, index: number): string =>
+    sections.length === 1
+      ? area.heading
+      : area.arrangement === "split"
+        ? regionName(section, index)
+        : asHeading(section.question);
+
   const per = sections.map((section, index) => ({
     section,
     index,
@@ -1022,7 +1049,7 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
         disclosure: "open",
         because: "Nothing more specific applied.",
       },
-      sections.length > 1 ? asHeading(section.question) : area.heading,
+      titleFor(section, index),
       sections.length,
     ),
   })).filter((entry) => entry.nodes.length > 0);
@@ -1054,11 +1081,9 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
       {
         id: uid(build, "split"),
         component: "SplitPane",
-        props: {
-          leftLabel: regionName(per[0].section, 0),
-          rightLabel: regionName(per[1].section, 1),
-          ratio: "even",
-        },
+        /* No pane labels: `titleFor` has already given each side's card its own title, and a
+           label above a titled card is the same name twice. */
+        props: { ratio: "even" },
         slots: { left: region(per[0].nodes), right: region(per[1].nodes) },
       },
     ];
@@ -1302,9 +1327,27 @@ export function composeView(
    * dropped.
    */
   const band: UINode[] = [opening, ...(keyFigures ? [keyFigures] : [])];
-  const readout = body.find(
-    (node) => node.component === "Section" && node.id.startsWith("area_headline_"),
-  );
+  let readout = body.find((node) => node.component === "Section" && node.id.startsWith("area_headline_"));
+  /*
+   * The readout section may not exist yet, and that is the normal case rather than the odd
+   * one. A headline section whose every figure went to the strip has no findings left to
+   * draw, so `buildArea` correctly returns nothing for it — its content was placed, at the
+   * top of the page. But the band *is* that section's content, so the section still has to
+   * be there to hold it, with its heading and its number. Built here, from the area the IA
+   * planner named, rather than left to the root: a page whose first heading is "2." reads as
+   * though something was lost.
+   */
+  const headlineArea = areas.find((area) => area.id.startsWith("area_headline_"));
+  if (!readout && headlineArea && band.length > 0) {
+    readout = {
+      id: uid(build, headlineArea.id),
+      component: "Section",
+      sectionId: headlineArea.sectionIds[0],
+      props: { heading: safeHeading(headlineArea.heading) },
+      children: [],
+    };
+    body.unshift(readout);
+  }
   if (readout) {
     readout.children = [...band, ...(readout.children ?? [])].slice(0, 8);
     band.length = 0;
@@ -1335,7 +1378,15 @@ export function composeView(
    * node in reading order that can does instead, and a page that genuinely has no
    * candidate simply has no hero. The validator warns; it does not block.
    */
-  if (!build.created.some((node) => node.props.variant === "hero")) {
+  /*
+   * ...unless the page already opens on a strip of figures, in which case it has one.
+   *
+   * The fallback used to run regardless, and on a report with a headline strip it picked
+   * the first figure *after* the strip — so a secondary number like total assets was drawn
+   * at hero size, larger than the four figures the page leads with, directly underneath
+   * them. A page has one entry point; the strip is it.
+   */
+  if (!keyFigures && !build.created.some((node) => node.props.variant === "hero")) {
     const candidate = build.created.find(
       (node) => !build.peers.has(node.id) && specOf(node.component).variants.includes("hero"),
     );

@@ -93,6 +93,8 @@ export const PRASHANTH_PLAN: IntentPlan = {
     { key: "networth.total", tool: "portfolio.summary", args: { clientId: "prashanth-ranganathan" }, required: true },
     { key: "networth.series", tool: "performance.series", args: { clientId: "prashanth-ranganathan" }, required: false },
     { key: "perf.indexed", tool: "performance.series", args: { clientId: "prashanth-ranganathan", indexed: true }, required: false },
+    { key: "perf.returns", tool: "performance.series", args: { clientId: "prashanth-ranganathan", periods: true }, required: false },
+    { key: "activity.timeline", tool: "meetings.recent", args: { clientId: "prashanth-ranganathan", since: "2026-06-28" }, required: false },
     { key: "alloc.class", tool: "portfolio.allocation", args: { clientId: "prashanth-ranganathan", by: "assetClass" }, required: true },
     { key: "holdings.positions", tool: "portfolio.holdings", args: { clientId: "prashanth-ranganathan" }, required: true },
     { key: "custody.securities", tool: "portfolio.holdings", args: { clientId: "prashanth-ranganathan", by: "custodian" }, required: false },
@@ -136,6 +138,42 @@ export const PRASHANTH_BUNDLE: DataBundle = {
       { label: "Jun", value: 108.6 },
       { label: "Jul", value: 111.6 },
       { label: "Aug", value: 114 },
+    ],
+    /*
+     * The periods the estimate can actually speak to, and no more.
+     *
+     * Every row is read off `perf.indexed` above — 1M is Jul→Aug, 3M is May→Aug, 6M is
+     * Feb→Aug — so the table and the chart beside it cannot disagree. There is no 1Y or
+     * since-inception row because the series starts at 31 December: a longer period would
+     * have to be invented, and a returns table is the last place to do that.
+     *
+     * And no year-to-date row either, for a different reason: year to date is one of the
+     * four headline tiles. A table that repeated it would print the same figure as a figure
+     * twice and leave the reader checking whether the two agree. The tiles carry the year;
+     * the table carries the shorter periods the tiles have no room for.
+     */
+    "perf.returns": [
+      { name: "1M", portfolio: "+2.2%", benchmark: "+2.1%", alpha: "+0.1pp" },
+      { name: "3M", portfolio: "+4.4%", benchmark: "+4.1%", alpha: "+0.3pp" },
+      { name: "6M", portfolio: "+13.7%", benchmark: "+10.3%", alpha: "+3.4pp" },
+    ],
+    /*
+     * What happened since the last review, as dated rows.
+     *
+     * Rows rather than findings because that is what the Timeline leaf draws — see the
+     * note on `Timeline` in ./leaves.tsx. Four events, each one recorded in his file: the
+     * 13 August remark, the two things the 7 August review put on the table, and the one
+     * item still waiting on a third party.
+     */
+    "activity.timeline": [
+      { date: "13 August", name: "Nine private positions remarked", display: "US$1.6m → US$2.4m" },
+      { date: "7 August", name: "Quarterly review approved the GS Private Credit Partners IV call", display: "US$500k" },
+      { date: "7 August", name: "NVIDIA overweight noted at 14.2% of the listed book", display: "US$3.6m" },
+      {
+        date: "Expected October",
+        name: "LGT asset transfer, awaiting the Withers intermediary trust",
+        confidence: "medium",
+      },
     ],
     "alloc.class": [
       { label: "Listed securities", value: 0.42 },
@@ -231,6 +269,8 @@ export const PRASHANTH_BUNDLE: DataBundle = {
     "networth.total": { tool: "portfolio.summary", asOf: PRASHANTH_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
     "networth.series": { tool: "performance.series", asOf: PRASHANTH_AS_OF, sources: [...FAMILY_OFFICE, "Performance estimate"] },
     "perf.indexed": { tool: "performance.series", asOf: "2026-08-31T00:00:00+08:00", sources: ["Performance estimate"] },
+    "perf.returns": { tool: "performance.series", asOf: "2026-08-31T00:00:00+08:00", sources: ["Performance estimate"] },
+    "activity.timeline": { tool: "meetings.recent", asOf: "2026-08-27T00:00:00+08:00", sources: [...FAMILY_OFFICE, "Quarterly review meeting note"] },
     "alloc.class": { tool: "portfolio.allocation", asOf: PRASHANTH_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
     "holdings.positions": { tool: "portfolio.holdings", asOf: PRASHANTH_AS_OF, sources: CUSTODY },
     "custody.securities": { tool: "portfolio.holdings", asOf: PRASHANTH_AS_OF, sources: CUSTODY },
@@ -291,7 +331,14 @@ export const PRASHANTH_REPORT: SemanticReport = {
   summary:
     "Net worth is US$55.4m, up US$2.2m since June on a private-book revaluation rather than a return. The listed portfolio is concentrated in five instruments, and the US$500k private credit call due 15 September is US$310k short of its approved funding source.",
   narrative: PRASHANTH_ANSWER,
-  relations: [{ kind: "answers_same_question", sectionIds: ["s.holdings", "s.custody"] }],
+  relations: [
+    { kind: "answers_same_question", sectionIds: ["s.holdings", "s.custody"] },
+    /* The chart and the table are the same claim read two ways — the shape of the year and
+       the numbers behind it — so neither may be hidden behind the other. That is what makes
+       the composer set them side by side rather than stack them or tab them; see
+       `ia.split-for-contrast` in ./compose.ts. */
+    { kind: "contrasts", sectionIds: ["s.drivers", "s.returns"] },
+  ],
   sections: [
     /* ------------------------------------------------------------ 1. headline */
     {
@@ -311,19 +358,58 @@ export const PRASHANTH_REPORT: SemanticReport = {
           subject: "Net worth",
           label: "Net worth",
           value: "US$55.4m",
-          basis: "assets less borrowing, at 27 August",
+          /* The gross figure lives here rather than in a metric of its own. As a second card
+             it was a stranded number — the same claim the tile above it makes, drawn at the
+             same weight — and the thing a reader actually wants from it is the arithmetic
+             behind the headline, which is what a basis line is for. */
+          basis: "US$60.1m of assets — US$12.8m of it in the Tara Ranganathan Living Trust — less US$4.6m of borrowing",
           delta: { label: "+US$2.2m since 28 June", value: 2.18, sentiment: "positive" },
         },
+        /* Here rather than in the performance section, because it is one of the four figures
+           the page opens on and the strip reads them from wherever they sit. A return stated
+           beside the balance sheet it was earned on is also the honest placement: it is an
+           estimate about one part of the book, not a property of the whole. */
         {
           kind: "metric",
-          id: "f.assets",
-          emphasis: "secondary",
-          confidence: 0.97,
-          sources: [...CUSTODY, ...FAMILY_OFFICE],
-          subject: "Net worth",
-          label: "Total assets",
-          value: "US$60.1m",
-          basis: "including US$12.8m in the Tara Ranganathan Living Trust",
+          id: "f.ytd",
+          emphasis: "primary",
+          confidence: 0.72,
+          sources: ["Performance estimate", "Quarterly review meeting note"],
+          subject: "Performance",
+          label: "Return year to date",
+          value: "+14.0%",
+          basis: "listed securities, against a 60/40 global benchmark",
+          delta: { label: "+2.8pp vs benchmark", value: 2.8, sentiment: "positive" },
+        },
+      ],
+    },
+
+    /* ------------------------------------------------- 2. what changed, dated */
+    /*
+     * The quarter as a chronology, which is what "what changed" means when the answer is
+     * four discrete events rather than a number moving.
+     *
+     * Its findings are deliberately thin: the four events are *rows*, in
+     * `activity.timeline`, because a dated list is data and writing each row as a finding
+     * would make four claims out of one chronology. The narrative is the thing a list
+     * cannot say — which of the four is still open.
+     */
+    {
+      id: "s.activity",
+      semanticType: "activity",
+      question: "What changed?",
+      importance: "secondary",
+      takeaway: "Four developments since the 7 August review.",
+      dataKeys: ["activity.timeline", "networth.series"],
+      findings: [
+        {
+          kind: "narrative",
+          id: "f.since",
+          emphasis: "primary",
+          confidence: 0.9,
+          sources: [...FAMILY_OFFICE, "Quarterly review meeting note"],
+          subject: "Since the last review",
+          text: "The remark and the approved call both date from the first half of August. The LGT transfer is the only item still outstanding, and it waits on a third party rather than on a decision here.",
         },
         {
           kind: "trend",
@@ -345,34 +431,32 @@ export const PRASHANTH_REPORT: SemanticReport = {
       ],
     },
 
-    /* --------------------------------------------------------- 2. performance */
+    /* ------------------------------------- 3. what drove it, two views of one claim */
+    /*
+     * The performance story, split in two sections on purpose.
+     *
+     * One question, two readings: the shape of the year against its benchmark, and the
+     * periods behind it. They are separate sections rather than one because that is the
+     * only way to ask for them side by side — two sections sharing a question and marked
+     * as contrasting become a split pane, where one section would have stacked the table
+     * under the chart. The claim is identical either way; what differs is whether the
+     * reader is looking for the trend or for the number.
+     */
     {
-      id: "s.performance",
-      semanticType: "performance",
-      question: "How is the listed portfolio performing?",
+      id: "s.drivers",
+      semanticType: "drivers",
+      question: "What drove the change?",
       importance: "secondary",
-      takeaway: "Ahead of the benchmark, on figures that are estimated rather than recorded.",
+      takeaway: "Listed performance is ahead of benchmark, on figures that are estimated rather than recorded.",
       dataKeys: ["perf.indexed"],
       findings: [
         {
-          kind: "metric",
-          id: "f.ytd",
-          emphasis: "primary",
-          confidence: 0.72,
-          sources: ["Performance estimate", "Quarterly review meeting note"],
-          subject: "Performance",
-          label: "Return year to date",
-          value: "+14.0%",
-          basis: "listed securities, against a 60/40 global benchmark",
-          delta: { label: "+2.8pp vs benchmark", value: 2.8, sentiment: "positive" },
-        },
-        {
           kind: "comparison",
           id: "f.indexed",
-          emphasis: "secondary",
+          emphasis: "primary",
           confidence: 0.72,
           sources: ["Performance estimate"],
-          subject: "Performance",
+          subject: "Portfolio performance",
           label: "Indexed to 31 December",
           measure: "Indexed value",
           entities: [
@@ -422,8 +506,70 @@ export const PRASHANTH_REPORT: SemanticReport = {
           emphasis: "secondary",
           confidence: 0.6,
           sources: ["Quarterly review meeting note"],
-          subject: "Performance",
+          subject: "Portfolio performance",
           text: "The LGT mandate is the largest at US$9.0m and the quarterly review recorded it as outperforming, but the file holds no mandate-level return series, so that has not been verified against benchmark. It remains an open action.",
+        },
+      ],
+    },
+
+    {
+      id: "s.returns",
+      semanticType: "drivers",
+      question: "What drove the change?",
+      importance: "secondary",
+      takeaway: "Ahead on every period the estimate can speak to.",
+      dataKeys: ["perf.returns"],
+      findings: [
+        /*
+         * Three measures over one set of periods, which is what makes this a table rather
+         * than three charts: the composer groups comparisons that measure the same entities
+         * and prints one column each. Alpha is stated rather than derived — nothing
+         * downstream subtracts one column from another.
+         */
+        {
+          kind: "comparison",
+          id: "f.ret.portfolio",
+          emphasis: "primary",
+          confidence: 0.72,
+          sources: ["Performance estimate"],
+          subject: "Returns summary",
+          label: "Period",
+          measure: "Portfolio",
+          entities: [
+            { name: "1M", value: 2.2, display: "+2.2%" },
+            { name: "3M", value: 4.4, display: "+4.4%" },
+            { name: "6M", value: 13.7, display: "+13.7%" },
+          ],
+        },
+        {
+          kind: "comparison",
+          id: "f.ret.benchmark",
+          emphasis: "secondary",
+          confidence: 0.72,
+          sources: ["Performance estimate"],
+          subject: "Returns summary",
+          label: "Period",
+          measure: "Benchmark",
+          entities: [
+            { name: "1M", value: 2.1, display: "+2.1%" },
+            { name: "3M", value: 4.1, display: "+4.1%" },
+            { name: "6M", value: 10.3, display: "+10.3%" },
+          ],
+        },
+        {
+          kind: "comparison",
+          id: "f.ret.alpha",
+          emphasis: "secondary",
+          confidence: 0.7,
+          sources: ["Performance estimate"],
+          subject: "Returns summary",
+          label: "Period",
+          measure: "Alpha",
+          entities: [
+            { name: "1M", value: 0.1, display: "+0.1pp" },
+            { name: "3M", value: 0.3, display: "+0.3pp" },
+            { name: "6M", value: 3.4, display: "+3.4pp" },
+          ],
         },
       ],
     },

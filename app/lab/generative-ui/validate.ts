@@ -377,7 +377,7 @@ function checkHeuristics(spec: UISpec, bundle: DataBundle, issues: ValidationIss
         emphasis: "normal",
       },
     });
-  } else if (heroes.length === 0 && nodes.length > 6) {
+  } else if (heroes.length === 0 && nodes.length > 6 && !opensOnFigures(spec)) {
     issues.push({
       code: "no_headline",
       severity: "warning",
@@ -503,6 +503,28 @@ function checkHeuristics(spec: UISpec, bundle: DataBundle, issues: ValidationIss
 }
 
 /* ------------------------------------------------------------------- entry */
+
+/**
+ * Whether the document leads with a strip of figures.
+ *
+ * A `hero` variant is one way to have an entry point; opening on the summary and the
+ * figures it is about is another, and it is the one the reference layout uses. Without
+ * this the report that reads *best* was the one the validator complained about, and the
+ * complaint was unfixable by design — the strip's cells are peers, so none of them may be
+ * enlarged, which is exactly why the composer stopped promoting a hero when a strip leads.
+ */
+const opensOnFigures = (spec: UISpec): boolean => {
+  /* Reading order, not tree position: depending on whether the recipe has a headline slot
+     the strip sits either at the root or one level inside the opening section, and both are
+     the same thing to the reader. Four nodes in is as far as "leads with" reaches. */
+  const reading: UINode[] = [];
+  for (const entry of walk(spec)) reading.push(entry.node);
+  const skip = new Set<ComponentId>(["PageHeader", "Section", "Stack", "SplitPane", "Grid"]);
+  return reading
+    .filter((node) => !skip.has(node.component))
+    .slice(0, 4)
+    .some((node) => node.component === "MetricStrip");
+};
 
 export function validate(spec: unknown, bundle: DataBundle): ValidationResult {
   const parsed = UISpecSchema.safeParse(spec);
