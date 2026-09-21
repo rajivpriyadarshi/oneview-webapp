@@ -84,7 +84,7 @@ export const PRASHANTH_PLAN: IntentPlan = {
   taskType: "portfolio_review",
   goal: "Analyse Prashanth Ranganathan's whole balance sheet and flag what needs a decision.",
   scope: { kind: "client", ids: ["prashanth-ranganathan"] },
-  timeRange: { kind: "point", to: "2026-08-27", label: "27 August 2026" },
+  timeRange: { kind: "point", to: "2026-08-27", label: "As of 27 Aug 2026" },
   needs: { comparison: true, chronology: false, actions: true, composition: true },
   register: "analytical",
   surface: "view",
@@ -284,7 +284,10 @@ Two structural items are unresolved rather than urgent. The LGT asset transfer t
  */
 export const PRASHANTH_REPORT: SemanticReport = {
   reportType: "portfolio_review",
-  title: "Prashanth Ranganathan — portfolio analysis",
+  /* The person, and nothing else. The masthead already says what kind of document this is
+     on the left and what it covers in the subtitle, so a title that repeated either read as
+     a filename rather than as the head of a page. */
+  title: "Prashanth Ranganathan",
   summary:
     "Net worth is US$55.4m, up US$2.2m since June on a private-book revaluation rather than a return. The listed portfolio is concentrated in five instruments, and the US$500k private credit call due 15 September is US$310k short of its approved funding source.",
   narrative: PRASHANTH_ANSWER,

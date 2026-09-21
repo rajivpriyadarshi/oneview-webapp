@@ -385,17 +385,29 @@ export function planIA(report: SemanticReport, intent: IntentPlan): IAResult {
       };
     }
 
-    /* One heading per area, from the question its sections share — which is how
-       contributors and detractors become "Performance drivers" rather than two
-       unrelated charts with two headings. */
-    const heading =
-      group.length > 1
-        ? safeHeading(slot.defaultHeading, asHeading(group[0].question))
-        : safeHeading(
-            asHeading(group[0].question),
-            slot.defaultHeading,
-            SEMANTIC_HEADINGS[group[0].semanticType],
-          );
+    /*
+     * The slot's name first, the question only where the slot is already taken.
+     *
+     * This was the other way round for single-section areas, and it is what made the page
+     * read as a list of the analysis's questions — "1. What is the balance sheet worth",
+     * "2. How is the book invested". Two problems with that. The headings are generated, so
+     * they vary run to run and between clients, and a document whose section names move is
+     * one a reader cannot learn; and a question is a sentence, which is the wrong grammar
+     * for a numbered heading. The recipe's names are fixed, short and in the reader's
+     * language rather than the pipeline's.
+     *
+     * Second and third areas in one slot still take their question, because three sections
+     * all headed "What changed" is worse than a sentence — the number would be the only
+     * thing distinguishing them. So the structural name goes to the first, which is the one
+     * the reader anchors on, and the others say what they are.
+     */
+    const nth = (used.get(slot.id) ?? 1) - 1;
+    const structural = nth === 0 ? slot.defaultHeading : slot.moreHeadings?.[nth - 1];
+    const heading = safeHeading(
+      structural,
+      asHeading(group[0].question),
+      SEMANTIC_HEADINGS[group[0].semanticType],
+    );
 
     areas.push({
       id: `area_${slot.id}_${areas.length}`,
@@ -1233,7 +1245,7 @@ export function composeView(
             {
               id: uid(build, "takeaway"),
               component: "Prose",
-              props: { heading: "Key takeaway", variant: "note", source: "takeaway" },
+              props: { heading: "Key takeaway", variant: "aside", source: "takeaway" },
             },
           ],
         },
@@ -1274,6 +1286,31 @@ export function composeView(
     .filter((node): node is UINode => node !== null);
 
   /*
+   * The readout band belongs *inside* section 1, not above it.
+   *
+   * These two nodes used to sit at the root, between the masthead and the first section,
+   * and the result was the specific mess the reference does not have: the answer and the
+   * figures floated unheaded at the top, and section 1 — "The readout" — then held only
+   * whatever the headline area had left over, which was one stranded hero card and a lone
+   * chart. Three separate things where the reference has one band.
+   *
+   * Folding them in is a placement decision, so it belongs here rather than in
+   * `buildArea`: only this level knows the opening exists at all. The headline slot is
+   * capped at one area in every recipe, so `find` cannot pick the wrong section. Where
+   * there is no headline section to fold into — a recipe whose required slot went
+   * unfilled, which the validator rejects anyway — they stay at the root rather than being
+   * dropped.
+   */
+  const band: UINode[] = [opening, ...(keyFigures ? [keyFigures] : [])];
+  const readout = body.find(
+    (node) => node.component === "Section" && node.id.startsWith("area_headline_"),
+  );
+  if (readout) {
+    readout.children = [...band, ...(readout.children ?? [])].slice(0, 8);
+    band.length = 0;
+  }
+
+  /*
    * Numbered in page order, and only once the page is known.
    *
    * It has to happen here rather than in `buildArea`: an area that produced nothing is
@@ -1311,7 +1348,7 @@ export function composeView(
   const spec: UISpec = {
     id: `view_${report.reportType}`,
     recipe: ia.recipeId,
-    root: [header, opening, ...(keyFigures ? [keyFigures] : []), ...body],
+    root: [header, ...band, ...body],
     narrative: report.narrative,
     meta: {
       reportId: report.title,

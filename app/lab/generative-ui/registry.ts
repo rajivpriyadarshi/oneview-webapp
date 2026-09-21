@@ -678,7 +678,7 @@ export const REGISTRY: ComponentRegistry = {
     category: "intelligence",
     propsSchema: z.object({
       heading: heading.optional(),
-      variant: z.enum(["lead", "body", "note", "readout"]).optional(),
+      variant: z.enum(["lead", "body", "note", "readout", "aside"]).optional(),
       /**
        * Which piece of the report's own writing to render, when the passage is not a
        * finding. A reference, not the text — see `reportText` in ./SpecRenderer.tsx.
@@ -691,7 +691,7 @@ export const REGISTRY: ComponentRegistry = {
     }),
     accepts: ["narrative", "transition"],
     implements: ["prose"],
-    variants: ["lead", "body", "note", "readout"],
+    variants: ["lead", "body", "note", "readout", "aside"],
     sizes: ["md"],
     useWhen: "The claim is a sentence. Explanation, context, or the reasoning behind a figure.",
     useInsteadWhen: [

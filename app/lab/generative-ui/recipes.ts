@@ -46,8 +46,21 @@ export type RecipeId = z.infer<typeof RecipeIdSchema>;
 
 export const RecipeSlotSchema = z.object({
   id: z.string().min(1),
-  /** Reader-facing heading when the composer has no better one from the sections. */
+  /** Reader-facing heading for the first area that lands here. */
   defaultHeading: z.string().min(1).optional(),
+  /**
+   * Names for the second and later areas in a slot that takes more than one.
+   *
+   * A slot with `maxAreas: 3` used to give its first area the structural name and let the
+   * rest fall back to the section's own question, which put two registers of heading on one
+   * page — "2. What changed" above "3. Where is the listed portfolio, and what is in it".
+   * The second is a sentence, it is generated, and it moves between clients. These are the
+   * names for the shapes a slot predictably holds in order: movement, then the positions,
+   * then the mix. Where the list runs out the question is still the fallback, because
+   * inventing a name for content the recipe did not anticipate would be a worse lie than
+   * printing the analysis's own words.
+   */
+  moreHeadings: z.array(z.string().min(1)).optional(),
   /**
    * Semantic types this slot will take. `"*"` accepts anything and exists for the
    * one honest catch-all case — an overview whose content is not known in advance.
@@ -100,11 +113,24 @@ export type ViewRecipe = z.infer<typeof ViewRecipeSchema>;
  */
 const ANALYTICAL_REPORT: ViewRecipe = {
   id: "AnalyticalReport",
-  description: "Headline, what changed, why it changed, risks, what to watch.",
+  /* Reader-facing, because the masthead prints it as the document's subtitle. It used to
+     name the slots — "Headline, what changed, why it changed, risks" — which described the
+     recipe to whoever wrote it rather than the document to whoever is reading it. */
+  description:
+    "A consolidated view of the portfolio, with what changed, what drove it and what to decide.",
   serves: ["portfolio_review", "risk_review", "explanation"],
   slots: [
     {
       id: "headline",
+      /*
+       * "The readout" — the reference's name for the first section, and a better one than
+       * the question it used to take. A generated heading like "What is the portfolio
+       * worth" is the *analysis's* question, and printing it as section 1 makes the page
+       * read as a transcript of the pipeline rather than as a document. The section names
+       * are structural: every report of this shape has the same six, in the same order, so
+       * a reader who has seen one knows where to look in the next.
+       */
+      defaultHeading: "The readout",
       accepts: ["summary", "performance", "identity"],
       required: true,
       arrangement: "single",
@@ -113,6 +139,7 @@ const ANALYTICAL_REPORT: ViewRecipe = {
     {
       id: "whatChanged",
       defaultHeading: "What changed",
+      moreHeadings: ["Current portfolio state", "How it is invested"],
       accepts: ["performance", "allocation", "activity", "comparison"],
       required: false,
       // Three, not two: movement, benchmark and composition are all "what changed",
@@ -122,21 +149,25 @@ const ANALYTICAL_REPORT: ViewRecipe = {
     },
     {
       id: "why",
-      defaultHeading: "Performance drivers",
+      defaultHeading: "What drove the change",
+      moreHeadings: ["Market context"],
       accepts: ["drivers", "market_context"],
       required: false,
       maxAreas: 2,
     },
     {
       id: "risks",
-      defaultHeading: "Risk changes",
+      defaultHeading: "What needs attention",
+      /* The reference's sixth section. Borrowing and the funding calendar land in this
+         slot after the exposure does, and "what is coming" is what they are. */
+      moreHeadings: ["What's coming"],
       accepts: ["risk", "liquidity", "commitments"],
       required: false,
       maxAreas: 2,
     },
     {
       id: "actions",
-      defaultHeading: "What to watch",
+      defaultHeading: "Decisions & next steps",
       accepts: ["recommendations", "actions"],
       required: false,
       maxAreas: 1,
@@ -179,11 +210,13 @@ const ANALYTICAL_REPORT: ViewRecipe = {
  */
 const PROPERTY_REPORT: ViewRecipe = {
   id: "PropertyReport",
-  description: "What it is worth, what is in the book, who holds it, what it needs.",
+  description:
+    "A consolidated view of the balance sheet, with what is held, what it needs and what to decide.",
   serves: ["property_review"],
   slots: [
     {
       id: "headline",
+      defaultHeading: "The readout",
       accepts: ["summary", "identity"],
       required: true,
       arrangement: "single",
@@ -192,6 +225,7 @@ const PROPERTY_REPORT: ViewRecipe = {
     {
       id: "book",
       defaultHeading: "The book",
+      moreHeadings: ["How it is invested"],
       accepts: ["allocation", "comparison", "performance"],
       required: true,
       maxAreas: 2,
@@ -199,6 +233,7 @@ const PROPERTY_REPORT: ViewRecipe = {
     {
       id: "structure",
       defaultHeading: "How it is held",
+      moreHeadings: ["Ownership and control"],
       accepts: ["identity", "activity", "drivers", "market_context"],
       required: false,
       maxAreas: 2,
@@ -206,20 +241,21 @@ const PROPERTY_REPORT: ViewRecipe = {
     {
       id: "funding",
       defaultHeading: "What it needs",
+      moreHeadings: ["What's coming"],
       accepts: ["commitments", "liquidity"],
       required: false,
       maxAreas: 2,
     },
     {
       id: "risks",
-      defaultHeading: "Exposure",
+      defaultHeading: "What needs attention",
       accepts: ["risk"],
       required: false,
       maxAreas: 1,
     },
     {
       id: "actions",
-      defaultHeading: "What to do next",
+      defaultHeading: "Decisions & next steps",
       accepts: ["recommendations", "actions"],
       required: false,
       maxAreas: 1,

@@ -92,9 +92,13 @@ export function Block({
 /**
  * A figure with its label above and its context below.
  *
- * Label / value / caption in that order, because the reader needs to know what they
- * are looking at before they read it. The delta rides beside the value rather than
- * under it so the pair is scanned as one thing.
+ * Label / value / change / basis, each on its own line.
+ *
+ * The delta used to ride beside the value, and on a four-up strip that is broken rather
+ * than tight: "+US$2.2m since 28 June" is a sentence, it wrapped to three lines inside a
+ * pill, and the pill then pushed the figure it was annotating out of alignment with its
+ * three neighbours. A row of figures only reads as a set if the figures sit on one line at
+ * the same height, so the change goes underneath and the pill never wraps.
  */
 export function Figure({
   label,
@@ -115,11 +119,15 @@ export function Figure({
   return (
     <div>
       {label ? <div className={TYPE.label}>{label}</div> : null}
-      <div className="mt-[6px] flex items-center gap-[8px]">
+      <div className="mt-[6px]">
         <span className={size === "lg" ? TYPE.figure : TYPE.figureSm}>{value}</span>
-        {delta ? <DeltaChip delta={delta} /> : null}
       </div>
-      {caption ? <div className={`${TYPE.caption} mt-[5px]`}>{caption}</div> : null}
+      {delta ? (
+        <div className="mt-[8px]">
+          <DeltaChip delta={delta} />
+        </div>
+      ) : null}
+      {caption ? <div className={`${TYPE.caption} mt-[6px]`}>{caption}</div> : null}
       {spark ? <div className="mt-[12px]">{spark}</div> : null}
     </div>
   );
@@ -184,8 +192,11 @@ export function DeltaChip({
    * not a second opinion on it.
    */
   const arrow = tone === "neutral" || /^[+-]|↑|↓/.test(delta.label) ? "" : tone === "positive" ? "↑ " : "↓ ";
+  /* `whitespace-nowrap` is load-bearing, not tidiness: a pill is a shape that means "one
+     short fact", and a wrapped pill reads as a paragraph someone drew a box around. Long
+     labels overflow their column instead, which is visible and therefore fixable. */
   return (
-    <span className={pill(tone)}>
+    <span className={`${pill(tone)} whitespace-nowrap`}>
       {arrow}
       {delta.label}
     </span>

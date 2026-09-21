@@ -51,14 +51,20 @@ const composed = (index: 0 | 1) => {
 describe("the document opens on prose", () => {
   for (const [index, testCase] of CASES.entries()) {
     it(`${testCase.name}: leads with the header, then the written summary`, () => {
-      const { spec } = composed(index as 0 | 1);
+      const { spec, nodes } = composed(index as 0 | 1);
       expect(spec.root[0].component).toBe("PageHeader");
-      expect(spec.root[1].component).toBe("Prose");
-      expect(spec.root[1].props.source).toBe("summary");
+      /* First in reading order, not first at the root. The readout band is folded into
+         section 1 where the recipe has a headline slot, so the assertion is about where the
+         reader meets the summary rather than about the shape of the tree above it. */
+      const summary = nodes.find((node) => node.props.source === "summary");
+      expect(summary?.component).toBe("Prose");
       /* `readout` rather than `lead`: the opening passage is washed and marked now, which
-         is a weight, not a different passage. Both cases here carry no section takeaway, so
-         the readout is the whole opening rather than the left half of a split. */
-      expect(spec.root[1].props.variant).toBe("readout");
+         is a weight, not a different passage. */
+      expect(summary?.props.variant).toBe("readout");
+      const content = nodes.filter(
+        (node) => !["PageHeader", "Section", "SplitPane", "Stack"].includes(node.component),
+      );
+      expect(content[0]).toBe(summary);
     });
 
     it(`${testCase.name}: references the summary and never copies it`, () => {
@@ -66,7 +72,7 @@ describe("the document opens on prose", () => {
       const serialised = JSON.stringify(spec);
       // The whole point: the sentence is not anywhere in the spec.
       expect(serialised).not.toContain(report.summary);
-      for (const node of walk(spec.root[1])) {
+      for (const node of spec.root.flatMap((root) => walk(root))) {
         expect(node.props).not.toHaveProperty("text");
         expect(node.props).not.toHaveProperty("content");
       }

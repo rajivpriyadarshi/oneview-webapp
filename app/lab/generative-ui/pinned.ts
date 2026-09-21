@@ -17,6 +17,7 @@
  *      selector is not a switch that turns one fixture into the answer to everything.
  */
 
+import type { ClientOverview } from "../MockClientOverview";
 import { ELEANOR_ANSWER, ELEANOR_BUNDLE, ELEANOR_PLAN, ELEANOR_REPORT } from "./eleanor";
 import { PRASHANTH_ANSWER, PRASHANTH_BUNDLE, PRASHANTH_PLAN, PRASHANTH_REPORT } from "./prashanth";
 import type { DataBundle } from "./data";
@@ -42,6 +43,14 @@ export type PinnedClient = {
   distinction: string;
   /** Names and entities that identify this client in a question. */
   pattern: RegExp;
+  /**
+   * The surrounding screen's facts — the panel the report opens over.
+   *
+   * Here rather than in the panel because the panel is shared by three labs and only this
+   * one switches client. Every figure is the fixture's own: the AUM is the bundle's net
+   * worth, so the shell and the report cannot state two different totals.
+   */
+  overview: ClientOverview;
   run: Omit<PinnedRun, "note">;
 };
 
@@ -51,6 +60,21 @@ export const PINNED_CLIENTS: PinnedClient[] = [
     name: "Prashanth Ranganathan",
     distinction: "Listed-heavy, leveraged, a benchmark to beat",
     pattern: /prashanth|ranganathan|prtr/,
+    overview: {
+      name: "Prashanth Ranganathan",
+      summary:
+        "Singapore-based family office with concentrated technology equity, private investments, trust structures and multi-currency exposure.",
+      location: "Singapore",
+      aum: "US$55.4m",
+      aumDelta: "↗ +US$2.2m",
+      glance: [
+        ["Segment", "Family office"],
+        ["Client since", "2016"],
+        ["Tax residency", "Singapore"],
+        ["Custodians", "Four"],
+        ["Risk profile", "Growth"],
+      ],
+    },
     run: {
       plan: PRASHANTH_PLAN,
       bundle: PRASHANTH_BUNDLE,
@@ -63,6 +87,21 @@ export const PINNED_CLIENTS: PinnedClient[] = [
     name: "Eleanor Whitfield",
     distinction: "Property and private holdings, no debt, three owners",
     pattern: /eleanor|whitfield/,
+    overview: {
+      name: "Eleanor Whitfield",
+      summary:
+        "Singapore-resident private client: four properties across three countries, four private funds, a family business stake and no borrowing.",
+      location: "Singapore",
+      aum: "S$113.3m",
+      aumDelta: "↗ +S$2.4m",
+      glance: [
+        ["Segment", "Private client"],
+        ["Client since", "2009"],
+        ["Family", "3 children"],
+        ["Tax residency", "Singapore"],
+        ["Risk profile", "Balanced"],
+      ],
+    },
     run: {
       plan: ELEANOR_PLAN,
       bundle: ELEANOR_BUNDLE,

@@ -294,6 +294,33 @@ function Prose({ props, finding, value }: Resolved) {
     );
   }
 
+  /*
+   * The one line worth remembering, in a narrow panel beside the readout.
+   *
+   * It is a panel with a micro-label *inside* it, not a section with a heading above it,
+   * and the difference is the whole point: at section weight, "Key takeaway" set in serif
+   * over a grey box competed with the numbered headings and read as a seventh section
+   * wedged into the top of the page. The label belongs to the panel the way a caption
+   * belongs to a photograph — small, uppercase, and clearly subordinate to the sentence it
+   * introduces.
+   *
+   * No border and a flat wash, so it reads as a quieter neighbour of the readout rather
+   * than as a competing card. Full height, because it sits in a two-column band and a
+   * short panel floating beside a tall one looks unfinished.
+   */
+  if (variant === "aside") {
+    return (
+      <div className={`flex h-full flex-col rounded-[12px] ${SURFACE.inset} p-[18px]`}>
+        {heading ? (
+          <div className="mb-[8px] font-satoshi text-[10px] font-bold uppercase tracking-[0.11em] text-black/40">
+            {heading}
+          </div>
+        ) : null}
+        <div className={TYPE.body}>{paragraphs}</div>
+      </div>
+    );
+  }
+
   return (
     <Block title={heading}>
       <div className={variant === "note" ? SURFACE.inset : undefined}>{paragraphs}</div>

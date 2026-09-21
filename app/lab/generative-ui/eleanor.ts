@@ -67,7 +67,7 @@ export const ELEANOR_PLAN: IntentPlan = {
   taskType: "property_review",
   goal: "Review Eleanor Whitfield's balance sheet, which is mostly property and private holdings.",
   scope: { kind: "client", ids: ["eleanor-whitfield"] },
-  timeRange: { kind: "point", to: "2026-09-15", label: "as at 15 September" },
+  timeRange: { kind: "point", to: "2026-09-15", label: "As of 15 Sep 2026" },
   needs: {
     comparison: true,
     /*
@@ -227,7 +227,7 @@ Assets sit in three names: S$86.8m personally, S$19.0m through Whitfield Holding
 
 export const ELEANOR_REPORT: SemanticReport = {
   reportType: "property_review",
-  title: "Eleanor Whitfield — balance sheet and property review",
+  title: "Eleanor Whitfield",
   summary:
     "Net worth is S$113.3m with no borrowing, but 76% of assets do not trade and S$36.0m of them are carried at valuations 8 to 17 months old. S$6.95m falls due by the end of January, and which pocket funds it has to be settled before 12 October.",
   narrative: ELEANOR_ANSWER,

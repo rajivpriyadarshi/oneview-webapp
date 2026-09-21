@@ -35,7 +35,7 @@ import MockClientOverview from "../MockClientOverview";
 import { CLIENT } from "../dynamic-ui/clientBook";
 import { INK, LABEL } from "./chrome";
 import { run, type RunResult, type Stage, type Turn as HistoryTurn } from "./pipeline";
-import { PINNED_CLIENTS, type PinnedClientId } from "./pinned";
+import { PINNED_CLIENTS, pinnedClient, type PinnedClientId } from "./pinned";
 import { NarrativeFallback, SpecRenderer } from "./SpecRenderer";
 
 const SUBJECT = CLIENT.name;
@@ -468,7 +468,9 @@ export default function GenerativeUILab() {
 
         {/* ------------------------------- right-hand surface: the same client
             overview every lab shows, with the generated view opening over it. */}
-        <MockClientOverview>
+        {/* The panel switches with the simulator. It used to be hardcoded, which put
+            Eleanor's report over Prashanth's name and AUM — see `ClientOverview`. */}
+        <MockClientOverview client={pinnedClient(client).overview}>
           <div className="absolute right-[20px] bottom-[18px] z-[90] flex items-center gap-[14px] rounded-full border border-black/[0.07] bg-white/85 px-[14px] py-[8px] shadow-[0_6px_22px_rgba(0,0,0,0.06)] backdrop-blur-[8px]">
             {via ? (
               <span
