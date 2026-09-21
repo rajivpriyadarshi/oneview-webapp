@@ -55,19 +55,28 @@ export function Block({
   caption,
   children,
   aside,
+  boxed = false,
 }: {
   title?: string;
   caption?: string;
   children: React.ReactNode;
   /** Right-aligned furniture on the title line: a legend, a period switch. */
   aside?: React.ReactNode;
+  /**
+   * For content with its own geometry — a chart, a table, a schedule.
+   *
+   * The title goes *inside* the panel when this is set, because a title floating above a
+   * bordered box belongs to the page while the box belongs to itself, and the reader has
+   * to guess which. See `SURFACE.panel`.
+   */
+  boxed?: boolean;
 }) {
   const printed = React.useContext(SectionHeading);
-  const shown = title && printed && title.trim() === printed.trim() ? undefined : title;
+  const shown = title && printed && title.trim() === printed.trim() && !boxed ? undefined : title;
   return (
-    <section className={RHYTHM.block}>
-      {shown || aside ? (
-        <div className="flex items-baseline justify-between gap-[16px]">
+    <section className={boxed ? SURFACE.panel : RHYTHM.block}>
+      {shown || caption || aside ? (
+        <div className={`flex items-baseline justify-between gap-[16px] ${boxed ? "mb-[14px]" : ""}`}>
           <div className="min-w-0">
             {shown ? <h3 className={TYPE.sectionTitle}>{shown}</h3> : null}
             {caption ? <p className={`${TYPE.sectionCaption} mt-[2px]`}>{caption}</p> : null}
@@ -165,7 +174,22 @@ export function DeltaChip({
 }: {
   delta: { label: string; value?: number; sentiment?: "positive" | "negative" | "neutral" };
 }) {
-  return <span className={pill(toneOf(delta.value, delta.sentiment))}>{delta.label}</span>;
+  const tone = toneOf(delta.value, delta.sentiment);
+  /*
+   * An arrow, where the direction is known and is not already written.
+   *
+   * Colour alone carries direction only for readers who see it, and a label the analysis
+   * wrote as "+14%" already says which way it went — so the glyph is added exactly when
+   * the tone is decided and the label is silent about it. It is a rendering of `sentiment`,
+   * not a second opinion on it.
+   */
+  const arrow = tone === "neutral" || /^[+-]|↑|↓/.test(delta.label) ? "" : tone === "positive" ? "↑ " : "↓ ";
+  return (
+    <span className={pill(tone)}>
+      {arrow}
+      {delta.label}
+    </span>
+  );
 }
 
 /**

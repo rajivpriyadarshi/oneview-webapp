@@ -42,6 +42,14 @@ export type ContainerInput = {
    * composer may choose the eyebrow and the subtitle, never the title.
    */
   docTitle?: string;
+  /**
+   * The section's one-line takeaway, resolved from the semantic report.
+   *
+   * Here for the same reason `docTitle` is: it is content, the container needs it, and a
+   * prop carrying it would be the composer authoring a sentence about the findings. The
+   * first attempt did exactly that and `literal_in_props` rejected the spec.
+   */
+  takeaway?: string;
 };
 
 export type Container = (input: ContainerInput) => React.ReactNode;
@@ -61,13 +69,21 @@ const str = (value: unknown): string | undefined =>
  */
 const PageHeader: Container = ({ props, docTitle }) => (
   <header>
-    {str(props.eyebrow) ? <div className={`${TYPE.label} mb-[10px]`}>{props.eyebrow as string}</div> : null}
+    {/* Kind on the left, period on the right, on one line above the title. Two labels of
+        equal weight reading in opposite directions is what makes a masthead a masthead
+        rather than a stack — and it is the only place on the page where the as-of date is
+        a heading instead of a footnote. */}
+    {str(props.eyebrow) || str(props.period) ? (
+      <div className="mb-[14px] flex items-baseline justify-between gap-[16px]">
+        <div className="font-satoshi text-[11px] font-bold uppercase tracking-[0.13em] text-black/45">
+          {str(props.eyebrow)}
+        </div>
+        {str(props.period) ? <div className={TYPE.caption}>{props.period as string}</div> : null}
+      </div>
+    ) : null}
     <h1 className={TYPE.docTitle}>{docTitle ?? "Report"}</h1>
     {str(props.subtitle) ? <p className={`${TYPE.docSubtitle} mt-[8px]`}>{props.subtitle as string}</p> : null}
-    <div className="mt-[22px] flex items-center">
-      <span className="h-[2px] w-[80px] bg-[#171615]/70" />
-      <span className={`h-px flex-1 border-t ${SURFACE.hairline}`} />
-    </div>
+    <div className={`mt-[22px] border-t ${SURFACE.hairline}`} />
   </header>
 );
 
@@ -81,17 +97,42 @@ const PageHeader: Container = ({ props, docTitle }) => (
  * than a white panel, so a section the composer chose to set apart reads as set apart
  * instead of as one more card among cards.
  */
-const Section: Container = ({ props, children }) => (
-  <section className={props.variant === "bordered" ? `${SURFACE.inset} py-[20px]` : undefined}>
-    {str(props.heading) ? <h2 className={TYPE.sectionTitle}>{props.heading as string}</h2> : null}
-    {str(props.caption) ? <p className={`${TYPE.sectionCaption} mt-[3px]`}>{props.caption as string}</p> : null}
-    {/* Declares what it printed, so a leaf inside it does not print the same words
-        again. See `InSection` in ./chrome.tsx. */}
-    <InSection heading={str(props.heading)}>
-      <div className={`${str(props.heading) || str(props.caption) ? "mt-[16px]" : ""} ${RHYTHM.block}`}>{children}</div>
-    </InSection>
-  </section>
-);
+/**
+ * A numbered section: "3. What drove the change?", a line saying what it is about, then
+ * the content.
+ *
+ * The number is the change worth arguing for. A generated report is long and its sections
+ * were chosen by rule rather than by a person holding the whole page in their head, so the
+ * reader's real question at every heading is "how much of this is left?" — and a document
+ * that numbers its sections answers that for free, in the margin, without a progress bar.
+ * It also makes a section referenceable in conversation, which matters when the chat beside
+ * the page is the thing the reader is actually talking to.
+ *
+ * `index` is position, not rank. The composer knows it because it laid the page out; it
+ * cannot be derived here, and passing it as a prop is presentation reaching a container,
+ * which is exactly what props are for.
+ */
+const Section: Container = ({ props, children, takeaway }) => {
+  const heading = str(props.heading);
+  const index = typeof props.index === "number" ? props.index : undefined;
+  const caption = takeaway ?? str(props.caption);
+  return (
+    <section className={props.variant === "bordered" ? `${SURFACE.inset} py-[20px]` : undefined}>
+      {heading ? (
+        <h2 className={TYPE.areaTitle}>
+          {index !== undefined ? <span className="text-black/35">{index}. </span> : null}
+          {heading}
+        </h2>
+      ) : null}
+      {caption ? <p className={`${TYPE.areaCaption} mt-[4px]`}>{caption}</p> : null}
+      {/* Declares what it printed, so a leaf inside it does not print the same words
+          again. See `InSection` in ./chrome.tsx. */}
+      <InSection heading={heading}>
+        <div className={`${heading || caption ? "mt-[20px]" : ""} ${RHYTHM.block}`}>{children}</div>
+      </InSection>
+    </section>
+  );
+};
 
 /**
  * Three gaps, and `normal` is the document rhythm rather than a card gutter.
@@ -231,13 +272,34 @@ function DisclosureView({ props, children }: ContainerInput) {
 
 /* ------------------------------------------------------------ what to watch */
 
-const WhatToWatch: Container = ({ props, children }) => (
-  <div className={`${SURFACE.inset} py-[20px]`}>
-    <div className={TYPE.label}>Ahead</div>
-    <div className={`${TYPE.sectionTitle} mt-[2px]`}>{str(props.heading) ?? "What to watch"}</div>
-    <div className={`mt-[16px] ${RHYTHM.block}`}>{children}</div>
-  </div>
-);
+/**
+ * The last section: numbered like the others, and tinted because it closes the document.
+ *
+ * Two arguments met here and the reference settled them. Against the tint: a conclusion
+ * that does not look like part of the document reads as a footer, which is what the old
+ * panel-with-an-"Ahead"-label did. For it: a reader who has just come down nine sections
+ * needs to be told the page has ended, and a closing card is how a written note says so.
+ *
+ * So it keeps the number and the serif heading — it is section ten, not an appendix — and
+ * takes the wash inside them. `SURFACE.inset` rather than a new tint, because the only
+ * thing being said is "this is the end", and that does not need a colour of its own.
+ */
+const WhatToWatch: Container = ({ props, children, takeaway }) => {
+  const index = typeof props.index === "number" ? props.index : undefined;
+  const heading = str(props.heading) ?? "What to watch";
+  return (
+    <section className={`${SURFACE.inset} px-[22px] py-[22px]`}>
+      <h2 className={TYPE.areaTitle}>
+        {index !== undefined ? <span className="text-black/35">{index}. </span> : null}
+        {heading}
+      </h2>
+      {takeaway ? <p className={`${TYPE.areaCaption} mt-[4px]`}>{takeaway}</p> : null}
+      <InSection heading={heading}>
+        <div className={`mt-[18px] ${RHYTHM.block}`}>{children}</div>
+      </InSection>
+    </section>
+  );
+};
 
 /* ------------------------------------------------------------- the mapping */
 

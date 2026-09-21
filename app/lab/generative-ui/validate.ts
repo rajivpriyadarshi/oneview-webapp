@@ -260,6 +260,7 @@ function checkNode(
     keys.length > 0 ||
     node.props.source === "summary" ||
     node.props.source === "narrative" ||
+    node.props.source === "takeaway" ||
     // The headline strip: figures reached through `headlineFigures`, not carried.
     node.props.source === "key_figures";
   if (spec.requiresData && !bound) {

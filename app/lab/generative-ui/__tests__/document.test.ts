@@ -55,7 +55,10 @@ describe("the document opens on prose", () => {
       expect(spec.root[0].component).toBe("PageHeader");
       expect(spec.root[1].component).toBe("Prose");
       expect(spec.root[1].props.source).toBe("summary");
-      expect(spec.root[1].props.variant).toBe("lead");
+      /* `readout` rather than `lead`: the opening passage is washed and marked now, which
+         is a weight, not a different passage. Both cases here carry no section takeaway, so
+         the readout is the whole opening rather than the left half of a split. */
+      expect(spec.root[1].props.variant).toBe("readout");
     });
 
     it(`${testCase.name}: references the summary and never copies it`, () => {

@@ -42,6 +42,7 @@ import { RECIPES, candidateSlots, selectRecipe, type RecipeId, type RecipeSlot, 
 import { bestFor, specOf, type ComponentId } from "./registry";
 import {
   headlineFigures,
+  openingSection,
   questionGroups,
   sectionById,
   type SemanticReport,
@@ -77,6 +78,26 @@ const safeHeading = (...candidates: (string | undefined)[]): string => safeText(
 
 /** A question read as a heading: "How did the portfolio do?" → "How did the portfolio do". */
 const asHeading = (question: string): string => question.replace(/\s*\?\s*$/, "");
+
+/**
+ * What the document calls itself, by task type. The masthead's eyebrow.
+ *
+ * A label, not a claim: it names the kind of report the planner asked for, which is
+ * already decided by the time this file runs.
+ */
+const REPORT_KIND: Record<string, string> = {
+  portfolio_review: "Portfolio review",
+  property_review: "Balance sheet review",
+  comparison: "Comparison",
+  meeting_prep: "Meeting preparation",
+  liquidity_planning: "Liquidity plan",
+  activity_review: "Activity review",
+  risk_review: "Risk review",
+  action_plan: "Action plan",
+  entity_overview: "Entity overview",
+  explanation: "Explanation",
+  lookup: "Summary",
+};
 
 const SEMANTIC_HEADINGS: Record<string, string> = {
   performance: "Performance",
@@ -668,6 +689,13 @@ type Builder = {
   bundle: DataBundle;
   /** Findings already spoken for, in document order. Mirrors the renderer's claim. */
   claimed: Set<string>;
+  /**
+   * The section whose takeaway the opening panel prints.
+   *
+   * Claimed the same way a headline figure is: the line is moved to the top of the page,
+   * not copied there, so the section it came from does not print it again one screen down.
+   */
+  openingTakeaway?: string;
   /** Every node made, in document order, for the headline pass. */
   created: UINode[];
   /**
@@ -1059,15 +1087,49 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
     return {
       id: uid(build, area.id),
       component: "WhatToWatch",
-      props: { heading: safeHeading(area.heading, "What to watch") },
+      sectionId: sections[0].id,
+      props: {
+        heading: safeHeading(area.heading, "What to watch"),
+        ...(sections[0].takeaway && sections[0].id !== build.openingTakeaway ? { takeaway: true } : {}),
+      },
       children: body.slice(0, 3),
     };
+  }
+
+  /*
+   * Two or more things flagged in one section are a set, and a set reads as a grid.
+   *
+   * Stacked full-width callouts make four risks into four paragraphs the reader works
+   * through in order, when what they want is to see how many there are and how bad. Two
+   * columns says "four items, two of them serious" at a glance. Bounded to callouts only —
+   * a chart and a table side by side at half width are both unreadable.
+   */
+  const called: ComponentId[] = ["RiskAlert", "Recommendation"];
+  const flags = body.filter((node) => called.includes(node.component));
+  if (flags.length >= 2 && flags.length === body.length && flags.length <= 6) {
+    body = [
+      {
+        id: uid(build, `fg_${area.id}`),
+        component: "Grid",
+        props: { columns: 2 },
+        children: body,
+      },
+    ];
   }
 
   return {
     id: uid(build, area.id),
     component: "Section",
-    props: { heading: safeHeading(area.heading) },
+    /* Named so the renderer can read the section's own line. The composer decides the line
+       is shown; it never carries the words — see `Section.takeaway` in ./registry.ts. */
+    sectionId: sections[0].id,
+    props: {
+      heading: safeHeading(area.heading),
+      /* The analysis's own line about the section, where it wrote one. Sections sharing
+         an area are siblings of one question, so the first one's line describes the area.
+         Unless the opening panel already printed it — see `Builder.openingTakeaway`. */
+      ...(sections[0].takeaway && sections[0].id !== build.openingTakeaway ? { takeaway: true } : {}),
+    },
     children: body.slice(0, 8),
   };
 }
@@ -1108,24 +1170,24 @@ export function composeView(
     component: "PageHeader",
     props: {
       /*
-       * The period, if it can be said in a few words. A planner that writes "last 12
-       * months (and YTD where available)" has written a caveat, not a label, and an
-       * eyebrow is the one slot on the page with no room to argue — so long labels
-       * hand over to the report's own kind.
-       */
-      eyebrow: safeLabel(
-        intent.timeRange.label && intent.timeRange.label.length <= 28 ? intent.timeRange.label : undefined,
-        SEMANTIC_HEADINGS[report.reportType],
-        "Report",
-      ),
-      /*
-       * No subtitle.
+       * What kind of report this is, on the left of the masthead.
        *
-       * This used to be `intent.goal` truncated to 120 characters — the planner's
-       * restatement of the question, under a title that in the worst case was also the
-       * question. Two echoes of the query and an ellipsis, immediately above the
-       * executive summary that actually says something. The summary is the subtitle.
+       * This used to be the period, which put a date where the document's name for itself
+       * belongs and then had nowhere to say what the thing was. The two are separate props
+       * now and each one says one thing.
        */
+      eyebrow: safeLabel(REPORT_KIND[report.reportType], SEMANTIC_HEADINGS[report.reportType], "Report"),
+      /*
+       * The period, if it can be said in a few words. A planner that writes "last 12
+       * months (and YTD where available)" has written a caveat, not a label, and the
+       * masthead has no room to argue — so long labels are dropped rather than clipped.
+       */
+      ...(intent.timeRange.label && intent.timeRange.label.length <= 28
+        ? { period: safeLabel(intent.timeRange.label) }
+        : {}),
+      /* What the reader is holding, in one line. The recipe's own description of the
+         shape it builds — presentation about presentation, so it carries no claim. */
+      subtitle: clip(RECIPES[ia.recipeId].description, 120),
     },
   };
 
@@ -1144,8 +1206,39 @@ export function composeView(
   const summary: UINode = {
     id: "summary",
     component: "Prose",
-    props: { heading: "Executive summary", variant: "lead", source: "summary" },
+    props: { heading: "Executive summary", variant: "readout", source: "summary" },
   };
+
+  /**
+   * The readout and the one line beside it.
+   *
+   * The reference layout opens on a washed panel with the answer in it and a narrow panel
+   * to its right holding the single sentence worth remembering. That second panel is not a
+   * second summary — it is the primary section's own takeaway, resolved by reference (see
+   * `reportText`), which is why the composer can place it without being able to write it.
+   *
+   * Paired only when there is something to pair with. A report whose sections carry no
+   * takeaway gets the readout at full width rather than a panel with a gap in it.
+   */
+  const lead = openingSection(report);
+  if (lead) build.openingTakeaway = lead.id;
+  const opening: UINode = lead
+    ? {
+        id: uid(build, "opening"),
+        component: "SplitPane",
+        props: { ratio: "wide-left" },
+        slots: {
+          left: [summary],
+          right: [
+            {
+              id: uid(build, "takeaway"),
+              component: "Prose",
+              props: { heading: "Key takeaway", variant: "note", source: "takeaway" },
+            },
+          ],
+        },
+      }
+    : summary;
 
   /**
    * The figures, as the document's second line.
@@ -1181,6 +1274,22 @@ export function composeView(
     .filter((node): node is UINode => node !== null);
 
   /*
+   * Numbered in page order, and only once the page is known.
+   *
+   * It has to happen here rather than in `buildArea`: an area that produced nothing is
+   * dropped, and numbering as they are built would leave gaps — "1, 2, 4" tells the reader
+   * something went missing, which is both alarming and untrue. Disclosure is deliberately
+   * not numbered; provenance is an appendix, not a seventh thing to read.
+   */
+  let numbered = 0;
+  for (const node of body) {
+    if (node.component === "Section" || node.component === "WhatToWatch") {
+      numbered += 1;
+      node.props.index = numbered;
+    }
+  }
+
+  /*
    * The headline, placed after the fact.
    *
    * `planIA` names the section that should lead, but whether it *can* depends on the
@@ -1202,7 +1311,7 @@ export function composeView(
   const spec: UISpec = {
     id: `view_${report.reportType}`,
     recipe: ia.recipeId,
-    root: [header, summary, ...(keyFigures ? [keyFigures] : []), ...body],
+    root: [header, opening, ...(keyFigures ? [keyFigures] : []), ...body],
     narrative: report.narrative,
     meta: {
       reportId: report.title,

@@ -242,6 +242,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "summary",
       question: "What is the balance sheet worth?",
       importance: "primary",
+      takeaway: "Up on the quarter, with no borrowing against it.",
       dataKeys: ["networth.total", "networth.series"],
       findings: [
         {
@@ -291,6 +292,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "allocation",
       question: "What is in the property book?",
       importance: "secondary",
+      takeaway: "Four properties, and one of them is carrying a refurbishment commitment.",
       groups: ["By property"],
       dataKeys: ["property.schedule"],
       findings: [
@@ -367,6 +369,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "allocation",
       question: "What is in the property book?",
       importance: "secondary",
+      takeaway: "Three countries, and the UK is more than half the book.",
       groups: ["By country"],
       dataKeys: ["property.geography"],
       findings: [
@@ -401,6 +404,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "allocation",
       question: "How is the balance sheet made up?",
       importance: "secondary",
+      takeaway: "Most of the balance sheet cannot be sold quickly.",
       dataKeys: ["alloc.class", "liquidity.available"],
       findings: [
         {
@@ -449,6 +453,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "identity",
       question: "Who holds what?",
       importance: "secondary",
+      takeaway: "Three owners, and the trust documents governing one of them are unreviewed.",
       dataKeys: ["entities.ownership"],
       findings: [
         {
@@ -495,25 +500,19 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "commitments",
       question: "What has to be paid, and when?",
       importance: "secondary",
+      takeaway: "Five payments fall due across the next four months.",
       dataKeys: ["commit.calendar", "private.funds"],
+      /*
+       * No `f.calendar` comparison here, and its absence is the point.
+       *
+       * It listed the same five commitments the `commit.calendar` timeline lists, with the
+       * same five amounts, as horizontal bars — so the section stated every figure twice,
+       * once as a schedule and once as a chart, and a reader comparing them had to work out
+       * that there was nothing to compare. A bar chart of five dated amounts is also the
+       * wrong chart: it ranks them by size when the thing that matters is the order they
+       * arrive in, which is what the timeline already shows.
+       */
       findings: [
-        {
-          kind: "comparison",
-          id: "f.calendar",
-          emphasis: "secondary",
-          confidence: 0.9,
-          sources: [...FAMILY_OFFICE, "Fund manager reports"],
-          subject: "Commitments",
-          label: "Due by 31 January",
-          measure: "Amount due",
-          entities: [
-            { name: "Northstar call · 12 Oct", value: 2.4, display: "S$2.4m" },
-            { name: "Asia Growth call · 4 Nov", value: 1.1, display: "S$1.1m" },
-            { name: "Manchester refurbishment · 15 Dec", value: 1.8, display: "S$1.8m" },
-            { name: "Family distributions · 20 Dec", value: 0.75, display: "S$0.75m" },
-            { name: "Tax payment · 31 Jan", value: 0.9, display: "S$0.9m" },
-          ],
-        },
         {
           kind: "requirement",
           id: "f.next",
@@ -545,6 +544,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "liquidity",
       question: "Is there enough to fund it?",
       importance: "secondary",
+      takeaway: "Whether the floor holds depends on how the bonds are counted.",
       dataKeys: ["liquidity.available"],
       findings: [
         {
@@ -588,6 +588,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "risk",
       question: "Where is the exposure?",
       importance: "secondary",
+      takeaway: "Four jurisdictions, and some valuations are old enough to matter.",
       dataKeys: ["risk.jurisdiction", "valuation.ages"],
       findings: [
         {
@@ -630,6 +631,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "actions",
       question: "What needs doing?",
       importance: "supporting",
+      takeaway: "Five open items, the first due in October.",
       dataKeys: ["actions.open"],
       findings: [
         {
@@ -655,6 +657,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "evidence",
       question: "Where do these figures come from?",
       importance: "supporting",
+      takeaway: "Balance-sheet figures are recorded; the monthly history is estimated.",
       dataKeys: ["evidence.sources"],
       findings: [
         {

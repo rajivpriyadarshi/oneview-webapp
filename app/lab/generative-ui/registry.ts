@@ -209,6 +209,8 @@ export const REGISTRY: ComponentRegistry = {
     category: "layout",
     propsSchema: z.object({
       eyebrow: label.optional(),
+      /** The as-of date or the period, as the analysis stated it. */
+      period: label.optional(),
       subtitle: z.string().min(1).max(120).optional(),
     }),
     accepts: [],
@@ -224,7 +226,22 @@ export const REGISTRY: ComponentRegistry = {
     id: "Section",
     description: "A titled group of related content. The unit of the reader's scan.",
     category: "layout",
-    propsSchema: z.object({ heading, caption }),
+    propsSchema: z.object({
+      heading,
+      caption,
+      /**
+       * Print the section's own one-line takeaway under the heading.
+       *
+       * A switch, not the sentence. The takeaway is prose the analysis wrote, and the first
+       * version of this passed it through `caption` — which put the report's own figures
+       * into the spec and was caught by `literal_in_props`, correctly. So the composer
+       * decides *whether* the line is shown and the renderer reads *what it says* from the
+       * section named by `sectionId`. Same indirection as `dataKey`, one field narrower.
+       */
+      takeaway: z.boolean().optional(),
+      /** This section's position in the page, 1-based. Printed before the heading. */
+      index: z.number().int().min(1).max(24).optional(),
+    }),
     accepts: [],
     implements: [],
     variants: ["plain", "bordered"],
@@ -661,16 +678,20 @@ export const REGISTRY: ComponentRegistry = {
     category: "intelligence",
     propsSchema: z.object({
       heading: heading.optional(),
-      variant: z.enum(["lead", "body", "note"]).optional(),
+      variant: z.enum(["lead", "body", "note", "readout"]).optional(),
       /**
        * Which piece of the report's own writing to render, when the passage is not a
        * finding. A reference, not the text — see `reportText` in ./SpecRenderer.tsx.
+       *
+       * `takeaway` is the one line the primary section carries. It is here rather than as
+       * a prop because it is a sentence the analysis wrote, and a composer that could
+       * type it could type a different one.
        */
-      source: z.enum(["summary", "narrative"]).optional(),
+      source: z.enum(["summary", "narrative", "takeaway"]).optional(),
     }),
     accepts: ["narrative", "transition"],
     implements: ["prose"],
-    variants: ["lead", "body", "note"],
+    variants: ["lead", "body", "note", "readout"],
     sizes: ["md"],
     useWhen: "The claim is a sentence. Explanation, context, or the reasoning behind a figure.",
     useInsteadWhen: [
@@ -798,7 +819,13 @@ export const REGISTRY: ComponentRegistry = {
     id: "WhatToWatch",
     description: "Forward-looking items: what could change, and when.",
     category: "intelligence",
-    propsSchema: z.object({ heading }),
+    propsSchema: z.object({
+      heading,
+      /** The section's one-line takeaway, printed by reference. See `Section.takeaway`. */
+      takeaway: z.boolean().optional(),
+      /** Position in the page, 1-based — this closes the document, so it is numbered too. */
+      index: z.number().int().min(1).max(24).optional(),
+    }),
     accepts: ["requirement", "narrative", "flag"],
     implements: ["callout"],
     variants: [],

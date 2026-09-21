@@ -292,6 +292,35 @@ export default function GenerativeUILab() {
   return (
     <div className={TW.shell}>
       <Sidebar />
+      {/*
+       * The simulator control — floating, dark, over everything, and deliberately not
+       * part of the product.
+       *
+       * It exists to put the same question to two different balance sheets in front of an
+       * audience, which is a thing about the demo and not a thing about the app. Sitting
+       * it in the chat header made it read as a feature somebody had shipped; sitting it
+       * on top of the interface as a dev overlay says what it is. Switching clears the
+       * thread rather than continuing it: the history is about somebody else's balance
+       * sheet, and a follow-up answered against the wrong book is the one failure here
+       * that would look entirely plausible.
+       */}
+      <div className={TW.simulator}>
+        <span className={TW.simulatorLabel}>Simulating</span>
+        <div className="flex items-center gap-[2px]" role="group" aria-label="Simulated client">
+          {PINNED_CLIENTS.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              title={entry.distinction}
+              aria-pressed={client === entry.id}
+              className={client === entry.id ? TW.simulatorOn : TW.simulatorOff}
+              onClick={() => choose(entry.id)}
+            >
+              {entry.name.split(" ")[0]}
+            </button>
+          ))}
+        </div>
+      </div>
       <main className={TW.workspace}>
         {/* ------------------------------------------------------------ chat */}
         <aside className={TW.advisorPanel} aria-label="Advisor chat (simulated)">
@@ -303,27 +332,6 @@ export default function GenerativeUILab() {
               <ChevronDownIcon />
             </div>
             <div className="flex shrink-0 items-center gap-[8px]">
-              {/*
-               * The simulator control, and labelled as one.
-               *
-               * Switching clients clears the thread rather than continuing it: the history
-               * is about somebody else's balance sheet, and a follow-up answered against
-               * the wrong book is the one failure here that would look entirely plausible.
-               */}
-              <div className={TW.clientSwitch} role="group" aria-label="Simulated client">
-                {PINNED_CLIENTS.map((entry) => (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    title={entry.distinction}
-                    aria-pressed={client === entry.id}
-                    className={client === entry.id ? TW.clientOn : TW.clientOff}
-                    onClick={() => choose(entry.id)}
-                  >
-                    {entry.name.split(" ")[0]}
-                  </button>
-                ))}
-              </div>
               <Link
                 href="/lab"
                 className="font-satoshi text-[11px] font-bold uppercase tracking-[0.08em] text-black/35 transition-colors hover:text-black"
@@ -686,11 +694,15 @@ const TW = {
   conversationText: "block min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap",
   advisorAddBtn:
     "inline-grid h-[36px] w-[36px] shrink-0 place-items-center rounded-[12px] border border-black/[0.08] bg-transparent text-black transition hover:bg-black/[0.03] [&_svg]:h-[16px] [&_svg]:w-[16px]",
-  clientSwitch: "inline-flex shrink-0 items-center gap-[2px] rounded-[10px] bg-black/[0.04] p-[2px]",
-  clientOn:
-    "rounded-[8px] bg-white px-[9px] py-[5px] font-satoshi text-[11px] font-bold tracking-[-0.1px] text-black shadow-[0_1px_2px_rgba(0,0,0,0.08)]",
-  clientOff:
-    "rounded-[8px] px-[9px] py-[5px] font-satoshi text-[11px] font-bold tracking-[-0.1px] text-black/40 transition-colors hover:text-black/70",
+  /* Bottom-right, unmistakably not furniture — and out of the composer's way. It sat
+     bottom-left first, which is directly over the message box. */
+  simulator:
+    "fixed right-[16px] bottom-[16px] z-[120] inline-flex items-center gap-[10px] rounded-full border border-white/10 bg-[#171615]/92 py-[5px] pr-[6px] pl-[12px] shadow-[0_8px_28px_rgba(0,0,0,0.28)] backdrop-blur-[10px]",
+  simulatorLabel: "font-satoshi text-[9px] font-bold uppercase tracking-[0.12em] text-white/40",
+  simulatorOn:
+    "rounded-full bg-white px-[10px] py-[4px] font-satoshi text-[11px] font-bold tracking-[-0.1px] text-[#171615]",
+  simulatorOff:
+    "rounded-full px-[10px] py-[4px] font-satoshi text-[11px] font-bold tracking-[-0.1px] text-white/45 transition-colors hover:text-white/80",
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto px-[20px] pt-[64px] pb-[190px]",
   attentionTitle:
     "m-0 mb-[20px] max-w-[394px] font-butler-medium text-[40px] font-medium leading-[48px] tracking-[-2px] text-black",

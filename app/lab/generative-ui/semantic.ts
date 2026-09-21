@@ -78,6 +78,19 @@ export const SemanticSectionSchema = z.object({
   question: z.string().min(1),
   importance: z.enum(["primary", "secondary", "supporting"]),
   /**
+   * One line saying what this section establishes — "Four key developments since the
+   * last review."
+   *
+   * Content, which is why it is here and not a composer decision: it is a sentence about
+   * the findings, and only the layer that wrote the findings may write it. The composer
+   * prints it under the heading and can choose not to; it cannot compose one, and a
+   * section that does not carry one simply has a heading.
+   *
+   * It exists because a question alone ("What changed?") tells the reader what is coming
+   * but not whether it matters, and a page of nine bare questions reads as an interview.
+   */
+  takeaway: z.string().max(160).optional(),
+  /**
    * Sibling views of one thing: ["contributors"], ["detractors"], ["1M"], ["YTD"].
    *
    * Two sections sharing a `question` and each carrying a different `groups` entry
@@ -232,6 +245,24 @@ export function headlineFigures(report: SemanticReport): MetricFinding[] {
 
   return chosen.length >= HEADLINE_FIGURES.min ? chosen : [];
 }
+
+/**
+ * The section whose takeaway is worth printing beside the summary.
+ *
+ * The most important section that wrote one, by the `importance` the analysis stated. A
+ * rule rather than a claim, for the same reason `headlineFigures` is one: which line opens
+ * the document is presentation, and it is decided here so the composer and the renderer
+ * cannot disagree about it.
+ *
+ * Shared because the line is *moved*, not copied. The composer reads this to know which
+ * section must not print its own takeaway again under its heading, and the renderer reads
+ * it to know which line to resolve — and if the two used different rules the page would
+ * open on one sentence and repeat another.
+ */
+export const openingSection = (report: SemanticReport): SemanticSection | undefined =>
+  [...report.sections]
+    .sort((a, b) => IMPORTANCE_ORDER[a.importance] - IMPORTANCE_ORDER[b.importance])
+    .find((section) => section.takeaway);
 
 /** Every bundle key the report claims to stand on. */
 export const referencedKeys = (report: SemanticReport): string[] => [

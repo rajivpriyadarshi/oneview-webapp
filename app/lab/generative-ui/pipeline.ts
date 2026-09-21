@@ -94,6 +94,39 @@ export type RunResult =
         reason: string;
       });
 
+/* ------------------------------------------------------------------- pacing */
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * How long each stage is held open when nothing is actually being computed.
+ *
+ * Stated plainly because it is a lie, and a lie in a demo has to be legible in the source.
+ * On the pinned path layers 1 to 3 are hand-authored and layers 4 to 8 are a few
+ * milliseconds of pure function, so all six stages complete inside one frame and the panel
+ * flashes its whole list at once. A reader learns nothing from that: the *point* of the
+ * staged panel is that the architecture has six separable steps, and a step nobody sees
+ * cannot make that point.
+ *
+ * So the pinned run is paced, and the numbers are shaped like the work would be. Reading
+ * the question is quick. Gathering data is a few tool calls. Writing the answer is the
+ * long one, because generating four hundred words is, and structuring it is nearly as
+ * long. Choosing the layout and checking it are deterministic code and feel like it.
+ *
+ * Nothing else changes: the model path is not delayed by a millisecond, because there the
+ * stages take however long they take and inventing more would be padding a real number.
+ * And this cannot touch the report — it sleeps between stages, it does not participate in
+ * any of them.
+ */
+const PACE: Record<string, { before: number; after: number }> = {
+  plan: { before: 420, after: 220 },
+  data: { before: 880, after: 260 },
+  answer: { before: 1650, after: 340 },
+  structure: { before: 1450, after: 300 },
+  compose: { before: 760, after: 240 },
+  check: { before: 620, after: 180 },
+};
+
 /* ---------------------------------------------------------------- transport */
 
 type Post = { stage: "plan" | "answer" | "structure"; [key: string]: unknown };
@@ -162,20 +195,6 @@ export async function run(
   /** Undefined until layer 1 has decided. Reported with every later stage. */
   let surface: "text" | "view" | undefined;
 
-  const begin = (id: string, label: string): void => {
-    stages.push({ id, label });
-    onStage([...stages], surface);
-  };
-  const finish = (id: string, detail: string): void => {
-    const stage = stages.find((entry) => entry.id === id);
-    if (stage) stage.detail = detail;
-    onStage([...stages], surface);
-  };
-
-  /* ---------------------------------------------------- 1. what is being asked */
-
-  begin("plan", "Reading the question");
-
   /*
    * The pinned path (./pinned.ts).
    *
@@ -184,8 +203,32 @@ export async function run(
    * untouched — the composer still chooses the layout, the validator still gets to
    * reject it, and a pinned report that composed badly would fall back to prose exactly
    * like any other. That is the point of freezing here rather than at the spec.
+   *
+   * Resolved before the first stage is announced only because it is a pure lookup and
+   * `PACE` needs to know whether this run has any real latency in it to show.
    */
   const pinned = pinnedRun(query, client);
+
+  /** Whether the stages are being paced rather than timed. See `PACE`. */
+  const faked = Boolean(pinned);
+  const hold = (id: string, when: "before" | "after"): Promise<void> =>
+    faked ? sleep(PACE[id]?.[when] ?? 0) : Promise.resolve();
+
+  const begin = async (id: string, label: string): Promise<void> => {
+    stages.push({ id, label });
+    onStage([...stages], surface);
+    await hold(id, "before");
+  };
+  const finish = async (id: string, detail: string): Promise<void> => {
+    const stage = stages.find((entry) => entry.id === id);
+    if (stage) stage.detail = detail;
+    onStage([...stages], surface);
+    await hold(id, "after");
+  };
+
+  /* ---------------------------------------------------- 1. what is being asked */
+
+  await begin("plan", "Reading the question");
 
   let plan: IntentPlan;
   if (pinned) {
@@ -209,14 +252,14 @@ export async function run(
     }
   }
   surface = plan.surface;
-  finish("plan", `${plan.taskType.replace(/_/g, " ")} · ${plan.surface === "text" ? "a sentence" : "a view"}`);
+  await finish("plan", `${plan.taskType.replace(/_/g, " ")} · ${plan.surface === "text" ? "a sentence" : "a view"}`);
 
   /* -------------------------------------------------------------- 2. the data */
 
-  begin("data", "Gathering data");
+  await begin("data", "Gathering data");
   const bundle = pinned ? pinned.bundle : plan.dataRequests.length > 0 ? executePlan(plan) : emptyBundle();
   const keys = Object.keys(bundle.values);
-  finish(
+  await finish(
     "data",
     keys.length > 0
       ? `${keys.join(", ")}${bundle.failed.length > 0 ? ` · ${bundle.failed.length} unavailable` : ""}`
@@ -229,7 +272,7 @@ export async function run(
 
   /* ------------------------------------------------------------ 3a. the answer */
 
-  begin("answer", "Writing the answer");
+  await begin("answer", "Writing the answer");
   let answer = "";
   if (via === "model") {
     const written = await post({ stage: "answer", query, history, plan, values: bundle.values });
@@ -241,7 +284,7 @@ export async function run(
     }
   }
   if (!answer) answer = pinned ? pinned.answer : standInAnswer(plan, bundle);
-  finish("answer", `${answer.split(/\s+/).length} words`);
+  await finish("answer", `${answer.split(/\s+/).length} words`);
 
   const common: Common = { via, answer, plan, bundle, stages, notes };
 
@@ -253,13 +296,13 @@ export async function run(
    * and building one nobody wanted.
    */
   if (plan.surface === "text") {
-    finish("answer", `${answer.split(/\s+/).length} words · no layout needed`);
+    await finish("answer", `${answer.split(/\s+/).length} words · no layout needed`);
     return { kind: "text", ...common };
   }
 
   /* --------------------------------------------------------- 3b. what it means */
 
-  begin("structure", "Structuring the findings");
+  await begin("structure", "Structuring the findings");
   let report: SemanticReport | null = null;
   if (via === "model") {
     const structured = await post({ stage: "structure", query, plan, values: bundle.values, answer });
@@ -275,13 +318,13 @@ export async function run(
     }
   }
   if (!report) report = pinned ? pinned.report : standInReport(plan, bundle, answer);
-  finish("structure", `${report.sections.length} sections · ${report.sections.flatMap((s) => s.findings).length} findings`);
+  await finish("structure", `${report.sections.length} sections · ${report.sections.flatMap((s) => s.findings).length} findings`);
 
   /* --------------------------------------------- 4, 5, 7. the page, decided here */
 
-  begin("compose", "Choosing the layout");
+  await begin("compose", "Choosing the layout");
   const composed = composeView(report, plan, bundle);
-  finish(
+  await finish(
     "compose",
     `${composed.recipeId} · ${composed.ia.areas.length} areas${
       composed.unplaced.length > 0 ? ` · ${composed.unplaced.length} not placed` : ""
@@ -291,7 +334,7 @@ export async function run(
 
   /* --------------------------------------------------------- 8. is it any good */
 
-  begin("check", "Checking it");
+  await begin("check", "Checking it");
   let spec = composed.spec;
   let result = validate(spec, bundle);
 
@@ -329,7 +372,7 @@ export async function run(
   const outcome = outcomeOf(result, true);
   const errors = result.issues.filter((issue) => issue.severity === "error");
   const fixed = repaired ? "repaired · " : "";
-  finish(
+  await finish(
     "check",
     outcome === "render"
       ? result.issues.length > 0

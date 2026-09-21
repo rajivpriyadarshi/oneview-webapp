@@ -28,7 +28,7 @@ import { CONTAINER_COMPONENTS, isLayoutId } from "./containers";
 import { LEAF_COMPONENTS, isLeafId, type Provenance, type Resolved } from "./leaves";
 import { measureGroup, type Finding } from "./findings";
 import { REGISTRY, specOf } from "./registry";
-import { headlineFigures, type SemanticReport } from "./semantic";
+import { headlineFigures, openingSection, type SemanticReport } from "./semantic";
 import { childrenOf, type UINode, type UISpec } from "./spec";
 import { INK, LABEL } from "./chrome";
 import { TYPE } from "./ds";
@@ -55,6 +55,17 @@ function claimFinding(
   claimed: Set<string>,
 ): Finding | undefined {
   if (!report || !node.sectionId) return undefined;
+  /*
+   * A container renders children, never a claim.
+   *
+   * It matters the moment a container carries a `sectionId`, which `Section` now does so
+   * the renderer can read the section's takeaway. Without this line the section itself
+   * claimed one of its own findings on the way past, and the leaf underneath — finding
+   * nothing unclaimed left — fell back to the section's first finding and printed the net
+   * worth under a "Total assets" label. The claim mechanism is for leaves; a container has
+   * no way to render a finding even if it were handed one.
+   */
+  if (isLayoutId(node.component)) return undefined;
   const section = report.sections.find((entry) => entry.id === node.sectionId);
   if (!section) return undefined;
 
@@ -81,6 +92,14 @@ function claimFinding(
  */
 const reportText = (node: UINode, report: SemanticReport | undefined): string | undefined => {
   const source = node.props.source;
+  /*
+   * The one line worth pulling out beside the summary.
+   *
+   * Resolved rather than composed: the takeaway belongs to a section, and which section
+   * is the primary one is a fact the analysis stated in `importance`. The composer knows
+   * the node exists; it does not know, and cannot write, what the node says.
+   */
+  if (source === "takeaway") return report ? openingSection(report)?.takeaway : undefined;
   if (source !== "summary" && source !== "narrative") return undefined;
   return report?.[source];
 };
@@ -198,7 +217,7 @@ function Unsupported({ id }: { id: string }) {
 
 /* ---------------------------------------------------------------- dispatch */
 
-type Ctx = { resolved: Map<string, Resolved>; docTitle?: string };
+type Ctx = { resolved: Map<string, Resolved>; docTitle?: string; report?: SemanticReport };
 
 function NodeView({ node, ctx, index }: { node: UINode; ctx: Ctx; index?: number }) {
   if (!(node.component in REGISTRY)) return <Unsupported id={String(node.component)} />;
@@ -245,7 +264,15 @@ function Dispatch({ node, ctx }: { node: UINode; ctx: Ctx }) {
 
   if (isLayoutId(node.component)) {
     const container = CONTAINER_COMPONENTS[node.component];
-    return <>{container({ node, props: node.props, children: kids, slots, docTitle: ctx.docTitle })}</>;
+    /* The section's own line, read from the report the node points at. `props.takeaway` is
+       the composer saying "show it"; this is the only place that knows what it says. */
+    const takeaway =
+      node.props.takeaway === true && node.sectionId
+        ? ctx.report?.sections.find((section) => section.id === node.sectionId)?.takeaway
+        : undefined;
+    return (
+      <>{container({ node, props: node.props, children: kids, slots, docTitle: ctx.docTitle, takeaway })}</>
+    );
   }
 
   if (isLeafId(node.component)) {
@@ -277,7 +304,7 @@ export function SpecRenderer({
   // Resolution is keyed on the three inputs, so a patch to the spec re-resolves and
   // a re-render for any other reason does not.
   const resolved = React.useMemo(() => resolveAll(spec, report, bundle), [spec, report, bundle]);
-  const ctx: Ctx = { resolved, docTitle: report?.title };
+  const ctx: Ctx = { resolved, docTitle: report?.title, report };
   const count = revealed ?? spec.root.length;
 
   return (

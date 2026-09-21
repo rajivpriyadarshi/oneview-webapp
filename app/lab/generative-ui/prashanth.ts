@@ -186,9 +186,13 @@ export const PRASHANTH_BUNDLE: DataBundle = {
       { name: "ATO tax payable — FY2025", value: 0.42 },
       { name: "Credit cards", value: 0.04 },
     ],
+    /* `display` is not decoration. A row that carries only `value: 1.22` renders as
+       "1.22", and 1.22 of what is a question the page cannot answer — the unit lives in
+       layer 2 or nowhere. See `formatterFor` in ./leaves.tsx for the fallback that
+       exists only because tools do not always say. */
     "liquidity.available": [
-      { label: "Cash at four banks", value: 1.22 },
-      { label: "US Treasury bills", value: 1.42 },
+      { label: "Cash at four banks", value: 1.22, display: "US$1.2m" },
+      { label: "US Treasury bills", value: 1.42, display: "US$1.4m" },
     ],
     "commit.privatecredit": {
       amount: "US$500k",
@@ -292,6 +296,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "summary",
       question: "What is the balance sheet worth?",
       importance: "primary",
+      takeaway: "Up on the quarter, but the rise is a revaluation rather than a return.",
       dataKeys: ["networth.total", "networth.series"],
       findings: [
         {
@@ -343,6 +348,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "performance",
       question: "How is the listed portfolio performing?",
       importance: "secondary",
+      takeaway: "Ahead of the benchmark, on figures that are estimated rather than recorded.",
       dataKeys: ["perf.indexed"],
       findings: [
         {
@@ -425,6 +431,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "allocation",
       question: "How is the balance sheet made up?",
       importance: "secondary",
+      takeaway: "Six asset classes, and the unlisted book drove most of the quarter's gain.",
       dataKeys: ["alloc.class", "private.marks", "digital.holdings"],
       findings: [
         {
@@ -477,6 +484,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "comparison",
       question: "Where is the listed portfolio, and what is in it?",
       importance: "secondary",
+      takeaway: "Five instruments hold the entire listed book.",
       groups: ["By position"],
       dataKeys: ["holdings.positions"],
       findings: [
@@ -538,6 +546,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "comparison",
       question: "Where is the listed portfolio, and what is in it?",
       importance: "secondary",
+      takeaway: "The same five instruments at four banks — one portfolio in four places.",
       groups: ["By custodian"],
       dataKeys: ["custody.securities"],
       findings: [
@@ -575,6 +584,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "risk",
       question: "Where is the portfolio concentrated?",
       importance: "secondary",
+      takeaway: "Three names dominate the listed book, and one of them is held four times over.",
       dataKeys: ["risk.concentration", "holdings.positions"],
       findings: [
         {
@@ -618,6 +628,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "liquidity",
       question: "What is borrowed, and can the September call be funded?",
       importance: "secondary",
+      takeaway: "Borrowing is modest; the September call is not covered by cash alone.",
       dataKeys: ["liquidity.available", "debt.facilities", "commit.privatecredit"],
       findings: [
         {
@@ -709,6 +720,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "actions",
       question: "What needs doing?",
       importance: "supporting",
+      takeaway: "Four open items, one of them due this month.",
       dataKeys: ["actions.open"],
       findings: [
         {
@@ -739,6 +751,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
       semanticType: "evidence",
       question: "Where do these figures come from?",
       importance: "supporting",
+      takeaway: "Balance-sheet figures are recorded; returns are estimated.",
       dataKeys: ["evidence.sources"],
       findings: [
         {

@@ -38,6 +38,19 @@ export const TYPE = {
   docSubtitle: "font-satoshi text-[16px] leading-[1.5] text-black/45",
 
   /**
+   * A numbered section's name — "2. What changed?".
+   *
+   * Serif, and the second-largest thing on the page. The earlier scale had one heading
+   * role for both a section and a block inside it, which is why the report scanned as a
+   * long undifferentiated list: nine headings at 15px semibold, each equally likely to be
+   * the next thing you should read. A reader needs to see the spine of the document from
+   * across the room and the joints within a section up close, and those are two roles.
+   */
+  areaTitle: "font-butler text-[23px] leading-[1.25] tracking-[-0.01em] text-[#171615]",
+  /** One line under a section heading, saying what the section is about. */
+  areaCaption: "font-satoshi text-[14px] leading-[1.5] text-black/45",
+
+  /**
    * A block's name — "Executive summary", "Portfolio allocation".
    *
    * Semibold at body size rather than large: a heading earns attention by weight and
@@ -99,6 +112,27 @@ export const TONE = {
 
 export type ToneName = keyof typeof TONE;
 
+/**
+ * The three severities, as a word and an ink.
+ *
+ * Here rather than in a component because severity is a *semantic* field — layer 3 sets
+ * it — and how loudly the document says each level has to be one decision. The old
+ * treatment filled a rounded box with peach at every level, which made an informational
+ * note look like an emergency and gave the page two large tinted rectangles competing
+ * with the prose between them. An ink and a rule are enough: the reader's eye finds the
+ * accent, and the word says which kind it is.
+ *
+ * `word` is a rendering of the enum, not new content. Nothing here can change what was
+ * flagged or how serious the analysis said it was.
+ */
+export const SEVERITY = {
+  info: { word: "Note", hex: "#3F5B6B" },
+  warn: { word: "Needs attention", hex: "#9A6B15" },
+  critical: { word: "Critical", hex: "#A03A2B" },
+} as const;
+
+export type SeverityName = keyof typeof SEVERITY;
+
 /** The emphasised bar / series colour, and the grey everything else sits in. */
 export const CHART = {
   /** One series is the subject. It gets the ink. */
@@ -141,6 +175,17 @@ export const RHYTHM = {
 export const SURFACE = {
   /** A metric tile. The only routinely boxed thing in the document. */
   tile: "rounded-[10px] border border-black/[0.09] bg-white px-[16px] py-[14px]",
+  /**
+   * A chart, a table, a schedule: something with its own internal geometry.
+   *
+   * The earlier version of this document had no panel at all, on the reasoning that a
+   * page of boxes has no hierarchy. True, and it overcorrected: a chart *is* a bounded
+   * object — it has axes, a plot area and a legend, and letting that bleed into the
+   * page's own margins makes it read as a stain rather than a figure. So a panel is for
+   * things with edges of their own, and prose, callouts and headings stay flat. What the
+   * page must never become is a panel per finding.
+   */
+  panel: "rounded-[12px] border border-black/[0.08] bg-white px-[18px] py-[16px]",
   /** A callout that has to be noticed — a flag, a recommendation. Tinted, not boxed. */
   inset: "rounded-[10px] border border-black/[0.07] bg-[#FBFAF8] px-[16px] py-[14px]",
   /** One hairline. Used for table rows and under a section title. */

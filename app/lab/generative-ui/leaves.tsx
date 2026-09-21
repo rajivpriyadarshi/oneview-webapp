@@ -24,11 +24,22 @@
  * axes. The prop cannot change what the number is.
  */
 
+import { Sparkles } from "lucide-react";
 import type React from "react";
-import { LineSvg, RENDERER_COMPONENTS } from "../dynamic-ui/renderers";
-import { Block, Card, DeltaChip, Empty, INK, LABEL, Rows, Tile } from "./chrome";
-import { CHART, RHYTHM, SURFACE, TYPE, pill, toneOf } from "./ds";
-import { isPlottable, type Finding } from "./findings";
+import { RENDERER_COMPONENTS } from "../dynamic-ui/renderers";
+import {
+  ChecklistBlock,
+  FlagBlock,
+  NarrativeBlock,
+  RecommendationBlock,
+  RequirementBlock,
+  TransitionBlock,
+  emphasise,
+} from "./blocks";
+import { BarsFigure, DonutFigure, LineFigure, SparkFigure, barsLegend, share } from "./charts";
+import { Block, Card, DeltaChip, Empty, Figure, INK, LABEL, Rows, Tile } from "./chrome";
+import { RHYTHM, SURFACE, TONE, TYPE, pill, toneOf } from "./ds";
+import { isPlottable, type Delta, type Finding, type Series } from "./findings";
 import type { ComponentId } from "./registry";
 import type { UINode } from "./spec";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -128,15 +139,47 @@ const humanise = (raw: string): string => {
  * every figure the way `MetricFinding.value` already arrives pre-formatted. Until the
  * tools do that, a node bound directly to a field lands here.
  */
-const figure = (value: unknown, hint = ""): string => {
-  if (typeof value !== "number") return text(value);
-  if (/pct|percent/i.test(hint)) return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
-  if (/bps/i.test(hint)) return `${group(value)} bps`;
-  if (/(^|[^a-z])m$|millions?/i.test(hint)) {
-    return Math.abs(value) >= 1 ? `S$${value.toFixed(1)}m` : `S$${Math.round(value * 1000)}k`;
+/**
+ * How a raw number reads, given whatever names it.
+ *
+ * `quarterChangePct: 3.8` rendered as "3.8" is not a smaller version of the truth, it is a
+ * different number — 3.8 what? The unit is already stated, in the field name or the
+ * measure's label, so reading it there is translation rather than invention: no unit in
+ * the name, no unit on the page.
+ *
+ * The currency comes from the hint too. It used to be hardcoded to S$, which on a book
+ * reported in US dollars printed a figure that was wrong by the exchange rate and looked
+ * entirely plausible — the worst kind of wrong a report can be.
+ *
+ * Stated limit: the right home for this is layer 2, emitting `{value, display}` for every
+ * figure the way `MetricFinding.value` already arrives pre-formatted. Until the tools do
+ * that, a node bound directly to a field lands here.
+ */
+const formatterFor = (hint: string): ((value: number) => string) => {
+  const currency = /US\$/i.test(hint)
+    ? "US$"
+    : /S\$/.test(hint)
+      ? "S$"
+      : /€|\bEUR\b/.test(hint)
+        ? "€"
+        : /£|\bGBP\b/.test(hint)
+          ? "£"
+          : "";
+  if (/%|pct|percent|share|weight/i.test(hint)) {
+    return (value) => (Math.abs(value) <= 1 ? share(value) : `${value > 0 ? "+" : ""}${value.toFixed(1)}%`);
   }
-  return group(value);
+  if (/bps/i.test(hint)) return (value) => `${group(value)} bps`;
+  if (/\$m|\bm\b|millions?|value|amount|cost|gain|market|worth|cash|balance/i.test(hint)) {
+    return (value) =>
+      Math.abs(value) >= 1 || value === 0
+        ? `${currency}${value.toFixed(1)}m`
+        : `${currency}${Math.round(value * 1000)}k`;
+  }
+  return (value) => group(Number(value.toFixed(2)));
 };
+
+const figure = (value: unknown, hint = ""): string =>
+  typeof value === "number" ? formatterFor(hint)(value) : text(value);
 
 const text = (value: unknown): string =>
   typeof value === "string"
@@ -203,38 +246,60 @@ function Prose({ props, finding, value }: Resolved) {
 
   const variant = str(props.variant) ?? "body";
   const heading = str(props.heading) ?? (finding && "heading" in finding ? str(finding.heading) : undefined);
-  const body = variant === "lead" ? TYPE.bodyLead : TYPE.body;
+  const body = variant === "lead" || variant === "readout" ? TYPE.bodyLead : TYPE.body;
+
+  const paragraphs = passage.split(/\n{2,}/).map((para, index) => (
+    <p key={index} className={`${body} ${index === 0 ? "" : "mt-[12px]"}`}>
+      {emphasise(para)}
+    </p>
+  ));
+
+  /*
+   * The opening statement, washed and marked — the one passage on the page that is framed.
+   *
+   * It earns the frame because it is the only thing a reader who reads nothing else will
+   * read, and because the frame is what says "this is the answer" rather than "this is the
+   * first section". Everything below it is deliberately flat, so one washed panel reads as
+   * emphasis; two would read as a dashboard again.
+   *
+   * The tone is `TONE.positive` because a readout is a conclusion, not a warning, and the
+   * severity palette is reserved for things that need attention. No hue is chosen here.
+   */
+  if (variant === "readout") {
+    const hex = TONE.positive.hex;
+    return (
+      <div
+        className="flex gap-[14px] rounded-[12px] border p-[20px]"
+        style={{ background: `${hex}0A`, borderColor: `${hex}26` }}
+      >
+        <span
+          className="mt-[3px] grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full"
+          style={{ background: `${hex}1F`, color: hex }}
+          aria-hidden
+        >
+          <Sparkles className="h-[15px] w-[15px]" strokeWidth={2} />
+        </span>
+        <div className="min-w-0 flex-1">
+          {heading ? (
+            <div
+              className="mb-[8px] font-satoshi text-[10px] font-bold uppercase tracking-[0.11em]"
+              style={{ color: hex }}
+            >
+              {heading}
+            </div>
+          ) : null}
+          {paragraphs}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Block title={heading}>
-      <div className={variant === "note" ? SURFACE.inset : undefined}>
-        {passage.split(/\n{2,}/).map((para, index) => (
-          <p key={index} className={`${body} ${index === 0 ? "" : "mt-[12px]"}`}>
-            {emphasise(para)}
-          </p>
-        ))}
-      </div>
+      <div className={variant === "note" ? SURFACE.inset : undefined}>{paragraphs}</div>
     </Block>
   );
 }
-
-/**
- * `**bold**` → `<strong>`, and nothing else.
- *
- * Split rather than parsed: a regex with a capture group on an alternating split gives
- * the delimited runs at odd indices, which is enough for one inline mark and cannot
- * produce malformed output the way a partial markdown parser can.
- */
-const emphasise = (raw: string): React.ReactNode[] =>
-  raw.split(/\*\*(.+?)\*\*/g).map((part, index) =>
-    index % 2 === 1 ? (
-      <strong key={index} className="font-semibold text-[#171615]">
-        {part}
-      </strong>
-    ) : (
-      part
-    ),
-  );
 
 /**
  * Several short points, as bullets.
@@ -295,7 +360,7 @@ function BulletSummary({ props, value, finding, node }: Resolved) {
  * number. `secondary` becomes the caption under the value, which is where "vs. your
  * 35–45% range" belongs: attached to the figure it qualifies.
  */
-function MetricStrip({ props, value, finding, group }: Resolved) {
+function MetricStrip({ node, props, value, finding, group }: Resolved) {
   /*
    * The report's own figures, when this is the headline strip.
    *
@@ -330,7 +395,7 @@ function MetricStrip({ props, value, finding, group }: Resolved) {
 
   const items = Array.isArray(value) ? value : [];
   if (items.length === 0) {
-    return finding ? draw("StatTile", finding) : <Empty what="No figures for this strip." />;
+    return finding ? metric({ node, props, finding, value }) : <Empty what="No figures for this strip." />;
   }
 
   const shown = items.slice(0, 4);
@@ -399,7 +464,7 @@ function DataTable({ props, value, finding, node }: Resolved) {
   const isDelta = (key: string) => /change|delta|diff|alpha|contrib/i.test(key);
 
   return (
-    <Block title={str(props.label)} caption={str(props.caption)}>
+    <Block title={str(props.label)} caption={str(props.caption)} boxed>
       <Table>
         <TableHeader>
           <TableRow className={`border-b ${SURFACE.hairline} hover:bg-transparent`}>
@@ -482,7 +547,7 @@ function ComparisonTable({ props, group, finding, node, value }: Resolved) {
     measure.entities.some((entity) => entity.value < 0);
 
   return (
-    <Block title={str(props.label)} caption={str(props.caption)}>
+    <Block title={str(props.label)} caption={str(props.caption)} boxed>
       <Table>
         <TableHeader>
           <TableRow className={`border-b ${SURFACE.hairline} hover:bg-transparent`}>
@@ -532,105 +597,100 @@ function ComparisonTable({ props, group, finding, node, value }: Resolved) {
   );
 }
 
-/* --------------------------------------------------- new: flat document bar chart */
+/* ----------------------------------------------------------- charted findings */
 
 /**
- * Bars with their values written on them, one subject and the rest as context.
+ * The parts a chart draws, from whichever of the three sources this node has.
  *
- * Also a replacement rather than a reuse, for a reason that is about meaning and not
- * taste: prototype 1's BarChart colours every bar from the palette, which tells the
- * reader that the categories differ in kind. In an exposure or allocation view they do
- * not — one of them is *the point* and the others exist to show it is large. So one bar
- * takes the ink and the rest go grey, and which one is chosen comes from the finding's
- * own emphasis, never from a prop.
+ * Shared by the bar, donut and ranked-list paths so they cannot disagree about what the
+ * finding said. A composition's values are *shares* — 0.29, not 29 — which the schema
+ * states and every chart has to honour; formatting them with a generic percentage helper
+ * printed "+0.3%" for a 29% holding, which is not a rounder version of the truth but a
+ * different number, and the one case on the page where being out by two orders of
+ * magnitude looks plausible. Shares carry no `display`, so they are formatted here, once.
+ */
+type Part = { label: string; value: number; display?: string; delta?: Delta };
+
+const partsOf = (finding: Finding | undefined, value: unknown): { parts: Part[]; shares: boolean } => {
+  if (finding?.kind === "composition") {
+    return {
+      shares: true,
+      parts: finding.parts.map((part) => ({
+        label: part.label,
+        value: part.value,
+        display: share(part.value),
+        delta: part.delta,
+      })),
+    };
+  }
+  if (finding?.kind === "comparison") {
+    return {
+      shares: false,
+      parts: finding.entities.map((entity) => ({
+        label: entity.name,
+        value: entity.value,
+        display: entity.display,
+      })),
+    };
+  }
+  return {
+    shares: false,
+    parts: (Array.isArray(value) ? value : [])
+      .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null)
+      .map((entry) => ({
+        label: text(entry.label ?? entry.name),
+        value: typeof entry.value === "number" ? entry.value : 0,
+        display: str(entry.display),
+      })),
+  };
+};
+
+/** What the numbers in a chart are measured in, read off whatever named them. */
+const chartFormat = (finding: Finding | undefined, props: Record<string, unknown>, node: UINode) =>
+  formatterFor(
+    [
+      finding && "measure" in finding ? finding.measure : undefined,
+      finding && "label" in finding ? finding.label : undefined,
+      str(props.label),
+      node.dataKey,
+    ]
+      .filter(Boolean)
+      .join(" "),
+  );
+
+/**
+ * Named quantities as horizontal bars — see `BarsFigure` in ./charts.tsx for why
+ * horizontal and why one bar takes the ink.
  *
- * No axis and no gridlines: every value is printed above its bar, which is strictly
- * more precise than a reader interpolating against a scale.
+ * The legend is only drawn when the emphasis means something, which is when there is more
+ * than one bar to be emphasised against.
  */
 function BarChartFlat({ props, finding, value, node }: Resolved) {
-  type Part = { label: string; value: number; display?: string };
-  const parts: Part[] =
-    finding?.kind === "composition"
-      ? /*
-         * A composition's values are *shares* — 0.29, not 29 — which the schema states
-         * and this chart has to honour. Formatting them with the generic percentage
-         * helper printed "+0.3%" for a 29% holding: not a rounder version of the truth
-         * but a different number, and the one case on the page where being out by two
-         * orders of magnitude looks plausible. Parts carry no `display`, so the share
-         * is formatted here, once.
-         */
-        finding.parts.map((part) => ({
-          label: part.label,
-          value: part.value,
-          // One decimal only where it says something: "8%", not "8.0%".
-          display: `${Number((part.value * 100).toFixed(1))}%`,
-        }))
-      : finding?.kind === "comparison"
-        ? finding.entities.map((entity) => ({ label: entity.name, value: entity.value, display: entity.display }))
-        : (Array.isArray(value) ? value : [])
-            .filter((entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null)
-            .map((entry) => ({
-              label: text(entry.label ?? entry.name),
-              value: typeof entry.value === "number" ? entry.value : 0,
-              display: str(entry.display),
-            }));
-
+  const { parts, shares } = partsOf(finding, value);
   if (parts.length === 0) return escape({ props, finding, value, node }, "Nothing to chart.");
-
-  const peak = Math.max(...parts.map((part) => Math.abs(part.value)), 1);
-  /*
-   * The subject is the largest share — what a concentration or allocation finding is
-   * about — derived rather than passed, so no prop can point the emphasis elsewhere.
-   *
-   * Residual buckets are excluded from the running. "Other" is not a holding; it is
-   * everything the analysis chose not to name, and giving it the ink tells the reader
-   * the report is about the part it declined to break out.
-   */
-  const named = parts.filter((part) => !/^(others?|misc|remaining|unclassified)\b/i.test(part.label));
-  const ranked = named.length > 0 ? named : parts;
-  const subject = ranked.reduce((best, part) => (Math.abs(part.value) > Math.abs(best.value) ? part : best), ranked[0]);
 
   return (
     <Block
       title={str(props.label)}
-      aside={
-        <div className="flex items-center gap-[14px]">
-          {[
-            { name: str(props.subjectLabel) ?? "Current", hex: CHART.primary },
-            { name: str(props.contextLabel) ?? "Others", hex: CHART.context },
-          ].map((key) => (
-            <span key={key.name} className={`${TYPE.caption} inline-flex items-center gap-[6px]`}>
-              <span className="h-[8px] w-[8px] rounded-full" style={{ background: key.hex }} />
-              {key.name}
-            </span>
-          ))}
-        </div>
-      }
+      aside={parts.length > 1 ? barsLegend(str(props.subjectLabel) ?? "Largest", str(props.contextLabel) ?? "Rest") : undefined}
+      boxed
     >
-      <div className="flex items-end gap-[8px]" style={{ height: 150 }}>
-        {parts.slice(0, 9).map((part) => {
-          const on = part.label === subject.label;
-          return (
-            <div key={part.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-[6px]">
-              <div className={`${TYPE.caption} tabular-nums ${on ? "font-medium text-[#171615]" : ""}`}>
-                {part.display ?? figure(part.value, "pct")}
-              </div>
-              <div
-                className="w-full rounded-t-[4px]"
-                style={{
-                  // A floor of 3px, so a 0.4% slice is still visibly a bar rather than
-                  // a missing one. It distorts the ramp; a bar you cannot see is worse.
-                  height: `${Math.max(3, (Math.abs(part.value) / peak) * 104)}px`,
-                  background: on ? CHART.primary : CHART.context,
-                }}
-              />
-              <div className={`${TYPE.caption} w-full truncate text-center`} title={part.label}>
-                {part.label}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <BarsFigure
+        parts={parts}
+        format={shares ? share : chartFormat(finding, props, node)}
+        total={shares ? "Shares of total assets." : undefined}
+      />
+    </Block>
+  );
+}
+
+/** Parts of a whole, as a ring with the whole in the middle. */
+function AllocationDonut({ props, finding, value, node }: Resolved) {
+  const { parts, shares } = partsOf(finding, value);
+  if (parts.length === 0) return escape({ props, finding, value, node }, "No composition to draw.");
+  return (
+    <Block title={str(props.label) ?? (finding && "label" in finding ? finding.label : undefined)} boxed>
+      <DonutFigure parts={parts} format={shares ? share : chartFormat(finding, props, node)} />
     </Block>
   );
 }
@@ -648,22 +708,30 @@ function BarChartFlat({ props, finding, value, node }: Resolved) {
 function Comparison({ props, finding, node }: Resolved) {
   if (finding?.kind !== "comparison") return escape({ props, finding, node }, "Nothing to compare.");
 
-  const measures = Array.isArray(props.measures) ? props.measures.filter((entry) => typeof entry === "string") : [];
+  /*
+   * The measure is said once, above the row, and never again.
+   *
+   * Every entity in a comparison is measured on the *same* measure — that is what makes
+   * it a comparison — so a caption under each tile repeats one phrase as many times as
+   * there are options, and the composer's `measures` prop names that same measure again
+   * on top. "Also weighed: Assets held", then "Assets held" three times. What the figures
+   * are is a property of the set, so it is stated where the set is named; `measures` only
+   * earns a line when it names something the measure does not.
+   */
+  const shown = humanise(finding.measure);
+  const also = (Array.isArray(props.measures) ? props.measures.filter((entry) => typeof entry === "string") : [])
+    .map(humanise)
+    .filter((name) => name.toLowerCase() !== shown.toLowerCase());
   const rows = props.variant === "rows";
 
   return (
-    <Block title={finding.label} caption={measures.length > 0 ? `Also weighed: ${measures.map(humanise).join(" · ")}` : undefined}>
+    <Block title={finding.label} caption={[shown, ...also].join(" · ")}>
       <div
         className={rows ? "flex flex-col gap-[10px]" : "grid gap-[10px]"}
         style={rows ? undefined : { gridTemplateColumns: `repeat(${finding.entities.length}, minmax(0, 1fr))` }}
       >
         {finding.entities.map((entity) => (
-          <Tile
-            key={entity.name}
-            label={entity.name}
-            value={entity.display ?? group(entity.value)}
-            caption={humanise(finding.measure)}
-          />
+          <Tile key={entity.name} label={entity.name} value={entity.display ?? group(entity.value)} />
         ))}
       </div>
     </Block>
@@ -682,26 +750,73 @@ function KeyValueList({ props, value, finding, node }: Resolved) {
   );
 }
 
-function Timeline({ props, value, finding, node }: Resolved) {
-  const items = Array.isArray(value) ? value : [];
-  if (items.length === 0) return escape({ props, value, finding, node }, "No dated events.");
+/**
+ * Dated events, as a schedule: when, what, how much.
+ *
+ * Two things this used to get wrong, and both are the same mistake — trusting the bound
+ * key further than it deserved.
+ *
+ * A timeline is chosen from the *finding* (a requirement is something due), but the key it
+ * binds to is whichever of the section's `dataKeys` resolved first. On the funding section
+ * that is the liquidity list: undated rows, drawn as if they were a calendar, with their
+ * bare values in the description column — while the requirement itself, the amount and the
+ * deadline that make it urgent, never reached the page at all. So a row with no date is not
+ * a timeline entry, and a key with no dated rows means the finding gets drawn instead.
+ *
+ * And the amount belongs in its own column. Reading `display ?? value` into the description
+ * slot printed "S$2.4m" where the name of the commitment should have been, so a five-line
+ * calendar said five dates and five figures and never once said what was being paid for.
+ */
+function Timeline(input: Resolved) {
+  const { props, value, finding, node } = input;
+  const rows = (Array.isArray(value) ? value : []).filter(
+    (entry): entry is Record<string, unknown> => typeof entry === "object" && entry !== null,
+  );
+  const dated = rows.filter((entry) => str(entry.date) ?? str(entry.when) ?? str(entry.due));
+  if (dated.length === 0) return finding ? insight(input) : escape(input, "No dated events.");
+
+  const hint = str(props.label) ?? node.dataKey ?? "";
+  /* The claimed finding is a requirement and the schedule is what it is due within, so
+     its note belongs above the schedule rather than nowhere — which is where it went
+     when the rows came from the bundle and the finding was only used to pick the form. */
+  const caption = finding?.kind === "requirement" ? finding.note : undefined;
 
   return (
-    <Block title={str(props.label)}>
-      <ol className="flex flex-col">
-        {items.map((item, index) => {
-          const entry = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
+    <Block title={str(props.label)} caption={caption} boxed>
+      {/* A rail, not a ruled list.
+          Five hairlined rows say "five facts"; five dots on a line say "five things in an
+          order, and this one is first" — which is the whole reason a schedule is drawn
+          rather than listed. The rail is one absolutely-positioned line behind the dots so
+          the rows stay in normal flow and a long description still wraps under itself. */}
+      <ol className="relative flex flex-col">
+        <span className="absolute top-[14px] bottom-[14px] left-[4px] w-[1px] bg-black/[0.12]" aria-hidden />
+        {dated.map((entry, index) => {
+          const when = str(entry.date) ?? str(entry.when) ?? str(entry.due) ?? "";
+          const what = str(entry.text) ?? str(entry.detail) ?? str(entry.name) ?? str(entry.label);
+          const amount =
+            str(entry.display) ?? (typeof entry.value === "number" ? figure(entry.value, hint) : undefined);
+          /* A rendering of the field, not a judgement added to it: the analysis recorded
+             how firm each date is, and a calendar that hides that reads as certain. */
+          const firmness = str(entry.confidence);
+          /* The first dot is filled because the first date is the one a decision is owed
+             on. Position, not severity — nothing here reads the palette. */
+          const next = index === 0;
           return (
-            <li
-              key={text(entry.label ?? entry.date ?? index)}
-              className={`flex gap-[14px] border-b ${SURFACE.hairline} py-[11px] last:border-b-0`}
-            >
-              <div className={`${TYPE.label} w-[96px] shrink-0 tabular-nums`}>
-                {text(entry.date ?? entry.label ?? entry.when)}
+            <li key={`${when}:${index}`} className="relative flex gap-[16px] py-[9px] pl-[20px]">
+              <span
+                className={`absolute top-[15px] left-0 h-[9px] w-[9px] rounded-full border-[1.5px] ${
+                  next ? "border-[#171615] bg-[#171615]" : "border-black/25 bg-white"
+                }`}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <div className={`${TYPE.label} tabular-nums`}>{when}</div>
+                <div className={`${TYPE.cell} mt-[3px] font-medium`}>{what ?? "—"}</div>
+                {firmness && firmness !== "high" ? (
+                  <div className={`${TYPE.caption} mt-[2px]`}>{firmness} confidence on the date</div>
+                ) : null}
               </div>
-              <div className={`${TYPE.cell} min-w-0`}>
-                {text(entry.text ?? entry.detail ?? entry.display ?? entry.value)}
-              </div>
+              {amount ? <div className={`${TYPE.cell} shrink-0 tabular-nums`}>{amount}</div> : null}
             </li>
           );
         })}
@@ -801,7 +916,7 @@ function ExposureHeatmap({ props, value, finding, node }: Resolved) {
   const peak = Math.max(...cells.map((cell) => Math.abs(cell.value)), 1);
 
   return (
-    <Block title={str(props.label)}>
+    <Block title={str(props.label)} boxed>
       <div className="grid gap-[3px]" style={{ gridTemplateColumns: `auto repeat(${cols.length}, minmax(0, 1fr))` }}>
         <div />
         {cols.map((col) => (
@@ -850,10 +965,21 @@ function ExposureHeatmap({ props, value, finding, node }: Resolved) {
  */
 const metric: Leaf = ({ props, finding, value, node }) => {
   const large = props.variant === "hero" || props.size === "lg";
+  /*
+   * A box only where a box means something.
+   *
+   * `SURFACE.tile` is for a figure being scanned against its peers, and a figure on its
+   * own inside a section has no peers — so one bordered card sitting alone under a
+   * heading, mid-column, reads as something left over from a row that is not there. That
+   * is exactly what "Instruments in the listed book / 5" looked like. The headline strip
+   * still boxes, because there the set is the point; the lead figure of a section still
+   * boxes, because it is the section's plaque. Everything else is a figure in the flow.
+   */
+  const Shape = large ? Tile : Figure;
 
   if (finding?.kind === "metric") {
     return (
-      <Tile
+      <Shape
         label={humanise(finding.label)}
         value={finding.value}
         caption={finding.basis}
@@ -861,7 +987,7 @@ const metric: Leaf = ({ props, finding, value, node }) => {
         size={large ? "lg" : "sm"}
         spark={
           large && isPlottable(finding.series) && finding.series ? (
-            <LineSvg series={finding.series} color={CHART.primary} height={64} />
+            <SparkFigure series={finding.series} height={48} />
           ) : undefined
         }
       />
@@ -873,7 +999,7 @@ const metric: Leaf = ({ props, finding, value, node }) => {
   const entry = typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
   if (!entry) return escape({ props, finding, value, node }, "No figure to show.");
   return (
-    <Tile
+    <Shape
       label={humanise(str(props.label) ?? text(entry.label ?? node.dataKey?.split(".").at(-1)))}
       value={str(entry.display) ?? figure(entry.value, text(props.label ?? entry.label ?? node.dataKey))}
       caption={str(entry.secondary) ?? str(entry.detail)}
@@ -896,38 +1022,69 @@ const metric: Leaf = ({ props, finding, value, node }) => {
  * single min/max scale. Separately-scaled lines cannot be compared, and drawing them
  * side by side implies they can.
  */
+/**
+ * A line chart, from whichever findings carry a history.
+ *
+ * Two or more entities with their own series go on *one* shared scale, which is the piece
+ * of knowledge worth keeping from the earlier renderers: separately scaled lines drawn
+ * side by side tell the reader they can be compared when they cannot. The interactive
+ * readout is what makes the chart worth having at all — see ./charts.tsx.
+ */
 const line: Leaf = ({ props, finding, node, value }) => {
   if (!finding) return escape({ props, finding, node, value }, "No series to draw.");
-  if (bool(props.sparkline)) return draw("Sparkline", finding);
-  if (finding.kind === "comparison") {
-    return draw(finding.entities.length === 2 ? "DualLineChart" : "MultiLineChart", finding);
-  }
-  if (finding.kind === "trend" || finding.kind === "metric") return draw("LineChart", finding);
-  return escape({ props, finding, node, value }, "No series to draw.");
+
+  const series: Series[] =
+    finding.kind === "comparison"
+      ? finding.entities.filter((entity) => isPlottable(entity.series)).map((entity) => entity.series as Series)
+      : (finding.kind === "trend" || finding.kind === "metric") && isPlottable(finding.series)
+        ? [finding.series as Series]
+        : [];
+  if (series.length === 0) return escape({ props, finding, node, value }, "No series to draw.");
+
+  if (bool(props.sparkline)) return <SparkFigure series={series[0]} />;
+
+  return (
+    <Block title={str(props.label) ?? ("label" in finding ? finding.label : undefined)} boxed>
+      <LineFigure series={series} format={chartFormat(finding, props, node)} />
+    </Block>
+  );
 };
 
-const bars: Leaf = ({ props, finding, node, value }) => {
-  if (!finding) return escape({ props, finding, node, value }, "Nothing to chart.");
-  if (finding.kind === "composition" && bool(props.stacked)) return draw("StackedBar", finding);
-  if (finding.kind === "comparison" || finding.kind === "composition") return draw("BarChart", finding);
-  return escape({ props, finding, node, value }, "Nothing to chart.");
+/**
+ * A conclusion, rendered as whatever kind of conclusion it is.
+ *
+ * One registry id over three finding kinds, because to the composer they are one thing —
+ * "the point of this section" — and to a reader they are not: a transition wants its two
+ * states side by side, a requirement wants its date next to its amount, and a narrative
+ * wants to be a paragraph. See ./blocks.tsx.
+ */
+const insight: Leaf = (input) => {
+  const { finding } = input;
+  if (!finding) return escape(input, "No conclusion to show.");
+  if (finding.kind === "transition") return <TransitionBlock finding={finding} />;
+  if (finding.kind === "requirement") return <RequirementBlock finding={finding} />;
+  if (finding.kind === "narrative") return <NarrativeBlock finding={finding} />;
+  return escape(input, "No conclusion to show.");
 };
 
-const insight: Leaf = ({ props, finding, node, value }) => {
-  if (!finding) return escape({ props, finding, node, value }, "No conclusion to show.");
-  if (finding.kind === "transition") return draw("TransitionCard", finding);
-  // `NarrativeWithChips` is the right treatment only when there are chips to show;
-  // without them it is a prose block with extra machinery.
-  if ("deltas" in finding && Array.isArray((finding as { deltas?: unknown[] }).deltas)) {
-    return draw("NarrativeWithChips", finding);
-  }
-  return draw("ProseBlock", finding);
-};
+const flag: Leaf = (input) =>
+  input.finding?.kind === "flag" ? (
+    <FlagBlock finding={input.finding} />
+  ) : input.finding?.kind === "transition" ? (
+    <TransitionBlock finding={input.finding} />
+  ) : (
+    escape(input, "Nothing flagged.")
+  );
 
-const guarded =
-  (id: RendererId, kinds: Finding["kind"][], what: string): Leaf =>
-  (input) =>
-    input.finding && kinds.includes(input.finding.kind) ? draw(id, input.finding) : escape(input, what);
+const recommendation: Leaf = (input) =>
+  input.finding?.kind === "recommendation" ? (
+    <RecommendationBlock finding={input.finding} />
+  ) : (
+    escape(input, "No recommendation.")
+  );
+
+const checklist: Leaf = (input) =>
+  input.finding?.kind === "checklist" ? <ChecklistBlock finding={input.finding} /> : escape(input, "No open items.");
 
 /* ------------------------------------------------------------- the mapping */
 
@@ -944,23 +1101,23 @@ export const LEAF_COMPONENTS: Record<Exclude<ComponentId, LayoutId>, Leaf> = {
   // Flat document table, not prototype 1's bordered widget — see `DataTable` above.
   DataTable,
   ComparisonTable,
-  RankedList: bars,
+  RankedList: BarChartFlat,
   Timeline,
   KeyValueList,
 
   LineChart: line,
   BarChart: BarChartFlat,
-  AllocationDonut: guarded("DonutChart", ["composition"], "No composition to draw."),
+  AllocationDonut,
   ExposureHeatmap,
 
   Prose,
   BulletSummary,
 
   InsightCard: insight,
-  RiskAlert: guarded("FlagCallout", ["flag", "transition"], "Nothing flagged."),
-  Recommendation: guarded("RecommendationCard", ["recommendation"], "No recommendation."),
+  RiskAlert: flag,
+  Recommendation: recommendation,
   NewsImpact,
-  Checklist: guarded("Checklist", ["checklist"], "No open items."),
+  Checklist: checklist,
   Comparison,
 
   ClientCard: entityCard("Client"),
