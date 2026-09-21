@@ -12,17 +12,17 @@
  * What is different is everything behind the send button. That prototype asked a
  * model for a finished document and animated it in. Here the query goes through nine
  * layers (./pipeline.ts), the model never sees a component name, the layout is chosen
- * by rules, and the result is validated before it is allowed on screen. Three things
+ * by rules, and the result is validated before it is allowed on screen. Two things
  * on this page exist to make that visible rather than merely true:
  *
  *   - **The stage list** is the real pipeline reporting itself, each line filled in
  *     with what that layer actually did — the keys it fetched, the recipe it chose,
  *     the verdict it reached (§13).
- *   - **The Answer / View toggle** is always there, and the answer is always the
- *     first thing the chat says. Rich UI is an enhancement, never the source of
- *     truth (§14).
- *   - **Inspect** shows the composer's trace, the validator's issues and anything
- *     dropped. A page nobody can interrogate is a page whose rules are decorative.
+ *   - **The answer** is always the first thing the chat says, and it takes over the
+ *     pane entirely when composition fails. There is no toggle and no debug control:
+ *     this pane is the report. Rich UI is an enhancement, never the source of truth
+ *     (§14). The composer's trace, the validator's issues and anything dropped stay
+ *     in the run result for whoever is debugging — they are not furniture on the page.
  *
  * This file owns state and pacing only. No layout decision is taken here.
  */
@@ -35,16 +35,33 @@ import MockClientOverview from "../MockClientOverview";
 import { CLIENT } from "../dynamic-ui/clientBook";
 import { INK, LABEL } from "./chrome";
 import { run, type RunResult, type Stage, type Turn as HistoryTurn } from "./pipeline";
+import { PINNED_CLIENTS, type PinnedClientId } from "./pinned";
 import { NarrativeFallback, SpecRenderer } from "./SpecRenderer";
 
 const SUBJECT = CLIENT.name;
 
-const PROMPTS = [
-  { id: "review", label: "Portfolio review", prompt: `How is ${SUBJECT.split(" ")[0]}'s portfolio doing?` },
-  { id: "compare", label: "Compare holdings", prompt: "Compare his two biggest holdings" },
-  { id: "liquidity", label: "Liquidity", prompt: "How would he fund the property purchase?" },
-  { id: "lookup", label: "Lookup", prompt: "Who is his relationship manager?" },
-];
+/**
+ * The suggestions, per client, because the questions are not interchangeable.
+ *
+ * "Compare his two biggest holdings" is a real question about a listed book and a
+ * meaningless one about four houses. Swapping the prompts with the client is not
+ * decoration: it is the demo's whole point made visible before anything is sent — what
+ * you can usefully ask depends on what the client has.
+ */
+const PROMPTS: Record<PinnedClientId, { id: string; label: string; prompt: string }[]> = {
+  prashanth: [
+    { id: "review", label: "Portfolio review", prompt: `How is ${SUBJECT.split(" ")[0]}'s portfolio doing?` },
+    { id: "compare", label: "Compare holdings", prompt: "Compare his two biggest holdings" },
+    { id: "liquidity", label: "Liquidity", prompt: "How would he fund the property purchase?" },
+    { id: "lookup", label: "Lookup", prompt: "Who is his relationship manager?" },
+  ],
+  eleanor: [
+    { id: "review", label: "Balance sheet", prompt: "How is Eleanor's balance sheet looking?" },
+    { id: "property", label: "Property book", prompt: "What is in her property book?" },
+    { id: "exposure", label: "Exposure", prompt: "Where is the biggest exposure in her portfolio?" },
+    { id: "lookup", label: "Lookup", prompt: "Who is her relationship manager?" },
+  ],
+};
 
 /**
  * How long one top-level area takes to land.
@@ -78,7 +95,7 @@ type ChatTurn = {
   thinking?: boolean;
   /**
    * Why this turn is not what you would expect — the stand-in answered, or the
-   * follow-up rebuilt rather than edited. In the chat, not behind Inspect: a
+   * follow-up rebuilt rather than edited. In the chat, where it is read: a
    * degradation nobody can see is a degradation nobody can debug.
    */
   note?: string;
@@ -91,10 +108,19 @@ export default function GenerativeUILab() {
   const [stages, setStages] = React.useState<Stage[]>([]);
   const [result, setResult] = React.useState<RunResult | null>(null);
   const [open, setOpen] = React.useState(false);
-  const [showAnswer, setShowAnswer] = React.useState(false);
-  const [inspecting, setInspecting] = React.useState(false);
   /** How many top-level areas of the current view have landed. See `placing` below. */
   const [placed, setPlaced] = React.useState(0);
+  /**
+   * Whose book the simulator has open.
+   *
+   * Prototype scaffolding, and labelled as such on screen. In a deployment the client
+   * comes from the session and the question; this dropdown exists so a demo can put the
+   * same question to two different balance sheets and show that the page that comes back
+   * is a different shape — which is the architecture's central claim and otherwise has
+   * to be taken on trust.
+   */
+  const [client, setClient] = React.useState<PinnedClientId>("prashanth");
+  const prompts = PROMPTS[client];
 
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const nextId = React.useRef(1);
@@ -126,7 +152,6 @@ export default function GenerativeUILab() {
       setBusy(true);
       setStages([]);
       setResult(null);
-      setShowAnswer(false);
       setPlaced(0);
       /*
        * The panel does not open on send.
@@ -139,19 +164,22 @@ export default function GenerativeUILab() {
        */
       setOpen(false);
 
-      const outcome = await run(query, [...history, { role: "user", text: query }], (next, surface) => {
-        setStages(next);
-        if (surface === "view") setOpen(true);
-      });
+      const outcome = await run(
+        query,
+        [...history, { role: "user", text: query }],
+        (next, surface) => {
+          setStages(next);
+          if (surface === "view") setOpen(true);
+        },
+        client,
+      );
 
       setResult(outcome);
       setBusy(false);
-      /* A view that failed validation opens on its answer, not on an empty sheet. */
-      if (outcome.kind === "fallback") setShowAnswer(true);
       if (outcome.kind === "text") setOpen(false);
 
       /*
-       * Two things a reader is entitled to know without opening Inspect, because both
+       * Two things a reader is entitled to know from the chat itself, because both
        * of them explain an answer that looks wrong:
        *
        *   - the stand-in wrote this, so the words are a fixture and two questions of
@@ -162,6 +190,9 @@ export default function GenerativeUILab() {
       const why: string[] = [];
       if (outcome.via === "local") {
         why.push(`Written by the local stand-in — ${outcome.notes[0] ?? "the model was not reachable"}`);
+      }
+      if (outcome.via === "pinned") {
+        why.push("Pinned report — the data and the analysis are a fixture; the layout is composed live.");
       }
       if (history.length > 0 && outcome.kind !== "text") {
         why.push("Follow-ups build a new page rather than editing the last one.");
@@ -200,7 +231,7 @@ export default function GenerativeUILab() {
         ),
       );
     },
-    [busy, turns],
+    [busy, turns, client],
   );
 
   const reset = React.useCallback(() => {
@@ -212,6 +243,15 @@ export default function GenerativeUILab() {
     setComposerText("");
     setPlaced(0);
   }, []);
+
+  const choose = React.useCallback(
+    (next: PinnedClientId) => {
+      if (next === client) return;
+      setClient(next);
+      reset();
+    },
+    [client, reset],
+  );
 
   const via = result?.via;
   const spec = result?.kind === "view" ? result.spec : undefined;
@@ -263,6 +303,27 @@ export default function GenerativeUILab() {
               <ChevronDownIcon />
             </div>
             <div className="flex shrink-0 items-center gap-[8px]">
+              {/*
+               * The simulator control, and labelled as one.
+               *
+               * Switching clients clears the thread rather than continuing it: the history
+               * is about somebody else's balance sheet, and a follow-up answered against
+               * the wrong book is the one failure here that would look entirely plausible.
+               */}
+              <div className={TW.clientSwitch} role="group" aria-label="Simulated client">
+                {PINNED_CLIENTS.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    title={entry.distinction}
+                    aria-pressed={client === entry.id}
+                    className={client === entry.id ? TW.clientOn : TW.clientOff}
+                    onClick={() => choose(entry.id)}
+                  >
+                    {entry.name.split(" ")[0]}
+                  </button>
+                ))}
+              </div>
               <Link
                 href="/lab"
                 className="font-satoshi text-[11px] font-bold uppercase tracking-[0.08em] text-black/35 transition-colors hover:text-black"
@@ -281,7 +342,7 @@ export default function GenerativeUILab() {
                 What can I help<br />you with?
               </h1>
               <div className={TW.attentionList}>
-                {PROMPTS.map((item, index) => (
+                {prompts.map((item, index) => (
                   <div
                     key={item.id}
                     className="stagger-in max-w-full"
@@ -341,7 +402,7 @@ export default function GenerativeUILab() {
                 <div className={TW.composerWrap}>
                   <div className={TW.promptChipsRow}>
                     <div className={TW.promptChipsLeft}>
-                      {PROMPTS.map((item) => (
+                      {prompts.map((item) => (
                         <div
                           key={item.id}
                           className={TW.promptChip}
@@ -404,14 +465,16 @@ export default function GenerativeUILab() {
             {via ? (
               <span
                 className="font-satoshi text-[10px] font-semibold uppercase tracking-[0.12em]"
-                style={{ color: via === "model" ? "#7F4E0B" : "#8a8a8a" }}
+                style={{ color: via === "model" ? "#7F4E0B" : via === "pinned" ? "#2F5D50" : "#8a8a8a" }}
                 title={
                   via === "model"
                     ? "The plan, answer and report came from the model"
-                    : "No model key set — the plan, answer and report came from the local stand-in analyst. Composition and validation are the same either way."
+                    : via === "pinned"
+                      ? "A pinned report: the data and the analysis are a hand-authored fixture. The layout is still composed and validated live from them."
+                      : "No model key set — the plan, answer and report came from the local stand-in analyst. Composition and validation are the same either way."
                 }
               >
-                {via === "model" ? "live model" : "local"}
+                {via === "model" ? "live model" : via === "pinned" ? "pinned" : "local"}
               </span>
             ) : null}
             {result?.kind === "view" ? (
@@ -431,8 +494,11 @@ export default function GenerativeUILab() {
                 >
                   ✕
                 </button>
-                <div className="relative z-[1] mx-auto w-full max-w-[860px] px-[28px] py-[56px] max-[900px]:px-[18px]">
-                  <div className="gu-card relative overflow-hidden rounded-[24px] bg-white px-[26px] py-[24px] shadow-[0_24px_80px_rgba(58,35,9,0.14)]">
+                {/* 940px, and generous inner padding. The measure is the document's
+                    most consequential setting: at 860px with 26px of padding the
+                    four-up figure strip could not breathe and every table wrapped. */}
+                <div className="relative z-[1] mx-auto w-full max-w-[940px] px-[28px] py-[48px] max-[900px]:px-[16px]">
+                  <div className="gu-card relative overflow-hidden rounded-[20px] bg-white px-[44px] py-[38px] shadow-[0_24px_80px_rgba(58,35,9,0.14)] max-[900px]:px-[20px]">
                     <div aria-hidden className="absolute top-0 right-0 left-0 h-[3px] bg-[#7F4E0B]/[0.08]">
                       <div
                         className="h-full bg-[linear-gradient(90deg,#C79A4A,#7F4E0B)] transition-[width] duration-500 ease-out"
@@ -450,33 +516,26 @@ export default function GenerativeUILab() {
 
                     {result ? (
                       <>
-                        <div className="mb-[18px] flex items-center gap-[8px]">
-                          <Toggle active={!showAnswer} onClick={() => setShowAnswer(false)} disabled={!spec}>
-                            View
-                          </Toggle>
-                          <Toggle active={showAnswer} onClick={() => setShowAnswer(true)}>
-                            Answer
-                          </Toggle>
-                          <span className="ml-auto" />
-                          {placing && !showAnswer ? (
-                            <span className="font-satoshi text-[11px] tracking-[-0.11px] text-black/35">
-                              Assembling · {placed}/{total}
-                            </span>
-                          ) : null}
-                          <Toggle active={inspecting} onClick={() => setInspecting((was) => !was)}>
-                            Inspect
-                          </Toggle>
-                        </div>
+                        {/* No toolbar and no inspector. This pane is the document and
+                            nothing else: no debug control for the reader to step around,
+                            and no rule for the title to start underneath. §14 is unaffected
+                            — the written answer is the chat's first reply, and it *is* this
+                            pane whenever composition fails. The composer's trace and the
+                            validator's issues are still in the run artifacts for whoever
+                            is debugging; they are no longer furniture on the page. */}
+                        {placing ? (
+                          <div className="mb-[18px] font-satoshi text-[11px] tracking-[-0.11px] text-black/35">
+                            Assembling · {placed}/{total}
+                          </div>
+                        ) : null}
 
-                        {inspecting ? <Inspector result={result} /> : null}
-
-                        {spec && !showAnswer ? (
+                        {spec ? (
                           <SpecRenderer spec={spec} report={report} bundle={result.bundle} revealed={placed} />
                         ) : (
                           <NarrativeFallback title={report?.title} narrative={result.answer} />
                         )}
 
-                        {result.kind === "fallback" && !inspecting ? (
+                        {result.kind === "fallback" ? (
                           <p className="mt-[16px] font-satoshi text-[11px] text-black/40">
                             The composed view did not pass validation, so this is the answer. {result.reason}
                           </p>
@@ -603,107 +662,6 @@ function ViewWidget({
   );
 }
 
-/* ---------------------------------------------------------------- inspector */
-
-function Toggle({
-  active,
-  disabled,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  disabled?: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`rounded-full px-[12px] py-[5px] font-satoshi text-[11px] transition-colors disabled:opacity-35 ${
-        active ? "bg-black/85 text-white" : "border border-black/10 text-black/50 hover:text-black/80"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-/**
- * Why the page looks the way it does.
- *
- * The composer's trace is the argument for every arrangement it chose, and the
- * validator's issues are what it would have rejected. Both are in the artifacts
- * already; this only puts them on screen.
- */
-function Inspector({ result }: { result: RunResult }) {
-  const rows: [string, string][] = [
-    ["Task", `${result.plan.taskType.replace(/_/g, " ")} → ${result.plan.surface}`],
-    ["Because", result.plan.because],
-    ["Data", Object.keys(result.bundle.values).join(", ") || "none"],
-    ...(result.kind === "view"
-      ? ([
-          ["Recipe", result.recipeId],
-          ["Areas", result.ia.areas.map((area) => `${area.heading} (${area.arrangement})`).join(", ")],
-        ] as [string, string][])
-      : []),
-  ];
-
-  const trace = result.kind === "view" ? result.ia.trace : [];
-  const issues = result.kind === "text" ? [] : result.issues;
-
-  return (
-    <div className="mb-[20px] flex flex-col gap-[8px] rounded-[12px] border border-black/8 bg-black/[0.015] px-[14px] py-[12px]">
-      {rows.map(([label, value]) => (
-        <div key={label} className="flex gap-[10px]">
-          <span className={`${LABEL} w-[64px] shrink-0`}>{label}</span>
-          <span className="font-satoshi text-[11px] leading-[1.5] text-black/60">{value}</span>
-        </div>
-      ))}
-
-      {trace.length > 0 ? (
-        <div className="flex gap-[10px]">
-          <span className={`${LABEL} w-[64px] shrink-0`}>Rules</span>
-          <ul className="flex flex-col gap-[2px]">
-            {trace.map((entry, index) => (
-              <li key={index} className="font-satoshi text-[11px] text-black/45">
-                {entry.rule} · {entry.because}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {issues.length > 0 ? (
-        <div className="flex gap-[10px]">
-          <span className={`${LABEL} w-[64px] shrink-0`}>Checks</span>
-          <ul className="flex flex-col gap-[2px]">
-            {issues.map((issue, index) => (
-              <li key={index} className="font-satoshi text-[11px] text-black/45">
-                <span className="uppercase tracking-[0.06em]">{issue.severity}</span> · {issue.code} · {issue.message}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {result.notes.length > 0 ? (
-        <div className="flex gap-[10px]">
-          <span className={`${LABEL} w-[64px] shrink-0`}>Notes</span>
-          <ul className="flex flex-col gap-[2px]">
-            {result.notes.map((note, index) => (
-              <li key={index} className="font-satoshi text-[11px] text-black/45">
-                {note}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------------ styles */
 
 /**
@@ -711,7 +669,12 @@ function Inspector({ result }: { result: RunResult }) {
  * copy on purpose: editing the lab must never be able to move the real panel.
  */
 const TW = {
-  shell: "h-screen overflow-hidden bg-white text-[#171615]",
+  /**
+   * `gu-theme` is what turns the shadcn primitives on. The token values live only
+   * under this class (see ./ui/theme.css), so a shadcn component used outside the
+   * prototype renders unstyled rather than inheriting a palette it shouldn't.
+   */
+  shell: "gu-theme h-screen overflow-hidden bg-white text-[#171615]",
   workspace:
     "relative ml-[80px] grid h-screen grid-cols-[434px_minmax(0,1fr)] overflow-hidden bg-white max-[1180px]:grid-cols-[minmax(360px,420px)_minmax(0,1fr)] max-[900px]:grid-cols-1",
   advisorPanel:
@@ -723,6 +686,11 @@ const TW = {
   conversationText: "block min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap",
   advisorAddBtn:
     "inline-grid h-[36px] w-[36px] shrink-0 place-items-center rounded-[12px] border border-black/[0.08] bg-transparent text-black transition hover:bg-black/[0.03] [&_svg]:h-[16px] [&_svg]:w-[16px]",
+  clientSwitch: "inline-flex shrink-0 items-center gap-[2px] rounded-[10px] bg-black/[0.04] p-[2px]",
+  clientOn:
+    "rounded-[8px] bg-white px-[9px] py-[5px] font-satoshi text-[11px] font-bold tracking-[-0.1px] text-black shadow-[0_1px_2px_rgba(0,0,0,0.08)]",
+  clientOff:
+    "rounded-[8px] px-[9px] py-[5px] font-satoshi text-[11px] font-bold tracking-[-0.1px] text-black/40 transition-colors hover:text-black/70",
   attentionContent: "flex min-h-0 flex-col justify-center overflow-auto px-[20px] pt-[64px] pb-[190px]",
   attentionTitle:
     "m-0 mb-[20px] max-w-[394px] font-butler-medium text-[40px] font-medium leading-[48px] tracking-[-2px] text-black",

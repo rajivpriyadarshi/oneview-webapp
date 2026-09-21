@@ -54,7 +54,7 @@ export type UINode = {
   span?: number;
   /** The semantic section this node came from. The audit trail back to layer 3. */
   sectionId?: string;
-  /** Why this component, in the advisor's language. Surfaced in the Inspect panel. */
+  /** Why this component, in the advisor's language. For the audit trail, not the page. */
   because?: string;
   /** Flat children, for containers that take a list. */
   children?: UINode[];
@@ -100,10 +100,10 @@ export const UISpecSchema = z.object({
    * is why the field is required rather than optional.
    */
   narrative: z.string().min(1),
-  /** Traceability. Not shown to the reader except through Inspect. */
+  /** Traceability. Carried on the spec, never rendered. */
   meta: z.object({
     reportId: z.string().min(1),
-    /** Which rules fired, carried from the IA plan for the Inspect panel. */
+    /** Which rules fired, carried from the IA plan for debugging. */
     trace: z.array(z.object({ rule: z.string(), because: z.string(), targets: z.array(z.string()) })),
     /** Sections the composer could not place. The honest version of dropping them. */
     unplacedSectionIds: z.array(z.string()),

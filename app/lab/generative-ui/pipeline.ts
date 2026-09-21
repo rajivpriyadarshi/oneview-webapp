@@ -38,6 +38,7 @@ import type { IAPlan } from "./ia";
 import type { IntentPlan } from "./intent";
 import type { RecipeId } from "./recipes";
 import type { SemanticReport } from "./semantic";
+import { pinnedRun, type PinnedClientId } from "./pinned";
 import { standInAnswer, standInPlan, standInReport } from "./standin";
 import type { UISpec } from "./spec";
 import { executePlan, satisfied } from "./tools";
@@ -55,8 +56,15 @@ export type Stage = {
 
 export type Turn = { role: "user" | "assistant"; text: string };
 
-/** Where the content came from. Shown in the UI: nobody should have to guess. */
-export type Via = "model" | "local";
+/**
+ * Where the content came from. Shown in the UI: nobody should have to guess.
+ *
+ * `pinned` is the demo path — a hand-authored bundle and semantic report per client
+ * (./pinned.ts), with layers 4 onwards running live over them. It is named
+ * separately from `local` because they are different claims: `local` means the
+ * stand-in wrote the analysis, `pinned` means a person did.
+ */
+export type Via = "model" | "local" | "pinned";
 
 type Common = {
   via: Via;
@@ -133,7 +141,20 @@ export type OnStage = (stages: Stage[], surface?: "text" | "view") => void;
  * missing model, the narrative for a view that will not validate — because a
  * pipeline whose last layer is `catch` has no fallback contract at all.
  */
-export async function run(query: string, history: Turn[], onStage: OnStage): Promise<RunResult> {
+export async function run(
+  query: string,
+  history: Turn[],
+  onStage: OnStage,
+  /**
+   * Whose book the simulator has open (./pinned.ts).
+   *
+   * Prototype scaffolding, and named as such. In a real deployment the client is
+   * resolved from the session and the question, not chosen from a dropdown; this exists
+   * so a demo can show the same question producing two differently-shaped reports,
+   * which is the claim the architecture makes and otherwise has to be taken on trust.
+   */
+  client?: PinnedClientId,
+): Promise<RunResult> {
   const stages: Stage[] = [];
   const notes: string[] = [];
   let via: Via = "model";
@@ -155,20 +176,37 @@ export async function run(query: string, history: Turn[], onStage: OnStage): Pro
 
   begin("plan", "Reading the question");
 
+  /*
+   * The pinned path (./pinned.ts).
+   *
+   * Checked first and checked once: if this query is the demo report, layers 1, 2 and 3
+   * are already written and the run starts at composition. Everything downstream is
+   * untouched — the composer still chooses the layout, the validator still gets to
+   * reject it, and a pinned report that composed badly would fall back to prose exactly
+   * like any other. That is the point of freezing here rather than at the spec.
+   */
+  const pinned = pinnedRun(query, client);
+
   let plan: IntentPlan;
-  const planned = await post({ stage: "plan", query, history });
-  if (planned.ok && planned.body.plan) {
-    plan = planned.body.plan as IntentPlan;
+  if (pinned) {
+    via = "pinned";
+    plan = pinned.plan;
+    notes.push(pinned.note);
   } else {
-    via = "local";
-    plan = standInPlan(query);
-    notes.push(
-      planned.ok
-        ? "The planning pass returned nothing usable; answered locally."
-        : planned.noKey
-          ? "No model key configured; answered locally."
-          : `Planning pass failed (${planned.detail}); answered locally.`,
-    );
+    const planned = await post({ stage: "plan", query, history });
+    if (planned.ok && planned.body.plan) {
+      plan = planned.body.plan as IntentPlan;
+    } else {
+      via = "local";
+      plan = standInPlan(query);
+      notes.push(
+        planned.ok
+          ? "The planning pass returned nothing usable; answered locally."
+          : planned.noKey
+            ? "No model key configured; answered locally."
+            : `Planning pass failed (${planned.detail}); answered locally.`,
+      );
+    }
   }
   surface = plan.surface;
   finish("plan", `${plan.taskType.replace(/_/g, " ")} · ${plan.surface === "text" ? "a sentence" : "a view"}`);
@@ -176,7 +214,7 @@ export async function run(query: string, history: Turn[], onStage: OnStage): Pro
   /* -------------------------------------------------------------- 2. the data */
 
   begin("data", "Gathering data");
-  const bundle = plan.dataRequests.length > 0 ? executePlan(plan) : emptyBundle();
+  const bundle = pinned ? pinned.bundle : plan.dataRequests.length > 0 ? executePlan(plan) : emptyBundle();
   const keys = Object.keys(bundle.values);
   finish(
     "data",
@@ -202,7 +240,7 @@ export async function run(query: string, history: Turn[], onStage: OnStage): Pro
       notes.push(written.ok ? "The answering pass returned nothing." : `Answering pass failed (${written.detail}).`);
     }
   }
-  if (!answer) answer = standInAnswer(plan, bundle);
+  if (!answer) answer = pinned ? pinned.answer : standInAnswer(plan, bundle);
   finish("answer", `${answer.split(/\s+/).length} words`);
 
   const common: Common = { via, answer, plan, bundle, stages, notes };
@@ -236,7 +274,7 @@ export async function run(query: string, history: Turn[], onStage: OnStage): Pro
       );
     }
   }
-  if (!report) report = standInReport(plan, bundle, answer);
+  if (!report) report = pinned ? pinned.report : standInReport(plan, bundle, answer);
   finish("structure", `${report.sections.length} sections · ${report.sections.flatMap((s) => s.findings).length} findings`);
 
   /* --------------------------------------------- 4, 5, 7. the page, decided here */

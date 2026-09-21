@@ -31,7 +31,7 @@ export const ProvenanceSchema = z.object({
   /**
    * Where it came from, in the advisor's words — "Custody positions", not a table
    * name. Reuses prototype 1's grounding vocabulary so the existing grounding
-   * pill and Inspect panel attach to a generated view's areas unchanged.
+   * pill attaches to a generated view's areas unchanged.
    */
   sources: z.array(z.string()),
 });

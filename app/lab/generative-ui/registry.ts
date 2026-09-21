@@ -54,6 +54,7 @@ export const ComponentIdSchema = z.enum([
   "Metric",
   "MetricStrip",
   "DataTable",
+  "ComparisonTable",
   "RankedList",
   "Timeline",
   "KeyValueList",
@@ -62,6 +63,9 @@ export const ComponentIdSchema = z.enum([
   "BarChart",
   "AllocationDonut",
   "ExposureHeatmap",
+  // prose — text as a first-class element of the document, not a fallback
+  "Prose",
+  "BulletSummary",
   // intelligence
   "InsightCard",
   "RiskAlert",
@@ -91,6 +95,7 @@ const LEAVES: ComponentId[] = [
   "Metric",
   "MetricStrip",
   "DataTable",
+  "ComparisonTable",
   "RankedList",
   "Timeline",
   "KeyValueList",
@@ -98,6 +103,8 @@ const LEAVES: ComponentId[] = [
   "BarChart",
   "AllocationDonut",
   "ExposureHeatmap",
+  "Prose",
+  "BulletSummary",
   "InsightCard",
   "RiskAlert",
   "Recommendation",
@@ -174,7 +181,19 @@ export type ComponentSpec = {
    * Consulted by the IA composer to break ties within a chosen form — never by
    * the model.
    */
-  fit?: (finding: Finding, context: { count: number; siblings: number }) => number;
+  fit?: (
+    finding: Finding,
+    context: {
+      count: number;
+      siblings: number;
+      /**
+       * How many findings in this section measure exactly this finding's entities,
+       * itself included. Absent means "not computed", which reads as one — a finding
+       * cannot see its siblings, so only the composer can answer this.
+       */
+      measures?: number;
+    },
+  ) => number;
 };
 
 export type ComponentRegistry = Record<ComponentId, ComponentSpec>;
@@ -346,6 +365,12 @@ export const REGISTRY: ComponentRegistry = {
       // is not a summary, it is a wall. The validator enforces it too.
       columns: z.union([z.literal(2), z.literal(3), z.literal(4)]),
       heading: heading.optional(),
+      /**
+       * The headline strip: the report's own figures, gathered from across its sections
+       * by `headlineFigures` in ./semantic.ts. A reference, like Prose's `source` — the
+       * node names a rule, not a set of numbers.
+       */
+      source: z.literal("key_figures").optional(),
     }),
     accepts: ["metric"],
     implements: ["metric_strip"],
@@ -392,6 +417,53 @@ export const REGISTRY: ComponentRegistry = {
         return finding.parts.length > 12 ? 0.95 : 0.1;
       }
       return 0;
+    },
+  },
+
+  /**
+   * The holdings table: entities down the side, measures across the top.
+   *
+   * Distinct from `DataTable`, and the difference is where the figures come from.
+   * `DataTable` tabulates a bound array — every column the bundle happens to carry,
+   * whether or not the analysis mentioned it. That is the wrong contract for a report:
+   * a table showing cost basis because the row object had a `costBasisM` field is the
+   * presentation layer adding a fact, which §9 forbids. This component is built from
+   * the findings instead, so a column exists only where the analysis made a claim.
+   */
+  ComparisonTable: {
+    id: "ComparisonTable",
+    description: "The same entities across several measures, one row each, one column per measure.",
+    category: "data",
+    /*
+     * `label` optional, and that is the one difference from every other table here.
+     * A section already prints its question as a heading; a table whose own label is
+     * that same question prints it twice. So the composer omits it in exactly that
+     * case, which it can only do if the schema allows the omission.
+     */
+    propsSchema: z.object({ label: heading.optional(), caption: caption, entityHeader: label.optional() }),
+    accepts: ["comparison"],
+    implements: ["table"],
+    variants: ["plain"],
+    sizes: ["md", "lg"],
+    useWhen: "Three or more entities that the analysis measured two or more ways.",
+    useInsteadWhen: [
+      { condition: "one measure only", prefer: "RankedList" },
+      { condition: "each entity has its own history and the shape is the point", prefer: "LineChart" },
+    ],
+    children: { allowed: "none" },
+    requiresData: true,
+    /*
+     * `context.measures` is how many findings in this section measure exactly these
+     * entities — supplied by the composer, since a finding cannot see its siblings.
+     * One measure is a ranking and belongs in bars; two or more is a table, and the
+     * score rises with the count because every extra measure is another thing bars
+     * would have had to drop.
+     */
+    fit: (finding, context) => {
+      if (finding.kind !== "comparison" || finding.entities.length < 2) return 0;
+      const measures = context.measures ?? 1;
+      if (measures < 2) return 0;
+      return Math.min(0.9 + (measures - 2) * 0.02, 0.98);
     },
   },
 
@@ -515,9 +587,11 @@ export const REGISTRY: ComponentRegistry = {
       }
       if (finding.kind === "composition") {
         const n = finding.parts.length;
-        // Above six a donut's slices stop being comparable; above twelve even a
-        // stacked bar loses to a table.
-        return n > 6 && n <= 12 ? 0.9 : n >= 2 ? 0.2 : 0;
+        // The default for an allocation, not the overflow case it used to be. Bars
+        // share a baseline and carry their own printed figure, so four shares or
+        // twelve read the same way; above twelve the labels stop fitting and a table
+        // wins. Two or three parts hand back to the donut.
+        return n >= 4 && n <= 12 ? 0.92 : n >= 2 ? 0.5 : 0;
       }
       return 0;
     },
@@ -532,12 +606,22 @@ export const REGISTRY: ComponentRegistry = {
     implements: ["chart"],
     variants: ["plain", "labelled"],
     sizes: ["sm", "md"],
-    useWhen: "Composition of a whole, with six parts or fewer.",
-    useInsteadWhen: [{ condition: "more than six parts", prefer: "BarChart" }],
+    useWhen: "A whole split two or three ways, where the split itself is the claim.",
+    useInsteadWhen: [{ condition: "four or more parts", prefer: "BarChart" }],
     children: { allowed: "none" },
     requiresData: true,
+    /*
+     * Deliberately narrow, and narrowed *down* from two-to-six.
+     *
+     * A donut is the worst common chart for the question an allocation view is actually
+     * asked — "how big is this one against that one" — because comparing arc lengths is
+     * hard and the numbers end up in a legend away from the shape. It earns its place
+     * only when the claim is the split itself ("two thirds equities") and there are few
+     * enough parts to read at a glance. Past three, bars with the figure printed above
+     * each one answer the same question better, so they take the default.
+     */
     fit: (finding) =>
-      finding.kind === "composition" && finding.parts.length >= 2 && finding.parts.length <= 6 ? 0.95 : 0,
+      finding.kind === "composition" && finding.parts.length >= 2 && finding.parts.length <= 3 ? 0.9 : 0,
   },
 
   ExposureHeatmap: {
@@ -553,6 +637,90 @@ export const REGISTRY: ComponentRegistry = {
     useInsteadWhen: [{ condition: "one dimension only", prefer: "BarChart" }],
     children: { allowed: "none" },
     requiresData: true,
+  },
+
+  /* -------------------------------------------------------------------- prose */
+
+  /**
+   * A paragraph of the report, as part of the document.
+   *
+   * The reason this exists as an approved component rather than as a fallback: the
+   * brief requires the prose answer to remain available and authoritative, and until
+   * now the only way it reached the page was `NarrativeFallback` — shown when
+   * composition *failed*. So on the success path the writing was either boxed into an
+   * InsightCard or dropped, which made "rich UI is an enhancement, never the source of
+   * truth" false in practice. Prose in the flow makes it true: the reader gets the
+   * sentences and the figures in one document, in the order the analysis meant.
+   *
+   * `variant` chooses the weight of the passage, not its content. `lead` is the
+   * opening summary; `note` is an aside. Neither can change a word of it.
+   */
+  Prose: {
+    id: "Prose",
+    description: "A passage of the written answer, set as running text in the document.",
+    category: "intelligence",
+    propsSchema: z.object({
+      heading: heading.optional(),
+      variant: z.enum(["lead", "body", "note"]).optional(),
+      /**
+       * Which piece of the report's own writing to render, when the passage is not a
+       * finding. A reference, not the text — see `reportText` in ./SpecRenderer.tsx.
+       */
+      source: z.enum(["summary", "narrative"]).optional(),
+    }),
+    accepts: ["narrative", "transition"],
+    implements: ["prose"],
+    variants: ["lead", "body", "note"],
+    sizes: ["md"],
+    useWhen: "The claim is a sentence. Explanation, context, or the reasoning behind a figure.",
+    useInsteadWhen: [
+      { condition: "the passage is really three or more separate points", prefer: "BulletSummary" },
+      { condition: "it needs to be noticed and acted on", prefer: "RiskAlert" },
+    ],
+    children: { allowed: "none" },
+    requiresData: true,
+    // Beats InsightCard (0.8) for plain narrative, and loses to it when the finding
+    // carries deltas — chips beside prose want the card's framing.
+    fit: (finding) =>
+      finding.kind !== "narrative"
+        ? finding.kind === "transition"
+          ? 0.4
+          : 0
+        : Array.isArray(finding.deltas) && finding.deltas.length > 0
+          ? 0.5
+          : 0.9,
+  },
+
+  /**
+   * Several short points under one question — "What changed?", "Next steps".
+   *
+   * A separate component from Prose because a list of three findings set as one
+   * paragraph forces the reader to parse which is which, and setting them as bullets
+   * is a presentation decision the composer is explicitly allowed to make. It cannot
+   * merge, split or reword the points: each bullet is one finding's own text.
+   */
+  BulletSummary: {
+    id: "BulletSummary",
+    description: "Several short related points, set as a bulleted list under a heading.",
+    category: "intelligence",
+    propsSchema: z.object({
+      heading: heading.optional(),
+      /** Numbered when the order is a sequence rather than a ranking. */
+      numbered: z.boolean().optional(),
+    }),
+    accepts: ["narrative", "transition", "requirement", "checklist"],
+    implements: ["prose"],
+    variants: ["plain", "numbered"],
+    sizes: ["md"],
+    useWhen: "Three or more short statements the reader should scan rather than read.",
+    useInsteadWhen: [
+      { condition: "the items have owners or due dates", prefer: "Checklist" },
+      { condition: "there is one continuous argument", prefer: "Prose" },
+    ],
+    children: { allowed: "none" },
+    requiresData: true,
+    fit: (finding, context) =>
+      context.count >= 3 && (finding.kind === "narrative" || finding.kind === "transition") ? 0.7 : 0,
   },
 
   /* ------------------------------------------------------------ intelligence */
@@ -636,7 +804,11 @@ export const REGISTRY: ComponentRegistry = {
     variants: [],
     sizes: ["md", "lg"],
     useWhen: "Closing an analytical view on what happens next.",
-    children: { allowed: ["Checklist", "Timeline", "KeyValueList", "InsightCard"], min: 1, max: 3 },
+    children: {
+      allowed: ["Checklist", "Timeline", "KeyValueList", "InsightCard", "Prose", "BulletSummary"],
+      min: 1,
+      max: 3,
+    },
     requiresData: false,
   },
 
@@ -803,7 +975,7 @@ export const usesNamedSlots = (parent: ComponentId): boolean => {
 export function bestFor(
   form: PresentationForm,
   finding: Finding,
-  context: { count: number; siblings: number },
+  context: { count: number; siblings: number; measures?: number },
 ): { id: ComponentId; fit: number; runnersUp: ComponentId[] } | null {
   const scored = implementing(form)
     .filter((spec) => spec.accepts.includes(finding.kind))

@@ -106,6 +106,12 @@ const STRUCTURE_SYSTEM = `You are the semantic layer. You have an answer that ha
 
 Call structure_report exactly once.
 
+Title:
+- The title names the document, the way a filed report is named. "Prashanth's portfolio review", "Prashanth's two largest holdings compared", "Funding the Sentosa purchase".
+- Never the question that was asked, never a question at all, and never a sentence. "How is Prashanth's portfolio doing?" is a query; it is not a title.
+- Name the client or the subject in it where there is one, so the page is identifiable without the query beside it.
+- Never an answer or a figure. "Portfolio up 6.2%" is a finding and belongs in a section.
+
 Sections:
 - A section is a group of claims that answer one reader-facing question. Write that question in the question field, as a question.
 - Two sections that answer the same question — contributors and detractors, this month and year to date — must either share an identical question string or be joined by an answers_same_question relation. This is how they end up presented as one thing rather than two.
@@ -124,6 +130,7 @@ Rules that matter:
 - Only put a claim in a section's detail array if it is methodology or provenance that a reader does not need on a first scan.
 - Labels, measure names and entity names are read by a person. Write them as English — "Index level", not "indexLevel"; never a field name from the data.
 - A metric's value is a single figure, written the way a reader reads it: "S$3.6m", "+32.1%", "S$800k". Never a field name, never a field name next to a number ("returnYtdPct 32.1"), never two or three figures crammed into one value. If the claim needs two figures held against each other it is not a metric — it is a comparison, or a transition from A to B.
+- Give a metric a basis wherever the answer states one: what the figure is measured against, in a few words. "of total portfolio", "vs. the 35–45% range you set", "in the last 12 months", "across all custody accounts". It is a claim, not a caption — write it only where the answer supports it, and never invent a benchmark, a target or a range the data does not contain. No figure in it that the value or delta already carries.
 - Things weighed against each other are one comparison finding holding every one of them, not one metric finding each. Five holdings compared is one comparison with five entities; five holdings on three measures is three comparison findings over the same five entities, one per measure. Never drop entities to make a claim fit, and never split one measure across several findings.
 - If the data holds a series for what a claim is about, carry it: a trend's series.points, or every entity's own series on a comparison. A twelve-month history described as two end values is a different claim from the one the answer makes, and the presentation layer cannot recover the shape you left out.
 

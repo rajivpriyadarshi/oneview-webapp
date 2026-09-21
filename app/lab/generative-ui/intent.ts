@@ -38,6 +38,17 @@ import { z } from "zod";
  */
 export const TaskTypeSchema = z.enum([
   "portfolio_review",
+  /**
+   * A review whose subject is the property book and the structures that hold it.
+   *
+   * Separate from `portfolio_review` because the two want different pages, not
+   * different content in the same page: a client whose balance sheet is 41% real
+   * estate, 76% illiquid and carries no listed benchmark at all has no "what changed
+   * and why" to lead with — the questions are what the assets are, how fresh the
+   * valuations are, who owns them and what has to be funded next. Recipe selection is
+   * a lookup on this field, so the task type is where that belongs.
+   */
+  "property_review",
   "comparison",
   "meeting_prep",
   "liquidity_planning",

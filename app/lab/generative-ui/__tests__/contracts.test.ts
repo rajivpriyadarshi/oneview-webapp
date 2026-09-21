@@ -353,9 +353,17 @@ describe("registry fitness — the thresholds ported from prototype 1", () => {
     expect(bestFor("chart", comparison(7, true), context)?.id).toBe("BarChart");
   });
 
-  it("draws six parts as a donut and seven as bars", () => {
-    expect(bestFor("chart", composition(6), context)?.id).toBe("AllocationDonut");
-    expect(bestFor("chart", composition(7), context)?.id).toBe("BarChart");
+  /*
+   * Narrowed from the ported threshold, on purpose. Prototype 1 gave the donut
+   * everything up to six parts; a donut answers "how big is this against that" worse
+   * than any other chart, because arc lengths do not compare and the figures end up in
+   * a legend away from the shape. So it keeps only the case where the split itself is
+   * the claim — two or three parts — and bars take the rest.
+   */
+  it("draws three parts as a donut and four as bars", () => {
+    expect(bestFor("chart", composition(3), context)?.id).toBe("AllocationDonut");
+    expect(bestFor("chart", composition(4), context)?.id).toBe("BarChart");
+    expect(bestFor("chart", composition(8), context)?.id).toBe("BarChart");
   });
 
   it("sends more than twelve rows to a table", () => {

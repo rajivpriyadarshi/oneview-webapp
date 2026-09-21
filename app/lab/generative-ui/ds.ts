@@ -1,0 +1,168 @@
+/**
+ * The presentation scale. One place that decides what anything looks like.
+ *
+ * This file exists because of a specific failure. Every component in this prototype
+ * was choosing its own type size, its own border and its own padding inline —
+ * `text-[13px]` here, `text-[12px]` two lines down, `rounded-[10px] border
+ * border-black/8 bg-white/50` on six different leaves. Each choice was defensible and
+ * the aggregate was noise: a page of competing boxes with no rhythm, which is exactly
+ * what a generated view cannot afford. When a human lays out one report they hold the
+ * whole page in their head. A composer assembling components it has never seen
+ * together cannot, so consistency has to come from the components being incapable of
+ * disagreeing.
+ *
+ * So: no component below this file names a pixel size, a weight, or an opacity again.
+ * They name a *role* — `TYPE.sectionTitle`, `TONE.positive`, `RHYTHM.block` — and this
+ * file decides what the role means. That is the same discipline the brief applies to
+ * the model ("semantic presentation, not visual styling"); it turns out the components
+ * need it for the same reason.
+ *
+ * The scale is deliberately small. Four type sizes for text, two for figures, three
+ * tones, three rhythms. A restricted palette of decisions is what makes independently
+ * composed blocks look like one document.
+ */
+
+/* ------------------------------------------------------------------ typography */
+
+/**
+ * Six roles, and every one of them is load-bearing somewhere.
+ *
+ * `docTitle` is serif and everything else is sans. That is the one typeface contrast
+ * in the document and it does real work: it marks the title as the title without
+ * needing size alone to carry it, which is what lets `sectionTitle` be quiet.
+ */
+export const TYPE = {
+  /** The report's name. Serif, because it is the only thing at this level. */
+  docTitle: "font-butler text-[32px] leading-[1.15] tracking-[-0.01em] text-[#171615]",
+  /** One line under the title saying what the report is for. */
+  docSubtitle: "font-satoshi text-[16px] leading-[1.5] text-black/45",
+
+  /**
+   * A block's name — "Executive summary", "Portfolio allocation".
+   *
+   * Semibold at body size rather than large: a heading earns attention by weight and
+   * by the space above it, and using size for eight headings on one page produces a
+   * document that shouts in eight places.
+   */
+  sectionTitle: "font-satoshi text-[15px] font-semibold leading-[1.4] text-[#171615]",
+  /** An optional line under a block title. */
+  sectionCaption: "font-satoshi text-[13px] leading-[1.5] text-black/45",
+
+  /**
+   * Running prose.
+   *
+   * 15px at 1.65 is the one measurement here worth defending: the old 12–13px body
+   * text is why the prose read as a caption beside the figures rather than as the
+   * answer, and the answer is the part the brief calls the source of truth.
+   */
+  body: "font-satoshi text-[15px] leading-[1.65] text-black/75",
+  /** The lead paragraph. Same family, slightly larger, same colour. */
+  bodyLead: "font-satoshi text-[16px] leading-[1.65] text-black/75",
+
+  /**
+   * A label above a figure, or a table header.
+   *
+   * Sentence case, not the uppercase micro-label this prototype used everywhere.
+   * Uppercase tracking is a device for one or two labels on a page; at the density a
+   * generated report reaches it turns every caption into furniture.
+   */
+  label: "font-satoshi text-[13px] leading-[1.4] text-black/45",
+  /** Beneath a figure: what it is measured against. */
+  caption: "font-satoshi text-[13px] leading-[1.45] text-black/45",
+
+  /** A headline figure. */
+  figure: "font-satoshi text-[32px] font-medium leading-[1.05] tracking-[-0.02em] tabular-nums text-[#171615]",
+  /** A figure in a strip of peers, or inside a block. */
+  figureSm: "font-satoshi text-[20px] font-medium leading-[1.1] tracking-[-0.01em] tabular-nums text-[#171615]",
+
+  /** Table text. Tabular figures, because a column of numbers has to align. */
+  cell: "font-satoshi text-[14px] leading-[1.5] text-[#171615]",
+  cellMuted: "font-satoshi text-[14px] leading-[1.5] text-black/50",
+} as const;
+
+/* ------------------------------------------------------------------- sentiment */
+
+/**
+ * The three tones, and the only colour any component is allowed to choose.
+ *
+ * Colour here is never decoration. Green and red in a financial report are claims —
+ * "this went the client's way", "this did not" — so the tone is derived from the
+ * finding's own `sentiment` or the sign of its value, never from a prop. A composer
+ * that could set the tone could make a loss look like a gain without touching the
+ * number, which is precisely the class of thing §9 forbids.
+ */
+export const TONE = {
+  positive: { text: "text-[#1F6F4A]", bg: "bg-[#1F6F4A]/10", hex: "#1F6F4A" },
+  negative: { text: "text-[#A03A2B]", bg: "bg-[#A03A2B]/10", hex: "#A03A2B" },
+  neutral: { text: "text-black/55", bg: "bg-black/[0.05]", hex: "#171615" },
+} as const;
+
+export type ToneName = keyof typeof TONE;
+
+/** The emphasised bar / series colour, and the grey everything else sits in. */
+export const CHART = {
+  /** One series is the subject. It gets the ink. */
+  primary: "#2C5F4B",
+  /** The rest are context. Grey, so the subject is unambiguous. */
+  context: "#D4D4D1",
+  /** A target or benchmark band behind the subject. */
+  reference: "#E8E7E4",
+} as const;
+
+/* ---------------------------------------------------------------------- rhythm */
+
+/**
+ * Vertical space, which is what actually makes a document readable.
+ *
+ * Three steps only. The important one is `section`: 40px between blocks is what
+ * separates "a document with sections" from "a stack of cards", and it is the single
+ * change that does most of the work in making composed output look deliberate.
+ */
+export const RHYTHM = {
+  /** Between top-level blocks. */
+  section: "space-y-[40px]",
+  /** Between elements inside one block. */
+  block: "space-y-[16px]",
+  /** Between lines of one element. */
+  tight: "space-y-[8px]",
+} as const;
+
+/* -------------------------------------------------------------------- surfaces */
+
+/**
+ * Almost nothing is a card.
+ *
+ * The prototype's default was a bordered translucent panel per component, so a report
+ * with nine findings rendered as nine boxes and the reader got no signal about which
+ * mattered. A box should mean something — here it means "this is a discrete figure you
+ * should be able to scan against its peers", which is true of a metric tile and false
+ * of a paragraph, a table, or a chart. Those sit flat on the page.
+ */
+export const SURFACE = {
+  /** A metric tile. The only routinely boxed thing in the document. */
+  tile: "rounded-[10px] border border-black/[0.09] bg-white px-[16px] py-[14px]",
+  /** A callout that has to be noticed — a flag, a recommendation. Tinted, not boxed. */
+  inset: "rounded-[10px] border border-black/[0.07] bg-[#FBFAF8] px-[16px] py-[14px]",
+  /** One hairline. Used for table rows and under a section title. */
+  hairline: "border-black/[0.09]",
+} as const;
+
+/** A tinted pill: a delta beside a figure, a severity beside a risk. */
+export const pill = (tone: ToneName): string =>
+  `inline-flex items-center rounded-[6px] px-[6px] py-[2px] font-satoshi text-[12px] font-medium tabular-nums ${TONE[tone].bg} ${TONE[tone].text}`;
+
+/**
+ * A tone from a signed number, which is the honest source for it.
+ *
+ * Takes `sentiment` when the analysis stated one, because "up" and "good" are not the
+ * same thing — a rising cost and a rising return both have a positive sign and opposite
+ * meanings, and only layer 3 knows which.
+ */
+export const toneOf = (
+  value: number | undefined,
+  sentiment?: "positive" | "negative" | "neutral",
+): ToneName => {
+  if (sentiment) return sentiment;
+  if (value === undefined || value === 0) return "neutral";
+  return value > 0 ? "positive" : "negative";
+};

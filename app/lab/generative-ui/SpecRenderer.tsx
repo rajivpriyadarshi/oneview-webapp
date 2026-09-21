@@ -26,11 +26,12 @@ import React, { type CSSProperties } from "react";
 import { resolveKey, type DataBundle } from "./data";
 import { CONTAINER_COMPONENTS, isLayoutId } from "./containers";
 import { LEAF_COMPONENTS, isLeafId, type Provenance, type Resolved } from "./leaves";
-import type { Finding } from "./findings";
+import { measureGroup, type Finding } from "./findings";
 import { REGISTRY, specOf } from "./registry";
-import type { SemanticReport } from "./semantic";
+import { headlineFigures, type SemanticReport } from "./semantic";
 import { childrenOf, type UINode, type UISpec } from "./spec";
 import { INK, LABEL } from "./chrome";
+import { TYPE } from "./ds";
 
 /* ------------------------------------------------------------------ resolve */
 
@@ -67,17 +68,77 @@ function claimFinding(
   return chosen;
 }
 
+/**
+ * The report's own writing, reached by reference rather than by copy.
+ *
+ * `report.summary` and `report.narrative` are prose the analysis authored, and the
+ * document needs them on the page — the reference layout's "Executive summary" is
+ * exactly this. Putting the text into `props` would have been simpler and wrong: props
+ * are presentation, the validator rejects content found in them, and a spec carrying a
+ * copy of the answer is a spec that can disagree with the answer. So the node carries
+ * `source: "summary"` — a reference, the same shape of promise `dataKey` makes about the
+ * bundle — and resolution reads the live value here.
+ */
+const reportText = (node: UINode, report: SemanticReport | undefined): string | undefined => {
+  const source = node.props.source;
+  if (source !== "summary" && source !== "narrative") return undefined;
+  return report?.[source];
+};
+
+/**
+ * The sibling findings a table's columns come from.
+ *
+ * Only for components that tabulate several measures over one set of entities. The
+ * predicate lives in findings.ts and is shared with the composer on purpose: the
+ * composer chose a table *because* this group exists, so collecting a different group
+ * here would build the table out of claims it was not chosen for.
+ *
+ * Marking the whole group claimed matters. Without it the section's other measures are
+ * still unclaimed, and a second node over the same section would render one of them
+ * again — the reader would see the table and then one of its own columns repeated.
+ */
+function claimGroup(
+  node: UINode,
+  report: SemanticReport | undefined,
+  finding: Finding | undefined,
+  claimed: Set<string>,
+): Finding[] | undefined {
+  /*
+   * The headline strip, whose figures come from across the report rather than from one
+   * section — so it has no `sectionId` and cannot be resolved by the per-section claim.
+   * `headlineFigures` is the same rule the composer used to decide the strip exists and
+   * to claim its figures, which is why the strip shows exactly what the sections below
+   * are no longer printing.
+   */
+  if (node.component === "MetricStrip" && node.props.source === "key_figures") {
+    if (!report) return undefined;
+    const figures = headlineFigures(report);
+    for (const member of figures) claimed.add(member.id);
+    return figures.length >= 2 ? figures : undefined;
+  }
+
+  if (node.component !== "ComparisonTable" || !finding || !report || !node.sectionId) return undefined;
+  const section = report.sections.find((entry) => entry.id === node.sectionId);
+  if (!section) return undefined;
+
+  const group = measureGroup(section.findings, finding);
+  for (const member of group) claimed.add(member.id);
+  return group.length > 1 ? group : undefined;
+}
+
 /** One pure pass over the tree, so render itself resolves nothing. */
 function resolveAll(spec: UISpec, report: SemanticReport | undefined, bundle: DataBundle): Map<string, Resolved> {
   const resolved = new Map<string, Resolved>();
   const claimed = new Set<string>();
 
   const visit = (node: UINode): void => {
+    const finding = claimFinding(node, report, claimed);
     resolved.set(node.id, {
       node,
       props: node.props,
-      finding: claimFinding(node, report, claimed),
-      value: node.dataKey ? resolveKey(bundle, node.dataKey) : undefined,
+      finding,
+      group: claimGroup(node, report, finding, claimed),
+      value: node.dataKey ? resolveKey(bundle, node.dataKey) : reportText(node, report),
       provenance: node.dataKey ? (bundle.provenance[node.dataKey] as Provenance | undefined) : undefined,
     });
     for (const child of childrenOf(node)) visit(child);
@@ -220,7 +281,10 @@ export function SpecRenderer({
   const count = revealed ?? spec.root.length;
 
   return (
-    <div className="flex flex-col gap-[26px]">
+    // 40px between top-level areas, matching `RHYTHM.section`. The rhythm between
+    // areas is the document's coarsest signal and it has to be larger than the rhythm
+    // *inside* an area, or the reader cannot tell where one section ends.
+    <div className="flex flex-col gap-[40px]">
       {spec.root.slice(0, count).map((node) => (
         // Keyed on the node, so a landed area is never remounted by a later one
         // arriving — its build animation runs once, when it first appears.
@@ -394,17 +458,18 @@ function AssemblyStyles() {
  */
 export function NarrativeFallback({ title, narrative }: { title?: string; narrative: string }) {
   return (
-    <article className="flex flex-col gap-[10px]">
-      {title ? (
-        <h1 className="font-satoshi text-[20px] font-medium tracking-[-0.01em]" style={{ color: INK }}>
-          {title}
-        </h1>
-      ) : null}
-      {narrative.split(/\n{2,}/).map((paragraph, index) => (
-        <p key={index} className="font-satoshi text-[14px] leading-[1.6] text-black/70">
-          {paragraph}
-        </p>
-      ))}
+    // Set on the same scale as the composed document, deliberately. The fallback is the
+    // authoritative answer, so it should not look like a degraded version of the view —
+    // it should look like the same report with fewer components in it.
+    <article>
+      {title ? <h1 className={TYPE.docTitle}>{title}</h1> : null}
+      <div className={title ? "mt-[20px]" : ""}>
+        {narrative.split(/\n{2,}/).map((paragraph, index) => (
+          <p key={index} className={`${TYPE.body} ${index === 0 ? "" : "mt-[14px]"}`}>
+            {paragraph}
+          </p>
+        ))}
+      </div>
     </article>
   );
 }

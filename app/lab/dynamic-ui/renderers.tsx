@@ -96,7 +96,7 @@ function linePath(series: Series, width: number, height: number, pad = 4) {
   return { d, points, width, height };
 }
 
-function LineSvg({
+export function LineSvg({
   series,
   color,
   height = 120,

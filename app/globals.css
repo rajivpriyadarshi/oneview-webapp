@@ -1,6 +1,14 @@
 @config "../tailwind.config.js";
 @import "tailwindcss";
 
+/**
+ * The generative-UI lab's shadcn tokens. Registers `bg-card`, `text-muted-foreground`
+ * and friends as utilities, but leaves their *values* undefined outside `.gu-theme`,
+ * so nothing here reaches production surfaces. See that file's header for why the
+ * variables are named `--gu-*` instead of shadcn's defaults.
+ */
+@import "./lab/generative-ui/ui/theme.css";
+
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 

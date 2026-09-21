@@ -36,6 +36,7 @@ import { TaskTypeSchema, type TaskType } from "./intent";
 
 export const RecipeIdSchema = z.enum([
   "AnalyticalReport",
+  "PropertyReport",
   "ComparisonReport",
   "TimelineReport",
   "EntityOverview",
@@ -149,7 +150,94 @@ const ANALYTICAL_REPORT: ViewRecipe = {
       disclosure: "collapsed",
     },
   ],
-  maxAreas: 7,
+  // Eight, not seven. Seven was tuned on a quarterly performance review, where the
+  // whole report is one side of the balance sheet. A full analysis has both sides —
+  // what it is worth, how it is invested, what is borrowed, what is owed next — and at
+  // seven the area that lost was `provenance`, because it sits last in slot order and
+  // placement is first-fit. Dropping the sources and the currency assumptions off a
+  // financial document to save a row is the wrong trade. The slot caps still bind, so
+  // this buys one more area, not a longer page.
+  maxAreas: 8,
+};
+
+/**
+ * The assets, then who holds them, then what they need — the shape for a balance
+ * sheet whose weight is in things that do not trade.
+ *
+ * Worth having as its own recipe rather than as an AnalyticalReport with different
+ * content, because the analytical shape's argument is movement: headline, what changed,
+ * why it changed. A book that is 41% property, 76% illiquid and carries no benchmark
+ * has no movement to lead with — four valuations, three of them months old, do not make
+ * a performance story, and putting them in a "what changed" slot would claim they do.
+ * The questions this shape answers in order are: what is it worth, what is in the book,
+ * who owns it, what has to be paid and when, and what is the exposure.
+ *
+ * `structure` is the slot the analytical shape has no equivalent of. Where assets sit in
+ * a trust, a holding company and a personal name, ownership is not a footnote — it
+ * decides who can sell, who is taxed and what succession means — and a recipe that had
+ * nowhere to put it would push it into a generic detail slot behind the numbers.
+ */
+const PROPERTY_REPORT: ViewRecipe = {
+  id: "PropertyReport",
+  description: "What it is worth, what is in the book, who holds it, what it needs.",
+  serves: ["property_review"],
+  slots: [
+    {
+      id: "headline",
+      accepts: ["summary", "identity"],
+      required: true,
+      arrangement: "single",
+      maxAreas: 1,
+    },
+    {
+      id: "book",
+      defaultHeading: "The book",
+      accepts: ["allocation", "comparison", "performance"],
+      required: true,
+      maxAreas: 2,
+    },
+    {
+      id: "structure",
+      defaultHeading: "How it is held",
+      accepts: ["identity", "activity", "drivers", "market_context"],
+      required: false,
+      maxAreas: 2,
+    },
+    {
+      id: "funding",
+      defaultHeading: "What it needs",
+      accepts: ["commitments", "liquidity"],
+      required: false,
+      maxAreas: 2,
+    },
+    {
+      id: "risks",
+      defaultHeading: "Exposure",
+      accepts: ["risk"],
+      required: false,
+      maxAreas: 1,
+    },
+    {
+      id: "actions",
+      defaultHeading: "What to do next",
+      accepts: ["recommendations", "actions"],
+      required: false,
+      maxAreas: 1,
+    },
+    {
+      id: "provenance",
+      defaultHeading: "Valuations and sources",
+      accepts: ["evidence"],
+      required: false,
+      maxAreas: 1,
+      disclosure: "collapsed",
+    },
+  ],
+  // Nine, and the highest ceiling of any recipe here, because this shape carries two
+  // things the others fold away: an ownership structure and a dated funding calendar.
+  // The slot caps still add to ten, so this is not a licence for a longer page — it is
+  // the difference between nine areas placed and the last one, the sources, dropped.
+  maxAreas: 9,
 };
 
 /**
@@ -373,6 +461,7 @@ const ACTION_PLAN: ViewRecipe = {
 
 export const RECIPES: Record<RecipeId, ViewRecipe> = {
   AnalyticalReport: ANALYTICAL_REPORT,
+  PropertyReport: PROPERTY_REPORT,
   ComparisonReport: COMPARISON_REPORT,
   TimelineReport: TIMELINE_REPORT,
   EntityOverview: ENTITY_OVERVIEW,

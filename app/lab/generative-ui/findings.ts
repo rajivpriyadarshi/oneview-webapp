@@ -113,6 +113,17 @@ export const MetricFindingSchema = FindingMetaSchema.extend({
   label: z.string().min(1),
   /** Pre-formatted: "S$25.4m". Currency and precision are the analysis's call. */
   value: z.string().min(1),
+  /**
+   * What the figure is measured against, in the analysis's own words: "of total
+   * portfolio", "vs. your 35–45% range", "in the last 12 months".
+   *
+   * A claim, not a caption. A figure with no basis is ambiguous in a way a reader
+   * cannot resolve — 62% of what, against what — and the presentation layer must not
+   * be the thing that supplies the answer, because it would be guessing. So the field
+   * belongs to the finding and the strip renders it where the reference document puts
+   * it: under the figure it qualifies.
+   */
+  basis: z.string().optional(),
   delta: DeltaSchema.optional(),
   series: SeriesSchema.optional(),
 });
@@ -296,6 +307,31 @@ export const isPlottable = (series: Series | undefined): boolean =>
 export const hasEntitySeries = (finding: ComparisonFinding): boolean =>
   finding.entities.length > 0 &&
   finding.entities.every((entity) => isPlottable(entity.series));
+
+/**
+ * The same things, measured several ways.
+ *
+ * A comparison finding holds N entities on *one* measure — that is the schema's rule
+ * and the semantic layer is instructed in those terms: five holdings on three measures
+ * is three findings over the same five entities. Which leaves a shape the presentation
+ * layer has to recognise, because it is the one case where the right answer is a table.
+ * A chart can only draw one of the measures and a set of cards repeats the entity names
+ * three times; a table puts the entities down the side and the measures across the top,
+ * which is what the claim looked like before it was split up.
+ *
+ * Exported rather than inlined because two places need it and they must agree: the
+ * composer decides a table on it, and the renderer collects the columns with it. If
+ * they disagreed the table would be built from a different set of findings than the one
+ * it was chosen for.
+ */
+export const measureGroup = (findings: Finding[], of: Finding): ComparisonFinding[] => {
+  if (of.kind !== "comparison" || of.entities.length < 2) return [];
+  const key = (finding: ComparisonFinding): string => finding.entities.map((entity) => entity.name).join(" ");
+  const wanted = key(of);
+  return findings.filter(
+    (finding): finding is ComparisonFinding => finding.kind === "comparison" && key(finding) === wanted,
+  );
+};
 
 /** How many things a finding puts in front of the reader. Drives the IA rules. */
 export const cardinalityOf = (finding: Finding): number => {

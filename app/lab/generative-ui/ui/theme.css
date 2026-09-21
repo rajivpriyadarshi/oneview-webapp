@@ -1,0 +1,101 @@
+/**
+ * shadcn's design tokens, scoped to this prototype and mapped to OneView's palette.
+ *
+ * Two problems this file exists to solve, both of which would otherwise be silent:
+ *
+ *   1. **Token collision.** app/globals.css already defines `--background`,
+ *      `--foreground`, `--muted` and `--card` with production meanings. shadcn uses
+ *      the same four names for different things. Redefining them at `:root` would
+ *      restyle the entire app, so every token here is named `--gu-*` and the
+ *      Tailwind utilities point at those instead.
+ *
+ *   2. **Opt-in by scope.** The `--gu-*` values are declared only inside
+ *      `.gu-theme`. A shadcn utility used anywhere else in the app resolves to an
+ *      undefined variable and paints nothing, which is the failure mode we want:
+ *      inert outside the prototype rather than subtly wrong.
+ *
+ * The values are OneView's, not shadcn's neutral defaults. A generated view has to
+ * look like it belongs to the product it appears in, and the point of owning the
+ * registry is that we get to decide that — so `--gu-foreground` is the same
+ * `#171615` as chrome.tsx's INK, cards are the same translucent white, and the
+ * accent is the brown already used by the assembly animation.
+ */
+
+@theme {
+  --color-background: var(--gu-background);
+  --color-foreground: var(--gu-foreground);
+  --color-card: var(--gu-card);
+  --color-card-foreground: var(--gu-card-foreground);
+  --color-popover: var(--gu-popover);
+  --color-popover-foreground: var(--gu-popover-foreground);
+  --color-primary: var(--gu-primary);
+  --color-primary-foreground: var(--gu-primary-foreground);
+  --color-secondary: var(--gu-secondary);
+  --color-secondary-foreground: var(--gu-secondary-foreground);
+  --color-muted: var(--gu-muted);
+  --color-muted-foreground: var(--gu-muted-foreground);
+  --color-accent: var(--gu-accent);
+  --color-accent-foreground: var(--gu-accent-foreground);
+  --color-destructive: var(--gu-destructive);
+  --color-destructive-foreground: var(--gu-destructive-foreground);
+  --color-border: var(--gu-border);
+  --color-input: var(--gu-input);
+  --color-ring: var(--gu-ring);
+  --radius-sm: calc(var(--gu-radius) - 4px);
+  --radius-md: calc(var(--gu-radius) - 2px);
+  --radius-lg: var(--gu-radius);
+  --radius-xl: calc(var(--gu-radius) + 4px);
+}
+
+.gu-theme {
+  /* The page the view sits on, and the ink on it. */
+  --gu-background: #f6f5f3;
+  --gu-foreground: #171615;
+
+  /* Cards match chrome.tsx's CARD: translucent white over the page tint. */
+  --gu-card: rgba(255, 255, 255, 0.65);
+  --gu-card-foreground: #171615;
+  --gu-popover: #ffffff;
+  --gu-popover-foreground: #171615;
+
+  /* Brown, as used by the assembly outline and the production link colour. */
+  --gu-primary: #7f4e0b;
+  --gu-primary-foreground: #ffffff;
+
+  --gu-secondary: rgba(23, 22, 21, 0.06);
+  --gu-secondary-foreground: #171615;
+
+  /* `muted-foreground` is the single most-used token in shadcn's components, and
+     it is what every caption and column header in a report lands on. Tuned to the
+     same black/45 the hand-built leaves already use. */
+  --gu-muted: rgba(23, 22, 21, 0.04);
+  --gu-muted-foreground: rgba(23, 22, 21, 0.55);
+
+  --gu-accent: rgba(127, 78, 11, 0.08);
+  --gu-accent-foreground: #7f4e0b;
+
+  /* Reds and greens are the two colours in a financial report that carry meaning
+     rather than decoration, so they match the DeltaChip sentiment pair exactly. */
+  --gu-destructive: #a03a2b;
+  --gu-destructive-foreground: #ffffff;
+
+  --gu-border: rgba(0, 0, 0, 0.1);
+  --gu-input: rgba(0, 0, 0, 0.12);
+  --gu-ring: rgba(127, 78, 11, 0.35);
+
+  /* 12px, matching CARD's rounded-[12px]. shadcn's default 0.5rem is tighter than
+     everything else on the page. */
+  --gu-radius: 12px;
+}
+
+/**
+ * Typography, because shadcn assumes a sans stack it does not set.
+ *
+ * Satoshi is the product's face and every hand-built leaf already asks for it
+ * explicitly. Setting it on the scope means the shadcn primitives inherit it
+ * instead of each component needing `font-satoshi` threaded through.
+ */
+.gu-theme {
+  font-family: var(--font-satoshi), Arial, Helvetica, sans-serif;
+  font-feature-settings: "tnum" 1;
+}

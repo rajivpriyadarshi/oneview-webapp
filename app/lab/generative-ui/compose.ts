@@ -35,12 +35,18 @@
  */
 
 import { hasKey, type DataBundle } from "./data";
-import { cardinalityOf, hasEntitySeries, isPlottable, type Finding } from "./findings";
+import { cardinalityOf, hasEntitySeries, isPlottable, measureGroup, type Finding } from "./findings";
 import type { ChartIntent, IAArea, IAPlan, PresentationForm, SectionPresentation } from "./ia";
 import type { IntentPlan } from "./intent";
 import { RECIPES, candidateSlots, selectRecipe, type RecipeId, type RecipeSlot, type ViewRecipe } from "./recipes";
 import { bestFor, specOf, type ComponentId } from "./registry";
-import { questionGroups, sectionById, type SemanticReport, type SemanticSection } from "./semantic";
+import {
+  headlineFigures,
+  questionGroups,
+  sectionById,
+  type SemanticReport,
+  type SemanticSection,
+} from "./semantic";
 import type { UINode, UISpec } from "./spec";
 import { FIGURE } from "./validate";
 
@@ -273,6 +279,30 @@ export type IAResult = { plan: IAPlan; recipe: ViewRecipe; recipeId: RecipeId; u
  * the only form that survives a model having a productive afternoon, and anything
  * that does not fit is reported as unplaced rather than dropped quietly.
  */
+/**
+ * A section that says nothing the executive summary has not already said.
+ *
+ * The document now opens on `report.summary`, so a summary section whose prose *is* that
+ * sentence prints it twice, one block apart, and the reader's first impression of the
+ * report is that it repeats itself. This is a disclosure decision, which the composer is
+ * allowed to make, and it removes nothing: the claim is on the page, at the top, in the
+ * words the analysis wrote.
+ *
+ * Deliberately narrow. Only a `summary` section, only when *every* finding in it is
+ * prose, and only on containment — a summary section that also carries a figure, a
+ * comparison or a flag is saying something extra and stays.
+ */
+function restatesSummary(group: SemanticSection[], report: SemanticReport): boolean {
+  const lead = report.summary.trim();
+  if (lead.length < 24) return false;
+  return group.every(
+    (section) =>
+      section.semanticType === "summary" &&
+      section.findings.length > 0 &&
+      section.findings.every((finding) => finding.kind === "narrative" && lead.includes(finding.text.trim())),
+  );
+}
+
 export function planIA(report: SemanticReport, intent: IntentPlan): IAResult {
   const recipeId = selectRecipe(report.reportType, intent.needs);
   const recipe = RECIPES[recipeId];
@@ -285,7 +315,7 @@ export function planIA(report: SemanticReport, intent: IntentPlan): IAResult {
     },
   ];
 
-  const groups = questionGroups(report);
+  const groups = questionGroups(report).filter((group) => !restatesSummary(group, report));
   const used = new Map<string, number>();
   const areas: IAArea[] = [];
   const unplaced: string[] = [];
@@ -407,7 +437,9 @@ const FALLBACK_COMPONENT: Record<Finding["kind"], ComponentId> = {
   composition: "BarChart",
   transition: "InsightCard",
   requirement: "Timeline",
-  narrative: "InsightCard",
+  // Prose, not InsightCard. A paragraph's default home is the document's flow; boxing
+  // it was what kept the written answer off the success path entirely.
+  narrative: "Prose",
   recommendation: "Recommendation",
   flag: "RiskAlert",
   checklist: "Checklist",
@@ -420,7 +452,14 @@ function componentFor(
   siblings: number,
 ): ComponentId {
   if (section.semanticType === "evidence") return "SourceList";
-  const scored = bestFor(form, finding, { count: cardinalityOf(finding), siblings });
+  const scored = bestFor(form, finding, {
+    count: cardinalityOf(finding),
+    siblings,
+    // The one thing a finding cannot know about itself: how many of its siblings
+    // measure the same entities. Several measures over one set of names is a table,
+    // and only this level can see it.
+    measures: measureGroup(section.findings, finding).length,
+  });
   return scored?.id ?? FALLBACK_COMPONENT[finding.kind];
 }
 
@@ -466,6 +505,12 @@ function propsFor(
 
   const fallbackHeading = SEMANTIC_HEADINGS[section.semanticType];
   const title = safeHeading(heading, asHeading(section.question), fallbackHeading);
+  /*
+   * What the enclosing Section is already headed with. A label equal to it is the same
+   * words twice, one line apart; a label different from it is the claim's own name,
+   * which the extras pass deliberately.
+   */
+  const sectionTitle = safeHeading(asHeading(section.question), fallbackHeading);
 
   switch (component) {
     case "Metric":
@@ -478,13 +523,43 @@ function propsFor(
       break;
 
     case "MetricStrip":
-      props.columns = 3;
+      // Four across, because four is what the document measure fits on one line and a
+      // strip that wraps to a second row stops reading as a set.
+      props.columns = 4;
       props.heading = title;
+      break;
+
+    case "Prose": {
+      // `lead` only for the report's own summary section, so exactly one passage on the
+      // page is set larger. Any more and the emphasis means nothing.
+      const lead = section.semanticType === "summary" && presentation.emphasis !== "quiet";
+      props.variant = lead ? "lead" : presentation.emphasis === "quiet" ? "note" : "body";
+      // No heading when the finding brings its own — two titles on one passage is the
+      // bug the old InsightCard comment was working around.
+      if (finding.kind === "narrative" && !finding.heading) props.heading = title;
+      break;
+    }
+
+    case "BulletSummary":
+      props.heading = title;
+      // Numbered when the items are a sequence to work through rather than a set of
+      // observations. `requirement` is the kind that carries an order.
+      props.numbered = finding.kind === "requirement" || finding.kind === "checklist";
       break;
 
     case "DataTable":
       props.label = title;
       props.compact = cardinalityOf(finding) > 8;
+      break;
+
+    case "ComparisonTable":
+      // No label where the label would be the section's own heading, printed directly
+      // above it. The table's columns name the measures; the question names the table.
+      if (title !== sectionTitle) props.label = title;
+      // The row header names what the rows *are*, and the finding's label is the only
+      // place that is stated — "Holding", "Fund", "Option". Not derived from the entity
+      // names, which would make the header a fact.
+      props.entityHeader = safeLabel(finding.kind === "comparison" ? finding.label : undefined, "Name");
       break;
 
     case "RankedList":
@@ -595,6 +670,14 @@ type Builder = {
   claimed: Set<string>;
   /** Every node made, in document order, for the headline pass. */
   created: UINode[];
+  /**
+   * Nodes that sit in a row of peers.
+   *
+   * The headline pass may not promote one of these. A row of figures is read as a set,
+   * and enlarging one of four cards makes it a different kind of thing rather than a
+   * more important one — which is exactly how the strip came out at two type sizes.
+   */
+  peers: Set<string>;
   counter: { n: number };
   unplaced: string[];
 };
@@ -615,9 +698,26 @@ const uid = (build: Builder, base: string): string => {
  */
 function claim(build: Builder, section: SemanticSection, accepts: Finding["kind"][]): Finding | undefined {
   const fits = accepts.length > 0 ? section.findings.filter((f) => accepts.includes(f.kind)) : section.findings;
-  const pool = fits.length > 0 ? fits : section.findings;
-  const fresh = pool.find((finding) => !build.claimed.has(finding.id));
-  const chosen = fresh ?? pool[0];
+  /*
+   * Unclaimed only, and never a second copy of something already placed.
+   *
+   * It used to end `fresh ?? pool[0]`, on the reasoning that a section should never come
+   * out empty. That was safe only while every claim came from the same area; once the
+   * headline strip could take a figure from anywhere in the report, the fallback printed
+   * it a second time under its own section — the duplication the strip exists to remove.
+   *
+   * But "prefer the form's kinds" and "only unclaimed" are two conditions, and treating
+   * them as one loses sections. `formFor` picks the form from the section's *dominant*
+   * finding, which is exactly the finding the headline strip is most likely to have
+   * promoted; a performance section whose one metric went to the strip then had its form
+   * set to "metric", found no unclaimed metric, and was dropped — taking its benchmark
+   * comparison and its narrative with it, both unplaced and neither duplicated anywhere.
+   * So the kind preference degrades: the right shape first, then anything the section
+   * still has to say, and only then nothing.
+   */
+  const chosen =
+    fits.find((finding) => !build.claimed.has(finding.id)) ??
+    section.findings.find((finding) => !build.claimed.has(finding.id));
   if (chosen) build.claimed.add(chosen.id);
   return chosen;
 }
@@ -665,38 +765,82 @@ function nodesForSection(
    * enforces; past it the honest answer is a table, and `formFor` has already said
    * so for the cases where the count is known from the finding.
    */
+  /*
+   * What the section leads with. One node, or a row of peer figures.
+   *
+   * This used to be two independent paths, and the strip path returned straight out of
+   * the function — so a section presented as a strip placed its metrics and dropped
+   * everything else it said. On the funding section that cost the `critical` flag
+   * naming the US$310k shortfall: the most important sentence in the report, silently
+   * absent, and not even counted as unplaced because the section did produce nodes.
+   * The lead is chosen differently in the two cases; what follows it is not.
+   */
+  const lead: UINode[] = [];
+
   if (presentation.form === "metric_strip") {
-    const metrics = section.findings.filter((finding) => finding.kind === "metric").slice(0, 4);
+    /*
+     * Unclaimed only. A figure the headline strip took has already been placed, and
+     * drawing it again here is the doubled-content mistake with numbers instead of
+     * sentences. A section whose figures were all promoted yields nothing and is
+     * dropped by `buildArea`.
+     */
+    const metrics = section.findings
+      .filter((finding) => finding.kind === "metric" && !build.claimed.has(finding.id))
+      .slice(0, 4);
+    /*
+     * One weight for every cell in the row. This used to give the first metric the
+     * section's emphasis and the rest "normal", which resolved to two different
+     * components — 34px with a sparkline beside 22px without — for two figures that are
+     * peers by construction. Rank is expressed by which figures are in the row and in
+     * what order, not by making one of them bigger.
+     */
+    const weight: SectionPresentation = { ...presentation, emphasis: "normal" };
     const cells = metrics
-      .map((finding, index) =>
-        make(finding, "metric", index === 0 ? presentation : { ...presentation, emphasis: "normal" }),
-      )
+      .map((finding) => make(finding, "metric", weight))
       .filter((node): node is UINode => node !== null);
     for (const finding of metrics) build.claimed.add(finding.id);
+    if (cells.length > 1) for (const cell of cells) build.peers.add(cell.id);
 
-    if (cells.length === 0) return [];
-    if (cells.length === 1) return cells;
-    return [
-      {
+    if (cells.length === 1) {
+      lead.push(cells[0]);
+    } else if (cells.length > 1) {
+      lead.push({
         id: uid(build, `g_${section.id}`),
         component: "Grid",
         props: { columns: Math.min(cells.length, 4) as 2 | 3 | 4 },
         children: cells,
-      },
-    ];
-  }
+      });
+    }
+    /* No cells is not a dead section: the strip form was chosen from the metrics, and
+       if every one of them went to the headline strip the flags and requirements
+       underneath them are still the section's content. The loop below picks them up. */
+  } else {
+    const kinds = section.semanticType === "evidence" ? [] : componentAccepts(presentation.form);
+    const finding = claim(build, section, kinds);
+    if (!finding) {
+      build.unplaced.push(section.id);
+      return [];
+    }
 
-  const kinds = section.semanticType === "evidence" ? [] : componentAccepts(presentation.form);
-  const finding = claim(build, section, kinds);
-  if (!finding) {
-    build.unplaced.push(section.id);
-    return [];
-  }
+    const node = make(finding, presentation.form, presentation);
+    if (!node) {
+      build.unplaced.push(section.id);
+      return [];
+    }
 
-  const node = make(finding, presentation.form, presentation);
-  if (!node) {
-    build.unplaced.push(section.id);
-    return [];
+    /*
+     * A table over several measures has placed all of them, so none is left over.
+     *
+     * Without this the extras loop below sees the other measures still unclaimed and
+     * draws each as its own ranked list — the reader gets the table and then every one
+     * of its own columns again as bars. The renderer collects the same group by the same
+     * predicate, so what is claimed here is exactly what appears in the table.
+     */
+    if (node.component === "ComparisonTable") {
+      for (const member of measureGroup(section.findings, finding)) build.claimed.add(member.id);
+    }
+
+    lead.push(node);
   }
 
   /*
@@ -715,6 +859,13 @@ function nodesForSection(
    * problem, not a layout opportunity.
    */
   const extras: UINode[] = [];
+  /*
+   * Not for evidence sections. Every finding in one resolves to `SourceList`, which
+   * draws the whole of the bound key rather than the finding it was given, so a second
+   * and third node there is the same list of sources printed again — tried, and that is
+   * exactly what it did. A method note that has to appear on the page belongs in the
+   * evidence *data*, where the source list will render it as a row.
+   */
   if (section.semanticType !== "evidence") {
     const rest = section.findings.filter((left) => !build.claimed.has(left.id)).slice(0, 4);
     for (const left of rest) {
@@ -727,13 +878,29 @@ function nodesForSection(
     }
   }
 
-  if (extras.length === 0) return [node];
+  const body = [...lead, ...extras];
+  /*
+   * Nothing to draw. Whether that is a loss depends on why.
+   *
+   * A section whose every figure was lifted into the headline strip *has* reached the
+   * page — the strip is where it landed — and calling that unplaced would report a
+   * problem that does not exist, on the most common shape there is. But a section
+   * holding findings nobody claimed and no component could draw has genuinely fallen
+   * off, and that has to be said: an unplaced section and a section with nothing to say
+   * look identical on screen, which is why this is counted rather than left to the eye.
+   */
+  if (body.length === 0) {
+    const stranded = section.findings.some((finding) => !build.claimed.has(finding.id));
+    if (stranded) build.unplaced.push(section.id);
+    return [];
+  }
+  if (body.length === 1) return body;
   return [
     {
       id: uid(build, `k_${section.id}`),
       component: "Stack",
       props: { gap: "normal" },
-      children: [node, ...extras],
+      children: body,
     },
   ];
 }
@@ -884,7 +1051,9 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
     recipe.id === "AnalyticalReport" &&
     area.id.startsWith("area_actions_") &&
     body.every((node) =>
-      (["Checklist", "Timeline", "KeyValueList", "InsightCard"] as ComponentId[]).includes(node.component),
+      (
+        ["Checklist", "Timeline", "KeyValueList", "InsightCard", "Prose", "BulletSummary"] as ComponentId[]
+      ).includes(node.component),
     );
   if (forward) {
     return {
@@ -929,6 +1098,7 @@ export function composeView(
     bundle,
     claimed: new Set(),
     created: [],
+    peers: new Set(),
     counter: { n: 0 },
     unplaced: [...ia.unplaced],
   };
@@ -937,10 +1107,73 @@ export function composeView(
     id: "header",
     component: "PageHeader",
     props: {
-      eyebrow: safeLabel(intent.timeRange.label, SEMANTIC_HEADINGS[report.reportType], "Report"),
-      subtitle: safeText(120, report.summary, intent.goal),
+      /*
+       * The period, if it can be said in a few words. A planner that writes "last 12
+       * months (and YTD where available)" has written a caveat, not a label, and an
+       * eyebrow is the one slot on the page with no room to argue — so long labels
+       * hand over to the report's own kind.
+       */
+      eyebrow: safeLabel(
+        intent.timeRange.label && intent.timeRange.label.length <= 28 ? intent.timeRange.label : undefined,
+        SEMANTIC_HEADINGS[report.reportType],
+        "Report",
+      ),
+      /*
+       * No subtitle.
+       *
+       * This used to be `intent.goal` truncated to 120 characters — the planner's
+       * restatement of the question, under a title that in the worst case was also the
+       * question. Two echoes of the query and an ellipsis, immediately above the
+       * executive summary that actually says something. The summary is the subtitle.
+       */
     },
   };
+
+  /**
+   * The executive summary, as the document's opening paragraph.
+   *
+   * This is the change that makes the output a report rather than a dashboard. The
+   * analysis always wrote a summary; until now it was squeezed into the header subtitle
+   * at 120 characters and otherwise discarded, so the page led with figures and the
+   * reader had to infer the point. Leading with the sentence and following with the
+   * evidence is how the reference document reads, and it is also what §14 has been
+   * asking for all along — the written answer *in* the view, not behind a toggle.
+   *
+   * `source` rather than the text itself, so the spec still contains no content.
+   */
+  const summary: UINode = {
+    id: "summary",
+    component: "Prose",
+    props: { heading: "Executive summary", variant: "lead", source: "summary" },
+  };
+
+  /**
+   * The figures, as the document's second line.
+   *
+   * A report opens on the sentence and then on the numbers the sentence is about — that
+   * is the reference layout and it is also how a filed note reads. Before this, the
+   * figures stayed wherever their section happened to fall, so a reader had to scroll
+   * past an allocation chart to find the total value.
+   *
+   * The selection rule is `headlineFigures`, shared with the renderer. Claiming the
+   * findings here is what keeps the page honest: a figure promoted to the top is *moved*
+   * there, not copied, so nothing below prints it a second time. Where that empties a
+   * section, `buildArea` drops it — a section that was only its figures has had its
+   * content placed, higher up.
+   */
+  const figures = headlineFigures(report);
+  const keyFigures: UINode | null =
+    figures.length >= 2
+      ? {
+          id: "key_figures",
+          component: "MetricStrip",
+          props: {
+            columns: Math.min(figures.length, 4) as 2 | 3 | 4,
+            source: "key_figures",
+          },
+        }
+      : null;
+  if (keyFigures) for (const finding of figures) build.claimed.add(finding.id);
 
   const areas = [...ia.plan.areas].sort((a, b) => a.rank - b.rank);
   const body = areas
@@ -957,7 +1190,9 @@ export function composeView(
    * candidate simply has no hero. The validator warns; it does not block.
    */
   if (!build.created.some((node) => node.props.variant === "hero")) {
-    const candidate = build.created.find((node) => specOf(node.component).variants.includes("hero"));
+    const candidate = build.created.find(
+      (node) => !build.peers.has(node.id) && specOf(node.component).variants.includes("hero"),
+    );
     if (candidate) {
       candidate.props.variant = "hero";
       if (specOf(candidate.component).sizes.includes("lg")) candidate.props.size = "lg";
@@ -967,7 +1202,7 @@ export function composeView(
   const spec: UISpec = {
     id: `view_${report.reportType}`,
     recipe: ia.recipeId,
-    root: [header, ...body],
+    root: [header, summary, ...(keyFigures ? [keyFigures] : []), ...body],
     narrative: report.narrative,
     meta: {
       reportId: report.title,

@@ -247,7 +247,22 @@ function checkNode(
   }
 
   const keys = [...(node.dataKey ? [node.dataKey] : []), ...(node.dataKeys ?? [])];
-  if (spec.requiresData && keys.length === 0) {
+  /**
+   * `source` is a binding too, just not to the bundle.
+   *
+   * A Prose node carrying `source: "summary"` points at the report's own writing, which
+   * resolution reads live (see `reportText` in ./SpecRenderer.tsx). It satisfies this
+   * rule for the reason the rule exists: the node references its content rather than
+   * containing it, so the composer still cannot author or alter a word. Accepting it
+   * here keeps the check about indirection rather than about which map the key is in.
+   */
+  const bound =
+    keys.length > 0 ||
+    node.props.source === "summary" ||
+    node.props.source === "narrative" ||
+    // The headline strip: figures reached through `headlineFigures`, not carried.
+    node.props.source === "key_figures";
+  if (spec.requiresData && !bound) {
     issues.push({
       code: "missing_data_binding",
       severity: "error",

@@ -31,7 +31,7 @@
  */
 
 import { z } from "zod";
-import { FindingSchema, type Finding } from "./findings";
+import { FindingSchema, type Finding, type MetricFinding } from "./findings";
 import { TaskTypeSchema } from "./intent";
 
 /**
@@ -184,6 +184,53 @@ export function questionGroups(report: SemanticReport): SemanticSection[][] {
   for (const section of report.sections) if (!groupOf.has(section.id)) join([section.id]);
 
   return groups.filter((group) => group.length > 0);
+}
+
+/**
+ * The figures that belong at the top of the document, under the executive summary.
+ *
+ * The reference layout opens on the sentence and then on three or four figures read as
+ * a set — the numbers the summary is about, before any section. Nothing in the semantic
+ * report says "these are the headline figures", and nothing should: that is a
+ * presentation decision. So it is made here, by rule, over what the analysis already
+ * wrote.
+ *
+ * The rule: metric findings only, ranked by the emphasis the analysis gave them and
+ * then by where they appear, deduplicated by label, capped at four. Four is the cap the
+ * strip has always had — past it a row of figures is a wall rather than a summary — and
+ * two is the floor, because one tile is not a set and reads better in its own section.
+ *
+ * Nothing is computed, aggregated or rephrased. "Aggregated" here means gathered from
+ * across the sections, not derived: every figure on the strip is a figure the analysis
+ * stated, with the analysis's own label, value, delta and basis. A composer that
+ * totalled two of them would be authoring a finding, which §9 forbids.
+ *
+ * Exported and shared, for the same reason `measureGroup` is: the composer claims these
+ * findings so their sections do not print them twice, and the renderer resolves the
+ * strip from them. If the two disagreed the strip would show one set of figures and the
+ * page would repeat another.
+ */
+export const HEADLINE_FIGURES = { min: 2, max: 4 } as const;
+
+export function headlineFigures(report: SemanticReport): MetricFinding[] {
+  const rank = { primary: 0, secondary: 1, supporting: 2 } as const;
+  const metrics = report.sections
+    .flatMap((section) => section.findings)
+    .filter((finding): finding is MetricFinding => finding.kind === "metric")
+    .map((finding, index) => ({ finding, index }))
+    .sort((a, b) => rank[a.finding.emphasis] - rank[b.finding.emphasis] || a.index - b.index);
+
+  const chosen: MetricFinding[] = [];
+  const seen = new Set<string>();
+  for (const { finding } of metrics) {
+    const key = finding.label.trim().toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    chosen.push(finding);
+    if (chosen.length === HEADLINE_FIGURES.max) break;
+  }
+
+  return chosen.length >= HEADLINE_FIGURES.min ? chosen : [];
 }
 
 /** Every bundle key the report claims to stand on. */

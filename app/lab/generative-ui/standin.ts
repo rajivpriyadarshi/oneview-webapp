@@ -18,6 +18,7 @@
  * from the model.
  */
 
+import { CLIENT } from "../dynamic-ui/clientBook";
 import type { DataBundle } from "./data";
 import type { Delta, Finding, Series } from "./findings";
 import type { IntentPlan, TaskType } from "./intent";
@@ -351,6 +352,10 @@ export function standInReport(plan: IntentPlan, bundle: DataBundle, narrative: s
           subject: "Portfolio value",
           label: "Portfolio value",
           value: summary.totalValue,
+          // `basis` is what the figure is held against, in the analysis's words. The
+          // stand-in writes it for the same reason the prompt asks the model for it: a
+          // figure with no basis leaves the reader asking "of what?".
+          basis: "across all custody accounts",
           delta: delta(summary.yearChangePct, pct(summary.yearChangePct), summary.yearChangePct > 0),
           series: { name: "Portfolio value", points: summary.valueSeries },
         },
@@ -361,6 +366,7 @@ export function standInReport(plan: IntentPlan, bundle: DataBundle, narrative: s
           subject: "Liquid assets",
           label: "Liquid assets",
           value: summary.liquidAssets,
+          basis: "available without selling a position",
           delta: delta(summary.liquidChangeM, `${money(summary.liquidChangeM)} on the period`, summary.liquidChangeM > 0),
         },
         {
@@ -370,6 +376,7 @@ export function standInReport(plan: IntentPlan, bundle: DataBundle, narrative: s
           subject: "Loan to value",
           label: "Loan to value",
           value: `${summary.loanToValuePct}%`,
+          basis: "against pledged assets",
         },
       ]),
     );
@@ -465,23 +472,43 @@ export function standInReport(plan: IntentPlan, bundle: DataBundle, narrative: s
   }
 
   if (holdings && holdings.length >= 2) {
+    /*
+     * Two positions is a pair held against each other; four or five is a book, and a
+     * book is read by measure. So above three the fixture states the claim the way the
+     * semantic layer is told to state it — one comparison finding per measure over the
+     * same entities — which is the shape the presentation layer turns into a table.
+     * Below that it stays a single measure with a history each, which is overlaid lines.
+     */
+    const wanted = Math.max(2, Math.min(plan.needs.count ?? 2, holdings.length));
+    const compared = holdings.slice(0, wanted);
+    const measures: { measure: string; of: (holding: Holding) => number; display: (holding: Holding) => string }[] =
+      wanted > 3
+        ? [
+            { measure: "Weight", of: (h) => h.sharePct, display: (h) => `${h.sharePct.toFixed(1)}%` },
+            { measure: "Return YTD", of: (h) => h.returnYtdPct, display: (h) => pct(h.returnYtdPct) },
+            { measure: "Market value", of: (h) => h.valueM, display: (h) => money(h.valueM) },
+          ]
+        : [{ measure: "Indexed return", of: (h) => h.returnYtdPct, display: (h) => pct(h.returnYtdPct) }];
+
     sections.push(
       section("s_holdings", "comparison", "How do the largest positions compare?", "primary", ["holdings.top"], [
-        {
+        ...measures.map((entry, index) => ({
           ...meta,
-          kind: "comparison",
+          kind: "comparison" as const,
           id: fid("f"),
-          emphasis: "primary",
+          emphasis: index === 0 ? ("primary" as const) : ("secondary" as const),
           subject: "Largest positions",
-          label: "Largest positions",
-          measure: "Indexed return",
-          entities: holdings.slice(0, 2).map((holding) => ({
+          label: "Holding",
+          measure: entry.measure,
+          entities: compared.map((holding) => ({
             name: holding.name,
-            value: holding.returnYtdPct,
-            display: pct(holding.returnYtdPct),
-            series: { name: holding.name, points: holding.indexed },
+            value: entry.of(holding),
+            display: entry.display(holding),
+            // Only the single-measure case draws lines, and only there does carrying a
+            // history per entity mean anything. In a table it is weight nobody reads.
+            ...(measures.length === 1 ? { series: { name: holding.name, points: holding.indexed } } : {}),
           })),
-        },
+        })),
       ]),
     );
   }
@@ -606,17 +633,24 @@ export function standInReport(plan: IntentPlan, bundle: DataBundle, narrative: s
     );
   }
 
+  /*
+   * The title names the document, not the question. A report headed with the query
+   * that produced it reads like a search result: it tells the reader what they typed,
+   * which they know, instead of what they are holding. So: subject, then the kind of
+   * report. The model is held to the same rule in STRUCTURE_SYSTEM.
+   */
+  const firstName = CLIENT.name.split(" ")[0];
   const TITLES: Partial<Record<TaskType, string>> = {
-    portfolio_review: "Portfolio review",
-    comparison: "Largest positions compared",
-    liquidity_planning: "Funding the near-term commitments",
-    risk_review: "Risk review",
-    meeting_prep: "Meeting preparation",
+    portfolio_review: `${firstName}'s portfolio review`,
+    comparison: `${firstName}'s largest positions compared`,
+    liquidity_planning: `Funding ${firstName}'s near-term commitments`,
+    risk_review: `${firstName}'s risk review`,
+    meeting_prep: `Meeting preparation — ${firstName}`,
   };
 
   return {
     reportType: plan.taskType,
-    title: TITLES[plan.taskType] ?? "Report",
+    title: TITLES[plan.taskType] ?? `${firstName}'s report`,
     summary: narrative.split("\n\n")[0] ?? narrative,
     sections,
     relations: [{ kind: "answers_same_question", sectionIds: ["s_contributors", "s_detractors"] }],
