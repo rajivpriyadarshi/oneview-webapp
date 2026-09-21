@@ -494,7 +494,7 @@ export default function GenerativeUILab() {
 
           {open && (result || stages.length > 0) ? (
             <div className="absolute inset-0 z-[80]">
-              <div aria-hidden className="gu-backdrop absolute inset-0 bg-[#F5F1EA]/[0.94] backdrop-blur-[2px]" />
+              <div aria-hidden className="gu-backdrop absolute inset-0 bg-[#f4f2ed]/[0.94] backdrop-blur-[2px]" />
               <div className="absolute inset-0 overflow-y-auto">
                 <button
                   type="button"
@@ -508,10 +508,10 @@ export default function GenerativeUILab() {
                     most consequential setting: at 860px with 26px of padding the
                     four-up figure strip could not breathe and every table wrapped. */}
                 <div className="relative z-[1] mx-auto w-full max-w-[1200px] px-[28px] py-[48px] max-[900px]:px-[16px]">
-                  <div className="gu-card relative overflow-hidden rounded-[20px] bg-white px-[44px] py-[38px] shadow-[0_24px_80px_rgba(58,35,9,0.14)] max-[900px]:px-[20px]">
-                    <div aria-hidden className="absolute top-0 right-0 left-0 h-[3px] bg-[#7F4E0B]/[0.08]">
+                  <div className="gu-card relative overflow-hidden rounded-[20px] bg-[#fffefa] px-[44px] py-[38px] shadow-[0_24px_80px_rgba(58,35,9,0.14)] max-[900px]:px-[20px]">
+                    <div aria-hidden className="absolute top-0 right-0 left-0 h-[3px] bg-[#8b6534]/[0.10]">
                       <div
-                        className="h-full bg-[linear-gradient(90deg,#C79A4A,#7F4E0B)] transition-[width] duration-500 ease-out"
+                        className="h-full bg-[linear-gradient(90deg,#c9a877,#8b6534)] transition-[width] duration-500 ease-out"
                         style={{
                           // The bar keeps running while the areas land, so it finishes
                           // when the page does rather than when the data does.

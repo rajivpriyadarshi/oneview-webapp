@@ -20,7 +20,7 @@
  * §9 constraint and not a style preference.
  */
 
-import { AlertCircle, AlertTriangle, ArrowRight, Info, Landmark, Target } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, Landmark, Target } from "lucide-react";
 import React from "react";
 import { Block } from "./chrome";
 import { RHYTHM, SEVERITY, SURFACE, TYPE, pill, toneOf, type SeverityName } from "./ds";
@@ -82,7 +82,7 @@ function Called({
           ) : null}
         </div>
       ) : null}
-      <div className="font-satoshi text-[15px] font-semibold leading-[1.4] text-[#171615]">{title}</div>
+      <div className="font-satoshi text-[15px] font-semibold leading-[1.4] text-[#20211f]">{title}</div>
       {children ? <div className="mt-[6px]">{children}</div> : null}
     </div>
   );
@@ -101,7 +101,7 @@ const Detail = ({ text }: { text: string }) => <p className={`${TYPE.body} m-0`}
 export const emphasise = (raw: string): React.ReactNode[] =>
   raw.split(/\*\*(.+?)\*\*/g).map((part, index) =>
     index % 2 === 1 ? (
-      <strong key={index} className="font-semibold text-[#171615]">
+      <strong key={index} className="font-semibold text-[#20211f]">
         {part}
       </strong>
     ) : (
@@ -147,7 +147,7 @@ export function FlagBlock({ finding }: { finding: FlagFinding }) {
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-[10px]">
-          <div className="font-satoshi text-[14px] font-semibold leading-[1.4] text-[#171615]">
+          <div className="font-satoshi text-[14px] font-semibold leading-[1.4] text-[#20211f]">
             {finding.subjectLabel}
           </div>
           <span
@@ -200,49 +200,63 @@ export function TransitionBlock({ finding }: { finding: TransitionFinding }) {
  *
  * The two ends are deliberately the same ink at two weights rather than two hues. A source
  * and a destination are not good and bad, and colouring them would say they were.
+ *
+ * Rebuilt as a ledger, because side by side did not survive real names. "GS Private Credit
+ * Partners IV" beside "Goldman Treasury bills" in half a card wraps to two lines while its
+ * neighbour takes one, so the arrow between them pointed at nothing in particular and the
+ * amount — the fact the reader actually wants — ended up last, in the same small type as the
+ * labels. Now the amount leads, the status is a chip on the title line where a reader looks
+ * for state, and the two ends are full-width rows on a rail: the same date | mark | text
+ * geometry as `Timeline`, which is how the document already draws a sequence.
  */
-function FlowEnd({ mark, role, name }: { mark: typeof Landmark; role: string; name: string }) {
-  const hex = SEVERITY.info.hex;
-  return (
-    <div className="flex min-w-0 flex-1 items-start gap-[10px]">
-      <span
-        className="mt-[1px] grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full"
-        style={{ background: `${hex}14`, color: hex }}
-        aria-hidden
-      >
-        {React.createElement(mark, { className: "h-[15px] w-[15px]", strokeWidth: 1.8 })}
-      </span>
-      <span className="min-w-0">
-        <span className={`${TYPE.caption} block`}>{role}</span>
-        <span className={`${TYPE.cell} mt-[1px] block font-medium`}>{name}</span>
-      </span>
-    </div>
-  );
-}
+const FLOW_STEPS = [
+  { role: "From", mark: Landmark },
+  { role: "To", mark: Target },
+] as const;
 
 export function CapitalFlowBlock({ finding }: { finding: TransitionFinding }) {
+  const ends = [finding.from, finding.to];
+  const hex = SEVERITY.info.hex;
   return (
     <div className={`flex h-full flex-col ${SURFACE.panel}`}>
-      <div className={TYPE.sectionTitle}>{finding.subjectLabel}</div>
-      <div className="mt-[16px] flex items-start gap-[12px]">
-        <FlowEnd mark={Landmark} role="From" name={finding.from} />
-        <ArrowRight className="mt-[8px] h-[15px] w-[15px] shrink-0 text-black/25" strokeWidth={1.8} aria-hidden />
-        <FlowEnd mark={Target} role="To" name={finding.to} />
-      </div>
-      <div className="mt-[18px] flex flex-wrap gap-x-[40px] gap-y-[10px]">
-        {finding.amount ? (
-          <div>
-            <div className={TYPE.caption}>Amount</div>
-            <div className={`${TYPE.cell} mt-[2px] font-medium tabular-nums`}>{finding.amount}</div>
-          </div>
-        ) : null}
+      <div className="flex items-start justify-between gap-[12px]">
+        <div className={TYPE.sectionTitle}>{finding.subjectLabel}</div>
+        {/* The tone is the finding's own `sentiment` — see `toneOf`. A transfer that is short
+            of its source is not neutral news, and nothing here decides that. */}
         {finding.status ? (
-          <div>
-            <div className={TYPE.caption}>Status</div>
-            <div className={`${TYPE.cell} mt-[2px] font-medium`}>{finding.status}</div>
-          </div>
+          <span className={`${pill(toneOf(undefined, finding.sentiment))} shrink-0`}>{finding.status}</span>
         ) : null}
       </div>
+
+      {finding.amount ? (
+        <div className="mt-[12px]">
+          <span className={TYPE.figure}>{finding.amount}</span>
+        </div>
+      ) : null}
+
+      <ol className="relative mt-[16px]">
+        {/* The rail, between the two marks rather than through them. */}
+        <span className="absolute top-[24px] bottom-[24px] left-[70px] w-[1px] bg-black/[0.10]" aria-hidden />
+        {FLOW_STEPS.map((step, index) => (
+          <li
+            key={step.role}
+            className={`grid grid-cols-[44px_28px_minmax(0,1fr)] items-start gap-x-[12px] border-t py-[12px] first:border-t-0 ${SURFACE.hairline}`}
+          >
+            <div className={`${TYPE.caption} pt-[6px]`}>{step.role}</div>
+            <div className="flex justify-center">
+              <span
+                className="grid h-[28px] w-[28px] place-items-center rounded-full"
+                style={{ background: `${hex}14`, color: hex }}
+                aria-hidden
+              >
+                {React.createElement(step.mark, { className: "h-[14px] w-[14px]", strokeWidth: 1.8 })}
+              </span>
+            </div>
+            <div className={`${TYPE.cell} min-w-0 pt-[5px] font-medium`}>{ends[index]}</div>
+          </li>
+        ))}
+      </ol>
+
       {finding.note ? <div className="mt-[12px]"><Detail text={finding.note} /></div> : null}
     </div>
   );
@@ -330,7 +344,7 @@ export function ChecklistBlock({ finding }: { finding: ChecklistFinding }) {
             <li key={`${item.text}:${index}`} className="flex items-start gap-[12px] py-[10px]">
               <span
                 className={`mt-[1px] grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full border font-satoshi text-[11px] font-bold tabular-nums leading-none ${
-                  done ? "border-transparent bg-[#1F6F4A] text-white" : "border-black/15 text-black/45"
+                  done ? "border-transparent bg-[#246e45] text-[#fffefa]" : "border-[#d7d4cb] text-[#6e706b]"
                 }`}
               >
                 {done ? "✓" : index + 1}

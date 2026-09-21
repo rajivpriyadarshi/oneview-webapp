@@ -76,7 +76,7 @@ function Readout({
       className="pointer-events-none absolute bottom-full z-[2] mb-[10px]"
       style={{ left: `${x}%`, transform: `translateX(${x > 70 ? "-100%" : x < 30 ? "0%" : "-50%"})` }}
     >
-      <div className="min-w-[104px] rounded-[8px] bg-[#171615] px-[10px] py-[8px] shadow-[0_6px_20px_rgba(0,0,0,0.18)]">
+      <div className="min-w-[104px] rounded-[8px] bg-[#252722] px-[10px] py-[8px] shadow-[0_6px_20px_rgba(0,0,0,0.18)]">
         <div className="font-satoshi text-[11px] leading-[1.3] text-white/55">{title}</div>
         {lines.map((line, index) => (
           <div key={index} className="mt-[4px] flex items-center gap-[7px]">
@@ -172,7 +172,7 @@ export function LineFigure({ series, format, height = 168, subject = 0 }: LineIn
               x2={PLOT}
               y1={height * fraction}
               y2={height * fraction}
-              stroke="#171615"
+              stroke="#20211f"
               strokeOpacity={0.055}
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
@@ -212,7 +212,7 @@ export function LineFigure({ series, format, height = 168, subject = 0 }: LineIn
               x2={x(shown)}
               y1={0}
               y2={height}
-              stroke="#171615"
+              stroke="#20211f"
               strokeOpacity={0.22}
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
@@ -452,7 +452,7 @@ export function DonutFigure({ parts, format }: { parts: Part[]; format: (value: 
           })}
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-[22px] text-center">
-          <span className="font-satoshi text-[19px] font-medium leading-[1.1] tabular-nums text-[#171615]">
+          <span className="font-satoshi text-[19px] font-medium leading-[1.1] tabular-nums text-[#20211f]">
             {shown.display ?? format(shown.value)}
           </span>
           <span className={`${TYPE.caption} mt-[3px] line-clamp-2 leading-[1.3]`}>{shown.label}</span>

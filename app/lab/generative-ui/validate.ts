@@ -131,8 +131,19 @@ const figuresIn = (value: unknown): boolean => {
 const signatureOf = (node: UINode): string =>
   `${node.component}:${node.props.variant ?? ""}:${node.props.size ?? ""}`;
 
+/**
+ * Containers whose children are peers, and therefore subject to the set rules below.
+ *
+ * `Carousel` is here deliberately. A rail is a grid the composer chose to lay sideways,
+ * so every objection the grid rules raise — eight figures in a row, twelve identical
+ * cards — is still the objection, and leaving it out would have made the carousel the one
+ * place in the system where card soup passes validation.
+ */
 const rowLike = (component: ComponentId): boolean =>
-  component === "Grid" || component === "MetricStrip" || component === "Stack";
+  component === "Grid" ||
+  component === "Carousel" ||
+  component === "MetricStrip" ||
+  component === "Stack";
 
 /** Length of a bound collection, when the binding resolves to one. */
 function boundLength(bundle: DataBundle, key: string | undefined): number | null {
@@ -419,12 +430,17 @@ function checkHeuristics(spec: UISpec, bundle: DataBundle, issues: ValidationIss
        * that carries the severity — so the repair this rule proposes would make it worse.
        * The composer only builds this container where *every* child is a callout, and
        * caps it; past the cap the original objection stands.
+       *
+       * A rail of them is the same set past the point where the rows fit on the page, so it
+       * gets the same exemption at the higher cap the rail is allowed — what is being waived
+       * is "these look alike", which was never the complaint about a set of flags.
        */
-      const calloutGrid =
-        node.component === "Grid" &&
-        kids.length <= 4 &&
+      const calloutCap = node.component === "Grid" ? 4 : node.component === "Carousel" ? 8 : 0;
+      const calloutSet =
+        calloutCap > 0 &&
+        kids.length <= calloutCap &&
         kids.every((kid) => kid.component === "RiskAlert" || kid.component === "Recommendation");
-      const limit = calloutGrid ? 4 : LIMITS.maxIdenticalSiblings;
+      const limit = calloutSet ? calloutCap : LIMITS.maxIdenticalSiblings;
       for (const [, group] of bySignature) {
         if (group.length <= limit) continue;
         issues.push({
@@ -535,7 +551,14 @@ const opensOnFigures = (spec: UISpec): boolean => {
      the same thing to the reader. Four nodes in is as far as "leads with" reaches. */
   const reading: UINode[] = [];
   for (const entry of walk(spec)) reading.push(entry.node);
-  const skip = new Set<ComponentId>(["PageHeader", "Section", "Stack", "SplitPane", "Grid"]);
+  const skip = new Set<ComponentId>([
+    "PageHeader",
+    "Section",
+    "Stack",
+    "SplitPane",
+    "Grid",
+    "Carousel",
+  ]);
   return reading
     .filter((node) => !skip.has(node.component))
     .slice(0, 4)

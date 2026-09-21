@@ -40,7 +40,7 @@ import {
 import { BarsFigure, DonutFigure, LineFigure, SparkFigure, barsLegend, share } from "./charts";
 import { Block, Card, DeltaChip, Empty, Figure, INK, LABEL, Rows, Tile } from "./chrome";
 import { markFor } from "./marks";
-import { RHYTHM, SEVERITY, SURFACE, TONE, TYPE, pill, toneOf } from "./ds";
+import { PALETTE, RHYTHM, SEVERITY, SURFACE, TONE, TYPE, pill, toneOf } from "./ds";
 import { isPlottable, type Delta, type Finding, type Series } from "./findings";
 import type { ComponentId } from "./registry";
 import type { UINode } from "./spec";
@@ -300,12 +300,11 @@ function Prose({ props, finding, value }: Resolved) {
   }
 
   if (variant === "readout") {
-    const hex = TONE.positive.hex;
+    /* Amber, not green — see `SURFACE.generated`. The wash says "a machine wrote this";
+       green in this document is reserved for saying a number went the client's way. */
+    const hex = PALETTE.ai;
     return (
-      <div
-        className="flex gap-[14px] rounded-[12px] border p-[20px]"
-        style={{ background: `${hex}0A`, borderColor: `${hex}26` }}
-      >
+      <div className={`${SURFACE.generated} flex gap-[14px] p-[20px]`}>
         <span
           className="mt-[3px] grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full"
           style={{ background: `${hex}1F`, color: hex }}
@@ -1243,6 +1242,7 @@ export type LayoutId =
   | "PageHeader"
   | "Section"
   | "Grid"
+  | "Carousel"
   | "Stack"
   | "Tabs"
   | "SplitPane"

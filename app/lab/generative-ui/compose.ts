@@ -1218,12 +1218,32 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
       ? body[0].children ?? body
       : body;
   const flags = candidates.filter((node) => called.includes(node.component));
-  if (flags.length >= 2 && flags.length === candidates.length && flags.length <= 6) {
+  const allFlags = flags.length >= 2 && flags.length === candidates.length;
+  /* A rail holds eight; a grid still stops at six, because past six the objection the Grid
+     cap exists for — a grid of cards is a table that has not admitted it — is unanswered. */
+  const risksOnly = flags.length > 2 && candidates.every((node) => node.component === "RiskAlert");
+  if (allFlags && (risksOnly ? flags.length <= 8 : flags.length <= 6)) {
+    /*
+     * Past two, the set goes on a rail instead of into rows.
+     *
+     * Two columns of two is a set the reader sees whole. Two columns of four is the same
+     * set costing four rows of the page, and what it spends them on is the tail — the
+     * analysis put the items in priority order, so the boxes that push the next section
+     * under the fold are the least urgent ones in the section. A rail keeps the first two
+     * at full size, says how many there are, and leaves the page its shape. See `Carousel`
+     * in ./registry.ts.
+     *
+     * Risks only. Recommendations are the actions the report is asking for and the reader
+     * has to be able to count them without scrolling — a decision behind a scroll is a
+     * decision the reader does not know they were asked to make.
+     */
+    const rail = risksOnly;
     body = [
       {
         id: uid(build, `fg_${area.id}`),
-        component: "Grid",
-        props: { columns: 2 },
+        ...(rail
+          ? { component: "Carousel" as const, props: { perView: 2 } }
+          : { component: "Grid" as const, props: { columns: 2 } }),
         children: candidates,
       },
     ];

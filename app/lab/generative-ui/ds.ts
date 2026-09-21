@@ -22,6 +22,59 @@
  * composed blocks look like one document.
  */
 
+/* --------------------------------------------------------------------- palette */
+
+/**
+ * Oneview Threads' palette, transcribed from that project's design.md.
+ *
+ * Literal hexes rather than `var(--gu-*)`, and the duplication with ./ui/theme.css is
+ * deliberate: several roles here build a tint by suffixing an alpha pair onto the hex
+ * (`${SEVERITY.warn.hex}14`), and `var(--gu-ai)14` is not a colour. The shadcn primitives
+ * need the variables; this file needs the values. `__tests__/palette.test.ts` fails if the
+ * two ever disagree, which is the only way a split like this stays honest.
+ *
+ * Nothing outside this file names a colour. Everything below names a role.
+ */
+export const PALETTE = {
+  /** The page the document sits on. Warm linen. */
+  shell: "#f4f2ed",
+  /** The document's own surface. */
+  card: "#fffefa",
+  /** Primary text. */
+  ink: "#20211f",
+  /** Running prose, a step lighter than a heading. */
+  body: "#52525b",
+  /** Captions, labels, column headers. */
+  muted: "#6e706b",
+  /** Timestamps and metadata — the quietest ink in the set. */
+  meta: "#71717a",
+  /** Dark fills: a tooltip, a filled tick box. */
+  fill: "#252722",
+  onFill: "#fffefa",
+  /** Subtle fills, and the ink that sits on them. */
+  subtle: "#eeece6",
+  onSubtle: "#2a2b28",
+  /** A de-emphasised surface — a callout, an inset band. */
+  surface: "#f1efe9",
+  /** Dividers, and the slightly stronger line an input takes. */
+  border: "#dedbd2",
+  line: "#d7d4cb",
+  /** Generated: the amber that marks something a machine wrote. */
+  ai: "#8b6534",
+  aiSurface: "#faf5eb",
+  aiBorder: "#ebdcc2",
+  /** Went the client's way. */
+  ok: "#246e45",
+  okSurface: "#edf6f0",
+  okBorder: "#c4e3cf",
+  /** Did not. */
+  bad: "#a94739",
+  /** Stated for the record rather than flagged. */
+  note: "#4d5c70",
+  /** 0.65rem, as one number for the whole document. */
+  radius: "10px",
+} as const;
+
 /* ------------------------------------------------------------------ typography */
 
 /**
@@ -40,9 +93,9 @@ export const TYPE = {
    * header of Prashanth should not be two different typefaces one tab apart. Only the ink
    * differs: the report keeps the document's near-black rather than the Overview's brown.
    */
-  docTitle: "font-butler-medium text-[32px] leading-[1.1] tracking-[-0.034em] text-[#171615]",
+  docTitle: "font-butler-medium text-[32px] leading-[1.1] tracking-[-0.034em] text-[#20211f]",
   /** One line under the title saying what the report is for. */
-  docSubtitle: "font-satoshi text-[16px] leading-[1.5] text-black/45",
+  docSubtitle: "font-satoshi text-[16px] leading-[1.5] text-[#6e706b]",
 
   /**
    * A section's name — "What changed?".
@@ -58,9 +111,9 @@ export const TYPE = {
    * that contrast on the furniture. Weight carries a heading at this size on its own — and
    * at 18px it does so without the heading needing to be a third of the way to the title.
    */
-  areaTitle: "font-satoshi text-[18px] font-semibold leading-[1.3] tracking-[-0.015em] text-[#171615]",
+  areaTitle: "font-satoshi text-[18px] font-semibold leading-[1.3] tracking-[-0.015em] text-[#20211f]",
   /** One line under a section heading, saying what the section is about. */
-  areaCaption: "font-satoshi text-[14px] leading-[1.5] text-black/45",
+  areaCaption: "font-satoshi text-[14px] leading-[1.5] text-[#6e706b]",
 
   /**
    * A block's name — "Executive summary", "Portfolio allocation".
@@ -69,27 +122,29 @@ export const TYPE = {
    * by the space above it, and using size for eight headings on one page produces a
    * document that shouts in eight places.
    */
-  sectionTitle: "font-satoshi text-[15px] font-semibold leading-[1.4] text-[#171615]",
+  sectionTitle: "font-satoshi text-[15px] font-semibold leading-[1.4] text-[#20211f]",
   /** An optional line under a block title. */
-  sectionCaption: "font-satoshi text-[13px] leading-[1.5] text-black/45",
+  sectionCaption: "font-satoshi text-[13px] leading-[1.5] text-[#6e706b]",
 
   /**
-   * Running prose.
+   * Running prose. Every passage in the document, at one size.
    *
-   * 15px at 1.65 is the one measurement here worth defending: the old 12–13px body
-   * text is why the prose read as a caption beside the figures rather than as the
-   * answer, and the answer is the part the brief calls the source of truth.
+   * 14px at 1.65 — the leading is what does the work here, not the size. The earlier scale
+   * ran three sizes for prose (16 lead / 15 body / 13 note) on the reasoning that a lead
+   * should look like a lead; at one and two pixels apart that is not a hierarchy, it reads
+   * as inconsistency, and it made the document's first paragraph the largest thing on the
+   * page after the title.
    */
-  body: "font-satoshi text-[15px] leading-[1.65] text-black/75",
+  body: "font-satoshi text-[14px] leading-[1.65] text-[#52525b]",
   /**
    * The lead paragraph — the readout, and the takeaway beside it.
    *
-   * 14px, not larger than the running body: a lead passage is set wide, at a generous
-   * measure, inside a washed panel, and those three things already mark it as the opening.
-   * Size on top of that made the first paragraph of the report the largest text on the page
-   * after the title, which crowded the headings underneath it.
+   * Deliberately the same size as `body`, and kept as its own role because the *place* is
+   * still distinct: what marks the opening is the wash, the mark and the measure, none of
+   * which any other passage gets. Having the role means that can change without every
+   * caller changing with it.
    */
-  bodyLead: "font-satoshi text-[14px] leading-[1.65] text-black/75",
+  bodyLead: "font-satoshi text-[14px] leading-[1.65] text-[#52525b]",
 
   /**
    * A label above a figure, or a table header.
@@ -98,18 +153,18 @@ export const TYPE = {
    * Uppercase tracking is a device for one or two labels on a page; at the density a
    * generated report reaches it turns every caption into furniture.
    */
-  label: "font-satoshi text-[13px] leading-[1.4] text-black/45",
+  label: "font-satoshi text-[13px] leading-[1.4] text-[#6e706b]",
   /** Beneath a figure: what it is measured against. */
-  caption: "font-satoshi text-[13px] leading-[1.45] text-black/45",
+  caption: "font-satoshi text-[13px] leading-[1.45] text-[#6e706b]",
 
   /** A headline figure. */
-  figure: "font-satoshi text-[32px] font-medium leading-[1.05] tracking-[-0.02em] tabular-nums text-[#171615]",
+  figure: "font-satoshi text-[32px] font-medium leading-[1.05] tracking-[-0.02em] tabular-nums text-[#20211f]",
   /** A figure in a strip of peers, or inside a block. */
-  figureSm: "font-satoshi text-[20px] font-medium leading-[1.1] tracking-[-0.01em] tabular-nums text-[#171615]",
+  figureSm: "font-satoshi text-[20px] font-medium leading-[1.1] tracking-[-0.01em] tabular-nums text-[#20211f]",
 
   /** Table text. Tabular figures, because a column of numbers has to align. */
-  cell: "font-satoshi text-[14px] leading-[1.5] text-[#171615]",
-  cellMuted: "font-satoshi text-[14px] leading-[1.5] text-black/50",
+  cell: "font-satoshi text-[14px] leading-[1.5] text-[#20211f]",
+  cellMuted: "font-satoshi text-[14px] leading-[1.5] text-[#6e706b]",
 } as const;
 
 /* ------------------------------------------------------------------- sentiment */
@@ -124,9 +179,9 @@ export const TYPE = {
  * number, which is precisely the class of thing §9 forbids.
  */
 export const TONE = {
-  positive: { text: "text-[#1F6F4A]", bg: "bg-[#1F6F4A]/10", hex: "#1F6F4A" },
-  negative: { text: "text-[#A03A2B]", bg: "bg-[#A03A2B]/10", hex: "#A03A2B" },
-  neutral: { text: "text-black/55", bg: "bg-black/[0.05]", hex: "#171615" },
+  positive: { text: "text-[#246e45]", bg: "bg-[#edf6f0]", hex: PALETTE.ok },
+  negative: { text: "text-[#a94739]", bg: "bg-[#a94739]/10", hex: PALETTE.bad },
+  neutral: { text: "text-[#6e706b]", bg: "bg-[#eeece6]", hex: PALETTE.muted },
 } as const;
 
 export type ToneName = keyof typeof TONE;
@@ -145,9 +200,9 @@ export type ToneName = keyof typeof TONE;
  * flagged or how serious the analysis said it was.
  */
 export const SEVERITY = {
-  info: { word: "Note", hex: "#3F5B6B" },
-  warn: { word: "Needs attention", hex: "#9A6B15" },
-  critical: { word: "Critical", hex: "#A03A2B" },
+  info: { word: "Note", hex: PALETTE.note },
+  warn: { word: "Needs attention", hex: PALETTE.ai },
+  critical: { word: "Critical", hex: PALETTE.bad },
 } as const;
 
 export type SeverityName = keyof typeof SEVERITY;
@@ -155,11 +210,11 @@ export type SeverityName = keyof typeof SEVERITY;
 /** The emphasised bar / series colour, and the grey everything else sits in. */
 export const CHART = {
   /** One series is the subject. It gets the ink. */
-  primary: "#2C5F4B",
-  /** The rest are context. Grey, so the subject is unambiguous. */
-  context: "#D4D4D1",
+  primary: PALETTE.ok,
+  /** The rest are context. The divider grey, so the subject is unambiguous. */
+  context: PALETTE.border,
   /** A target or benchmark band behind the subject. */
-  reference: "#E8E7E4",
+  reference: PALETTE.subtle,
 } as const;
 
 /* ---------------------------------------------------------------------- rhythm */
@@ -193,7 +248,7 @@ export const RHYTHM = {
  */
 export const SURFACE = {
   /** A metric tile. The only routinely boxed thing in the document. */
-  tile: "rounded-[10px] border border-black/[0.09] bg-white px-[16px] py-[14px]",
+  tile: "rounded-[10px] border border-[#dedbd2] bg-[#fffefa] px-[16px] py-[14px]",
   /**
    * A chart, a table, a schedule: something with its own internal geometry.
    *
@@ -204,11 +259,20 @@ export const SURFACE = {
    * things with edges of their own, and prose, callouts and headings stay flat. What the
    * page must never become is a panel per finding.
    */
-  panel: "rounded-[12px] border border-black/[0.08] bg-white px-[18px] py-[16px]",
+  panel: "rounded-[10px] border border-[#dedbd2] bg-[#fffefa] px-[18px] py-[16px]",
   /** A callout that has to be noticed — a flag, a recommendation. Tinted, not boxed. */
-  inset: "rounded-[10px] border border-black/[0.07] bg-[#FBFAF8] px-[16px] py-[14px]",
+  inset: "rounded-[10px] border border-[#dedbd2] bg-[#f1efe9] px-[16px] py-[14px]",
   /** One hairline. Used for table rows and under a section title. */
-  hairline: "border-black/[0.09]",
+  hairline: "border-[#dedbd2]",
+  /**
+   * The one band on the page that says a machine wrote it — the readout.
+   *
+   * Amber rather than green, which is the correction design.md makes to what was here: the
+   * opening passage was washed in the positive tone, so the document's loudest signal for
+   * "this went the client's way" was spent on a panel that is simply generated text. Green
+   * now means only the claim. Amber means authorship.
+   */
+  generated: "rounded-[10px] border border-[#ebdcc2] bg-[#faf5eb]",
 } as const;
 
 /** A tinted pill: a delta beside a figure, a severity beside a risk. */

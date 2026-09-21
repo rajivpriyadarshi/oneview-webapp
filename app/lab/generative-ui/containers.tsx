@@ -18,6 +18,7 @@
  * even though the registry files it under intelligence.
  */
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import React from "react";
 import { InSection, LABEL, Rule } from "./chrome";
 import { RHYTHM, SURFACE, TYPE } from "./ds";
@@ -149,6 +150,102 @@ const Grid: Container = ({ props, children }) => (
     ))}
   </div>
 );
+
+/**
+ * The grid, turned on its side once the set outgrows the page.
+ *
+ * Four flagged risks in two rows is a set the reader counts at a glance; six is two
+ * screens of tinted boxes, and everything after them — the forward look, the decisions —
+ * has been pushed under the fold by the least urgent items in the set. A rail keeps the
+ * first two at full size, states how many there are, and charges a scroll only for the
+ * part the reader was going to reach last.
+ *
+ * Native scroll with snap points rather than a transform carousel: the rail is a scroll
+ * container, so a trackpad, a shift-wheel, a touch swipe and tab-to-focus all work without
+ * this component implementing any of them, and nothing is `display: none` — an item off
+ * screen is still in the accessibility tree and still printable. The buttons are a
+ * convenience over that, not the mechanism, which is why they can be disabled at the ends
+ * without the content becoming unreachable.
+ *
+ * `perView` is the only prop, and it is a count, not a width. See `Carousel` in
+ * ./registry.ts for why the child cap matters more than the styling.
+ */
+const PER_VIEW: Record<number, string> = {
+  2: "basis-full md:basis-[calc((100%-24px)/2)]",
+  3: "basis-full md:basis-[calc((100%-48px)/3)]",
+};
+
+function CarouselView({ props, children }: ContainerInput) {
+  const per = Number(props.perView) === 3 ? 3 : 2;
+  const count = children.length;
+  const rail = React.useRef<HTMLDivElement | null>(null);
+  const [at, setAt] = React.useState(0);
+
+  /* One card's width, measured rather than computed from `per`: the rail is full width
+     below md and the arithmetic would be wrong there, and the element already knows. */
+  const step = () => {
+    const el = rail.current;
+    return el && count > 0 ? el.scrollWidth / count : 0;
+  };
+
+  const onScroll = () => {
+    const el = rail.current;
+    const width = step();
+    if (el && width > 0) setAt(Math.round(el.scrollLeft / width));
+  };
+
+  const move = (direction: -1 | 1) => {
+    const el = rail.current;
+    const width = step();
+    if (el && width > 0) el.scrollBy({ left: direction * width, behavior: "smooth" });
+  };
+
+  const last = Math.max(count - per, 0);
+  const first = Math.min(at, last);
+  const shown = Math.min(first + per, count);
+
+  return (
+    <div className="flex flex-col gap-[12px]">
+      {count > per ? (
+        <div className="flex items-center justify-end gap-[10px]">
+          <span className={`${TYPE.caption} tabular-nums`}>
+            {first + 1}–{shown} of {count}
+          </span>
+          {([-1, 1] as const).map((direction) => {
+            const Mark = direction === -1 ? ChevronLeft : ChevronRight;
+            const spent = direction === -1 ? first <= 0 : first >= last;
+            return (
+              <button
+                key={direction}
+                type="button"
+                onClick={() => move(direction)}
+                disabled={spent}
+                aria-label={direction === -1 ? "Previous" : "Next"}
+                className={`grid h-[28px] w-[28px] place-items-center rounded-full border transition-colors ${SURFACE.hairline} ${
+                  spent ? "opacity-35" : "hover:bg-black/[0.04]"
+                }`}
+              >
+                <Mark className="h-[14px] w-[14px] text-[#52525b]" strokeWidth={1.8} aria-hidden />
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      <div
+        ref={rail}
+        onScroll={onScroll}
+        className="-mx-[2px] flex snap-x snap-mandatory gap-[24px] overflow-x-auto px-[2px] pb-[4px] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {children.map((child, index) => (
+          // Positional, like Grid's: identity lives on the node ids one level down.
+          <div key={index} className={`min-w-0 shrink-0 snap-start ${PER_VIEW[per]}`}>
+            {child}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 const RATIOS: Record<string, string> = {
   even: "md:grid-cols-2",
@@ -282,12 +379,17 @@ function DisclosureView({ props, children }: ContainerInput) {
  */
 const WhatToWatch: Container = ({ props, children, takeaway }) => {
   const heading = str(props.heading) ?? "What to watch";
+  /* The heading sits on the page, not inside the panel — the same place every other section
+     puts its heading. Inside, it was a heading at section weight indented by the panel's own
+     padding, so the last band of the document was the one band whose title did not line up
+     with the seven above it, and the tint read as a card containing a section rather than as
+     a section whose list happens to be tinted. */
   return (
-    <section className={`${SURFACE.inset} px-[22px] py-[22px]`}>
+    <section>
       <h2 className={TYPE.areaTitle}>{heading}</h2>
       {takeaway ? <p className={`${TYPE.areaCaption} mt-[4px]`}>{takeaway}</p> : null}
       <InSection heading={heading}>
-        <div className={`mt-[18px] ${RHYTHM.block}`}>{children}</div>
+        <div className={`mt-[20px] ${SURFACE.inset} px-[22px] py-[20px] ${RHYTHM.block}`}>{children}</div>
       </InSection>
     </section>
   );
@@ -299,6 +401,7 @@ export const CONTAINER_COMPONENTS: Record<LayoutId, Container> = {
   PageHeader,
   Section,
   Grid,
+  Carousel: (input) => <CarouselView {...input} />,
   Stack,
   Tabs: (input) => <TabsView {...input} />,
   SplitPane,

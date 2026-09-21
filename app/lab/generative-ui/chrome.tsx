@@ -16,7 +16,7 @@
  */
 
 import React from "react";
-import { RHYTHM, SURFACE, TONE, TYPE, pill, toneOf } from "./ds";
+import { PALETTE, RHYTHM, SURFACE, TONE, TYPE, pill, toneOf } from "./ds";
 import type { InstrumentMark } from "./marks";
 
 /**
@@ -42,7 +42,7 @@ export const CARD = SURFACE.inset;
 /** Kept for the same reason. Quiet sentence-case label, not the old uppercase chip. */
 export const LABEL = TYPE.label;
 
-export const INK = "#171615";
+export const INK = PALETTE.ink;
 
 /**
  * A titled region of the document.
@@ -147,7 +147,7 @@ export function Figure({
       {mark ? (
         <div className="mt-[10px] flex items-start gap-[14px]">
           <span
-            className={`grid h-[42px] shrink-0 place-items-center rounded-[10px] border bg-white px-[11px] ${SURFACE.hairline}`}
+            className={`grid h-[42px] shrink-0 place-items-center rounded-[10px] border bg-[#fffefa] px-[11px] ${SURFACE.hairline}`}
           >
             {/* Plain <img> rather than next/image: the asset is a local SVG of known size,
                 and the optimiser has nothing to do to it.

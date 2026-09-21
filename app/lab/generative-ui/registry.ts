@@ -46,6 +46,7 @@ export const ComponentIdSchema = z.enum([
   "PageHeader",
   "Section",
   "Grid",
+  "Carousel",
   "Stack",
   "Tabs",
   "SplitPane",
@@ -90,7 +91,15 @@ export type ComponentId = z.infer<typeof ComponentIdSchema>;
  * and so adding a leaf component doesn't mean editing every container.
  */
 
-const CONTAINERS: ComponentId[] = ["Section", "Grid", "Stack", "Tabs", "SplitPane", "Disclosure"];
+const CONTAINERS: ComponentId[] = [
+  "Section",
+  "Grid",
+  "Carousel",
+  "Stack",
+  "Tabs",
+  "SplitPane",
+  "Disclosure",
+];
 
 const LEAVES: ComponentId[] = [
   "Metric",
@@ -284,6 +293,40 @@ export const REGISTRY: ComponentRegistry = {
     // Six is the ceiling because past it a grid of cards is a table that hasn't
     // admitted it yet — the failure the brief names as ten cards for ten securities.
     children: { allowed: [...LEAVES, "Stack"], min: 2, max: 6 },
+    requiresData: false,
+  },
+
+  /**
+   * The same set as `Grid`, past the point where a grid still fits on the page.
+   *
+   * A grid of four callouts is a set the reader takes in at a glance. A grid of six is
+   * two screens of tinted boxes, and the section after it has been pushed below the fold
+   * by items three through six — which are, by the analysis's own ordering, the least
+   * urgent ones. A rail keeps the set's first items at full size and its size stated
+   * ("1–2 of 5"), and costs the reader a scroll only for the part they were going to read
+   * last anyway.
+   *
+   * It is a presentation choice over an already-decided set: same children, same order,
+   * nothing hidden that a keyboard or a screen reader cannot reach. What it must never be
+   * is a way to put ten things where four belong — hence the cap, and hence `useInsteadWhen`
+   * sending genuinely repetitive records to a table as before.
+   */
+  Carousel: {
+    id: "Carousel",
+    description: "One horizontal rail of peers, scrolled rather than stacked.",
+    category: "layout",
+    propsSchema: z.object({ perView: z.union([z.literal(2), z.literal(3)]).optional() }),
+    accepts: [],
+    implements: [],
+    variants: [],
+    sizes: ["md"],
+    useWhen:
+      "3–8 peers of one kind, in priority order, where showing them all at once would cost the page more than scrolling costs the reader.",
+    useInsteadWhen: [
+      { condition: "there are four or fewer and they fit in two rows", prefer: "Grid" },
+      { condition: "the items share attributes and differ only in their values", prefer: "DataTable" },
+    ],
+    children: { allowed: [...LEAVES, "Stack"], min: 3, max: 8 },
     requiresData: false,
   },
 

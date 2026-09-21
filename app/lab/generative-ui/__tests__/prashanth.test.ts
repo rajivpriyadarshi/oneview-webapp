@@ -103,12 +103,16 @@ describe("the page has the shape the report was designed to have", () => {
     expect(headed.map((node) => node.props.index)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
-  it("lays the flagged set out as a grid rather than a column of paragraphs", () => {
+  it("lays the flagged set out as a rail rather than a column of paragraphs", () => {
+    /* Four risks in two columns cost four rows of the page and spent them on the tail of a
+       set the analysis had already put in priority order. On a rail the first two stay at
+       full size, the count is stated, and the sections after this one keep their place —
+       see the callout rule in ../compose.ts. Two would still be a Grid. */
     const attention = areas().find((node) => node.sectionId === "s.attention");
-    const grid = attention?.children?.[0];
-    expect(grid?.component).toBe("Grid");
-    expect(grid?.props.columns).toBe(2);
-    expect(grid?.children?.map((kid) => kid.component)).toEqual([
+    const rail = attention?.children?.[0];
+    expect(rail?.component).toBe("Carousel");
+    expect(rail?.props.perView).toBe(2);
+    expect(rail?.children?.map((kid) => kid.component)).toEqual([
       "RiskAlert",
       "RiskAlert",
       "RiskAlert",

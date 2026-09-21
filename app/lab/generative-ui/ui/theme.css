@@ -14,11 +14,10 @@
  *      undefined variable and paints nothing, which is the failure mode we want:
  *      inert outside the prototype rather than subtly wrong.
  *
- * The values are OneView's, not shadcn's neutral defaults. A generated view has to
- * look like it belongs to the product it appears in, and the point of owning the
- * registry is that we get to decide that — so `--gu-foreground` is the same
- * `#171615` as chrome.tsx's INK, cards are the same translucent white, and the
- * accent is the brown already used by the assembly animation.
+ * The values are Oneview Threads', not shadcn's neutral defaults. A generated view has to
+ * look like it belongs to the product it appears in, and the point of owning the registry is
+ * that we get to decide that — so the whole palette below is a transcription of that
+ * project's design.md, and ../ds.ts reads the same literals.
  */
 
 @theme {
@@ -47,45 +46,68 @@
   --radius-xl: calc(var(--gu-radius) + 4px);
 }
 
+/**
+ * The values are Oneview Threads' — see design.md in that project, which this block is a
+ * transcription of. Two consumers have to agree on them: the shadcn primitives, which read
+ * CSS variables, and ./ds.ts, which cannot — it composes tints by suffixing an alpha pair
+ * onto a hex (`${hex}14`), and `var(--gu-ok)14` is not a colour. So `PALETTE` in ds.ts holds
+ * the same literals and `__tests__/palette.test.ts` fails if the two ever drift.
+ */
 .gu-theme {
-  /* The page the view sits on, and the ink on it. */
-  --gu-background: #f6f5f3;
-  --gu-foreground: #171615;
+  /* The page the view sits on (warm linen), and the ink on it. */
+  --gu-background: #f4f2ed;
+  --gu-foreground: #20211f;
 
-  /* Cards match chrome.tsx's CARD: translucent white over the page tint. */
-  --gu-card: rgba(255, 255, 255, 0.65);
-  --gu-card-foreground: #171615;
-  --gu-popover: #ffffff;
-  --gu-popover-foreground: #171615;
+  /* The document's own surface — a shade off white, warmer than the page. */
+  --gu-card: #fffefa;
+  --gu-card-foreground: #20211f;
+  --gu-popover: #fffefa;
+  --gu-popover-foreground: #20211f;
 
-  /* Brown, as used by the assembly outline and the production link colour. */
-  --gu-primary: #7f4e0b;
-  --gu-primary-foreground: #ffffff;
+  --gu-primary: #252722;
+  --gu-primary-foreground: #fffefa;
 
-  --gu-secondary: rgba(23, 22, 21, 0.06);
-  --gu-secondary-foreground: #171615;
+  --gu-secondary: #eeece6;
+  --gu-secondary-foreground: #2a2b28;
 
-  /* `muted-foreground` is the single most-used token in shadcn's components, and
-     it is what every caption and column header in a report lands on. Tuned to the
-     same black/45 the hand-built leaves already use. */
-  --gu-muted: rgba(23, 22, 21, 0.04);
-  --gu-muted-foreground: rgba(23, 22, 21, 0.55);
+  /* `muted-foreground` is the single most-used token in shadcn's components, and it is what
+     every caption and column header in a report lands on. */
+  --gu-muted: #f1efe9;
+  --gu-muted-foreground: #6e706b;
 
-  --gu-accent: rgba(127, 78, 11, 0.08);
-  --gu-accent-foreground: #7f4e0b;
+  --gu-accent: #e7e2d4;
+  --gu-accent-foreground: #292a27;
 
-  /* Reds and greens are the two colours in a financial report that carry meaning
-     rather than decoration, so they match the DeltaChip sentiment pair exactly. */
-  --gu-destructive: #a03a2b;
-  --gu-destructive-foreground: #ffffff;
+  --gu-destructive: #a94739;
+  --gu-destructive-foreground: #fffefa;
 
-  --gu-border: rgba(0, 0, 0, 0.1);
-  --gu-input: rgba(0, 0, 0, 0.12);
-  --gu-ring: rgba(127, 78, 11, 0.35);
+  --gu-border: #dedbd2;
+  --gu-input: #d7d4cb;
+  --gu-ring: #816a46;
 
-  /* 12px, matching CARD's rounded-[12px]. shadcn's default 0.5rem is tighter than
-     everything else on the page. */
-  --gu-radius: 12px;
+  /*
+   * The amber that means "a machine wrote this", with its surface and border.
+   *
+   * Not in shadcn's vocabulary, and it has to be: the readout is generated and the document
+   * says so in one colour, in one place. Everything else on the page is the neutral warm
+   * scale, which is what keeps this legible as a signal rather than as a theme.
+   */
+  --gu-ai: #8b6534;
+  --gu-ai-surface: #faf5eb;
+  --gu-ai-border: #ebdcc2;
+
+  /* Green means the client's way, red means not — the two colours in a financial report
+     that are claims rather than decoration. */
+  --gu-ok: #246e45;
+  --gu-ok-surface: #edf6f0;
+  --gu-ok-border: #c4e3cf;
+
+  /* Timestamps and metadata, and the ink running prose is set in. */
+  --gu-meta: #71717a;
+  --gu-body: #52525b;
+
+  /* 0.65rem. One radius for the whole document — see `SURFACE` in ../ds.ts. */
+  --gu-radius: 10px;
 }
 
 /**
