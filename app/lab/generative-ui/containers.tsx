@@ -161,7 +161,16 @@ const SplitPane: Container = ({ props, slots }) => (
     {(["left", "right"] as const).map((side) => (
       <div key={side} className="flex min-w-0 flex-col gap-[8px]">
         {str(props[`${side}Label`]) ? <div className={LABEL}>{props[`${side}Label`] as string}</div> : null}
-        <div className="flex flex-col gap-[12px]">{slots[side] ?? null}</div>
+        {/* The two sides are one band, so a pane holding a single panel fills the band's
+            height rather than stopping at its own text. Two washed boxes of different
+            heights beside each other read as one finished and one cut short — which is
+            wrong, because the short one is a one-line takeaway by design.
+
+            `only-child` deliberately: where a pane stacks several blocks, their heights are
+            their own business and stretching them would distribute the slack arbitrarily. */}
+        <div className="flex flex-1 flex-col gap-[12px] [&>*:only-child]:h-full">
+          {slots[side] ?? null}
+        </div>
       </div>
     ))}
   </div>
