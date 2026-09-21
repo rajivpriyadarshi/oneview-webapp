@@ -17,6 +17,7 @@
 
 import React from "react";
 import { RHYTHM, SURFACE, TONE, TYPE, pill, toneOf } from "./ds";
+import type { InstrumentMark } from "./marks";
 
 /**
  * The heading the enclosing Section has already printed.
@@ -107,6 +108,7 @@ export function Figure({
   delta,
   size = "sm",
   spark,
+  mark,
 }: {
   label?: string;
   value: string;
@@ -115,11 +117,18 @@ export function Figure({
   size?: "sm" | "lg";
   /** A figure's own history, for a figure standing alone. Never in a row of peers. */
   spark?: React.ReactNode;
+  /**
+   * The instrument's own logo, where the figure is about one security.
+   *
+   * Boxed and to the left, so the figure keeps its column and the mark reads as
+   * identification rather than as decoration on the number. See `INSTRUMENT_MARKS` in
+   * ./marks.ts — a figure about no one instrument has no mark, which is the normal case.
+   */
+  mark?: InstrumentMark;
 }) {
-  return (
-    <div>
-      {label ? <div className={TYPE.label}>{label}</div> : null}
-      <div className="mt-[6px]">
+  const stack = (
+    <div className="min-w-0">
+      <div className={mark ? undefined : "mt-[6px]"}>
         <span className={size === "lg" ? TYPE.figure : TYPE.figureSm}>{value}</span>
       </div>
       {delta ? (
@@ -129,6 +138,31 @@ export function Figure({
       ) : null}
       {caption ? <div className={`${TYPE.caption} mt-[6px]`}>{caption}</div> : null}
       {spark ? <div className="mt-[12px]">{spark}</div> : null}
+    </div>
+  );
+
+  return (
+    <div>
+      {label ? <div className={TYPE.label}>{label}</div> : null}
+      {mark ? (
+        <div className="mt-[10px] flex items-start gap-[14px]">
+          <span
+            className={`grid h-[42px] shrink-0 place-items-center rounded-[10px] border bg-white px-[11px] ${SURFACE.hairline}`}
+          >
+            {/* Plain <img> rather than next/image: the asset is a local SVG of known size,
+                and the optimiser has nothing to do to it.
+
+                Bounded on both axes and `object-contain`, because a mark's aspect is the
+                issuer's business — a wordmark is wide and a roundel is square, and either
+                has to sit in the same plate without being stretched or cropped. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={mark.src} alt={mark.name} className="max-h-[20px] max-w-[96px] object-contain" />
+          </span>
+          {stack}
+        </div>
+      ) : (
+        stack
+      )}
     </div>
   );
 }

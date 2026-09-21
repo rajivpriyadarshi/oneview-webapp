@@ -522,7 +522,10 @@ export const REGISTRY: ComponentRegistry = {
     propsSchema: z.object({ label: heading, direction: z.enum(["down", "right"]).optional() }),
     accepts: ["transition", "requirement", "narrative"],
     implements: ["timeline"],
-    variants: [],
+    /* `flat` where the schedule is the whole section — no panel and no title of its own,
+       because the section heading above it already says what it is. `card` beside a
+       sibling, where the edge is what separates the two. */
+    variants: ["flat", "card"],
     sizes: ["md", "lg"],
     useWhen: "Events placed on a calendar, where order in time carries the meaning.",
     useInsteadWhen: [

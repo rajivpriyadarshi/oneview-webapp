@@ -1200,6 +1200,18 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
     ];
   }
 
+  /*
+   * A schedule that has the section to itself loses its frame.
+   *
+   * The panel and its title exist to separate a card from the card beside it. Where the
+   * timeline is the only thing in the area, there is nothing to separate it from, and the
+   * title it would print is the words already standing above it as the heading. Set here
+   * rather than in the leaf because only this level knows what else is in the area.
+   */
+  if (body.length === 1 && body[0].component === "Timeline" && body[0].props.label === area.heading) {
+    body[0].props.variant = "flat";
+  }
+
   return {
     id: uid(build, area.id),
     component: "Section",

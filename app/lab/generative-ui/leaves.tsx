@@ -24,7 +24,7 @@
  * axes. The prop cannot change what the number is.
  */
 
-import { Sparkles } from "lucide-react";
+import { Activity, Circle, FileText, Landmark, Sparkles, TrendingUp } from "lucide-react";
 import type React from "react";
 import { RENDERER_COMPONENTS } from "../dynamic-ui/renderers";
 import {
@@ -39,7 +39,8 @@ import {
 } from "./blocks";
 import { BarsFigure, DonutFigure, LineFigure, SparkFigure, barsLegend, share } from "./charts";
 import { Block, Card, DeltaChip, Empty, Figure, INK, LABEL, Rows, Tile } from "./chrome";
-import { RHYTHM, SURFACE, TONE, TYPE, pill, toneOf } from "./ds";
+import { markFor } from "./marks";
+import { RHYTHM, SEVERITY, SURFACE, TONE, TYPE, pill, toneOf } from "./ds";
 import { isPlottable, type Delta, type Finding, type Series } from "./findings";
 import type { ComponentId } from "./registry";
 import type { UINode } from "./spec";
@@ -253,7 +254,12 @@ function Prose({ props, finding, value }: Resolved) {
 
   const variant = str(props.variant) ?? "body";
   const heading = str(props.heading) ?? (finding && "heading" in finding ? str(finding.heading) : undefined);
-  const body = variant === "lead" || variant === "readout" ? TYPE.bodyLead : TYPE.body;
+  /* The readout and the takeaway beside it are one band, read in one glance, so they are
+     set at one size. They were 16px and 15px, which is not a hierarchy — at a difference
+     that small it reads as a mistake rather than as emphasis, and the emphasis is already
+     carried by the wash, the mark and the column widths. */
+  const lede = variant === "lead" || variant === "readout" || variant === "aside";
+  const body = lede ? TYPE.bodyLead : TYPE.body;
 
   const paragraphs = passage.split(/\n{2,}/).map((para, index) => (
     <p key={index} className={`${body} ${index === 0 ? "" : "mt-[12px]"}`}>
@@ -344,7 +350,7 @@ function Prose({ props, finding, value }: Resolved) {
             {heading}
           </div>
         ) : null}
-        <div className={TYPE.body}>{paragraphs}</div>
+        {paragraphs}
       </div>
     );
   }
@@ -822,6 +828,27 @@ function KeyValueList({ props, value, finding, node }: Resolved) {
  * slot printed "S$2.4m" where the name of the commitment should have been, so a five-line
  * calendar said five dates and five figures and never once said what was being paid for.
  */
+/**
+ * What kind of event this was, as an icon and an ink.
+ *
+ * Keyed on the data's own `kind` field, so the mapping is a rendering of a recorded
+ * category and not a guess made from the sentence. An unrecognised kind — or a row with
+ * none — gets the neutral dot, which is what the rail looked like before: a component that
+ * invented a category for an event it did not understand would be adding a claim.
+ */
+const EVENT_MARKS = {
+  valuation: { icon: TrendingUp, hex: TONE.positive.hex },
+  commitment: { icon: FileText, hex: SEVERITY.info.hex },
+  concentration: { icon: Activity, hex: SEVERITY.warn.hex },
+  structure: { icon: Landmark, hex: SEVERITY.info.hex },
+} as const;
+
+const markOf = (kind: string | undefined): { icon: typeof Circle; hex: string } =>
+  (kind && kind in EVENT_MARKS ? EVENT_MARKS[kind as keyof typeof EVENT_MARKS] : undefined) ?? {
+    icon: Circle,
+    hex: TONE.neutral.hex,
+  };
+
 function Timeline(input: Resolved) {
   const { props, value, finding, node } = input;
   const rows = (Array.isArray(value) ? value : []).filter(
@@ -835,43 +862,61 @@ function Timeline(input: Resolved) {
      its note belongs above the schedule rather than nowhere — which is where it went
      when the rows came from the bundle and the finding was only used to pick the form. */
   const caption = finding?.kind === "requirement" ? finding.note : undefined;
+  /*
+   * Flat where the schedule *is* the section, boxed where it is one card among several.
+   *
+   * The same component both times, and the difference is not decoration: a panel headed
+   * "What changed" directly under a section headed "What changed" says the same words
+   * twice a line apart and frames content that already has the page to itself. Beside a
+   * sibling card it needs the edge, because there the panel is what separates the two.
+   */
+  const boxed = props.variant !== "flat";
 
   return (
-    <Block title={str(props.label)} caption={caption} boxed>
-      {/* A rail, not a ruled list.
-          Five hairlined rows say "five facts"; five dots on a line say "five things in an
-          order, and this one is first" — which is the whole reason a schedule is drawn
-          rather than listed. The rail is one absolutely-positioned line behind the dots so
-          the rows stay in normal flow and a long description still wraps under itself. */}
+    <Block title={boxed ? str(props.label) : undefined} caption={caption} boxed={boxed}>
+      {/* Date, mark, event — three columns and a rail.
+          The date moves into its own column because a reader scanning a schedule scans
+          dates, and a date set above its own event turns four events into eight lines. The
+          rail runs behind the marks so the rows stay in normal flow and a long description
+          still wraps under itself; the hairlines are what make each row one event. */}
       <ol className="relative flex flex-col">
-        <span className="absolute top-[14px] bottom-[14px] left-[4px] w-[1px] bg-black/[0.12]" aria-hidden />
+        {/* 88px date column + 16px gap + half of the 32px mark column. */}
+        <span className="absolute top-[26px] bottom-[26px] left-[120px] w-[1px] bg-black/[0.10]" aria-hidden />
         {dated.map((entry, index) => {
           const when = str(entry.date) ?? str(entry.when) ?? str(entry.due) ?? "";
-          const what = str(entry.text) ?? str(entry.detail) ?? str(entry.name) ?? str(entry.label);
-          const amount =
-            str(entry.display) ?? (typeof entry.value === "number" ? figure(entry.value, hint) : undefined);
+          const what = str(entry.name) ?? str(entry.label) ?? str(entry.text);
+          const detail =
+            str(entry.detail) ??
+            str(entry.display) ??
+            (typeof entry.value === "number" ? figure(entry.value, hint) : undefined);
           /* A rendering of the field, not a judgement added to it: the analysis recorded
              how firm each date is, and a calendar that hides that reads as certain. */
           const firmness = str(entry.confidence);
-          /* The first dot is filled because the first date is the one a decision is owed
-             on. Position, not severity — nothing here reads the palette. */
-          const next = index === 0;
+          /* The mark is read from the data's own `kind`, never inferred from the words: a
+             component that guessed "this sounds like a risk" would be adding a claim. */
+          const mark = markOf(str(entry.kind));
           return (
-            <li key={`${when}:${index}`} className="relative flex gap-[16px] py-[9px] pl-[20px]">
-              <span
-                className={`absolute top-[15px] left-0 h-[9px] w-[9px] rounded-full border-[1.5px] ${
-                  next ? "border-[#171615] bg-[#171615]" : "border-black/25 bg-white"
-                }`}
-                aria-hidden
-              />
-              <div className="min-w-0 flex-1">
-                <div className={`${TYPE.label} tabular-nums`}>{when}</div>
-                <div className={`${TYPE.cell} mt-[3px] font-medium`}>{what ?? "—"}</div>
+            <li
+              key={`${when}:${index}`}
+              className={`grid grid-cols-[88px_32px_minmax(0,1fr)] items-start gap-x-[16px] border-t py-[14px] first:border-t-0 ${SURFACE.hairline}`}
+            >
+              <div className={`${TYPE.caption} pt-[7px] tabular-nums`}>{when}</div>
+              <div className="flex justify-center pt-[2px]">
+                <span
+                  className="grid h-[28px] w-[28px] place-items-center rounded-full"
+                  style={{ background: `${mark.hex}14`, color: mark.hex }}
+                  aria-hidden
+                >
+                  <mark.icon className="h-[14px] w-[14px]" strokeWidth={1.9} />
+                </span>
+              </div>
+              <div className="min-w-0">
+                <div className={TYPE.sectionTitle}>{what ?? "—"}</div>
+                {detail ? <div className={`${TYPE.caption} mt-[3px]`}>{detail}</div> : null}
                 {firmness && firmness !== "high" ? (
                   <div className={`${TYPE.caption} mt-[2px]`}>{firmness} confidence on the date</div>
                 ) : null}
               </div>
-              {amount ? <div className={`${TYPE.cell} shrink-0 tabular-nums`}>{amount}</div> : null}
             </li>
           );
         })}
@@ -1040,6 +1085,9 @@ const metric: Leaf = ({ props, finding, value, node }) => {
         caption={finding.basis}
         delta={finding.delta}
         size={large ? "lg" : "sm"}
+        /* The instrument's own logo, where the finding named one. A lookup on a ticker the
+           analysis supplied, not a guess from the words of the label — see ./marks.ts. */
+        mark={markFor(finding.symbol)}
         spark={
           large && isPlottable(finding.series) && finding.series ? (
             <SparkFigure series={finding.series} height={48} />

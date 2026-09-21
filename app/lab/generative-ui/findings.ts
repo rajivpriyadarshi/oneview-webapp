@@ -124,6 +124,15 @@ export const MetricFindingSchema = FindingMetaSchema.extend({
    * it: under the figure it qualifies.
    */
   basis: z.string().optional(),
+  /**
+   * The instrument this figure is about, where it is about one — "NVDA".
+   *
+   * A ticker, which is a fact the analysis holds and not a label: it identifies the
+   * security, so the renderer can set the instrument's own mark beside the figure without
+   * matching on the words of `label`. Unknown or absent, and the figure simply has no mark
+   * — see `INSTRUMENT_MARKS` in ./marks.ts. Nothing about the number changes either way.
+   */
+  symbol: z.string().min(1).max(12).optional(),
   delta: DeltaSchema.optional(),
   series: SeriesSchema.optional(),
 });
@@ -338,7 +347,7 @@ export const hasEntitySeries = (finding: ComparisonFinding): boolean =>
  */
 export const measureGroup = (findings: Finding[], of: Finding): ComparisonFinding[] => {
   if (of.kind !== "comparison" || of.entities.length < 2) return [];
-  const key = (finding: ComparisonFinding): string => finding.entities.map((entity) => entity.name).join(" ");
+  const key = (finding: ComparisonFinding): string => finding.entities.map((entity) => entity.name).join("\u0000");
   const wanted = key(of);
   return findings.filter(
     (finding): finding is ComparisonFinding => finding.kind === "comparison" && key(finding) === wanted,

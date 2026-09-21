@@ -160,13 +160,33 @@ export const PRASHANTH_BUNDLE: DataBundle = {
      * 13 August remark, the two things the 7 August review put on the table, and the one
      * item still waiting on a third party.
      */
+    /* `kind` is the event's own category, recorded so the rail can mark it. The renderer
+       maps a kind to an icon and never reads the sentence — see `EVENT_MARKS` in
+       ./leaves.tsx. A row with no kind, or one nobody recognises, gets a neutral dot. */
     "activity.timeline": [
-      { date: "13 August", name: "Nine private positions remarked", display: "US$1.6m → US$2.4m" },
-      { date: "7 August", name: "Quarterly review approved the GS Private Credit Partners IV call", display: "US$500k" },
-      { date: "7 August", name: "NVIDIA overweight noted at 14.2% of the listed book", display: "US$3.6m" },
+      {
+        date: "13 August",
+        kind: "valuation",
+        name: "Nine private positions remarked",
+        display: "The unlisted book moved from US$1.6m to US$2.4m — a revaluation, not a return.",
+      },
+      {
+        date: "7 August",
+        kind: "commitment",
+        name: "Quarterly review approved the GS Private Credit Partners IV call",
+        display: "US$500k, to be funded from the Goldman Treasury bills.",
+      },
+      {
+        date: "7 August",
+        kind: "concentration",
+        name: "NVIDIA overweight noted at 14.2% of the listed book",
+        display: "US$3.6m, held across all four custodians.",
+      },
       {
         date: "Expected October",
+        kind: "structure",
         name: "LGT asset transfer, awaiting the Withers intermediary trust",
+        display: "The transfer cannot begin until the intermediary trust completes.",
         confidence: "medium",
       },
     ],
@@ -257,10 +277,21 @@ export const PRASHANTH_BUNDLE: DataBundle = {
      * saying it twice would leave the reader checking the two against each other.
      */
     "commit.timeline": [
-      { when: "Q3 2026", name: "GS Private Credit capital call", display: "Funded from the Goldman Treasury bills" },
-      { when: "Q4 2026", name: "Withers to complete the intermediary trust", display: "Enables the LGT transfer" },
+      {
+        when: "Q3 2026",
+        kind: "commitment",
+        name: "GS Private Credit capital call",
+        display: "Funded from the Goldman Treasury bills",
+      },
+      {
+        when: "Q4 2026",
+        kind: "structure",
+        name: "Withers to complete the intermediary trust",
+        display: "Enables the LGT transfer",
+      },
       {
         when: "Q4 2026 – Q1 2027",
+        kind: "structure",
         name: "LGT asset transfer",
         display: "Subject to trust completion",
         confidence: "medium",
@@ -655,6 +686,7 @@ export const PRASHANTH_REPORT: SemanticReport = {
           sources: CUSTODY,
           subject: "NVIDIA position",
           label: "NVIDIA position",
+          symbol: "NVDA",
           value: "14.2%",
           basis: "of the listed book — US$3.6m, held at all four custodians",
           delta: { label: "+5.1pp since December", value: 5.1, sentiment: "negative" },

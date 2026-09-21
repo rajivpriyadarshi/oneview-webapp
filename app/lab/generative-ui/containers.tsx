@@ -98,32 +98,19 @@ const PageHeader: Container = ({ props, docTitle }) => (
  * instead of as one more card among cards.
  */
 /**
- * A numbered section: "3. What drove the change?", a line saying what it is about, then
- * the content.
+ * A section: its heading, a line saying what it is about, then the content.
  *
- * The number is the change worth arguing for. A generated report is long and its sections
- * were chosen by rule rather than by a person holding the whole page in their head, so the
- * reader's real question at every heading is "how much of this is left?" — and a document
- * that numbers its sections answers that for free, in the margin, without a progress bar.
- * It also makes a section referenceable in conversation, which matters when the chat beside
- * the page is the thing the reader is actually talking to.
- *
- * `index` is position, not rank. The composer knows it because it laid the page out; it
- * cannot be derived here, and passing it as a prop is presentation reaching a container,
- * which is exactly what props are for.
+ * `index` is still carried and still means position — the composer assigns it in page
+ * order, the validator can see it, and a continuation band is the one that has none. It is
+ * no longer *drawn*: a number in front of every heading turned the page into a numbered
+ * list of parts, and the headings are strong enough to be the spine on their own.
  */
 const Section: Container = ({ props, children, takeaway }) => {
   const heading = str(props.heading);
-  const index = typeof props.index === "number" ? props.index : undefined;
   const caption = takeaway ?? str(props.caption);
   return (
     <section className={props.variant === "bordered" ? `${SURFACE.inset} py-[20px]` : undefined}>
-      {heading ? (
-        <h2 className={TYPE.areaTitle}>
-          {index !== undefined ? <span className="text-black/35">{index}. </span> : null}
-          {heading}
-        </h2>
-      ) : null}
+      {heading ? <h2 className={TYPE.areaTitle}>{heading}</h2> : null}
       {caption ? <p className={`${TYPE.areaCaption} mt-[4px]`}>{caption}</p> : null}
       {/* Declares what it printed, so a leaf inside it does not print the same words
           again. See `InSection` in ./chrome.tsx. */}
@@ -280,19 +267,15 @@ function DisclosureView({ props, children }: ContainerInput) {
  * panel-with-an-"Ahead"-label did. For it: a reader who has just come down nine sections
  * needs to be told the page has ended, and a closing card is how a written note says so.
  *
- * So it keeps the number and the serif heading — it is section ten, not an appendix — and
- * takes the wash inside them. `SURFACE.inset` rather than a new tint, because the only
- * thing being said is "this is the end", and that does not need a colour of its own.
+ * So it keeps the heading at section weight — it is the last section, not an appendix — and
+ * takes the wash inside it. `SURFACE.inset` rather than a new tint, because the only thing
+ * being said is "this is the end", and that does not need a colour of its own.
  */
 const WhatToWatch: Container = ({ props, children, takeaway }) => {
-  const index = typeof props.index === "number" ? props.index : undefined;
   const heading = str(props.heading) ?? "What to watch";
   return (
     <section className={`${SURFACE.inset} px-[22px] py-[22px]`}>
-      <h2 className={TYPE.areaTitle}>
-        {index !== undefined ? <span className="text-black/35">{index}. </span> : null}
-        {heading}
-      </h2>
+      <h2 className={TYPE.areaTitle}>{heading}</h2>
       {takeaway ? <p className={`${TYPE.areaCaption} mt-[4px]`}>{takeaway}</p> : null}
       <InSection heading={heading}>
         <div className={`mt-[18px] ${RHYTHM.block}`}>{children}</div>

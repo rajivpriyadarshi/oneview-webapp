@@ -38,15 +38,19 @@ export const TYPE = {
   docSubtitle: "font-satoshi text-[16px] leading-[1.5] text-black/45",
 
   /**
-   * A numbered section's name — "2. What changed?".
+   * A section's name — "What changed?".
    *
-   * Serif, and the second-largest thing on the page. The earlier scale had one heading
-   * role for both a section and a block inside it, which is why the report scanned as a
-   * long undifferentiated list: nine headings at 15px semibold, each equally likely to be
-   * the next thing you should read. A reader needs to see the spine of the document from
+   * The second-largest thing on the page, and the spine of the document. The earlier scale
+   * had one heading role for both a section and a block inside it, which is why the report
+   * scanned as a long undifferentiated list: nine headings at 15px semibold, each equally
+   * likely to be the next thing you should read. A reader needs to see the spine from
    * across the room and the joints within a section up close, and those are two roles.
+   *
+   * Sans at 800 rather than serif: the serif title at the top of the page is the one
+   * typeface contrast the document makes, and repeating it seven times down the page spent
+   * that contrast on the furniture. Weight carries a heading at this size on its own.
    */
-  areaTitle: "font-butler text-[23px] leading-[1.25] tracking-[-0.01em] text-[#171615]",
+  areaTitle: "font-satoshi text-[23px] font-extrabold leading-[1.25] tracking-[-0.015em] text-[#171615]",
   /** One line under a section heading, saying what the section is about. */
   areaCaption: "font-satoshi text-[14px] leading-[1.5] text-black/45",
 
