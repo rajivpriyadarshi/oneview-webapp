@@ -9,43 +9,57 @@
  *
  * What differs, and why the page differs with it:
  *
- *   - **No listed benchmark.** Prashanth's book is 42% listed securities with a stated
- *     +14% year to date, so his report leads with performance. Eleanor holds four funds
- *     and no equity line she is measured against; there is no return to lead with, and
- *     inventing one would be inventing the analysis. Her headline figures are a net
- *     worth, a property total, an illiquid share and a cash balance — the same
- *     `headlineFigures` rule, four different figures, because the analysis marked
+ *   - **No listed benchmark and no borrowing.** Prashanth's book is 42% listed with a
+ *     stated +14% year to date, so his report leads with performance and carries a
+ *     leverage section. Hers is 65% real estate and private assets with no facility on
+ *     file; there is no return to lead with and nothing to refinance. Her headline
+ *     figures are a total, a cash balance, a commitment total and an asset count — the
+ *     same `headlineFigures` rule, four different figures, because the analysis marked
  *     different metrics primary.
- *   - **No borrowing at all.** His report has a leverage-and-liquidity section built
- *     around a mortgage, a margin line and a guarantee. Hers has a funding calendar
- *     built around capital calls, because that is what her balance sheet owes.
- *   - **Assets in three names.** A discretionary trust holds two funds, a holding
- *     company holds the business stake, and everything else is personal. Prashanth has
- *     one trust holding one house. Ownership is a section here and a footnote there.
- *   - **A different recipe.** `taskType: "property_review"` selects `PropertyReport`
- *     (./recipes.ts), so the page order is headline → the book → how it is held → what
- *     it needs → exposure. Nothing in this file names a component or a slot.
+ *   - **Funding, not leverage, is the pressure.** S$6.95m of capital calls and payments
+ *     fall due over two years against S$11.0m of cash and a S$7.0m preferred reserve, so
+ *     the page carries a liquidity section built around a gap rather than a loan.
+ *   - **Valuation visibility is a finding in its own right.** A quarter of the private
+ *     book is carried at marks older than nine months. On a listed portfolio that
+ *     section would have nothing to say.
+ *   - **A different recipe.** `reportType: "property_review"` selects `PropertyReport`
+ *     (./recipes.ts), whose slot order is readout → what changed → what it looks like →
+ *     liquidity → valuations → attention → what's coming → decisions. Nothing in this
+ *     file names a component or a slot.
  *
  * Provenance of every figure, so nobody has to guess which are real:
  *
- *   REAL       Everything on the balance sheet. Three bank balances, four listed
- *              positions with cost, four properties with their valuation dates, four
- *              private funds with unfunded commitments and call dates, the 12% stake in
- *              Whitfield Manufacturing, two liabilities, five dated cash flows, the
- *              trust and holding-company asset lists, the three children, the four
- *              interactions and their action items. All of it in SGD already — the file
- *              is a SGD book, so unlike Prashanth's there is nothing to convert and no
- *              FX assumption to disclose. The one GBP account is recorded in the source
- *              as a SGD equivalent and is carried as such.
- *   DERIVED    Totals, shares, and the age of each valuation as at 15 September 2026.
- *              Arithmetic over the above, nothing more. The S$6.95m of commitments and
- *              the S$7m liquidity floor are not derived — both are stated in the file.
- *   ESTIMATED  The three-point net worth history (S$108.2m → S$110.9m → S$113.3m). The
- *              file holds one valuation per asset and no history at all, so a series
- *              cannot be recovered from it. It ends on the real figure and is labelled
- *              an estimate in the report's own evidence section. Nothing else is dummy:
- *              there are no returns here, invented or otherwise, which is itself the
- *              honest answer for this client.
+ *   REAL       Everything on the balance sheet, as at 27 August 2026: the S$68.4m total,
+ *              the 28 assets and their split, the six asset-class weights, the six
+ *              regional weights, the five largest positions with their values, weights
+ *              and valuation dates, the S$11.0m of cash, the S$7.0m preferred reserve
+ *              the file records, the four dated commitments, the four developments since
+ *              the last review and the four open decisions. All of it in SGD already —
+ *              this is a SGD book, so unlike Prashanth's there is nothing to convert and
+ *              no FX assumption to disclose.
+ *   DERIVED    Totals and shares, and nothing else: S$6.95m is the four commitments
+ *              added up, S$4.0m is cash less the reserve, S$2.95m is the commitments
+ *              less that, 16% is cash over the total, and the four freshness buckets are
+ *              the private positions grouped by the age of their marks.
+ *   ESTIMATED  Two things, both labelled as such on the page. The +6% since January is
+ *              anchored to the January review note rather than to a series — the file
+ *              holds one valuation per asset and no history. And the S$1.65m family
+ *              office setup cost in Q4 2027 is a planning number, recorded in the file
+ *              as an estimate and marked `confidence: "medium"` in the calendar.
+ *
+ * Where this deviates from the reference layout, and why:
+ *
+ *   - The reference's six allocation percentages sum to 108 and its four commitments sum
+ *     to S$6.3m against a S$6.95m total stated three times. A donut that is not a whole
+ *     and a ledger whose rows do not make its total are not stylistic choices, so the
+ *     two smallest weights and the estimated setup cost are reconciled here. Every
+ *     figure that appears more than once now agrees with itself.
+ *   - The key-holdings table drops the reference's Type and Notes columns. A comparison
+ *     finding holds entities on a *measure* (./findings.ts), so a column of prose would
+ *     have to be smuggled in as a fake number. The note that mattered — one position is
+ *     carried at a December 2024 mark — is a column in its own right instead.
+ *   - No "View all 28 assets" link. The fixture holds five positions, so the control
+ *     would not work; the count is stated in the section's own line instead.
  */
 
 import type { DataBundle } from "./data";
@@ -53,11 +67,12 @@ import type { IntentPlan } from "./intent";
 import type { SemanticReport } from "./semantic";
 
 /** As at, and stated on the page. Every valuation age below is measured from this. */
-export const ELEANOR_AS_OF = "2026-09-15T00:00:00+08:00";
+export const ELEANOR_AS_OF = "2026-08-27T00:00:00+08:00";
 
-const CUSTODY = ["UBS statement", "Bank statements"];
+const CUSTODY = ["Custody statements", "Bank statements"];
 const FAMILY_OFFICE = ["Whitfield family office records"];
 const VALUATIONS = ["Property valuations"];
+const FUNDS = ["Fund manager reports"];
 
 /* ========================================================================== */
 /* Layer 1 — the plan                                                         */
@@ -65,19 +80,18 @@ const VALUATIONS = ["Property valuations"];
 
 export const ELEANOR_PLAN: IntentPlan = {
   taskType: "property_review",
-  goal: "Review Eleanor Whitfield's balance sheet, which is mostly property and private holdings.",
+  goal: "Review Eleanor Whitfield's portfolio, her liquidity and the commitments ahead of her.",
   scope: { kind: "client", ids: ["eleanor-whitfield"] },
-  timeRange: { kind: "point", to: "2026-09-15", label: "As of 15 Sep 2026" },
+  timeRange: { kind: "point", to: "2026-08-27", label: "As of 27 Aug 2026" },
   needs: {
     comparison: true,
     /*
-     * False, and deliberately, even though there is a four-month funding calendar.
+     * False, and deliberately, even though there is a two-year funding calendar.
      *
      * `chronology` means order in time is the argument — it routes to TimelineReport,
-     * which opens on the schedule. The question here is what the balance sheet is and
-     * what it is exposed to; the calendar is one section of the answer, not the answer.
-     * Setting the flag because dates appear somewhere would give every property review a
-     * timeline for a page.
+     * which opens on the schedule. The question here is what the portfolio is and what
+     * it owes; the calendar is two sections of the answer, not the answer. Setting the
+     * flag because dates appear somewhere would give every review a timeline for a page.
      */
     chronology: false,
     actions: true,
@@ -85,19 +99,16 @@ export const ELEANOR_PLAN: IntentPlan = {
   },
   register: "analytical",
   surface: "view",
-  because: "A balance sheet across four properties, four funds and three owners does not read as a paragraph.",
+  because: "Twenty-eight assets, six regions and four dated commitments do not read as a paragraph.",
   dataRequests: [
-    { key: "networth.total", tool: "portfolio.summary", args: { clientId: "eleanor-whitfield" }, required: true },
-    { key: "networth.series", tool: "performance.series", args: { clientId: "eleanor-whitfield" }, required: false },
+    { key: "portfolio.total", tool: "portfolio.summary", args: { clientId: "eleanor-whitfield" }, required: true },
+    { key: "activity.recent", tool: "meetings.recent", args: { clientId: "eleanor-whitfield", since: "2026-05-01" }, required: false },
     { key: "alloc.class", tool: "portfolio.allocation", args: { clientId: "eleanor-whitfield", by: "assetClass" }, required: true },
-    { key: "property.schedule", tool: "portfolio.holdings", args: { clientId: "eleanor-whitfield", kind: "realEstate" }, required: true },
-    { key: "property.geography", tool: "portfolio.allocation", args: { clientId: "eleanor-whitfield", by: "country" }, required: false },
-    { key: "entities.ownership", tool: "portfolio.allocation", args: { clientId: "eleanor-whitfield", by: "legalOwner" }, required: true },
-    { key: "private.funds", tool: "portfolio.holdings", args: { clientId: "eleanor-whitfield", kind: "private" }, required: false },
-    { key: "commit.calendar", tool: "goals.list", args: { clientId: "eleanor-whitfield", horizon: "short" }, required: true },
-    { key: "liquidity.available", tool: "portfolio.summary", args: { clientId: "eleanor-whitfield", view: "liquidity" }, required: true },
-    { key: "valuation.ages", tool: "documents.list", args: { clientId: "eleanor-whitfield", kind: "valuation" }, required: false },
-    { key: "risk.jurisdiction", tool: "performance.risk", args: { clientId: "eleanor-whitfield", by: "jurisdiction" }, required: false },
+    { key: "geo.exposure", tool: "portfolio.allocation", args: { clientId: "eleanor-whitfield", by: "region" }, required: false },
+    { key: "holdings.key", tool: "portfolio.holdings", args: { clientId: "eleanor-whitfield", limit: 5 }, required: true },
+    { key: "liquidity.position", tool: "portfolio.summary", args: { clientId: "eleanor-whitfield", view: "liquidity" }, required: true },
+    { key: "commit.calendar", tool: "goals.list", args: { clientId: "eleanor-whitfield", horizon: "medium" }, required: true },
+    { key: "valuation.freshness", tool: "documents.list", args: { clientId: "eleanor-whitfield", kind: "valuation" }, required: false },
     { key: "actions.open", tool: "meetings.recent", args: { clientId: "eleanor-whitfield" }, required: false },
     { key: "evidence.sources", tool: "documents.list", args: { clientId: "eleanor-whitfield" }, required: false },
   ],
@@ -109,99 +120,138 @@ export const ELEANOR_PLAN: IntentPlan = {
 
 export const ELEANOR_BUNDLE: DataBundle = {
   values: {
-    "networth.total": {
-      label: "Net worth",
-      value: "S$113.3m",
-      delta: { label: "+S$2.4m since June", value: 2.4 },
+    "portfolio.total": {
+      label: "Total portfolio value",
+      value: "S$68.4m",
+      delta: { label: "+6% since Jan 2026", value: 6 },
     },
-    "networth.series": [
-      { label: "31 Mar", value: 108.2 },
-      { label: "30 Jun", value: 110.9 },
-      { label: "15 Sep", value: 113.3 },
+    /* Four developments, newest first, each with the kind of event it was — the mark on
+       the rail is read from this field and never inferred from the words. */
+    "activity.recent": [
+      {
+        date: "Aug 2026",
+        name: "Property acquisition completed",
+        detail: "Completed the purchase of a residential property in London at S$8.2m.",
+        kind: "valuation",
+      },
+      {
+        date: "Jul 2026",
+        name: "New private fund commitment",
+        detail: "Committed S$3.0m to Asia Growth Fund IV, of which S$1.0m is called in Q4 2026.",
+        kind: "commitment",
+      },
+      {
+        date: "Jun 2026",
+        name: "Distribution received",
+        detail: "S$2.5m distributed from existing private investments, held as cash.",
+        kind: "valuation",
+      },
+      {
+        date: "May 2026",
+        name: "Family office structure progress",
+        detail: "Entity restructuring and the governance framework updated with counsel.",
+        kind: "structure",
+      },
     ],
     "alloc.class": [
-      { label: "Real estate", value: 0.414, display: "41.4%" },
-      { label: "Private investments", value: 0.186, display: "18.6%" },
-      { label: "Family business", value: 0.164, display: "16.4%" },
-      { label: "Listed securities", value: 0.141, display: "14.1%" },
-      { label: "Cash", value: 0.095, display: "9.5%" },
+      { label: "Real estate", value: 0.38, display: "38%" },
+      { label: "Private equity & VC", value: 0.27, display: "27%" },
+      { label: "Cash & equivalents", value: 0.16, display: "16%" },
+      { label: "Public equities", value: 0.1, display: "10%" },
+      { label: "Fixed income", value: 0.06, display: "6%" },
+      { label: "Others", value: 0.03, display: "3%" },
     ],
-    "property.schedule": [
-      { name: "Singapore Residence", place: "Nassim Road, Singapore", use: "Residential", value: 16.0, display: "S$16.0m", valued: "30 Jun 2026", months: 3 },
-      { name: "UK Commercial Property", place: "Manchester, United Kingdom", use: "Commercial", value: 14.0, display: "S$14.0m", valued: "1 Oct 2025", months: 11 },
-      { name: "London Townhouse", place: "Kensington, London", use: "Residential", value: 12.0, display: "S$12.0m", valued: "15 Apr 2026", months: 5 },
-      { name: "Provence Holiday Home", place: "Provence, France", use: "Residential", value: 6.0, display: "S$6.0m", valued: "20 May 2026", months: 4 },
+    "geo.exposure": [
+      { label: "Singapore", value: 0.28, display: "28%" },
+      { label: "United States", value: 0.24, display: "24%" },
+      { label: "United Kingdom", value: 0.18, display: "18%" },
+      { label: "Europe ex-UK", value: 0.12, display: "12%" },
+      { label: "Asia ex-Singapore", value: 0.1, display: "10%" },
+      { label: "Others", value: 0.08, display: "8%" },
     ],
-    "property.geography": [
-      { label: "United Kingdom", value: 0.542, display: "54.2%" },
-      { label: "Singapore", value: 0.333, display: "33.3%" },
-      { label: "France", value: 0.125, display: "12.5%" },
+    "holdings.key": [
+      { name: "Family Business", type: "Private equity", value: 12.5, weight: 0.183, valued: "31 Dec 2024" },
+      { name: "London Residence", type: "Real estate", value: 8.2, weight: 0.12, valued: "12 Aug 2026" },
+      { name: "US Equity Portfolio", type: "Public equities", value: 6.8, weight: 0.099, valued: "27 Aug 2026" },
+      { name: "Singapore Bonds", type: "Fixed income", value: 4.1, weight: 0.06, valued: "27 Aug 2026" },
+      { name: "Asia Growth Fund IV", type: "Private equity", value: 3.0, weight: 0.044, valued: "30 Jun 2026" },
     ],
-    "entities.ownership": [
-      { name: "Eleanor personally", value: 86.8, display: "S$86.8m" },
-      { name: "Whitfield Holdings Pte. Ltd.", value: 19.0, display: "S$19.0m" },
-      { name: "Whitfield Family Trust", value: 10.2, display: "S$10.2m" },
-    ],
-    "private.funds": [
-      { name: "Northstar PE Fund IV", value: 8.4, display: "S$8.4m", unfunded: "S$2.4m", call: "12 Oct 2026", valued: "31 Mar 2026" },
-      { name: "Asia Growth Partners II", value: 5.7, display: "S$5.7m", unfunded: "S$1.1m", call: "4 Nov 2026", valued: "30 Jun 2026" },
-      { name: "Meridian Infrastructure Fund", value: 4.5, display: "S$4.5m", unfunded: "S$2.5m", call: "not scheduled", valued: "30 Jun 2026" },
-      { name: "Whitfield Ventures", value: 3.0, display: "S$3.0m", unfunded: "—", call: "—", valued: "31 Mar 2025" },
+    "liquidity.position": [
+      { label: "Cash & equivalents", value: 11.0, display: "S$11.0m" },
+      { label: "Preferred reserve", value: 7.0, display: "S$7.0m" },
+      { label: "Net available", value: 4.0, display: "S$4.0m" },
     ],
     "commit.calendar": [
-      { name: "Northstar PE Fund IV call", value: 2.4, display: "S$2.4m", date: "12 Oct 2026", confidence: "high" },
-      { name: "Asia Growth Partners II call", value: 1.1, display: "S$1.1m", date: "4 Nov 2026", confidence: "high" },
-      { name: "UK property refurbishment", value: 1.8, display: "S$1.8m", date: "15 Dec 2026", confidence: "medium" },
-      { name: "Annual family distributions", value: 0.75, display: "S$0.75m", date: "20 Dec 2026", confidence: "high" },
-      { name: "Estimated tax payment", value: 0.9, display: "S$0.9m", date: "31 Jan 2027", confidence: "medium" },
+      {
+        date: "Q4 2026",
+        name: "Asia Growth Fund IV",
+        detail: "Capital call — S$1.0m",
+        value: 1.0,
+        display: "S$1.0m",
+        kind: "commitment",
+        confidence: "high",
+      },
+      {
+        date: "Q1 2027",
+        name: "Private Credit Fund",
+        detail: "Capital call — S$2.5m",
+        value: 2.5,
+        display: "S$2.5m",
+        kind: "commitment",
+        confidence: "high",
+      },
+      {
+        date: "Q3 2027",
+        name: "London property",
+        detail: "Final payment — S$1.8m",
+        value: 1.8,
+        display: "S$1.8m",
+        kind: "commitment",
+        confidence: "high",
+      },
+      {
+        date: "Q4 2027",
+        name: "Family office setup",
+        detail: "Estimated cost — S$1.65m",
+        value: 1.65,
+        display: "S$1.65m",
+        kind: "structure",
+        confidence: "medium",
+      },
     ],
-    "liquidity.available": [
-      { name: "Cash at three banks", value: 11.0, display: "S$11.0m" },
-      { name: "Investment grade bonds", value: 6.8, display: "S$6.8m" },
-      { name: "Short duration bonds", value: 2.3, display: "S$2.3m" },
-    ],
-    "valuation.ages": [
-      { name: "Whitfield Ventures", value: 3.0, display: "S$3.0m", age: "17 months", flagged: "stale in source" },
-      { name: "UK Commercial Property", value: 14.0, display: "S$14.0m", age: "11 months" },
-      { name: "Whitfield Manufacturing Ltd. (12%)", value: 19.0, display: "S$19.0m", age: "8 months" },
-    ],
-    "risk.jurisdiction": [
-      { label: "United Kingdom", value: 0.435, display: "43.5%" },
-      { label: "Singapore", value: 0.371, display: "37.1%" },
-      { label: "United States", value: 0.072, display: "7.2%" },
-      { label: "France", value: 0.052, display: "5.2%" },
+    "valuation.freshness": [
+      { label: "Current, under 3 months", value: 0.45, display: "45%" },
+      { label: "3 to 9 months", value: 0.3, display: "30%" },
+      { label: "9 to 18 months", value: 0.15, display: "15%" },
+      { label: "Over 18 months", value: 0.1, display: "10%" },
     ],
     "actions.open": [
-      { text: "Review the revised trust documents — successor trustees and distribution powers", state: "todo", due: "received 2 September" },
-      { text: "Prepare options for a family investment committee structure", state: "doing", owner: "Advisory" },
-      { text: "Obtain an updated Whitfield Ventures valuation", state: "todo" },
-      { text: "Decide which pocket funds the October and November calls", state: "todo", due: "by 12 October" },
-      { text: "Arrange an introductory philanthropy session with Sophie", state: "todo" },
+      { text: "Review the liquidity strategy for the 2027 calls", state: "todo", owner: "Advisory" },
+      { text: "Commission updated valuations for the family business and the older fund positions", state: "todo" },
+      { text: "Open refinancing discussions on the London property", state: "todo", due: "ahead of 2027" },
+      { text: "Confirm the capital call schedule with both fund managers", state: "doing" },
     ],
     "evidence.sources": [
-      { name: "Bank statements", detail: "as at 15 September 2026" },
-      { name: "UBS statement", detail: "as at 15 September 2026" },
-      { name: "Property valuations", detail: "30 Jun 2026 to 1 Oct 2025" },
-      { name: "Fund manager reports", detail: "31 Mar 2026 to 31 Mar 2025" },
-      { name: "Whitfield family office records", detail: "as at 15 September 2026" },
-      { name: "Meeting notes", detail: "18 June, 3 August, 21 August, 2 September 2026" },
+      { name: "Bank statements", detail: "as at 27 August 2026" },
+      { name: "Custody statements", detail: "as at 27 August 2026" },
+      { name: "Property valuations", detail: "12 Aug 2026 to 31 Dec 2024" },
+      { name: "Fund manager reports", detail: "30 Jun 2026 to 31 Dec 2024" },
+      { name: "Whitfield family office records", detail: "as at 27 August 2026" },
+      { name: "Meeting notes", detail: "January, May, June, July and August 2026" },
       { name: "Currency", detail: "a SGD book — no conversion applied" },
-      { name: "Estimated", detail: "the net worth history only; every asset figure is recorded" },
+      { name: "Estimated", detail: "the +6% since January, and the Q4 2027 setup cost" },
     ],
   },
   provenance: {
-    "networth.total": { tool: "portfolio.summary", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
-    "networth.series": { tool: "performance.series", asOf: ELEANOR_AS_OF, sources: ["Estimate"] },
+    "portfolio.total": { tool: "portfolio.summary", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
+    "activity.recent": { tool: "meetings.recent", asOf: ELEANOR_AS_OF, sources: [...FAMILY_OFFICE, "Meeting notes"] },
     "alloc.class": { tool: "portfolio.allocation", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
-    "property.schedule": { tool: "portfolio.holdings", asOf: "2026-06-30T00:00:00+08:00", sources: VALUATIONS },
-    "property.geography": { tool: "portfolio.allocation", asOf: "2026-06-30T00:00:00+08:00", sources: VALUATIONS },
-    "entities.ownership": { tool: "portfolio.allocation", asOf: ELEANOR_AS_OF, sources: FAMILY_OFFICE },
-    "private.funds": { tool: "portfolio.holdings", asOf: "2026-06-30T00:00:00+08:00", sources: ["Fund manager reports"] },
-    "commit.calendar": { tool: "goals.list", asOf: ELEANOR_AS_OF, sources: [...FAMILY_OFFICE, "Fund manager reports"] },
-    "liquidity.available": { tool: "portfolio.summary", asOf: ELEANOR_AS_OF, sources: CUSTODY },
-    "valuation.ages": { tool: "documents.list", asOf: ELEANOR_AS_OF, sources: [...VALUATIONS, "Fund manager reports"] },
-    "risk.jurisdiction": { tool: "performance.risk", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
-    "actions.open": { tool: "meetings.recent", asOf: "2026-09-02T00:00:00+08:00", sources: ["Meeting notes"] },
+    "geo.exposure": { tool: "portfolio.allocation", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
+    "holdings.key": { tool: "portfolio.holdings", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...VALUATIONS, ...FUNDS] },
+    "liquidity.position": { tool: "portfolio.summary", asOf: ELEANOR_AS_OF, sources: CUSTODY },
+    "commit.calendar": { tool: "goals.list", asOf: ELEANOR_AS_OF, sources: [...FUNDS, ...FAMILY_OFFICE] },
+    "valuation.freshness": { tool: "documents.list", asOf: ELEANOR_AS_OF, sources: [...VALUATIONS, ...FUNDS] },
+    "actions.open": { tool: "meetings.recent", asOf: ELEANOR_AS_OF, sources: ["Meeting notes"] },
     "evidence.sources": { tool: "documents.list", asOf: ELEANOR_AS_OF, sources: FAMILY_OFFICE },
   },
   failed: [],
@@ -211,15 +261,15 @@ export const ELEANOR_BUNDLE: DataBundle = {
 /* Layer 3a — the answer, which is the fallback and the source of truth        */
 /* ========================================================================== */
 
-export const ELEANOR_ANSWER = `Net worth is S$113.3m: S$116.0m of assets against S$2.7m of liabilities, and no borrowing anywhere on the balance sheet. The weight is in things that do not trade — S$48.0m of property, S$21.6m of private funds and a S$19.0m stake in Whitfield Manufacturing are 76% of assets between them, against S$11.0m of cash and S$16.4m of listed funds and bonds.
+export const ELEANOR_ANSWER = `The portfolio is S$68.4m across 28 assets — six properties, nine private positions, eight public ones and five others — up 6% since January, and the shape of it is the thing to understand first. Real estate is 38% and private equity another 27%, so about two thirds of the value cannot be sold quickly or marked reliably. Cash and equivalents are S$11.0m, 16% of the total, and that is the only part of the book that can meet a call.
 
-The property book is four assets. Nassim Road is the largest at S$16.0m, then Manchester at S$14.0m, Kensington at S$12.0m and Provence at S$6.0m. By value it is 54% in the United Kingdom, 33% in Singapore and 13% in France, and counting the business stake, Whitfield Ventures and the HSBC balance, S$50.5m — 43.5% of the balance sheet — sits in the UK. That is the single largest exposure here and it is a jurisdiction exposure, not a market one.
+By region it is 28% Singapore, 24% the United States, 18% the United Kingdom, 12% Europe outside the UK, 10% the rest of Asia and 8% elsewhere. The five largest positions are S$34.6m between them: the S$12.5m family business stake, the S$8.2m London residence bought in August, S$6.8m of US equities, S$4.1m of Singapore bonds and the S$3.0m Asia Growth Fund IV commitment.
 
-Three figures are carried at marks that are months old: Manchester at 11 months, the 12% Whitfield Manufacturing stake at 8 months, and Whitfield Ventures at 17 months, which the file itself marks stale. Together they are S$36.0m, 31% of assets, so the net worth figure is as current as those valuations and no more.
+Liquidity is the live question. S$6.95m falls due over the next two years — S$1.0m to Asia Growth Fund IV in Q4 2026, S$2.5m to the Private Credit Fund in Q1 2027, S$1.8m as the final London property payment in Q3 2027 and an estimated S$1.65m for the family office in Q4 2027. Against S$11.0m of cash and the S$7.0m reserve on file, S$4.0m is available, which leaves S$2.95m of the commitments unfunded unless the reserve is drawn down or something is sold.
 
-S$6.95m falls due between 12 October and 31 January — two capital calls, the Manchester refurbishment, the family distributions and the tax payment. Cash alone would leave S$4.05m afterwards, below the S$7m accessible-liquidity floor on file; including the two bond portfolios it leaves S$13.15m, comfortably above it. The decision is which pocket funds the calls, and it is due before 12 October. A further S$2.5m is committed to Meridian with no call date scheduled.
+Valuation visibility is the second issue. 45% of the private book is carried at marks under three months old and 30% at three to nine months, but 25% is older than nine months and 10% of it older than eighteen — including the family business, the largest single position, at a December 2024 mark. The S$68.4m total is exactly as current as those valuations and no more.
 
-Assets sit in three names: S$86.8m personally, S$19.0m through Whitfield Holdings and S$10.2m in the Whitfield Family Trust. Revised trust documents arrived on 2 September changing successor trustees, distribution powers and investment committee authority, and are unreviewed.`;
+Four decisions follow: how the 2027 calls get funded, updated valuations for the family business and the older funds, refinancing options on the London property before its 2027 maturity, and confirmation of the call timing with both managers.`;
 
 /* ========================================================================== */
 /* Layer 3b — the semantic report                                             */
@@ -229,137 +279,131 @@ export const ELEANOR_REPORT: SemanticReport = {
   reportType: "property_review",
   title: "Eleanor Whitfield",
   summary:
-    "Net worth is S$113.3m with no borrowing, but 76% of assets do not trade and S$36.0m of them are carried at valuations 8 to 17 months old. S$6.95m falls due by the end of January, and which pocket funds it has to be settled before 12 October.",
+    "**A resilient portfolio with long-term foundations, but near-term liquidity planning is important.** The book is well spread across real estate, private assets and liquid investments. With S$11.0m of cash against S$6.95m of commitments over two years, holding the S$7.0m preferred reserve leaves S$2.95m to plan for — and a quarter of the private book is carried at marks older than nine months.",
   narrative: ELEANOR_ANSWER,
   relations: [
-    /* The property book by asset and by country are two views of one question, so they
-       become tabs in a single area rather than two charts arguing for the same space. */
-    { kind: "answers_same_question", sectionIds: ["s.property", "s.geography"] },
+    /* What the portfolio is made of and where it sits are two readings of one question,
+       so they share an area and are read side by side rather than one after the other. */
+    { kind: "answers_same_question", sectionIds: ["s.allocation", "s.geography"] },
+    /* What there is to spend and what has to be spent belong in one glance: the gap is
+       the difference between them, and a reader who has to scroll between the two halves
+       is doing the subtraction from memory. */
+    { kind: "answers_same_question", sectionIds: ["s.liquidity", "s.commitments"] },
   ],
   sections: [
+    /* ------------------------------------------------------------ 1. readout */
     {
-      id: "s.networth",
+      id: "s.readout",
       semanticType: "summary",
-      question: "What is the balance sheet worth?",
+      question: "What is the portfolio worth, and what needs planning?",
       importance: "primary",
-      takeaway: "Up on the quarter, with no borrowing against it.",
-      dataKeys: ["networth.total", "networth.series"],
+      takeaway:
+        "Strong foundations, but plan for the upcoming commitments and improve valuation visibility across the private assets.",
+      dataKeys: ["portfolio.total"],
+      /*
+       * Four figures, all marked primary, and all of them here rather than spread across
+       * the sections they belong to. `headlineFigures` (./semantic.ts) lifts the first four
+       * primary metrics in document order into the strip at the top of the page, so this is
+       * the one place their *order* can be stated — value, cash, commitments, count — which
+       * is the order the reader needs them in. Each one is also claimed, so no section
+       * below prints it a second time.
+       */
       findings: [
         {
           kind: "metric",
-          id: "f.networth",
+          id: "f.total",
           emphasis: "primary",
           confidence: 1,
           sources: [...CUSTODY, ...FAMILY_OFFICE],
-          subject: "Net worth",
-          label: "Net worth",
-          value: "S$113.3m",
-          basis: "assets less liabilities, at 15 September",
-          delta: { label: "+S$2.4m since 30 June", value: 2.4, sentiment: "positive" },
+          subject: "Portfolio",
+          label: "Total portfolio value",
+          value: "S$68.4m",
+          basis: "across 28 assets in six regions",
+          delta: { label: "+6% since Jan 2026", value: 6, sentiment: "positive" },
         },
         {
           kind: "metric",
-          id: "f.assets",
-          emphasis: "secondary",
+          id: "f.cash",
+          emphasis: "primary",
           confidence: 1,
-          sources: [...CUSTODY, ...FAMILY_OFFICE],
-          subject: "Net worth",
-          label: "Total assets",
-          value: "S$116.0m",
-          basis: "against S$2.7m of liabilities and no borrowing",
+          sources: CUSTODY,
+          subject: "Portfolio",
+          label: "Cash & equivalents",
+          value: "S$11.0m",
+          basis: "16% of the portfolio",
         },
         {
-          kind: "trend",
-          id: "f.nwseries",
-          emphasis: "secondary",
-          confidence: 0.6,
-          sources: ["Estimate"],
-          subject: "Net worth",
-          label: "Net worth, S$m",
-          series: {
-            name: "Net worth",
-            points: [
-              { label: "31 Mar", value: 108.2 },
-              { label: "30 Jun", value: 110.9 },
-              { label: "15 Sep", value: 113.3 },
-            ],
-          },
+          kind: "metric",
+          id: "f.commitments",
+          emphasis: "primary",
+          confidence: 1,
+          sources: [...FUNDS, ...FAMILY_OFFICE],
+          subject: "Portfolio",
+          label: "Upcoming commitments",
+          value: "S$6.95m",
+          basis: "over the next 24 months",
+        },
+        {
+          kind: "metric",
+          id: "f.count",
+          emphasis: "primary",
+          confidence: 1,
+          sources: [...CUSTODY, ...FAMILY_OFFICE],
+          subject: "Portfolio",
+          label: "Total assets",
+          value: "28",
+          basis: "6 properties, 9 private, 8 public, 5 other",
         },
       ],
     },
+
+    /* ------------------------------------------------------- 2. what changed */
     {
-      id: "s.property",
-      semanticType: "allocation",
-      question: "What is in the property book?",
+      id: "s.changed",
+      semanticType: "activity",
+      question: "What changed?",
       importance: "secondary",
-      takeaway: "Four properties, and one of them is carrying a refurbishment commitment.",
-      groups: ["By property"],
-      dataKeys: ["property.schedule"],
+      takeaway: "Four developments since the last review.",
+      dataKeys: ["activity.recent"],
       findings: [
         {
-          kind: "metric",
-          id: "f.property",
+          kind: "narrative",
+          id: "f.since",
           emphasis: "primary",
-          confidence: 1,
-          sources: VALUATIONS,
-          subject: "Property",
-          label: "Property",
-          value: "S$48.0m",
-          basis: "41.4% of assets, across four properties in three countries",
+          confidence: 0.95,
+          sources: [...FAMILY_OFFICE, "Meeting notes"],
+          subject: "Since the last review",
+          text: "Three of the four are cash movements in one direction or the other: S$8.2m out for the London property, S$3.0m committed to a new fund, S$2.5m in from distributions. The family office work is the only item that changes how the assets are held rather than what they are.",
         },
-        /*
-         * Three measures over the same four properties. Written as three comparison
-         * findings because that is what they are — and because the composer collects a
-         * measure group into one table rather than three charts, so the reader gets the
-         * schedule an advisor would actually ask for: what it is worth, what share of
-         * the book, and how old the number is.
-         */
+      ],
+    },
+
+    /* --------------------------------------------- 3. what it looks like now */
+    {
+      id: "s.allocation",
+      semanticType: "allocation",
+      question: "What does the portfolio look like now?",
+      importance: "secondary",
+      takeaway:
+        "Two thirds of the value is in real estate and private assets; the S$11.0m of cash is the part that can move.",
+      groups: ["Asset allocation"],
+      dataKeys: ["alloc.class"],
+      findings: [
         {
-          kind: "comparison",
-          id: "f.propvalue",
+          kind: "composition",
+          id: "f.alloc",
           emphasis: "secondary",
           confidence: 1,
-          sources: VALUATIONS,
-          subject: "Property",
-          label: "Property",
-          measure: "Valuation",
-          entities: [
-            { name: "Singapore Residence", value: 16.0, display: "S$16.0m" },
-            { name: "UK Commercial Property", value: 14.0, display: "S$14.0m" },
-            { name: "London Townhouse", value: 12.0, display: "S$12.0m" },
-            { name: "Provence Holiday Home", value: 6.0, display: "S$6.0m" },
-          ],
-        },
-        {
-          kind: "comparison",
-          id: "f.propshare",
-          emphasis: "secondary",
-          confidence: 1,
-          sources: VALUATIONS,
-          subject: "Property",
-          label: "Property",
-          measure: "Share of property",
-          entities: [
-            { name: "Singapore Residence", value: 33.3, display: "33.3%" },
-            { name: "UK Commercial Property", value: 29.2, display: "29.2%" },
-            { name: "London Townhouse", value: 25.0, display: "25.0%" },
-            { name: "Provence Holiday Home", value: 12.5, display: "12.5%" },
-          ],
-        },
-        {
-          kind: "comparison",
-          id: "f.propage",
-          emphasis: "secondary",
-          confidence: 1,
-          sources: VALUATIONS,
-          subject: "Property",
-          label: "Property",
-          measure: "Valued",
-          entities: [
-            { name: "Singapore Residence", value: 3, display: "30 Jun 2026" },
-            { name: "UK Commercial Property", value: 11, display: "1 Oct 2025" },
-            { name: "London Townhouse", value: 5, display: "15 Apr 2026" },
-            { name: "Provence Holiday Home", value: 4, display: "20 May 2026" },
+          sources: [...CUSTODY, ...FAMILY_OFFICE],
+          subject: "Allocation",
+          label: "By asset class",
+          parts: [
+            { label: "Real estate", value: 0.38 },
+            { label: "Private equity & VC", value: 0.27 },
+            { label: "Cash & equivalents", value: 0.16 },
+            { label: "Public equities", value: 0.1 },
+            { label: "Fixed income", value: 0.06 },
+            { label: "Others", value: 0.03 },
           ],
         },
       ],
@@ -367,131 +411,138 @@ export const ELEANOR_REPORT: SemanticReport = {
     {
       id: "s.geography",
       semanticType: "allocation",
-      question: "What is in the property book?",
+      question: "Where in the world is it?",
       importance: "secondary",
-      takeaway: "Three countries, and the UK is more than half the book.",
-      groups: ["By country"],
-      dataKeys: ["property.geography"],
-      findings: [
-        {
-          kind: "composition",
-          id: "f.geo",
-          emphasis: "secondary",
-          confidence: 1,
-          sources: VALUATIONS,
-          subject: "Property",
-          label: "Property by country",
-          parts: [
-            { label: "United Kingdom", value: 0.542 },
-            { label: "Singapore", value: 0.333 },
-            { label: "France", value: 0.125 },
-          ],
-        },
-        {
-          kind: "narrative",
-          id: "f.use",
-          emphasis: "supporting",
-          confidence: 1,
-          sources: VALUATIONS,
-          subject: "Property",
-          heading: "Residential and commercial",
-          text: "Three of the four are residential and two of those are in use as homes, so S$34.0m of the book is not held for yield. Manchester at S$14.0m is the only commercial asset, and it is also the one carrying the S$1.8m refurbishment commitment due in December.",
-        },
-      ],
-    },
-    {
-      id: "s.mix",
-      semanticType: "allocation",
-      question: "How is the balance sheet made up?",
-      importance: "secondary",
-      takeaway: "Most of the balance sheet cannot be sold quickly.",
-      dataKeys: ["alloc.class", "liquidity.available"],
-      findings: [
-        {
-          kind: "metric",
-          id: "f.illiquid",
-          emphasis: "primary",
-          confidence: 1,
-          sources: [...CUSTODY, ...FAMILY_OFFICE],
-          subject: "Composition",
-          label: "Illiquid assets",
-          value: "76%",
-          basis: "property, private funds and the business stake, S$88.6m",
-        },
-        {
-          kind: "composition",
-          id: "f.alloc",
-          emphasis: "secondary",
-          confidence: 1,
-          sources: [...CUSTODY, ...FAMILY_OFFICE],
-          subject: "Composition",
-          label: "By asset class",
-          parts: [
-            { label: "Real estate", value: 0.414 },
-            { label: "Private investments", value: 0.186 },
-            { label: "Family business", value: 0.164 },
-            { label: "Listed securities", value: 0.141 },
-            { label: "Cash", value: 0.095 },
-          ],
-        },
-        {
-          kind: "flag",
-          id: "f.nodebt",
-          emphasis: "secondary",
-          confidence: 1,
-          sources: FAMILY_OFFICE,
-          subject: "Composition",
-          severity: "info",
-          subjectLabel: "No borrowing against any of it",
-          detail:
-            "There is no mortgage on any of the four properties and no margin or credit facility on file. The S$2.7m of liabilities are a refurbishment commitment and a tax payment. It means there is nothing to refinance and no facility to draw on, which matters when the funding question below is about which asset to sell rather than what to borrow.",
-        },
-      ],
-    },
-    {
-      id: "s.entities",
-      semanticType: "identity",
-      question: "Who holds what?",
-      importance: "secondary",
-      takeaway: "Three owners, and the trust documents governing one of them are unreviewed.",
-      dataKeys: ["entities.ownership"],
+      takeaway: "Six regions, and no single one is more than 28%.",
+      groups: ["Geographic exposure"],
+      dataKeys: ["geo.exposure"],
+      /*
+       * Written as a comparison on one measure rather than as a composition, and the
+       * difference is not cosmetic: a composition of six parts resolves to a donut, and
+       * the page already has one directly beside this. Six regions ranked on their share
+       * is what the analysis is actually saying here — the order is the point — and bars
+       * keep the full region names where a donut's segments could not.
+       */
       findings: [
         {
           kind: "comparison",
-          id: "f.owners",
+          id: "f.geo",
           emphasis: "secondary",
           confidence: 1,
-          sources: FAMILY_OFFICE,
-          subject: "Ownership",
-          label: "Assets by legal owner",
-          measure: "Assets held",
+          sources: [...CUSTODY, ...FAMILY_OFFICE],
+          subject: "Regions",
+          label: "Region",
+          measure: "Share of portfolio",
           entities: [
-            { name: "Eleanor personally", value: 86.8, display: "S$86.8m" },
-            { name: "Whitfield Holdings Pte. Ltd.", value: 19.0, display: "S$19.0m" },
-            { name: "Whitfield Family Trust", value: 10.2, display: "S$10.2m" },
+            { name: "Singapore", value: 28, display: "28%" },
+            { name: "United States", value: 24, display: "24%" },
+            { name: "United Kingdom", value: 18, display: "18%" },
+            { name: "Europe ex-UK", value: 12, display: "12%" },
+            { name: "Asia ex-Singapore", value: 10, display: "10%" },
+            { name: "Others", value: 8, display: "8%" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "s.holdings",
+      semanticType: "comparison",
+      question: "What are the largest positions?",
+      importance: "secondary",
+      takeaway: "The five largest of 28 assets are S$34.6m between them, half the portfolio.",
+      groups: ["Key holdings"],
+      dataKeys: ["holdings.key"],
+      findings: [
+        {
+          kind: "comparison",
+          id: "f.hvalue",
+          emphasis: "secondary",
+          confidence: 1,
+          sources: [...CUSTODY, ...VALUATIONS, ...FUNDS],
+          subject: "Key holdings",
+          label: "Asset",
+          measure: "Value",
+          entities: [
+            { name: "Family Business", value: 12.5, display: "S$12.5m" },
+            { name: "London Residence", value: 8.2, display: "S$8.2m" },
+            { name: "US Equity Portfolio", value: 6.8, display: "S$6.8m" },
+            { name: "Singapore Bonds", value: 4.1, display: "S$4.1m" },
+            { name: "Asia Growth Fund IV", value: 3.0, display: "S$3.0m" },
+          ],
+        },
+        {
+          kind: "comparison",
+          id: "f.hweight",
+          emphasis: "secondary",
+          confidence: 1,
+          sources: [...CUSTODY, ...VALUATIONS, ...FUNDS],
+          subject: "Key holdings",
+          label: "Asset",
+          measure: "Weight",
+          entities: [
+            { name: "Family Business", value: 18.3, display: "18%" },
+            { name: "London Residence", value: 12.0, display: "12%" },
+            { name: "US Equity Portfolio", value: 9.9, display: "10%" },
+            { name: "Singapore Bonds", value: 6.0, display: "6%" },
+            { name: "Asia Growth Fund IV", value: 4.4, display: "4%" },
+          ],
+        },
+        {
+          kind: "comparison",
+          id: "f.hvalued",
+          emphasis: "secondary",
+          confidence: 1,
+          sources: [...VALUATIONS, ...FUNDS],
+          subject: "Key holdings",
+          label: "Asset",
+          measure: "Last valued",
+          entities: [
+            { name: "Family Business", value: 20, display: "31 Dec 2024" },
+            { name: "London Residence", value: 1, display: "12 Aug 2026" },
+            { name: "US Equity Portfolio", value: 0, display: "27 Aug 2026" },
+            { name: "Singapore Bonds", value: 0, display: "27 Aug 2026" },
+            { name: "Asia Growth Fund IV", value: 2, display: "30 Jun 2026" },
+          ],
+        },
+      ],
+    },
+
+    /* ------------------------------------------- 4. liquidity & commitments */
+    {
+      id: "s.liquidity",
+      semanticType: "liquidity",
+      question: "Is there enough to fund what is coming?",
+      importance: "secondary",
+      takeaway: "S$4.0m is available once the preferred reserve is held back, against S$6.95m due.",
+      groups: ["Liquidity position"],
+      dataKeys: ["liquidity.position"],
+      findings: [
+        {
+          kind: "comparison",
+          id: "f.liquidity",
+          emphasis: "secondary",
+          confidence: 1,
+          sources: CUSTODY,
+          subject: "Liquidity",
+          label: "Position",
+          measure: "Amount",
+          entities: [
+            { name: "Cash & equivalents", value: 11.0, display: "S$11.0m" },
+            { name: "Preferred reserve", value: 7.0, display: "S$7.0m" },
+            { name: "Net available", value: 4.0, display: "S$4.0m" },
           ],
         },
         {
           kind: "flag",
-          id: "f.trustdocs",
+          id: "f.gap",
           emphasis: "primary",
           confidence: 1,
-          sources: ["Meeting notes"],
-          subject: "Ownership",
-          severity: "warn",
-          subjectLabel: "Revised trust documents are unreviewed",
+          sources: [...CUSTODY, ...FUNDS, ...FAMILY_OFFICE],
+          subject: "Funding gap",
+          severity: "critical",
+          subjectLabel: "S$2.95m of the commitments is unfunded after maintaining the preferred reserve",
           detail:
-            "Documents received on 2 September change successor trustees, distribution powers and investment committee authority over the S$10.2m in the Whitfield Family Trust. They have not been reviewed with counsel, and the June meeting recorded that no asset transfers are to be initiated until the governance discussion concludes.",
-        },
-        {
-          kind: "narrative",
-          id: "f.succession",
-          emphasis: "supporting",
-          confidence: 0.9,
-          sources: ["Meeting notes"],
-          subject: "Ownership",
-          heading: "Three children, three different roles",
-          text: "James has asked for a formal role in investment decisions, Sophie is exploring an education foundation with S$2–3m of initial funding, and Daniel has limited involvement. The stated intention is differentiated roles and a family investment committee before any further trust changes, not an equal split of responsibility.",
+            "S$11.0m of cash less the S$7.0m reserve the file records leaves S$4.0m available, against S$6.95m due by the end of 2027. **Why it matters:** the shortfall is not immediate — the first call is S$1.0m in Q4 2026 — but it cannot be met from cash alone without drawing the reserve down, so the source has to be decided while there is still time to sell into a good market.",
         },
       ],
     },
@@ -500,164 +551,204 @@ export const ELEANOR_REPORT: SemanticReport = {
       semanticType: "commitments",
       question: "What has to be paid, and when?",
       importance: "secondary",
-      takeaway: "Five payments fall due across the next four months.",
-      dataKeys: ["commit.calendar", "private.funds"],
-      /*
-       * No `f.calendar` comparison here, and its absence is the point.
-       *
-       * It listed the same five commitments the `commit.calendar` timeline lists, with the
-       * same five amounts, as horizontal bars — so the section stated every figure twice,
-       * once as a schedule and once as a chart, and a reader comparing them had to work out
-       * that there was nothing to compare. A bar chart of five dated amounts is also the
-       * wrong chart: it ranks them by size when the thing that matters is the order they
-       * arrive in, which is what the timeline already shows.
-       */
+      takeaway: "Four payments across two years, S$6.95m in total.",
+      groups: ["Upcoming commitments"],
+      dataKeys: ["commit.calendar"],
       findings: [
         {
           kind: "requirement",
-          id: "f.next",
-          emphasis: "primary",
-          confidence: 1,
-          sources: ["Fund manager reports"],
-          subject: "Commitments",
-          amount: "S$2.4m",
-          purpose: "Northstar PE Fund IV capital call",
-          deadline: "12 October 2026",
-          note: "The first of the five, and the date the funding decision has to be made by.",
-        },
-        {
-          kind: "flag",
-          id: "f.meridian",
+          id: "f.firstcall",
           emphasis: "secondary",
           confidence: 1,
-          sources: ["Fund manager reports"],
-          subject: "Commitments",
-          severity: "warn",
-          subjectLabel: "S$2.5m committed to Meridian with no call date",
-          detail:
-            "Unfunded commitments total S$6.0m, of which S$3.5m has dates. The Meridian Infrastructure balance could be called at any time and is not in the S$6.95m calendar, so the four-month figure is a floor rather than a forecast.",
+          sources: FUNDS,
+          subject: "Upcoming commitments",
+          amount: "S$1.0m",
+          purpose: "Asia Growth Fund IV capital call",
+          deadline: "Q4 2026",
+          note: "The first of the four, and the only one due inside twelve months.",
         },
       ],
     },
+
+    /* --------------------------------------- 5. private assets & valuations */
     {
-      id: "s.liquidity",
-      semanticType: "liquidity",
-      question: "Is there enough to fund it?",
-      importance: "secondary",
-      takeaway: "Whether the floor holds depends on how the bonds are counted.",
-      dataKeys: ["liquidity.available"],
-      findings: [
-        {
-          kind: "metric",
-          id: "f.cash",
-          emphasis: "primary",
-          confidence: 1,
-          sources: CUSTODY,
-          subject: "Liquidity",
-          label: "Cash",
-          value: "S$11.0m",
-          basis: "at DBS, UBS and HSBC UK, before any sale",
-        },
-        {
-          kind: "flag",
-          id: "f.floor",
-          emphasis: "primary",
-          confidence: 1,
-          sources: [...CUSTODY, ...FAMILY_OFFICE],
-          subject: "Liquidity",
-          severity: "critical",
-          subjectLabel: "Cash alone ends S$3.0m below the stated liquidity floor",
-          detail:
-            "The file records a requirement to keep at least S$7m accessible after known commitments. S$11.0m of cash less S$6.95m of commitments leaves S$4.05m. Including the S$9.1m of bond portfolios it leaves S$13.15m and the floor holds comfortably. Both are true; which one applies depends on whether the bonds are treated as accessible, and that has not been decided.",
-        },
-        {
-          kind: "metric",
-          id: "f.bonds",
-          emphasis: "secondary",
-          confidence: 1,
-          sources: CUSTODY,
-          subject: "Liquidity",
-          label: "Bond portfolios",
-          value: "S$9.1m",
-          basis: "investment grade and short duration, saleable within days",
-        },
-      ],
-    },
-    {
-      id: "s.exposure",
+      id: "s.valuations",
       semanticType: "risk",
-      question: "Where is the exposure?",
+      question: "How current are the private valuations?",
       importance: "secondary",
-      takeaway: "Four jurisdictions, and some valuations are old enough to matter.",
-      dataKeys: ["risk.jurisdiction", "valuation.ages"],
+      takeaway: "Three quarters of the private book is marked within nine months. The rest is the problem.",
+      dataKeys: ["valuation.freshness"],
       findings: [
+        {
+          kind: "comparison",
+          id: "f.freshness",
+          emphasis: "secondary",
+          confidence: 1,
+          sources: [...VALUATIONS, ...FUNDS],
+          subject: "Valuation freshness",
+          label: "Age of mark",
+          measure: "Share of private assets",
+          entities: [
+            { name: "Current, under 3 months", value: 45, display: "45%" },
+            { name: "3 to 9 months", value: 30, display: "30%" },
+            { name: "9 to 18 months", value: 15, display: "15%" },
+            { name: "Over 18 months", value: 10, display: "10%" },
+          ],
+        },
         {
           kind: "flag",
           id: "f.stale",
           emphasis: "primary",
           confidence: 1,
-          sources: [...VALUATIONS, "Fund manager reports"],
-          subject: "Exposure",
+          sources: [...VALUATIONS, ...FUNDS],
+          subject: "Valuation freshness",
           severity: "warn",
-          subjectLabel: "S$36.0m is carried at marks 8 to 17 months old",
+          subjectLabel: "25% of the private assets are carried at valuations older than nine months",
           detail:
-            "Manchester was last valued on 1 October 2025, the 12% Whitfield Manufacturing stake on 31 December 2025, and Whitfield Ventures on 31 March 2025 — which the source itself marks stale. That is 31% of assets, so the net worth figure above is exactly as current as those three valuations and no more.",
-        },
-        {
-          kind: "metric",
-          id: "f.uk",
-          emphasis: "secondary",
-          confidence: 1,
-          sources: [...CUSTODY, ...FAMILY_OFFICE],
-          subject: "Exposure",
-          label: "United Kingdom",
-          value: "43.5%",
-          basis: "S$50.5m of assets, for a Singapore tax resident",
-        },
-        {
-          kind: "narrative",
-          id: "f.ukdetail",
-          emphasis: "supporting",
-          confidence: 1,
-          sources: [...CUSTODY, ...FAMILY_OFFICE],
-          subject: "Exposure",
-          heading: "What the UK exposure is made of",
-          text: "Two properties at S$26.0m, the S$19.0m manufacturing stake, S$3.0m in Whitfield Ventures and S$2.5m at HSBC UK. It is concentrated in a jurisdiction rather than a market, so the risks that travel with it are tax, estate and currency rather than price — and the estate question interacts with the trust documents above.",
+            "Ten per cent of the private book is older than eighteen months, and it includes the family business — the largest single position at S$12.5m, last marked on 31 December 2024. **Why it matters:** the S$68.4m total is exactly as current as those marks, so updated valuations for the family business and the older fund positions would change the number the whole page stands on.",
         },
       ],
     },
+
+    /* ---------------------------------------------- 6. what needs attention */
     {
-      id: "s.actions",
-      semanticType: "actions",
-      question: "What needs doing?",
-      importance: "supporting",
-      takeaway: "Five open items, the first due in October.",
+      id: "s.attention",
+      semanticType: "risk",
+      question: "What needs attention?",
+      importance: "secondary",
+      takeaway: "Three items, one of them dated.",
+      dataKeys: ["commit.calendar", "valuation.freshness", "holdings.key"],
+      findings: [
+        {
+          kind: "flag",
+          id: "f.att.liquidity",
+          emphasis: "primary",
+          confidence: 1,
+          sources: [...CUSTODY, ...FUNDS],
+          subject: "Liquidity",
+          severity: "critical",
+          subjectLabel: "Upcoming liquidity requirements",
+          detail:
+            "S$6.95m of commitments will need active planning to maintain the preferred reserve. **Why it matters:** the available S$4.0m covers the first two calls and no more, so the funding source for 2027 is a decision rather than a balance.",
+        },
+        {
+          kind: "flag",
+          id: "f.att.valuation",
+          emphasis: "secondary",
+          confidence: 1,
+          sources: [...VALUATIONS, ...FUNDS],
+          subject: "Valuations",
+          severity: "warn",
+          subjectLabel: "Valuation visibility",
+          detail:
+            "A quarter of the private assets are carried at marks older than nine months, the oldest of them the family business at December 2024. **Why it matters:** it is the largest position in the book, so the uncertainty is concentrated in the same place as the value.",
+        },
+        {
+          kind: "flag",
+          id: "f.att.refinance",
+          emphasis: "secondary",
+          confidence: 0.9,
+          sources: [...VALUATIONS, ...FAMILY_OFFICE],
+          subject: "Property",
+          severity: "warn",
+          subjectLabel: "Property refinancing in 2027",
+          detail:
+            "Refinancing options for the London property should be reviewed ahead of maturity, in the same year as the S$1.8m final payment and the S$2.5m private credit call. **Why it matters:** three obligations on one asset class in one year, and the terms are set by whoever is asked first.",
+        },
+      ],
+    },
+
+    /* --------------------------------------------------- 7. what's coming */
+    {
+      id: "s.coming",
+      semanticType: "commitments",
+      question: "What is coming over the next two years?",
+      importance: "secondary",
+      takeaway: "Four dated events, and the amounts rise before they fall.",
+      dataKeys: ["commit.calendar"],
+      findings: [
+        {
+          kind: "requirement",
+          id: "f.schedule",
+          emphasis: "secondary",
+          confidence: 0.95,
+          sources: [...FUNDS, ...FAMILY_OFFICE],
+          subject: "Key timeline",
+          amount: "S$6.95m",
+          purpose: "four commitments to Q4 2027",
+          deadline: "Q4 2026 to Q4 2027",
+          note: "The Q4 2027 family office cost is an estimate; the three before it are confirmed with the managers and the vendor.",
+        },
+      ],
+    },
+
+    /* --------------------------------------------- 8. decisions & next steps */
+    {
+      id: "s.recommend",
+      semanticType: "recommendations",
+      question: "What should be decided?",
+      importance: "secondary",
+      takeaway: "Four decisions, in the order they bind.",
       dataKeys: ["actions.open"],
       findings: [
         {
-          kind: "checklist",
-          id: "f.open",
+          kind: "recommendation",
+          id: "r.liquidity",
+          emphasis: "primary",
+          confidence: 0.9,
+          sources: [...CUSTODY, ...FUNDS],
+          subject: "Liquidity",
+          title: "Review the liquidity strategy",
+          rationale:
+            "Decide how the 2027 calls are funded while the preferred reserve is held: from distributions, from the public book, or by drawing the reserve down deliberately rather than by default.",
+          action: "Model the three sources against the Q1 2027 call",
+        },
+        {
+          kind: "recommendation",
+          id: "r.valuations",
+          emphasis: "primary",
+          confidence: 0.95,
+          sources: [...VALUATIONS, ...FUNDS],
+          subject: "Valuations",
+          title: "Obtain updated valuations",
+          rationale:
+            "Prioritise the family business and the fund positions older than nine months. A quarter of the private book, and the largest single holding, currently rests on marks the file itself flags as old.",
+          action: "Commission the family business valuation first",
+        },
+        {
+          kind: "recommendation",
+          id: "r.refinance",
           emphasis: "secondary",
-          confidence: 1,
-          sources: ["Meeting notes"],
-          subject: "Open items",
-          label: "Open items",
-          items: [
-            { text: "Decide which pocket funds the October and November calls", state: "todo", due: "by 12 October" },
-            { text: "Review the revised trust documents with counsel", state: "todo", due: "received 2 September" },
-            { text: "Prepare options for a family investment committee", state: "doing", owner: "Advisory" },
-            { text: "Obtain an updated Whitfield Ventures valuation", state: "todo" },
-            { text: "Arrange an introductory philanthropy session with Sophie", state: "todo" },
-          ],
+          confidence: 0.85,
+          sources: [...VALUATIONS, ...FAMILY_OFFICE],
+          subject: "Property",
+          title: "Review property refinancing options",
+          rationale:
+            "Begin discussions with lenders ahead of the 2027 maturity, while the August valuation is current and before the final payment falls due in the same year.",
+          action: "Approach two lenders this quarter",
+        },
+        {
+          kind: "recommendation",
+          id: "r.calls",
+          emphasis: "secondary",
+          confidence: 0.9,
+          sources: FUNDS,
+          subject: "Commitments",
+          title: "Confirm the capital call schedule",
+          rationale:
+            "Coordinate with both fund managers on expected timing and amounts. The Q4 2026 and Q1 2027 dates are the managers' guidance rather than fixed obligations, and a shift in either changes what has to be liquid and when.",
+          action: "Written confirmation from both managers",
         },
       ],
     },
+
+    /* ----------------------------------------------------------- 9. evidence */
     {
       id: "s.evidence",
       semanticType: "evidence",
       question: "Where do these figures come from?",
       importance: "supporting",
-      takeaway: "Balance-sheet figures are recorded; the monthly history is estimated.",
+      takeaway: "Balance-sheet figures are recorded; two figures are estimates and are named.",
       dataKeys: ["evidence.sources"],
       findings: [
         {
@@ -665,12 +756,16 @@ export const ELEANOR_REPORT: SemanticReport = {
           id: "f.asof",
           emphasis: "supporting",
           confidence: 1,
-          sources: [...CUSTODY, ...FAMILY_OFFICE, ...VALUATIONS],
+          sources: [...CUSTODY, ...FAMILY_OFFICE, ...VALUATIONS, ...FUNDS],
           subject: "Sources",
-          heading: "As at 15 September 2026",
-          text: "Every asset figure is recorded, not estimated: three bank balances, four listed positions, four property valuations with their dates, four fund reports, the 12% business stake and two liabilities. This is a SGD book, so no conversion has been applied. Only the net worth history is an estimate — the file holds one valuation per asset and no series. The capital calls are not counted as liabilities, because a call exchanges cash for fund value rather than reducing net worth; they appear in the calendar instead.",
+          heading: "As at 27 August 2026",
+          text: "Every asset figure is recorded rather than estimated: bank and custody statements for the cash and the public positions, property valuations with their dates, fund manager reports for the private book, and family office records for the structure. This is a SGD book, so no conversion has been applied. Two figures are estimates and both are labelled where they appear — the +6% since January is anchored to the January review note rather than to a series, and the Q4 2027 family office cost is a planning number. Capital calls are not counted as liabilities, because a call exchanges cash for fund value rather than reducing the total; they appear in the calendar instead.",
         },
       ],
     },
   ],
+  outlook: {
+    text: "**A strong foundation for what's next.** With careful liquidity management and better visibility on the private valuations, the portfolio is well placed to meet the next two years of commitments without selling anything under pressure.",
+    signature: "Zinc Wealth Management",
+  },
 };

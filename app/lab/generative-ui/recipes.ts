@@ -279,8 +279,7 @@ const ANALYTICAL_REPORT: ViewRecipe = {
  */
 const PROPERTY_REPORT: ViewRecipe = {
   id: "PropertyReport",
-  description:
-    "A consolidated view of the balance sheet, with what is held, what it needs and what to decide.",
+  description: "A clear view of your wealth, liquidity, and upcoming commitments.",
   serves: ["property_review"],
   slots: [
     {
@@ -292,33 +291,74 @@ const PROPERTY_REPORT: ViewRecipe = {
       maxAreas: 1,
     },
     {
+      id: "movement",
+      defaultHeading: "What changed",
+      moreHeadings: ["Since the last review"],
+      /* `market_context` lands here rather than in a slot of its own: on a book that is two
+         thirds property and private assets, what the market did is a thing that happened
+         since the last review, not a benchmark the portfolio is measured against. */
+      accepts: ["activity", "drivers", "market_context"],
+      required: false,
+      maxAreas: 1,
+    },
+    {
       id: "book",
-      defaultHeading: "The book",
+      defaultHeading: "What the portfolio looks like now",
       moreHeadings: ["How it is invested"],
-      accepts: ["allocation", "comparison", "performance"],
+      accepts: ["allocation", "performance"],
       required: true,
-      maxAreas: 2,
+      arrangement: "split",
+      maxAreas: 1,
     },
     {
-      id: "structure",
-      defaultHeading: "How it is held",
-      moreHeadings: ["Ownership and control"],
-      accepts: ["identity", "activity", "drivers", "market_context"],
+      /*
+       * The positions behind the split, and deliberately unnumbered. `continuation` says
+       * this band is a second reading of the one above it rather than a new question —
+       * what the book is made of, then what is actually in it — so the reader counts one
+       * topic and not two. Same device as AnalyticalReport's concentration band.
+       */
+      id: "bookDetail",
+      accepts: ["comparison", "identity"],
+      continuation: true,
       required: false,
-      maxAreas: 2,
+      maxAreas: 1,
     },
     {
+      /*
+       * One area, not two, and that is the point: what there is to spend and what has to
+       * be spent are the two halves of a subtraction. A reader who has to scroll between
+       * them is holding one of the numbers in their head. The report pairs the sections
+       * with `answers_same_question`; this slot is what leaves room for the pair.
+       */
       id: "funding",
-      defaultHeading: "What it needs",
-      moreHeadings: ["What's coming"],
-      accepts: ["commitments", "liquidity"],
+      defaultHeading: "Liquidity & commitments",
+      moreHeadings: ["What it needs"],
+      /*
+       * Liquidity only, though the area holds a commitments section too.
+       *
+       * Slot candidacy is read from the group's *first* section, and page order is read
+       * from each group's first candidate slot — so a slot that accepted `commitments`
+       * would pull a standalone calendar up to here and print "What's coming" ahead of
+       * "What needs attention". The pair still lands together, because the report grouped
+       * them and the group leads with the liquidity section.
+       */
+      accepts: ["liquidity"],
       required: false,
-      maxAreas: 2,
+      arrangement: "split",
+      maxAreas: 1,
     },
     {
       id: "risks",
-      defaultHeading: "What needs attention",
+      defaultHeading: "Private assets & valuations",
+      moreHeadings: ["What needs attention"],
       accepts: ["risk"],
+      required: false,
+      maxAreas: 2,
+    },
+    {
+      id: "coming",
+      defaultHeading: "What's coming",
+      accepts: ["commitments", "activity"],
       required: false,
       maxAreas: 1,
     },
@@ -338,11 +378,12 @@ const PROPERTY_REPORT: ViewRecipe = {
       disclosure: "collapsed",
     },
   ],
-  // Nine, and the highest ceiling of any recipe here, because this shape carries two
-  // things the others fold away: an ownership structure and a dated funding calendar.
-  // The slot caps still add to ten, so this is not a licence for a longer page — it is
-  // the difference between nine areas placed and the last one, the sources, dropped.
-  maxAreas: 9,
+  // Ten, and the highest ceiling of any recipe here, because this shape carries two
+  // things the others fold away: a dated funding calendar and a valuation-quality
+  // finding. The slot caps add to exactly ten, so this is not a licence for a longer
+  // page — it is the difference between ten areas placed and the last one, the sources,
+  // silently dropped.
+  maxAreas: 10,
 };
 
 /**

@@ -516,7 +516,13 @@ function DataTable({ props, value, finding, node }: Resolved) {
   const declared = Array.isArray(props.columns)
     ? props.columns.filter((entry): entry is string => typeof entry === "string")
     : [];
-  const keys = declared.length > 0 ? declared.filter((key) => key in rows[0]) : Object.keys(rows[0]);
+  /* `xDisplay` is the pre-formatted twin of `x` and the cell renderer below already reaches
+     for it, so it is not a column of its own. Deriving columns from the row's keys used to
+     print both — "Value" beside "Value Display", the same number twice. */
+  const keys =
+    declared.length > 0
+      ? declared.filter((key) => key in rows[0])
+      : Object.keys(rows[0]).filter((key) => !(key.endsWith("Display") && key.slice(0, -7) in rows[0]));
   if (keys.length === 0) return escape({ props, value, finding, node }, "No columns to show.");
 
   const limit = typeof props.limit === "number" ? props.limit : 12;
@@ -860,7 +866,11 @@ function Timeline(input: Resolved) {
   /* The claimed finding is a requirement and the schedule is what it is due within, so
      its note belongs above the schedule rather than nowhere — which is where it went
      when the rows came from the bundle and the finding was only used to pick the form. */
-  const caption = finding?.kind === "requirement" ? finding.note : undefined;
+  /* And a narrative claimed by a schedule is the sentence the analysis wrote *about* the
+     schedule, which is worth more above it than lost: the form was picked from the dated
+     rows, so before this the words the section was written around reached nothing. */
+  const caption =
+    finding?.kind === "requirement" ? finding.note : finding?.kind === "narrative" ? finding.text : undefined;
   /*
    * Flat where the schedule *is* the section, boxed where it is one card among several.
    *
@@ -870,6 +880,74 @@ function Timeline(input: Resolved) {
    * sibling card it needs the edge, because there the panel is what separates the two.
    */
   const boxed = props.variant !== "flat";
+
+  /* Shared by both directions, because the fields a row carries are a property of the
+     data and not of the axis it is laid out on. */
+  const events = dated.map((entry, index) => ({
+    key: `${str(entry.date) ?? index}:${index}`,
+    when: str(entry.date) ?? str(entry.when) ?? str(entry.due) ?? "",
+    what: str(entry.name) ?? str(entry.label) ?? str(entry.text),
+    detail:
+      str(entry.detail) ??
+      str(entry.display) ??
+      (typeof entry.value === "number" ? figure(entry.value, hint) : undefined),
+    /* A rendering of the field, not a judgement added to it: the analysis recorded how
+       firm each date is, and a calendar that hides that reads as certain. */
+    firmness: str(entry.confidence),
+    /* The mark is read from the data's own `kind`, never inferred from the words: a
+       component that guessed "this sounds like a risk" would be adding a claim. */
+    mark: markOf(str(entry.kind)),
+  }));
+
+  /*
+   * Left to right, where the composer asked for it.
+   *
+   * Same rows, same marks, same hairline logic turned ninety degrees — the rail runs
+   * horizontally behind the marks and each event becomes a column under its own date. It
+   * is the right shape for a short calendar and the wrong one for a history: the columns
+   * are equal width, so a row of unequal prose either wraps into a ragged wall or gets
+   * cut. ./compose.ts only sets `direction: "right"` for a commitments section alone in
+   * its area, and the cap here is the backstop for that — past six columns there is no
+   * width left to read, so it falls back to the vertical form rather than squeezing.
+   */
+  if (props.direction === "right" && events.length <= 6) {
+    return (
+      <Block title={boxed ? str(props.label) : undefined} caption={caption} boxed={boxed}>
+        <ol className="relative grid gap-x-[20px]" style={{ gridTemplateColumns: `repeat(${events.length}, minmax(0, 1fr))` }}>
+          {/* Behind the marks, and inset by half a column at each end so the line starts
+              at the first mark and stops at the last rather than running off into margin. */}
+          <span
+            className="absolute top-[35px] h-[1px] bg-black/[0.10]"
+            style={{ left: `${50 / events.length}%`, right: `${50 / events.length}%` }}
+            aria-hidden
+          />
+          {events.map((event) => (
+            <li key={event.key} className="relative flex min-w-0 flex-col items-start">
+              <div className={`${TYPE.caption} tabular-nums`}>{event.when}</div>
+              <span
+                className="relative mt-[8px] grid h-[28px] w-[28px] shrink-0 place-items-center rounded-full"
+                /* Opaque, so the rail passes behind the mark and not through it. */
+                style={{ background: PALETTE.card, color: event.mark.hex }}
+                aria-hidden
+              >
+                <span
+                  className="grid h-[28px] w-[28px] place-items-center rounded-full"
+                  style={{ background: `${event.mark.hex}14` }}
+                >
+                  <event.mark.icon className="h-[14px] w-[14px]" strokeWidth={1.9} />
+                </span>
+              </span>
+              <div className={`${TYPE.sectionTitle} mt-[10px]`}>{event.what ?? "—"}</div>
+              {event.detail ? <div className={`${TYPE.caption} mt-[3px]`}>{event.detail}</div> : null}
+              {event.firmness && event.firmness !== "high" ? (
+                <div className={`${TYPE.caption} mt-[2px]`}>{event.firmness} confidence</div>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      </Block>
+    );
+  }
 
   return (
     <Block title={boxed ? str(props.label) : undefined} caption={caption} boxed={boxed}>
@@ -881,22 +959,10 @@ function Timeline(input: Resolved) {
       <ol className="relative flex flex-col">
         {/* 88px date column + 16px gap + half of the 32px mark column. */}
         <span className="absolute top-[26px] bottom-[26px] left-[120px] w-[1px] bg-black/[0.10]" aria-hidden />
-        {dated.map((entry, index) => {
-          const when = str(entry.date) ?? str(entry.when) ?? str(entry.due) ?? "";
-          const what = str(entry.name) ?? str(entry.label) ?? str(entry.text);
-          const detail =
-            str(entry.detail) ??
-            str(entry.display) ??
-            (typeof entry.value === "number" ? figure(entry.value, hint) : undefined);
-          /* A rendering of the field, not a judgement added to it: the analysis recorded
-             how firm each date is, and a calendar that hides that reads as certain. */
-          const firmness = str(entry.confidence);
-          /* The mark is read from the data's own `kind`, never inferred from the words: a
-             component that guessed "this sounds like a risk" would be adding a claim. */
-          const mark = markOf(str(entry.kind));
+        {events.map(({ key, when, what, detail, firmness, mark }) => {
           return (
             <li
-              key={`${when}:${index}`}
+              key={key}
               className={`grid grid-cols-[88px_32px_minmax(0,1fr)] items-start gap-x-[16px] border-t py-[14px] first:border-t-0 ${SURFACE.hairline}`}
             >
               <div className={`${TYPE.caption} pt-[7px] tabular-nums`}>{when}</div>

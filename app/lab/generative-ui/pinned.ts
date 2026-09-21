@@ -85,15 +85,15 @@ export const PINNED_CLIENTS: PinnedClient[] = [
   {
     id: "eleanor",
     name: "Eleanor Whitfield",
-    distinction: "Property and private holdings, no debt, three owners",
+    distinction: "Property and private holdings, no debt, S$6.95m of calls ahead",
     pattern: /eleanor|whitfield/,
     overview: {
       name: "Eleanor Whitfield",
       summary:
-        "Singapore-resident private client: four properties across three countries, four private funds, a family business stake and no borrowing.",
+        "Singapore-resident private client: 28 assets across six regions — six properties, nine private positions, a family business stake and no borrowing.",
       location: "Singapore",
-      aum: "S$113.3m",
-      aumDelta: "↗ +S$2.4m",
+      aum: "S$68.4m",
+      aumDelta: "↗ +6% since Jan",
       glance: [
         ["Segment", "Private client"],
         ["Client since", "2009"],

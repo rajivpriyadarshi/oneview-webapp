@@ -87,7 +87,10 @@ const asHeading = (question: string): string => question.replace(/\s*\?\s*$/, ""
  */
 const REPORT_KIND: Record<string, string> = {
   portfolio_review: "Portfolio review",
-  property_review: "Balance sheet review",
+  /* "Portfolio review" rather than "Balance sheet review", because the recipe this task
+     type selects leads with what the portfolio is and what it owes. A balance sheet is
+     what you call it when there are liabilities on the other side. */
+  property_review: "Portfolio review",
   comparison: "Comparison",
   meeting_prep: "Meeting preparation",
   liquidity_planning: "Liquidity plan",
@@ -1259,7 +1262,7 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
   const risksOnly = flags.length > 2 && candidates.every((node) => node.component === "RiskAlert");
   if (allFlags && (risksOnly ? flags.length <= 8 : flags.length <= 6)) {
     /*
-     * Past two, the set goes on a rail instead of into rows.
+     * Past three, the set goes on a rail instead of into rows.
      *
      * Two columns of two is a set the reader sees whole. Two columns of four is the same
      * set costing four rows of the page, and what it spends them on is the tail — the
@@ -1268,17 +1271,22 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
      * at full size, says how many there are, and leaves the page its shape. See `Carousel`
      * in ./registry.ts.
      *
+     * Three is the boundary, and it is a boundary rather than a rounding: three cards in
+     * one row of three is still a set seen whole, at one row's cost and with nothing
+     * hidden behind a control. Four is where a 2×2 starts costing two rows and a rail
+     * starts being worth its scroll.
+     *
      * Risks only. Recommendations are the actions the report is asking for and the reader
      * has to be able to count them without scrolling — a decision behind a scroll is a
      * decision the reader does not know they were asked to make.
      */
-    const rail = risksOnly;
+    const rail = risksOnly && flags.length >= 4;
     body = [
       {
         id: uid(build, `fg_${area.id}`),
         ...(rail
           ? { component: "Carousel" as const, props: { perView: 2 } }
-          : { component: "Grid" as const, props: { columns: 2 } }),
+          : { component: "Grid" as const, props: { columns: flags.length === 3 ? 3 : 2 } }),
         children: candidates,
       },
     ];
@@ -1294,6 +1302,20 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
    */
   if (body.length === 1 && body[0].component === "Timeline" && body[0].props.label === area.heading) {
     body[0].props.variant = "flat";
+    /*
+     * And a funding calendar alone in its area runs left to right.
+     *
+     * A vertical rail is the right shape for a history: the rows carry prose of unequal
+     * length and reading down them is reading a sequence. A calendar carries a date, a
+     * name and an amount — four short cells, wide and shallow — and laid out downward it
+     * spends most of the area on the empty right-hand side of every row. Across, the four
+     * dates read as a span of time, which is the thing the section is about.
+     *
+     * Gated on `commitments` rather than on the row count, because the shape follows from
+     * what the section *is*: an `activity` timeline is a history and keeps its column,
+     * whether it holds three rows or ten.
+     */
+    if (sections[0].semanticType === "commitments") body[0].props.direction = "right";
   }
 
   return {
