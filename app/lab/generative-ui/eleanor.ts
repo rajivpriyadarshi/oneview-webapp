@@ -227,27 +227,53 @@ export const ELEANOR_BUNDLE: DataBundle = {
       { name: "Tokyo Residential, Minato", value: 2.4, yield: 3.4, occupancy: "Let", lease: "Q1 2027", valued: "30 Nov 2025" },
       { name: "Provence Farmhouse", value: 1.6, yield: 0, occupancy: "Owner-occupied", lease: "—", valued: "31 Dec 2023" },
     ],
+    /*
+     * Three published items, and the only content on the page not drawn from her file.
+     *
+     * `kind` is the recorded category the renderer looks a glyph up from. `topic`, `date`,
+     * `source` and `url` are the article's own attribution — a market claim that does not
+     * say who published it and when is not context, it is hearsay, and the card shows all
+     * four. `image` is a path under /public/market; the renderer tolerates a missing file
+     * and draws the tinted plate instead, so an article with no art still reads as a card.
+     * `takeaway` is the one line that matters to *this* book, which is the difference
+     * between a news feed and market context: the item is external, the takeaway is hers.
+     */
     "market.context": [
-      /* `kind` is the same contract as the entity natures above and the timeline's event
-         marks: a recorded category the renderer looks a glyph up from, closed at the point of
-         rendering, with a neutral dot for anything it does not recognise. */
       {
         kind: "prices",
+        topic: "Singapore residential",
         headline: "Singapore private residential prices rose 2.1% in the first half of 2026",
         impact:
           "Supports the June valuation on the Tanjong Pagar shophouse, the second largest property in the book. Its lease runs to Q2 2028, so the move is a valuation effect rather than an income one.",
+        takeaway: "Tanjong Pagar valuation supported by continued strength in Singapore residential prices.",
+        date: "15 Aug 2026",
+        source: "The Straits Times",
+        url: "#",
+        image: "/market/singapore-residential.jpg",
       },
       {
         kind: "rates",
+        topic: "Interest rates",
         headline: "The Bank of England held the base rate at 4.0% in August",
         impact:
           "Prime central London values have been flat for three quarters. The Kensington residence is owner-occupied and unencumbered, so this bears on what it is worth, not on what it costs to hold.",
+        takeaway: "Kensington value more sensitive to market demand than to holding costs.",
+        date: "3 Aug 2026",
+        source: "Financial Times",
+        url: "#",
+        image: "/market/bank-of-england.jpg",
       },
       {
         kind: "supply",
+        topic: "Office market",
         headline: "Kuala Lumpur office vacancy reached a five-year high in Q2 2026",
         impact:
           "The KL unit carries the highest yield in the book at 5.1% and the least certain renewal, in Q3 2027. A re-let at market would reduce income rather than value.",
+        takeaway: "KL office income at risk if re-let at current market levels.",
+        date: "28 Jul 2026",
+        source: "Bloomberg",
+        url: "#",
+        image: "/market/kuala-lumpur-office.jpg",
       },
     ],
     "liquidity.position": [

@@ -27,6 +27,7 @@
 import {
   Activity,
   Building2,
+  ChevronRight,
   Circle,
   FileText,
   Landmark,
@@ -37,7 +38,7 @@ import {
   User,
   Warehouse,
 } from "lucide-react";
-import type React from "react";
+import React from "react";
 import { RENDERER_COMPONENTS } from "../dynamic-ui/renderers";
 import {
   CapitalFlowBlock,
@@ -1055,36 +1056,158 @@ const MARKET_MARKS: Record<string, typeof Newspaper> = {
   currency: FileText,
 };
 
+/**
+ * A card per item, because an external claim has to carry its attribution.
+ *
+ * This was three rows of a list: a headline, the sentence saying what it bears on, and a
+ * glyph. Everything on the rest of the page comes out of her own file, and these three do
+ * not — they are published third-party data, and a market claim that does not say who
+ * published it or when is not context, it is hearsay. So the card shows the topic, the
+ * headline, what it means for this book, the date and the publication, and links out to the
+ * article. The first gets the larger treatment because it is the one the analysis put first.
+ *
+ * The image is furniture and is treated as such: `object-cover` inside a fixed plate, the
+ * headline over a scrim on the lead card, and a missing file degrades to the tinted plate
+ * rather than to a broken-image glyph. Nothing in the picture carries information — a reader
+ * who cannot see it loses no claim, which is the test for anything decorative on this page.
+ */
+type NewsItem = {
+  kind?: string;
+  topic?: string;
+  headline?: string;
+  title?: string;
+  impact?: string;
+  text?: string;
+  detail?: string;
+  takeaway?: string;
+  date?: string;
+  source?: string;
+  url?: string;
+  image?: string;
+};
+
+/** The plate, with the art if it loads and without it if it does not. */
+function Art({ src, alt, height, children }: { src?: string; alt: string; height: number; children?: React.ReactNode }) {
+  const [failed, setFailed] = React.useState(false);
+  return (
+    <div className="relative w-full overflow-hidden bg-[#eeece6]" style={{ height }}>
+      {src && !failed ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img src={src} alt={alt} onError={() => setFailed(true)} className="h-full w-full object-cover" />
+      ) : null}
+      {children}
+    </div>
+  );
+}
+
 function NewsImpact({ props, value, finding, node }: Resolved) {
-  const items = Array.isArray(value) ? value : [];
+  const items = (Array.isArray(value) ? value : []).filter(
+    (item): item is NewsItem => typeof item === "object" && item !== null,
+  );
   if (items.length === 0) return escape({ props, value, finding, node }, "No market context.");
   const limit = typeof props.limit === "number" ? props.limit : 4;
+  const shown = items.slice(0, limit);
+  const [lead, ...rest] = shown;
+  const takeaways = shown.map((item) => item.takeaway).filter((line): line is string => Boolean(line));
+
+  const headlineOf = (item: NewsItem) => text(item.headline ?? item.title);
+  const bodyOf = (item: NewsItem) => text(item.impact ?? item.text ?? item.detail);
+
+  const attribution = (item: NewsItem) =>
+    item.date || item.source ? (
+      <span className={`${TYPE.caption} shrink-0`}>{[item.date, item.source].filter(Boolean).join(" · ")}</span>
+    ) : null;
+
+  const readMore = (item: NewsItem) =>
+    item.url ? (
+      <a
+        href={item.url}
+        className={`${TYPE.cell} inline-flex items-center gap-[4px] font-medium text-[#7F4E0B] no-underline hover:underline`}
+      >
+        Read full article
+        <ChevronRight size={13} strokeWidth={2} />
+      </a>
+    ) : null;
+
+  const eyebrow = (item: NewsItem, onDark = false) =>
+    item.topic ? (
+      <div
+        className={`text-[10px] font-medium tracking-[0.09em] uppercase ${onDark ? "text-white/75" : ""}`}
+        style={onDark ? undefined : { color: PALETTE.muted }}
+      >
+        {item.topic}
+      </div>
+    ) : null;
 
   return (
     <Block title={str(props.heading) ?? "Market context"}>
-      <ul className="flex flex-col">
-        {items.slice(0, limit).map((item, index) => {
-          const entry = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
-          const Glyph = MARKET_MARKS[str(entry.kind) ?? ""] ?? Newspaper;
-          return (
-            <li key={text(entry.headline ?? index)} className={`border-b ${SURFACE.hairline} py-[11px] last:border-b-0`}>
-              <div className="flex items-start gap-[12px]">
-                {/* Plated and top-aligned to the headline, so a two-line impact paragraph
-                    does not drag the glyph down to the middle of the row. */}
-                <span
-                  className={`mt-[1px] grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border bg-[#fffefa] ${SURFACE.hairline}`}
-                >
-                  <Glyph size={15} strokeWidth={1.75} color={PALETTE.muted} />
-                </span>
-                <div className="min-w-0">
-                  <div className={`${TYPE.cell} font-medium`}>{text(entry.headline ?? entry.title)}</div>
-                  <div className={`${TYPE.caption} mt-[3px]`}>{text(entry.impact ?? entry.text ?? entry.detail)}</div>
-                </div>
+      <div className={`grid gap-[18px] ${rest.length > 0 ? "md:grid-cols-[1.4fr_1fr_1fr]" : ""}`}>
+        {/* The lead: art with the headline over it, and the reading below the fold of the
+            plate where a paragraph has its full measure. */}
+        <article
+          className={`flex min-w-0 flex-col overflow-hidden rounded-[12px] border bg-[#fffefa] ${SURFACE.hairline}`}
+        >
+          <Art src={lead.image} alt={headlineOf(lead)} height={300}>
+            <div className="absolute inset-0 flex flex-col justify-end bg-[linear-gradient(180deg,rgba(0,0,0,0)_38%,rgba(0,0,0,0.72)_100%)] p-[20px]">
+              {eyebrow(lead, true)}
+              <h4 className="mt-[6px] font-satoshi text-[21px] leading-[1.22] font-medium tracking-[-0.34px] text-white">
+                {headlineOf(lead)}
+              </h4>
+            </div>
+          </Art>
+          <div className="flex flex-1 flex-col gap-[14px] p-[20px]">
+            <p className={`${TYPE.body} m-0`}>{bodyOf(lead)}</p>
+            <div className="mt-auto flex items-baseline justify-between gap-[14px]">
+              {readMore(lead)}
+              {attribution(lead)}
+            </div>
+          </div>
+        </article>
+
+        {rest.map((item) => (
+          <article
+            key={headlineOf(item)}
+            className={`flex min-w-0 flex-col overflow-hidden rounded-[12px] border bg-[#fffefa] ${SURFACE.hairline}`}
+          >
+            <Art src={item.image} alt={headlineOf(item)} height={148} />
+            <div className="flex flex-1 flex-col gap-[10px] p-[18px]">
+              {eyebrow(item)}
+              <h4 className="m-0 font-satoshi text-[16px] leading-[1.28] font-medium tracking-[-0.24px]">
+                {headlineOf(item)}
+              </h4>
+              <p className={`${TYPE.body} m-0`}>{bodyOf(item)}</p>
+              <div className="mt-auto flex flex-col gap-[6px] pt-[4px]">
+                {readMore(item)}
+                {attribution(item)}
               </div>
-            </li>
-          );
-        })}
-      </ul>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      {/*
+       * And the line that makes this context rather than news.
+       *
+       * Each item is external; each takeaway is about her book, and it comes from the
+       * analysis — the renderer picks no favourites and writes nothing. The band only exists
+       * when the items carry takeaways, so a feed with no bearing on the portfolio simply
+       * does not get one.
+       */}
+      {takeaways.length > 0 ? (
+        <div className={`mt-[18px] grid gap-[18px] rounded-[12px] border p-[20px] md:grid-cols-[auto_repeat(3,minmax(0,1fr))] ${SURFACE.hairline}`}>
+          <div className="font-satoshi text-[14px] leading-[1.3] font-medium tracking-[-0.2px] md:max-w-[130px]">
+            Key takeaways for your portfolio
+          </div>
+          {takeaways.map((line, index) => (
+            <div key={line} className="flex min-w-0 gap-[10px] md:border-l md:border-black/[0.07] md:pl-[18px]">
+              <span className="shrink-0 font-satoshi text-[12px] tracking-[0.02em] tabular-nums" style={{ color: PALETTE.line }}>
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span className={`${TYPE.body}`}>{line}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </Block>
   );
 }
