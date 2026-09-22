@@ -1,0 +1,86 @@
+# Publish the lab to GitHub Pages as a static site.
+#
+# The app normally runs as a Next server. Pages is a file host, so this builds the
+# `output: "export"` variant (see next.config.ts) and deploys the result. Two consequences
+# worth knowing before reading the steps:
+#
+#   1. `app/api` is deleted before the build. A POST route handler cannot be statically
+#      exported — Next fails the build rather than emitting something that would 404 at
+#      runtime — so the directory goes. The lab detects the absent route and falls back to
+#      the model key the user saves in the browser (app/lab/apiKey.ts). Deleting source in
+#      CI is not elegant; it is honest, it is one line, and the alternative is maintaining
+#      a second copy of the app.
+#   2. No secrets are used and none are needed. There is no server to hold a key, which is
+#      the whole reason the Settings dialog exists.
+#
+# The site lands at https://<owner>.github.io/<repo>/lab/ — enable Pages with
+# "Source: GitHub Actions" in the repository settings once, and this runs on every push.
+
+name: Deploy the lab to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # So a branch can be published without merging it first, which is most of what a
+  # prototype deployment is for.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one halfway: a cancelled Pages deploy can
+# leave the site serving a half-uploaded artifact.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The prototypes' own gate. Run before the build so a broken contract fails here,
+      # where the message is legible, rather than as a render error on a published page.
+      - name: Test
+        run: npx vitest run app/lab
+
+      - name: Drop the API routes
+        run: rm -rf app/api
+
+      - name: Build the static export
+        env:
+          NEXT_STATIC_EXPORT: "1"
+          # A project site is served under /<repo>, and the path has to be baked in.
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+        run: npx next build --webpack
+
+      # Pages runs Jekyll over the artifact unless told not to, and Jekyll drops
+      # directories beginning with an underscore — which is every Next asset in `_next`.
+      - name: Disable Jekyll
+        run: touch out/.nojekyll
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

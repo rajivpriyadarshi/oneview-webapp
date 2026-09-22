@@ -22,9 +22,28 @@ export type Prototype = {
   status: "ready" | "planned";
   /** Named surfaces inside the prototype, shown as chips on the card. */
   covers: string[];
+  /**
+   * Whether the chooser leads with this one.
+   *
+   * Not a ranking of how good they are — a statement about which questions are still
+   * open. An earlier prototype that has been superseded stays in the lab, because the
+   * comparison is most of what the later one proves, but it should not be the first
+   * thing on the page. The chooser puts these behind a disclosure.
+   */
+  archived?: boolean;
 };
 
 export const PROTOTYPES: Prototype[] = [
+  {
+    id: "generative-ui",
+    name: "Adaptive UI",
+    tagline: "A report that composes itself, in layers",
+    description:
+      "One question, and the page it needs is assembled from the answer: the planner decides what is being asked and whether the answer even needs a layout, the data is fetched by tool, the model says what the answer means and never names a component, and rules choose the recipe, the arrangement and the components. The page is validated before it is shown, and the written answer is always one click away.",
+    href: "/lab/generative-ui",
+    status: "ready",
+    covers: ["Intent planning", "Semantic report", "Layout recipes", "Validated spec", "Graceful fallback"],
+  },
   {
     id: "chat-transparency",
     name: "Chat transparency",
@@ -49,21 +68,16 @@ export const PROTOTYPES: Prototype[] = [
       "Progressive assembly",
       "Follow-up patches",
     ],
-  },
-  {
-    id: "generative-ui",
-    name: "Generative UI",
-    tagline: "The same idea, rebuilt as a pipeline",
-    description:
-      "Dynamic UI asked one model for a finished report. This one splits the job into layers: the planner decides what is being asked and whether the answer even needs a layout, the data is fetched by tool, the model says what the answer means and never names a component, and rules choose the recipe, the arrangement and the components. The page is validated before it is shown, and the written answer is always one click away.",
-    href: "/lab/generative-ui",
-    status: "ready",
-    covers: [
-      "Intent planning",
-      "Semantic report",
-      "Layout recipes",
-      "Validated spec",
-      "Graceful fallback",
-    ],
+    /* The first attempt, and Adaptive UI is what it became: one model call returned a
+       finished document, which left nowhere to put a rule and nothing to validate. Kept
+       because that is a useful thing to be able to see, archived because it is not where
+       the work is. */
+    archived: true,
   },
 ];
+
+/** The ones the chooser leads with, in order. */
+export const CURRENT = PROTOTYPES.filter((prototype) => !prototype.archived);
+
+/** The ones behind the disclosure. */
+export const ARCHIVED = PROTOTYPES.filter((prototype) => prototype.archived);

@@ -5,12 +5,16 @@
  * questions, so landing straight in one of them hides that fact. This is the
  * front door: pick what you came to look at.
  *
- * A server component. It only reads the register in ./prototypes and renders
- * links, so there is no state to own and nothing to hydrate.
+ * Still a server component. It reads the register in ./prototypes and renders links, so
+ * there is no state to own — the superseded prototypes are folded away with a
+ * `<details>` rather than with React state, which keeps it that way and keeps them
+ * reachable with scripting off. The one client island is ./SettingsButton.tsx, which
+ * owns the model key because a static deployment has no environment to hold one.
  */
 
 import Link from "next/link";
-import { PROTOTYPES, type Prototype } from "./prototypes";
+import { ARCHIVED, CURRENT, type Prototype } from "./prototypes";
+import { SettingsButton } from "./SettingsButton";
 
 export const metadata = {
   title: "Oneview Lab",
@@ -28,17 +32,36 @@ export default function LabIndexPage() {
         </h1>
         <p className="mt-[10px] mb-0 max-w-[520px] font-satoshi text-[15px] leading-[23px] text-black/55">
           Each one is a self-contained prototype with its own controls. None of
-          them touch production data. The later ones will call a model if a key is
-          configured, and say so on screen when they do; without one they fall
-          back to a scripted stand-in and replay identically every time.
+          them touch production data. They will call a model if a key is
+          configured — add one under Settings, bottom right — and say so on screen when
+          they do; without one they fall back to a scripted stand-in and replay
+          identically every time.
         </p>
 
         <div className="mt-[36px] grid gap-[14px]">
-          {PROTOTYPES.map((prototype) => (
+          {CURRENT.map((prototype) => (
             <PrototypeCard key={prototype.id} prototype={prototype} />
           ))}
         </div>
+
+        {/* Superseded, not deleted. See the `archived` note in ./prototypes.ts. */}
+        {ARCHIVED.length > 0 ? (
+          <details className="group mt-[26px]">
+            <summary className="inline-flex cursor-pointer list-none items-center gap-[7px] font-satoshi text-[13px] leading-[19px] font-semibold tracking-[-0.13px] text-black/45 transition-colors hover:text-black/75 focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+              <span className="text-[11px] transition-transform duration-200 group-open:rotate-90">▶</span>
+              See earlier prototypes
+              <span className="font-medium text-black/30">({ARCHIVED.length})</span>
+            </summary>
+            <div className="mt-[14px] grid gap-[14px]">
+              {ARCHIVED.map((prototype) => (
+                <PrototypeCard key={prototype.id} prototype={prototype} />
+              ))}
+            </div>
+          </details>
+        ) : null}
       </div>
+
+      <SettingsButton />
     </main>
   );
 }

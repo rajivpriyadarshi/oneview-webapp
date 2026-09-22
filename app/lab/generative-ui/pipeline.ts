@@ -31,8 +31,10 @@
  * cost of having somewhere to put the rules.
  */
 
+import { readKey } from "../apiKey";
 import { composeView } from "./compose";
 import { emptyBundle, type DataBundle } from "./data";
+import { runStage } from "./model";
 import { applySpecOps } from "./ops";
 import type { IAPlan } from "./ia";
 import type { IntentPlan } from "./intent";
@@ -149,23 +151,75 @@ type Reply =
   /** `noKey` is a configuration state, not an error: it selects the stand-in. */
   | { ok: false; noKey: boolean; detail: string };
 
-async function post(body: Post): Promise<Reply> {
+/**
+ * Whether there is a route behind this page at all.
+ *
+ * Undefined until the first attempt, then remembered. A static deployment has no
+ * `/api/lab/generative-ui` — the request comes back 404 or 405 from whatever is serving
+ * the files — and three passes per question is three pointless round trips if that answer
+ * is re-learned every time. One wasted request per page load is the price of not having
+ * to configure which deployment this is.
+ */
+let routeExists: boolean | undefined;
+
+/** The route, or a statement that there isn't one. Never throws. */
+async function viaRoute(body: Post): Promise<Reply | { absent: true; detail: string }> {
   try {
     const response = await fetch("/api/lab/generative-ui", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     });
+    /* 404/405 is "nothing is listening here", which is different from "it answered
+       badly" — the first sends us to the browser key, the second is a real failure. */
+    if (response.status === 404 || response.status === 405) {
+      routeExists = false;
+      return { absent: true, detail: `no route (${response.status})` };
+    }
+    routeExists = true;
     const parsed = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     if (response.ok) return { ok: true, body: parsed };
-    return {
-      ok: false,
-      noKey: response.status === 501,
-      detail: String(parsed.detail ?? parsed.error ?? response.status),
-    };
+    /* 501 is the route saying the *server* has no key, which is also a reason to try the
+       one in the browser rather than to give up on the model. */
+    if (response.status === 501) return { absent: true, detail: "no key on the server" };
+    return { ok: false, noKey: false, detail: String(parsed.detail ?? parsed.error ?? response.status) };
   } catch (error) {
-    return { ok: false, noKey: false, detail: error instanceof Error ? error.message : "network" };
+    routeExists = false;
+    return { absent: true, detail: error instanceof Error ? error.message : "network" };
   }
+}
+
+/**
+ * One pass, wherever the key is.
+ *
+ * The route first, always, because a key held on a server is a key the page never sees.
+ * The key the user typed into the lab's own settings is the fallback, and it is what makes
+ * the static deployment work at all — there the first branch has nothing to talk to. See
+ * ../apiKey.ts for what that trade costs.
+ *
+ * `noKey` comes back only when *neither* is available, because that is the one case the
+ * caller can do something about: it selects ./standin.ts and says so on screen.
+ */
+async function post(body: Post): Promise<Reply> {
+  if (routeExists !== false) {
+    const routed = await viaRoute(body);
+    if (!("absent" in routed)) return routed;
+  }
+
+  const stored = readKey();
+  if (!stored) return { ok: false, noKey: true, detail: "no model key, on the server or in this browser" };
+
+  const outcome = await runStage(body as never, {
+    provider: stored.provider,
+    key: stored.key,
+    fromBrowser: true,
+  });
+  if (outcome.ok) return { ok: true, body: outcome.body };
+  return {
+    ok: false,
+    noKey: outcome.error === "no-key",
+    detail: outcome.detail ?? outcome.error,
+  };
 }
 
 /* ------------------------------------------------------------------- driver */

@@ -33,6 +33,7 @@ import Link from "next/link";
 import Sidebar from "../../components/Sidebar";
 import SuggestionChip from "../../components/SuggestionChip";
 import MockClientOverview from "../MockClientOverview";
+import { SettingsButton } from "../SettingsButton";
 import { CLIENT } from "../dynamic-ui/clientBook";
 import { INK, LABEL } from "./chrome";
 import { run, type RunResult, type Stage, type Turn as HistoryTurn } from "./pipeline";
@@ -305,6 +306,9 @@ export default function GenerativeUILab() {
        * sheet, and a follow-up answered against the wrong book is the one failure here
        * that would look entirely plausible.
        */}
+      {/* Stacked above the simulator, which already owns the bottom-right corner. Dark,
+          because it is the same kind of thing: a control over the prototype, not in it. */}
+      <SettingsButton tone="dark" className="fixed right-[16px] bottom-[62px] z-[120]" />
       <div className={TW.simulator}>
         <span className={TW.simulatorLabel}>Simulating</span>
         <div className="flex items-center gap-[2px]" role="group" aria-label="Simulated client">
