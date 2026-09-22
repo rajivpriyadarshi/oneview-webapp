@@ -1175,27 +1175,47 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
     const left = lift(per[0].nodes);
     const right = lift(per[1].nodes);
     /*
-     * A comparison inside a pane stacks, because a pane is half a page.
+     * A comparison inside a pane stacks only if its labels will not fit across it.
      *
-     * Its tiles sit side by side by default, which is right at full width: three or four
-     * options read as one set with the figures aligned across. In half the width each tile
-     * is a third of a column, and the entity names — "Whitfield Holdings Pte Ltd" — wrap to
-     * two lines while the figures beneath them land at different heights, so the set stops
-     * being scannable at exactly the point the figures matter. Stacked, each option takes
-     * the pane's full width, the labels fit on one line and the values sit in a column.
+     * Side by side is the better reading when it works: three figures on one line are a set
+     * seen whole, with the values aligned for comparison. It stops working when the entity
+     * names are long — in half a page each tile gets a third of a column, so "Whitfield
+     * Holdings Pte Ltd" wraps to two lines and its figure drops below its neighbours'; the
+     * set loses its alignment at exactly the point the figures matter.
+     *
+     * Length is the honest signal available here. The composer has no pixels — it cannot
+     * measure text — but a name's character count is a property of the data, and the
+     * threshold is set where a name stops fitting a third of a pane at the label size in
+     * ./ds.ts. So the estate's entities stack and the liquidity position's — "Cash &
+     * equivalents", "Net available" — stay in a row, which is what each needs. Stacking
+     * everything traded one broken band for another: three full-width cards down a pane,
+     * each mostly empty, reading as a tall list where a short row belonged.
      *
      * The `rows` variant is the registry's (../registry.ts) and was until now unreachable;
      * this is the condition that earns it. Presentation only — same finding, same entities,
      * same order.
      */
-    const stackComparisons = (nodes: UINode[]): void => {
-      for (const node of nodes) {
-        if (node.component === "Comparison") node.props.variant = "rows";
-        if (node.children) stackComparisons(node.children);
-      }
+    const WRAPS_IN_A_PANE = 20;
+    /* Read from the section rather than from the node, because a node carries no
+       `findingId` — see `claim` above for why that indirection is deliberate. A section with
+       two comparisons of different name lengths would decide both together; none does here,
+       and the alternative is a finer grip on the report's contents than this needs. */
+    const stackComparisons = (nodes: UINode[], section: SemanticSection): void => {
+      const long = section.findings.some(
+        (finding) =>
+          finding.kind === "comparison" && finding.entities.some((entity) => entity.name.length > WRAPS_IN_A_PANE),
+      );
+      if (!long) return;
+      const walk = (within: UINode[]): void => {
+        for (const node of within) {
+          if (node.component === "Comparison") node.props.variant = "rows";
+          if (node.children) walk(node.children);
+        }
+      };
+      walk(nodes);
     };
-    stackComparisons(left.pane);
-    stackComparisons(right.pane);
+    stackComparisons(left.pane, per[0].section);
+    stackComparisons(right.pane, per[1].section);
     body = [
       {
         id: uid(build, "split"),

@@ -228,17 +228,23 @@ export const ELEANOR_BUNDLE: DataBundle = {
       { name: "Provence Farmhouse", value: 1.6, yield: 0, occupancy: "Owner-occupied", lease: "—", valued: "31 Dec 2023" },
     ],
     "market.context": [
+      /* `kind` is the same contract as the entity natures above and the timeline's event
+         marks: a recorded category the renderer looks a glyph up from, closed at the point of
+         rendering, with a neutral dot for anything it does not recognise. */
       {
+        kind: "prices",
         headline: "Singapore private residential prices rose 2.1% in the first half of 2026",
         impact:
           "Supports the June valuation on the Tanjong Pagar shophouse, the second largest property in the book. Its lease runs to Q2 2028, so the move is a valuation effect rather than an income one.",
       },
       {
+        kind: "rates",
         headline: "The Bank of England held the base rate at 4.0% in August",
         impact:
           "Prime central London values have been flat for three quarters. The Kensington residence is owner-occupied and unencumbered, so this bears on what it is worth, not on what it costs to hold.",
       },
       {
+        kind: "supply",
         headline: "Kuala Lumpur office vacancy reached a five-year high in Q2 2026",
         impact:
           "The KL unit carries the highest yield in the book at 5.1% and the least certain renewal, in Q3 2027. A re-let at market would reduce income rather than value.",
@@ -586,9 +592,12 @@ export const ELEANOR_REPORT: SemanticReport = {
           label: "Entity",
           measure: "Value held",
           entities: [
-            { name: "Whitfield Family Trust", value: 41.0, display: "S$41.0m" },
-            { name: "Whitfield Holdings Pte Ltd", value: 18.7, display: "S$18.7m" },
-            { name: "Held personally", value: 8.7, display: "S$8.7m" },
+            /* `nature` is a classification, not a picture: the renderer looks the glyph up
+               from a closed enum (../findings.ts), so the analysis says what each entity is
+               and the presentation layer decides how to show it. */
+            { name: "Whitfield Family Trust", value: 41.0, display: "S$41.0m", nature: "trust" },
+            { name: "Whitfield Holdings Pte Ltd", value: 18.7, display: "S$18.7m", nature: "company" },
+            { name: "Held personally", value: 8.7, display: "S$8.7m", nature: "individual" },
           ],
         },
       ],

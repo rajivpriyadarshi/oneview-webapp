@@ -24,7 +24,19 @@
  * axes. The prop cannot change what the number is.
  */
 
-import { Activity, Circle, FileText, Landmark, Sparkles, TrendingUp } from "lucide-react";
+import {
+  Activity,
+  Building2,
+  Circle,
+  FileText,
+  Landmark,
+  Newspaper,
+  Percent,
+  Sparkles,
+  TrendingUp,
+  User,
+  Warehouse,
+} from "lucide-react";
 import type React from "react";
 import { RENDERER_COMPONENTS } from "../dynamic-ui/renderers";
 import {
@@ -771,6 +783,24 @@ function AllocationDonut({ props, finding, value, node }: Resolved) {
  * the composer supplies measure *names* and inventing a value for each name is
  * exactly the fabrication §9 forbids.
  */
+/**
+ * A glyph per kind of entity, for the kinds the analysis is allowed to record.
+ *
+ * Keyed on the closed `nature` enum in ./findings.ts, exactly as `EVENT_MARKS` below is
+ * keyed on a timeline row's own `kind`. The mapping lives here because it is presentation;
+ * the classification lives in the analysis because it is a claim about what the thing is.
+ * An entity with no recorded nature gets no plate — the glyph identifies, and a renderer
+ * that guessed "trust" from the word "Trust" in a name would be reading tea leaves.
+ */
+const ENTITY_MARKS = {
+  trust: Landmark,
+  company: Building2,
+  individual: User,
+  account: FileText,
+  property: Warehouse,
+  fund: Activity,
+} as const;
+
 function Comparison({ props, finding, node }: Resolved) {
   if (finding?.kind !== "comparison") return escape({ props, finding, node }, "Nothing to compare.");
 
@@ -797,7 +827,12 @@ function Comparison({ props, finding, node }: Resolved) {
         style={rows ? undefined : { gridTemplateColumns: `repeat(${finding.entities.length}, minmax(0, 1fr))` }}
       >
         {finding.entities.map((entity) => (
-          <Tile key={entity.name} label={entity.name} value={entity.display ?? group(entity.value)} />
+          <Tile
+            key={entity.name}
+            label={entity.name}
+            value={entity.display ?? group(entity.value)}
+            icon={entity.nature ? ENTITY_MARKS[entity.nature] : undefined}
+          />
         ))}
       </div>
     </Block>
@@ -990,6 +1025,23 @@ function Timeline(input: Resolved) {
   );
 }
 
+/**
+ * A glyph per kind of market move, on the same terms as `ENTITY_MARKS`.
+ *
+ * Each row of market context is one of a handful of things — a price move, a rate
+ * decision, a change in supply — and the row records which. The glyph is looked up from
+ * that record, with the neutral `Newspaper` for a row whose kind is absent or unknown, so
+ * a new category shows up as an unmarked row rather than as a wrong icon.
+ */
+const MARKET_MARKS: Record<string, typeof Newspaper> = {
+  prices: TrendingUp,
+  rates: Percent,
+  supply: Building2,
+  demand: Activity,
+  regulation: Landmark,
+  currency: FileText,
+};
+
 function NewsImpact({ props, value, finding, node }: Resolved) {
   const items = Array.isArray(value) ? value : [];
   if (items.length === 0) return escape({ props, value, finding, node }, "No market context.");
@@ -1000,10 +1052,22 @@ function NewsImpact({ props, value, finding, node }: Resolved) {
       <ul className="flex flex-col">
         {items.slice(0, limit).map((item, index) => {
           const entry = (typeof item === "object" && item !== null ? item : {}) as Record<string, unknown>;
+          const Glyph = MARKET_MARKS[str(entry.kind) ?? ""] ?? Newspaper;
           return (
             <li key={text(entry.headline ?? index)} className={`border-b ${SURFACE.hairline} py-[11px] last:border-b-0`}>
-              <div className={`${TYPE.cell} font-medium`}>{text(entry.headline ?? entry.title)}</div>
-              <div className={`${TYPE.caption} mt-[3px]`}>{text(entry.impact ?? entry.text ?? entry.detail)}</div>
+              <div className="flex items-start gap-[12px]">
+                {/* Plated and top-aligned to the headline, so a two-line impact paragraph
+                    does not drag the glyph down to the middle of the row. */}
+                <span
+                  className={`mt-[1px] grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border bg-[#fffefa] ${SURFACE.hairline}`}
+                >
+                  <Glyph size={15} strokeWidth={1.75} color={PALETTE.muted} />
+                </span>
+                <div className="min-w-0">
+                  <div className={`${TYPE.cell} font-medium`}>{text(entry.headline ?? entry.title)}</div>
+                  <div className={`${TYPE.caption} mt-[3px]`}>{text(entry.impact ?? entry.text ?? entry.detail)}</div>
+                </div>
+              </div>
             </li>
           );
         })}

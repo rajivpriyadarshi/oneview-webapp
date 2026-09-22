@@ -109,6 +109,8 @@ export function Figure({
   size = "sm",
   spark,
   mark,
+  icon: Glyph,
+  iconHex,
 }: {
   label?: string;
   value: string;
@@ -125,10 +127,22 @@ export function Figure({
    * ./marks.ts — a figure about no one instrument has no mark, which is the normal case.
    */
   mark?: InstrumentMark;
+  /**
+   * What kind of thing the figure is about, where the analysis recorded a kind.
+   *
+   * Same plate as `mark` and the same job — identification, not decoration — for the case
+   * where there is no logo to show because the subject is not a security: a trust, a
+   * holding company, a person. The caller passes a glyph it looked up from a *recorded*
+   * category (see `ENTITY_MARKS` in ./leaves.tsx); a figure whose subject has no recorded
+   * kind gets no glyph, because choosing one from the wording would be inventing a claim.
+   */
+  icon?: React.ComponentType<{ size?: number; strokeWidth?: number; color?: string }>;
+  iconHex?: string;
 }) {
+  const plated = Boolean(mark) || Boolean(Glyph);
   const stack = (
     <div className="min-w-0">
-      <div className={mark ? undefined : "mt-[6px]"}>
+      <div className={plated ? undefined : "mt-[6px]"}>
         <span className={size === "lg" ? TYPE.figure : TYPE.figureSm}>{value}</span>
       </div>
       {delta ? (
@@ -144,10 +158,10 @@ export function Figure({
   return (
     <div>
       {label ? <div className={TYPE.label}>{label}</div> : null}
-      {mark ? (
+      {plated ? (
         <div className="mt-[10px] flex items-start gap-[14px]">
           <span
-            className={`grid h-[42px] shrink-0 place-items-center rounded-[10px] border bg-[#fffefa] px-[11px] ${SURFACE.hairline}`}
+            className={`grid h-[42px] shrink-0 place-items-center rounded-[10px] border bg-[#fffefa] ${mark ? "px-[11px]" : "w-[42px]"} ${SURFACE.hairline}`}
           >
             {/* Plain <img> rather than next/image: the asset is a local SVG of known size,
                 and the optimiser has nothing to do to it.
@@ -155,8 +169,12 @@ export function Figure({
                 Bounded on both axes and `object-contain`, because a mark's aspect is the
                 issuer's business — a wordmark is wide and a roundel is square, and either
                 has to sit in the same plate without being stretched or cropped. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={mark.src} alt={mark.name} className="max-h-[20px] max-w-[96px] object-contain" />
+            {mark ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={mark.src} alt={mark.name} className="max-h-[20px] max-w-[96px] object-contain" />
+            ) : Glyph ? (
+              <Glyph size={18} strokeWidth={1.75} color={iconHex ?? PALETTE.muted} />
+            ) : null}
           </span>
           {stack}
         </div>

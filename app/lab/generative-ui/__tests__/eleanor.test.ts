@@ -168,20 +168,41 @@ describe("the page has the shape the report was designed to have", () => {
     expect(JSON.stringify(composed().spec.root)).not.toContain("DataTable");
   });
 
-  it("stacks a comparison that has only half the page to sit in", () => {
-    /* Three entity tiles side by side in a pane are a third of a column each, so
-       "Whitfield Holdings Pte Ltd" wraps and the figures beneath the labels land at
-       different heights — a set that stops being scannable where the figures matter.
-       See the pane rule in ../compose.ts; the `rows` variant is the registry's. */
-    const inPanes = (nodes: readonly UINode[], within = false): UINode[] =>
-      nodes.flatMap((node) => {
-        const kids = [...(node.children ?? []), ...Object.values(node.slots ?? {}).flat()];
-        const inside = within || node.component === "SplitPane";
-        return [...(inside && node.component === "Comparison" ? [node] : []), ...inPanes(kids, inside)];
-      });
-    const paned = inPanes(composed().spec.root);
-    expect(paned.length).toBeGreaterThan(0);
-    for (const node of paned) expect(node.props.variant).toBe("rows");
+  it("stacks the comparison whose labels will not fit across a pane, and only that one", () => {
+    /*
+     * Both sit inside a pane, and they need opposite things.
+     *
+     * "Whitfield Holdings Pte Ltd" is 26 characters; across a third of half a page it wraps,
+     * and its figure drops below its neighbours' — the set loses the alignment that made it
+     * a comparison. "Cash & equivalents" fits, and three short figures on one line read as
+     * the subtraction they are. So the rule is on the length of the names, which is a
+     * property of the data, not on the position, which was the first attempt and stacked
+     * both. See ../compose.ts.
+     */
+    const all = (nodes: readonly UINode[]): UINode[] =>
+      nodes.flatMap((node) => [node, ...all([...(node.children ?? []), ...Object.values(node.slots ?? {}).flat()])]);
+    const variantOf = (sectionId: string) =>
+      all(composed().spec.root).find((node) => node.component === "Comparison" && node.sectionId === sectionId)?.props
+        .variant;
+    expect(variantOf("s.ownership")).toBe("rows");
+    expect(variantOf("s.liquidity")).toBeUndefined();
+  });
+
+  it("marks each entity and each market item with a glyph the analysis asked for", () => {
+    /*
+     * Not decoration, and not a guess made from the wording: the entity natures are a closed
+     * enum on the finding (../findings.ts) and the market kinds are a recorded field on the
+     * bundle row, and the renderer looks a glyph up from each. A renderer that read "trust"
+     * out of the word "Trust" in a name would be inventing a classification. So the test is
+     * on the *record*, not on the glyph — anything unrecognised draws the neutral mark.
+     */
+    const entities = ELEANOR_REPORT.sections
+      .find((section) => section.id === "s.ownership")
+      ?.findings.flatMap((finding) => (finding.kind === "comparison" ? finding.entities : []));
+    expect(entities?.map((entity) => entity.nature)).toEqual(["trust", "company", "individual"]);
+
+    const market = ELEANOR_BUNDLE.values["market.context"] as { kind?: string }[];
+    expect(market.map((item) => item.kind)).toEqual(["prices", "rates", "supply"]);
   });
 
   it("orders the page as the reader needs it, not as the model emitted it", () => {

@@ -165,6 +165,17 @@ export const ComparisonFindingSchema = FindingMetaSchema.extend({
       /** Pre-formatted, when the raw number shouldn't be shown bare. */
       display: z.string().optional(),
       series: SeriesSchema.optional(),
+      /**
+       * What kind of thing this entity is, from a closed list.
+       *
+       * Optional, and a closed enum rather than free text, because the presentation layer
+       * keys a glyph off it (`ENTITY_MARKS` in ./leaves.tsx). An enum means the analysis can
+       * *classify* — this row is a trust, that one is a person — without choosing an image,
+       * and an unrecognised value fails the parse rather than reaching the page. Entities
+       * with no recorded nature draw no glyph, which is the normal case: a comparison of
+       * six regions on their share has no per-entity kind to state.
+       */
+      nature: z.enum(["trust", "company", "individual", "account", "property", "fund"]).optional(),
     }),
   ),
 });
