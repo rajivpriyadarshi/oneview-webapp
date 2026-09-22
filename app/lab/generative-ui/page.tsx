@@ -313,16 +313,12 @@ export default function GenerativeUILab() {
         <span className={TW.simulatorLabel}>Simulating</span>
         <div className="flex items-center gap-[2px]" role="group" aria-label="Simulated client">
           {PINNED_CLIENTS.map((entry) => (
-            <button
+            <SimulatorChoice
               key={entry.id}
-              type="button"
-              title={entry.distinction}
-              aria-pressed={client === entry.id}
-              className={client === entry.id ? TW.simulatorOn : TW.simulatorOff}
-              onClick={() => choose(entry.id)}
-            >
-              {entry.name.split(" ")[0]}
-            </button>
+              entry={entry}
+              chosen={client === entry.id}
+              onChoose={() => choose(entry.id)}
+            />
           ))}
         </div>
       </div>
@@ -587,6 +583,76 @@ export default function GenerativeUILab() {
           .gu-pulse { animation: none }
         }
       `}</style>
+    </div>
+  );
+}
+
+/* ----------------------------------------------------------------- simulator */
+
+/**
+ * One client in the simulator, with a tooltip saying who they are.
+ *
+ * It was a `title` attribute, which is the wrong control for this in two ways: the browser
+ * takes a second to show it, and on a dark pill floating over a report it appears as an
+ * unstyled system box. But mostly the copy was wrong — `distinction` names the structural
+ * difference between the two books, which only reads if you already know both of them.
+ * `focus` (see ../generative-ui/pinned.ts) describes the client to somebody meeting them,
+ * and that is what a person hovering this is asking.
+ *
+ * Hover *and* focus, because the switch is reachable by keyboard and a tooltip only a mouse
+ * can open is a tooltip half the users never see. `pointer-events-none` so the panel cannot
+ * sit between the cursor and the button it describes.
+ */
+function SimulatorChoice({
+  entry,
+  chosen,
+  onChoose,
+}: {
+  entry: (typeof PINNED_CLIENTS)[number];
+  chosen: boolean;
+  onChoose: () => void;
+}) {
+  const [shown, setShown] = React.useState(false);
+  const first = entry.name.split(" ")[0];
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        aria-pressed={chosen}
+        aria-describedby={`sim-about-${entry.id}`}
+        className={chosen ? TW.simulatorOn : TW.simulatorOff}
+        onClick={onChoose}
+        onMouseEnter={() => setShown(true)}
+        onMouseLeave={() => setShown(false)}
+        onFocus={() => setShown(true)}
+        onBlur={() => setShown(false)}
+      >
+        {first}
+      </button>
+
+      {/*
+       * Above the pill and right-aligned, because the simulator is pinned to the
+       * bottom-right corner: a tooltip centred on the button would run off the viewport on
+       * the second of the two, and one below it would be off the bottom of the screen.
+       */}
+      <div
+        id={`sim-about-${entry.id}`}
+        role="tooltip"
+        className={`pointer-events-none absolute right-0 bottom-[calc(100%+12px)] w-[272px] rounded-[12px] border border-white/10 bg-[#0f0e0d]/96 px-[13px] py-[11px] text-left shadow-[0_16px_40px_rgba(0,0,0,0.45)] backdrop-blur-[10px] transition-[opacity,transform] duration-200 ${
+          shown ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-[4px] opacity-0"
+        }`}
+        aria-hidden={!shown}
+      >
+        <div className="font-satoshi text-[12px] leading-[16px] font-bold tracking-[-0.1px] text-white">
+          {entry.name}
+        </div>
+        <div className="mt-[5px] font-satoshi text-[11.5px] leading-[16px] font-medium text-white/60">
+          {entry.focus}
+        </div>
+        {/* The pointer, as a rotated square with only its two outer edges bordered. */}
+        <span className="absolute right-[18px] -bottom-[4px] h-[8px] w-[8px] rotate-45 border-r border-b border-white/10 bg-[#0f0e0d]" />
+      </div>
     </div>
   );
 }

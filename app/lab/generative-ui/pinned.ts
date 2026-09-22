@@ -41,6 +41,16 @@ export type PinnedClient = {
   name: string;
   /** One line under the name: what makes this client's report a different shape. */
   distinction: string;
+  /**
+   * Who this client is, for the person about to switch to them.
+   *
+   * `distinction` is written for a reader who already knows both books — it names the
+   * structural difference in a dozen words. This is written for someone meeting them:
+   * what kind of investor, what the money is in, and what they are actually worried
+   * about. Shown on hover in the simulator, because the switch is the moment somebody
+   * needs to know which of the two they are about to look at.
+   */
+  focus: string;
   /** Names and entities that identify this client in a question. */
   pattern: RegExp;
   /**
@@ -59,6 +69,8 @@ export const PINNED_CLIENTS: PinnedClient[] = [
     id: "prashanth",
     name: "Prashanth Ranganathan",
     distinction: "Listed-heavy, leveraged, a benchmark to beat",
+    focus:
+      "Growth-oriented family-office investor with a mostly liquid, market-driven portfolio; focused on performance, concentration and rebalancing.",
     pattern: /prashanth|ranganathan|prtr/,
     overview: {
       name: "Prashanth Ranganathan",
@@ -86,6 +98,8 @@ export const PINNED_CLIENTS: PinnedClient[] = [
     id: "eleanor",
     name: "Eleanor Whitfield",
     distinction: "A trust-held estate: six properties, no debt, S$6.95m of calls ahead",
+    focus:
+      "Wealth-preservation client with a largely illiquid estate; focused on liquidity planning, valuations, governance and succession.",
     pattern: /eleanor|whitfield/,
     overview: {
       name: "Eleanor Whitfield",
