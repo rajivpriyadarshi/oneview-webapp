@@ -832,45 +832,20 @@ export const ELEANOR_REPORT: SemanticReport = {
       ],
     },
 
-    /* --------------------------------------- 5. private assets & valuations */
-    {
-      id: "s.valuations",
-      semanticType: "risk",
-      question: "How current are the private valuations?",
-      importance: "secondary",
-      takeaway: "Three quarters of the private book is marked within nine months. The rest is the problem.",
-      dataKeys: ["valuation.freshness"],
-      findings: [
-        {
-          kind: "comparison",
-          id: "f.freshness",
-          emphasis: "secondary",
-          confidence: 1,
-          sources: [...VALUATIONS, ...FUNDS],
-          subject: "Valuation freshness",
-          label: "Age of mark",
-          measure: "Share of private assets",
-          entities: [
-            { name: "Current, under 3 months", value: 45, display: "45%" },
-            { name: "3 to 9 months", value: 30, display: "30%" },
-            { name: "9 to 18 months", value: 15, display: "15%" },
-            { name: "Over 18 months", value: 10, display: "10%" },
-          ],
-        },
-        {
-          kind: "flag",
-          id: "f.stale",
-          emphasis: "primary",
-          confidence: 1,
-          sources: [...VALUATIONS, ...FUNDS],
-          subject: "Valuation freshness",
-          severity: "warn",
-          subjectLabel: "25% of the private assets are carried at valuations older than nine months",
-          detail:
-            "Ten per cent of the private book is older than eighteen months, and it includes the family business — the largest single position at S$12.5m, last marked on 31 December 2024. **Why it matters:** the S$68.4m total is exactly as current as those marks, so updated valuations for the family business and the older fund positions would change the number the whole page stands on.",
-        },
-      ],
-    },
+    /*
+     * No standalone valuation-freshness section.
+     *
+     * The stale-marks claim is not dropped — it is stated once, as one of the three items
+     * under "What needs attention" below, which is where a reader looking for what to do
+     * about it would go. It had its own band as well, and the two said the same thing: a
+     * band whose flag repeats a flag one band later is a reader asking whether they are
+     * the same finding. The freshness distribution went with it, because a four-bar split
+     * of 45/30/15/10 is a chart of the ageing process, not of the problem, and the
+     * problem is the quarter that is old — a figure the flag states in words.
+     *
+     * `valuation.freshness` stays in the bundle and is still bound by the attention
+     * section, so nothing about provenance changes.
+     */
 
     /* ---------------------------------------------- 6. what needs attention */
     {

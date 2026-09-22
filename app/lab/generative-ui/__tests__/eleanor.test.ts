@@ -124,12 +124,23 @@ describe("the page has the shape the report was designed to have", () => {
     return spec.root.filter((node) => node.component === "Section" || node.component === "WhatToWatch");
   };
 
-  it("numbers ten topics, every one of them headed", () => {
-    /* Ten bands, all headed, plus the sources, which are a collapsed Disclosure rather
+  it("numbers nine topics, every one of them headed", () => {
+    /* Nine bands, all headed, plus the sources, which are a collapsed Disclosure rather
        than a Section. The headings are what the reader counts. */
     const headed = areas().filter((node) => node.props.heading);
-    expect(areas()).toHaveLength(10);
-    expect(headed.map((node) => node.props.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(areas()).toHaveLength(9);
+    expect(headed.map((node) => node.props.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  });
+
+  it("states the stale marks once, under what needs attention", () => {
+    /* The claim had a band of its own *and* an item on the attention rail, saying the same
+       thing twice one band apart. It survives where a reader would act on it. See the note
+       where the valuations section used to be in ../eleanor.ts. */
+    const flags = ELEANOR_REPORT.sections.flatMap((section) =>
+      section.findings.filter((finding) => finding.kind === "flag" && /older than nine months/.test(finding.detail)),
+    );
+    expect(flags).toHaveLength(1);
+    expect(ELEANOR_REPORT.sections.map((section) => section.id)).not.toContain("s.valuations");
   });
 
   it("carries the three bands a portfolio report cannot have", () => {
@@ -221,7 +232,6 @@ describe("the page has the shape the report was designed to have", () => {
       "s.allocation",
       "s.liquidity",
       "s.market",
-      "s.valuations",
       "s.attention",
       "s.coming",
     ]);
