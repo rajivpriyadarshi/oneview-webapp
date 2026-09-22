@@ -285,7 +285,15 @@ const PROPERTY_REPORT: ViewRecipe = {
     {
       id: "headline",
       defaultHeading: "The readout",
-      accepts: ["summary", "identity"],
+      /*
+       * Summary only. The other recipes let an `identity` section open the page, and doing
+       * that here cost the report its readout: page order is taken from each group's first
+       * candidate slot, so with `identity` listed the ownership sections sorted to position
+       * one, filled a slot with room for one area, and left the summary — the only section
+       * marked primary, the one the headline figures are lifted from — unplaced. It failed
+       * loudly in the test that asserts nothing is dropped, which is why that test exists.
+       */
+      accepts: ["summary"],
       required: true,
       arrangement: "single",
       maxAreas: 1,
@@ -294,10 +302,43 @@ const PROPERTY_REPORT: ViewRecipe = {
       id: "movement",
       defaultHeading: "What changed",
       moreHeadings: ["Since the last review"],
-      /* `market_context` lands here rather than in a slot of its own: on a book that is two
-         thirds property and private assets, what the market did is a thing that happened
-         since the last review, not a benchmark the portfolio is measured against. */
-      accepts: ["activity", "drivers", "market_context"],
+      accepts: ["activity", "drivers"],
+      required: false,
+      maxAreas: 1,
+    },
+    {
+      /*
+       * Who owns it, before what it is worth.
+       *
+       * The slot the other recipes have no use for: an estate held through a trust and a
+       * holding company is a different subject from an account, and the reader's first
+       * question about it is not performance but control — who is the trustee, who the
+       * beneficiaries are, when it vests. `identity` is the type the analysis marks that
+       * with, and the position is the argument: a figure means something different once
+       * you know which entity it sits in.
+       */
+      id: "structure",
+      defaultHeading: "How the estate is held",
+      moreHeadings: ["The family and succession"],
+      accepts: ["identity"],
+      required: false,
+      arrangement: "split",
+      maxAreas: 2,
+    },
+    {
+      /*
+       * The real assets in their own right, and not as rows of the holdings table.
+       *
+       * A property has attributes a listed position does not — a yield, a tenancy, a lease
+       * that ends on a date, a valuation with an age — and a book that is 38% property is
+       * one where those attributes are the analysis rather than detail beneath it. Six
+       * properties measured five ways is a schedule; the same six as a line of a holdings
+       * table is a number that happens to be large.
+       */
+      id: "property",
+      defaultHeading: "The property book",
+      moreHeadings: ["The assets behind it"],
+      accepts: ["comparison"],
       required: false,
       maxAreas: 1,
     },
@@ -308,19 +349,6 @@ const PROPERTY_REPORT: ViewRecipe = {
       accepts: ["allocation", "performance"],
       required: true,
       arrangement: "split",
-      maxAreas: 1,
-    },
-    {
-      /*
-       * The positions behind the split, and deliberately unnumbered. `continuation` says
-       * this band is a second reading of the one above it rather than a new question —
-       * what the book is made of, then what is actually in it — so the reader counts one
-       * topic and not two. Same device as AnalyticalReport's concentration band.
-       */
-      id: "bookDetail",
-      accepts: ["comparison", "identity"],
-      continuation: true,
-      required: false,
       maxAreas: 1,
     },
     {
@@ -345,6 +373,24 @@ const PROPERTY_REPORT: ViewRecipe = {
       accepts: ["liquidity"],
       required: false,
       arrangement: "split",
+      maxAreas: 1,
+    },
+    {
+      /*
+       * What the market did, and only where the analysis brought it.
+       *
+       * Below the portfolio rather than above it, which is the opposite of where a
+       * benchmarked report would put it. On a listed book the market is the yardstick and
+       * belongs beside the return; on a book of buildings it is context for a handful of
+       * specific assets — a rate decision that bears on one valuation, a vacancy rate that
+       * bears on one renewal — and context read before the thing it contextualises is just
+       * news.
+       */
+      id: "context",
+      defaultHeading: "The property market",
+      moreHeadings: ["Market context"],
+      accepts: ["market_context"],
+      required: false,
       maxAreas: 1,
     },
     {
@@ -378,12 +424,12 @@ const PROPERTY_REPORT: ViewRecipe = {
       disclosure: "collapsed",
     },
   ],
-  // Ten, and the highest ceiling of any recipe here, because this shape carries two
-  // things the others fold away: a dated funding calendar and a valuation-quality
-  // finding. The slot caps add to exactly ten, so this is not a licence for a longer
-  // page — it is the difference between ten areas placed and the last one, the sources,
-  // silently dropped.
-  maxAreas: 10,
+  // Twelve, and the highest ceiling of any recipe here, because this shape carries four
+  // things the others fold away: an ownership structure, a property schedule, a dated
+  // funding calendar and a valuation-quality finding. The slot caps add to thirteen, so
+  // the ceiling still binds — which is the point. It is the difference between twelve
+  // areas placed and the last one, the sources, silently dropped.
+  maxAreas: 12,
 };
 
 /**

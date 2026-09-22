@@ -9,13 +9,25 @@
  *
  * What differs, and why the page differs with it:
  *
+ *   - **An estate, not an account.** His report is about a portfolio; hers is about a
+ *     family that owns one. The value is held three ways — a discretionary trust with
+ *     S$41.0m, a holding company with S$18.7m, S$8.7m in her own name — and that is an
+ *     `identity` section, a semantic type his analysis never produces. It is also why the
+ *     page can carry labelled facts at all: a trustee, a governing law, a vesting year are
+ *     not figures, and nothing on a performance report has that shape.
+ *   - **Six buildings with attributes, not six rows of a holdings table.** A property has
+ *     a yield, a tenancy, a lease that ends on a date and a valuation with an age. Five
+ *     measures over six names is a schedule, and the row is the argument; the same six
+ *     inside a top-five table would be one large number. Three of the four leases end
+ *     within eighteen months, which is a finding only this shape can state.
  *   - **No listed benchmark and no borrowing.** Prashanth's book is 42% listed with a
  *     stated +14% year to date, so his report leads with performance and carries a
- *     leverage section. Hers is 65% real estate and private assets with no facility on
- *     file; there is no return to lead with and nothing to refinance. Her headline
- *     figures are a total, a cash balance, a commitment total and an asset count — the
- *     same `headlineFigures` rule, four different figures, because the analysis marked
- *     different metrics primary.
+ *     leverage section. Hers is 65% real estate and private assets, and there is no
+ *     facility on file against any asset — so there is nothing to refinance, and the
+ *     market section below is context for named buildings rather than a yardstick. Her
+ *     headline figures are a total, a cash balance, a commitment total and an asset count
+ *     — the same `headlineFigures` rule, four different figures, because the analysis
+ *     marked different metrics primary.
  *   - **Funding, not leverage, is the pressure.** S$6.95m of capital calls and payments
  *     fall due over two years against S$11.0m of cash and a S$7.0m preferred reserve, so
  *     the page carries a liquidity section built around a gap rather than a loan.
@@ -23,20 +35,23 @@
  *     book is carried at marks older than nine months. On a listed portfolio that
  *     section would have nothing to say.
  *   - **A different recipe.** `reportType: "property_review"` selects `PropertyReport`
- *     (./recipes.ts), whose slot order is readout → what changed → what it looks like →
- *     liquidity → valuations → attention → what's coming → decisions. Nothing in this
- *     file names a component or a slot.
+ *     (./recipes.ts), whose slot order is readout → what changed → how it is held → the
+ *     property book → what it looks like now → liquidity → the market → valuations →
+ *     attention → what's coming → decisions. Nothing in this file names a component or a
+ *     slot; four of those eleven bands exist because of the two types above.
  *
  * Provenance of every figure, so nobody has to guess which are real:
  *
  *   REAL       Everything on the balance sheet, as at 27 August 2026: the S$68.4m total,
  *              the 28 assets and their split, the six asset-class weights, the six
- *              regional weights, the five largest positions with their values, weights
- *              and valuation dates, the S$11.0m of cash, the S$7.0m preferred reserve
- *              the file records, the four dated commitments, the four developments since
- *              the last review and the four open decisions. All of it in SGD already —
- *              this is a SGD book, so unlike Prashanth's there is nothing to convert and
- *              no FX assumption to disclose.
+ *              regional weights, the three holding entities and what each holds, the
+ *              trust's own terms, the six properties with their values, yields, tenancies,
+ *              lease expiries and valuation dates, the S$11.0m of cash, the S$7.0m
+ *              preferred reserve the file records, the four dated commitments, the four
+ *              developments since the last review and the four open decisions. All of it
+ *              in SGD already — this is a SGD book, so unlike Prashanth's there is nothing
+ *              to convert and no FX assumption to disclose. The three market items are
+ *              published third-party data and the only content not drawn from her file.
  *   DERIVED    Totals and shares, and nothing else: S$6.95m is the four commitments
  *              added up, S$4.0m is cash less the reserve, S$2.95m is the commitments
  *              less that, 16% is cash over the total, and the four freshness buckets are
@@ -54,12 +69,18 @@
  *     and a ledger whose rows do not make its total are not stylistic choices, so the
  *     two smallest weights and the estimated setup cost are reconciled here. Every
  *     figure that appears more than once now agrees with itself.
- *   - The key-holdings table drops the reference's Type and Notes columns. A comparison
- *     finding holds entities on a *measure* (./findings.ts), so a column of prose would
- *     have to be smuggled in as a fake number. The note that mattered — one position is
- *     carried at a December 2024 mark — is a column in its own right instead.
- *   - No "View all 28 assets" link. The fixture holds five positions, so the control
- *     would not work; the count is stated in the section's own line instead.
+ *   - The property schedule's prose columns — status, lease expiry, last valued — are
+ *     carried as a comparison's `display` over a sortable `value`, because a comparison
+ *     finding holds entities on a *measure* (./findings.ts) and a column of bare strings
+ *     has nothing to order by. The two owner-occupied properties show "—" for yield rather
+ *     than 0.0%: a building nobody pays rent on has no yield, and a zero would be a claim
+ *     that it earns nothing.
+ *   - The key-holdings table is gone. It said the five largest positions were half the
+ *     book, which the entity split and the property schedule now say more precisely and in
+ *     the places a reader would look for it. One table of the same five names in between
+ *     was a third view of a question already answered twice.
+ *   - No "View all 28 assets" link. The fixture holds six properties and three entities,
+ *     so the control would not work; the counts are stated in the sections' own lines.
  */
 
 import type { DataBundle } from "./data";
@@ -73,6 +94,9 @@ const CUSTODY = ["Custody statements", "Bank statements"];
 const FAMILY_OFFICE = ["Whitfield family office records"];
 const VALUATIONS = ["Property valuations"];
 const FUNDS = ["Fund manager reports"];
+const TRUST = ["Trust deed and letter of wishes"];
+const TENANCY = ["Tenancy agreements"];
+const MARKET = ["Property market data"];
 
 /* ========================================================================== */
 /* Layer 1 — the plan                                                         */
@@ -105,7 +129,10 @@ export const ELEANOR_PLAN: IntentPlan = {
     { key: "activity.recent", tool: "meetings.recent", args: { clientId: "eleanor-whitfield", since: "2026-05-01" }, required: false },
     { key: "alloc.class", tool: "portfolio.allocation", args: { clientId: "eleanor-whitfield", by: "assetClass" }, required: true },
     { key: "geo.exposure", tool: "portfolio.allocation", args: { clientId: "eleanor-whitfield", by: "region" }, required: false },
-    { key: "holdings.key", tool: "portfolio.holdings", args: { clientId: "eleanor-whitfield", limit: 5 }, required: true },
+    { key: "estate.structure", tool: "documents.list", args: { clientId: "eleanor-whitfield", kind: "structure" }, required: true },
+    { key: "estate.byentity", tool: "portfolio.allocation", args: { clientId: "eleanor-whitfield", by: "entity" }, required: true },
+    { key: "property.schedule", tool: "portfolio.holdings", args: { clientId: "eleanor-whitfield", assetClass: "realEstate" }, required: true },
+    { key: "market.context", tool: "news.search", args: { topics: ["sg-property", "uk-rates", "apac-offices"] }, required: false },
     { key: "liquidity.position", tool: "portfolio.summary", args: { clientId: "eleanor-whitfield", view: "liquidity" }, required: true },
     { key: "commit.calendar", tool: "goals.list", args: { clientId: "eleanor-whitfield", horizon: "medium" }, required: true },
     { key: "valuation.freshness", tool: "documents.list", args: { clientId: "eleanor-whitfield", kind: "valuation" }, required: false },
@@ -169,12 +196,53 @@ export const ELEANOR_BUNDLE: DataBundle = {
       { label: "Asia ex-Singapore", value: 0.1, display: "10%" },
       { label: "Others", value: 0.08, display: "8%" },
     ],
-    "holdings.key": [
-      { name: "Family Business", type: "Private equity", value: 12.5, weight: 0.183, valued: "31 Dec 2024" },
-      { name: "London Residence", type: "Real estate", value: 8.2, weight: 0.12, valued: "12 Aug 2026" },
-      { name: "US Equity Portfolio", type: "Public equities", value: 6.8, weight: 0.099, valued: "27 Aug 2026" },
-      { name: "Singapore Bonds", type: "Fixed income", value: 4.1, weight: 0.06, valued: "27 Aug 2026" },
-      { name: "Asia Growth Fund IV", type: "Private equity", value: 3.0, weight: 0.044, valued: "30 Jun 2026" },
+    /* Facts, not figures, which is why they are pairs rather than a chart: the reader comes
+       to this block for one line of it and needs to find that line without reading the
+       others. */
+    "estate.structure": [
+      { label: "Structure", value: "Discretionary trust and a holding company" },
+      { label: "Trustee", value: "Zinc Trustees (Singapore) Pte Ltd" },
+      { label: "Protector", value: "E. Whitfield, as settlor" },
+      { label: "Governing law", value: "Singapore" },
+      { label: "Beneficiaries", value: "Three children and one grandchild" },
+      { label: "Vesting", value: "2041, or earlier at trustee discretion" },
+      { label: "Letter of wishes", value: "Last updated January 2024" },
+      { label: "Borrowing", value: "None — no facility on file against any asset" },
+    ],
+    "estate.byentity": [
+      { label: "Whitfield Family Trust", value: 41.0, display: "S$41.0m" },
+      { label: "Whitfield Holdings Pte Ltd", value: 18.7, display: "S$18.7m" },
+      { label: "Held personally", value: 8.7, display: "S$8.7m" },
+    ],
+    /*
+     * Six buildings, five measures each, and the two owner-occupied ones carry a zero with
+     * a word for a display: a property nobody pays rent on has no yield, and `0.0%` would
+     * be a claim that it earns nothing rather than that the question does not apply.
+     */
+    "property.schedule": [
+      { name: "London Residence, Kensington", value: 8.2, yield: 0, occupancy: "Owner-occupied", lease: "—", valued: "12 Aug 2026" },
+      { name: "Singapore Shophouse, Tanjong Pagar", value: 6.5, yield: 3.2, occupancy: "Let", lease: "Q2 2028", valued: "30 Jun 2026" },
+      { name: "Sydney Apartment, Potts Point", value: 4.1, yield: 3.8, occupancy: "Let", lease: "Q4 2026", valued: "15 May 2026" },
+      { name: "Kuala Lumpur Office Unit", value: 3.2, yield: 5.1, occupancy: "Let", lease: "Q3 2027", valued: "28 Feb 2026" },
+      { name: "Tokyo Residential, Minato", value: 2.4, yield: 3.4, occupancy: "Let", lease: "Q1 2027", valued: "30 Nov 2025" },
+      { name: "Provence Farmhouse", value: 1.6, yield: 0, occupancy: "Owner-occupied", lease: "—", valued: "31 Dec 2023" },
+    ],
+    "market.context": [
+      {
+        headline: "Singapore private residential prices rose 2.1% in the first half of 2026",
+        impact:
+          "Supports the June valuation on the Tanjong Pagar shophouse, the second largest property in the book. Its lease runs to Q2 2028, so the move is a valuation effect rather than an income one.",
+      },
+      {
+        headline: "The Bank of England held the base rate at 4.0% in August",
+        impact:
+          "Prime central London values have been flat for three quarters. The Kensington residence is owner-occupied and unencumbered, so this bears on what it is worth, not on what it costs to hold.",
+      },
+      {
+        headline: "Kuala Lumpur office vacancy reached a five-year high in Q2 2026",
+        impact:
+          "The KL unit carries the highest yield in the book at 5.1% and the least certain renewal, in Q3 2027. A re-let at market would reduce income rather than value.",
+      },
     ],
     "liquidity.position": [
       { label: "Cash & equivalents", value: 11.0, display: "S$11.0m" },
@@ -228,7 +296,7 @@ export const ELEANOR_BUNDLE: DataBundle = {
     "actions.open": [
       { text: "Review the liquidity strategy for the 2027 calls", state: "todo", owner: "Advisory" },
       { text: "Commission updated valuations for the family business and the older fund positions", state: "todo" },
-      { text: "Open refinancing discussions on the London property", state: "todo", due: "ahead of 2027" },
+      { text: "Agree a position on the Provence farmhouse: revalue and hold, or realise", state: "todo", due: "before Q1 2027" },
       { text: "Confirm the capital call schedule with both fund managers", state: "doing" },
     ],
     "evidence.sources": [
@@ -237,6 +305,9 @@ export const ELEANOR_BUNDLE: DataBundle = {
       { name: "Property valuations", detail: "12 Aug 2026 to 31 Dec 2024" },
       { name: "Fund manager reports", detail: "30 Jun 2026 to 31 Dec 2024" },
       { name: "Whitfield family office records", detail: "as at 27 August 2026" },
+      { name: "Trust deed and letter of wishes", detail: "deed 2009, wishes January 2024" },
+      { name: "Tenancy agreements", detail: "four let properties, expiries to Q2 2028" },
+      { name: "Property market data", detail: "Singapore, UK and Malaysia, to Q2 2026" },
       { name: "Meeting notes", detail: "January, May, June, July and August 2026" },
       { name: "Currency", detail: "a SGD book — no conversion applied" },
       { name: "Estimated", detail: "the +6% since January, and the Q4 2027 setup cost" },
@@ -247,7 +318,10 @@ export const ELEANOR_BUNDLE: DataBundle = {
     "activity.recent": { tool: "meetings.recent", asOf: ELEANOR_AS_OF, sources: [...FAMILY_OFFICE, "Meeting notes"] },
     "alloc.class": { tool: "portfolio.allocation", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
     "geo.exposure": { tool: "portfolio.allocation", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...FAMILY_OFFICE] },
-    "holdings.key": { tool: "portfolio.holdings", asOf: ELEANOR_AS_OF, sources: [...CUSTODY, ...VALUATIONS, ...FUNDS] },
+    "estate.structure": { tool: "documents.list", asOf: ELEANOR_AS_OF, sources: [...TRUST, ...FAMILY_OFFICE] },
+    "estate.byentity": { tool: "portfolio.allocation", asOf: ELEANOR_AS_OF, sources: [...TRUST, ...FAMILY_OFFICE, ...CUSTODY] },
+    "property.schedule": { tool: "portfolio.holdings", asOf: ELEANOR_AS_OF, sources: [...VALUATIONS, ...TENANCY] },
+    "market.context": { tool: "news.search", asOf: ELEANOR_AS_OF, sources: MARKET },
     "liquidity.position": { tool: "portfolio.summary", asOf: ELEANOR_AS_OF, sources: CUSTODY },
     "commit.calendar": { tool: "goals.list", asOf: ELEANOR_AS_OF, sources: [...FUNDS, ...FAMILY_OFFICE] },
     "valuation.freshness": { tool: "documents.list", asOf: ELEANOR_AS_OF, sources: [...VALUATIONS, ...FUNDS] },
@@ -263,13 +337,17 @@ export const ELEANOR_BUNDLE: DataBundle = {
 
 export const ELEANOR_ANSWER = `The portfolio is S$68.4m across 28 assets — six properties, nine private positions, eight public ones and five others — up 6% since January, and the shape of it is the thing to understand first. Real estate is 38% and private equity another 27%, so about two thirds of the value cannot be sold quickly or marked reliably. Cash and equivalents are S$11.0m, 16% of the total, and that is the only part of the book that can meet a call.
 
-By region it is 28% Singapore, 24% the United States, 18% the United Kingdom, 12% Europe outside the UK, 10% the rest of Asia and 8% elsewhere. The five largest positions are S$34.6m between them: the S$12.5m family business stake, the S$8.2m London residence bought in August, S$6.8m of US equities, S$4.1m of Singapore bonds and the S$3.0m Asia Growth Fund IV commitment.
+It is held three ways, and that matters more than it looks. The Whitfield Family Trust holds S$41.0m at trustee discretion, Whitfield Holdings Pte Ltd holds S$18.7m and S$8.7m is held personally. Nothing is borrowed against any of it, so there is no facility to refinance and no covenant to breach — but 60% of the value sits where the trustee decides, on the letter of wishes last updated in January 2024, so a decision to sell in order to meet a call is not hers alone to take.
+
+The property book is S$26.0m across six buildings: the S$8.2m Kensington residence bought in August, a S$6.5m Tanjong Pagar shophouse let to Q2 2028, a S$4.1m Potts Point apartment whose lease ends in Q4 2026, a S$3.2m Kuala Lumpur office unit on 5.1% to Q3 2027, a S$2.4m Minato residential unit to Q1 2027 and the S$1.6m Provence farmhouse. Four are let and yield between 3.2% and 5.1%; Kensington and Provence are used by the family and earn nothing, which is a choice rather than a problem. Three of the four leases end within eighteen months.
+
+By region it is 28% Singapore, 24% the United States, 18% the United Kingdom, 12% Europe outside the UK, 10% the rest of Asia and 8% elsewhere.
 
 Liquidity is the live question. S$6.95m falls due over the next two years — S$1.0m to Asia Growth Fund IV in Q4 2026, S$2.5m to the Private Credit Fund in Q1 2027, S$1.8m as the final London property payment in Q3 2027 and an estimated S$1.65m for the family office in Q4 2027. Against S$11.0m of cash and the S$7.0m reserve on file, S$4.0m is available, which leaves S$2.95m of the commitments unfunded unless the reserve is drawn down or something is sold.
 
 Valuation visibility is the second issue. 45% of the private book is carried at marks under three months old and 30% at three to nine months, but 25% is older than nine months and 10% of it older than eighteen — including the family business, the largest single position, at a December 2024 mark. The S$68.4m total is exactly as current as those valuations and no more.
 
-Four decisions follow: how the 2027 calls get funded, updated valuations for the family business and the older funds, refinancing options on the London property before its 2027 maturity, and confirmation of the call timing with both managers.`;
+Four decisions follow: how the 2027 calls get funded, updated valuations for the family business and the older funds, a settled position on the Provence farmhouse — revalue and hold, or realise it and close most of the gap — and confirmation of the call timing with both managers.`;
 
 /* ========================================================================== */
 /* Layer 3b — the semantic report                                             */
@@ -279,12 +357,15 @@ export const ELEANOR_REPORT: SemanticReport = {
   reportType: "property_review",
   title: "Eleanor Whitfield",
   summary:
-    "**A resilient portfolio with long-term foundations, but near-term liquidity planning is important.** The book is well spread across real estate, private assets and liquid investments. With S$11.0m of cash against S$6.95m of commitments over two years, holding the S$7.0m preferred reserve leaves S$2.95m to plan for — and a quarter of the private book is carried at marks older than nine months.",
+    "**A resilient estate with long-term foundations, but near-term liquidity planning is important.** Held through a trust and a holding company with nothing borrowed against any of it, the book is well spread across six properties, private assets and liquid investments. With S$11.0m of cash against S$6.95m of commitments over two years, holding the S$7.0m preferred reserve leaves S$2.95m to plan for — and a quarter of the private book is carried at marks older than nine months.",
   narrative: ELEANOR_ANSWER,
   relations: [
     /* What the portfolio is made of and where it sits are two readings of one question,
        so they share an area and are read side by side rather than one after the other. */
     { kind: "answers_same_question", sectionIds: ["s.allocation", "s.geography"] },
+    /* The structure and the split of value across it: one question about ownership, asked
+       twice — in words on the left, in figures on the right. */
+    { kind: "answers_same_question", sectionIds: ["s.estate", "s.ownership"] },
     /* What there is to spend and what has to be spent belong in one glance: the gap is
        the difference between them, and a reader who has to scroll between the two halves
        is doing the subtraction from memory. */
@@ -444,64 +525,180 @@ export const ELEANOR_REPORT: SemanticReport = {
         },
       ],
     },
+    /* --------------------------------------------- 3. how the estate is held */
     {
-      id: "s.holdings",
-      semanticType: "comparison",
-      question: "What are the largest positions?",
+      id: "s.estate",
+      semanticType: "identity",
+      question: "How is the estate held?",
       importance: "secondary",
-      takeaway: "The five largest of 28 assets are S$34.6m between them, half the portfolio.",
-      groups: ["Key holdings"],
-      dataKeys: ["holdings.key"],
+      takeaway: "A discretionary trust and a holding company, with nothing borrowed against any of it.",
+      groups: ["The structure"],
+      dataKeys: ["estate.structure"],
+      /*
+       * One narrative, and the block beside it is bound data rather than findings.
+       *
+       * The attributes of a trust are facts the file records, not claims the analysis made,
+       * so they belong in the bundle where a figure would. What the analysis contributes is
+       * the sentence about them — that the structure is settled and the exposure is who
+       * decides, not what is owed — and that is the finding.
+       */
+      findings: [
+        {
+          kind: "narrative",
+          id: "f.estate",
+          emphasis: "primary",
+          confidence: 1,
+          sources: [...TRUST, ...FAMILY_OFFICE],
+          subject: "The structure",
+          text: "The structure has been settled since 2009 and nothing in it has changed this year beyond the governance work in May. Two things follow from it that a single-account view would not show. Nothing is borrowed against any asset, so there is no facility to refinance and no covenant to breach — the funding question is entirely about what is liquid. And the trust holds 60% of the value at trustee discretion, so decisions about selling to meet a call are the trustee\u2019s to take, on the settlor\u2019s letter of wishes, rather than hers alone.",
+        },
+      ],
+    },
+    {
+      id: "s.ownership",
+      /*
+       * `allocation`, though the question is an ownership one, and the reason is worth
+       * writing down because it looks like a mislabel.
+       *
+       * A section's type does two jobs: it picks the slot, and it picks the form. The slot
+       * is decided by the *group's* first section, which is `s.estate` — so this section's
+       * type only decides its own form. Marked `identity` it inherited the estate's
+       * `key_value` form, and the only component that implements `key_value` and accepts a
+       * comparison is `DataTable`, which would have tabulated the bound rows: a Label
+       * column, a Value column, and a third for the pre-formatted twin of the second. This
+       * is a split of one total across three holders, which is what `allocation` means, and
+       * it is also exactly what the plan asked the tool for.
+       */
+      semanticType: "allocation",
+      question: "Who holds what?",
+      importance: "secondary",
+      takeaway: "Three entities, and the trust holds 60% of the value.",
+      groups: ["By entity"],
+      dataKeys: ["estate.byentity"],
       findings: [
         {
           kind: "comparison",
-          id: "f.hvalue",
+          id: "f.byentity",
           emphasis: "secondary",
           confidence: 1,
-          sources: [...CUSTODY, ...VALUATIONS, ...FUNDS],
-          subject: "Key holdings",
-          label: "Asset",
+          sources: [...TRUST, ...FAMILY_OFFICE, ...CUSTODY],
+          subject: "Entities",
+          label: "Entity",
+          measure: "Value held",
+          entities: [
+            { name: "Whitfield Family Trust", value: 41.0, display: "S$41.0m" },
+            { name: "Whitfield Holdings Pte Ltd", value: 18.7, display: "S$18.7m" },
+            { name: "Held personally", value: 8.7, display: "S$8.7m" },
+          ],
+        },
+      ],
+    },
+
+    /* ------------------------------------------------- 4. the property book */
+    {
+      id: "s.properties",
+      semanticType: "comparison",
+      question: "What is in the property book?",
+      importance: "secondary",
+      /*
+       * Five measures over six names, which is what makes this a schedule rather than a
+       * ranking. A property is worth something, earns something, is occupied or not, comes
+       * up for renewal on a date and was last valued on another — and the argument of the
+       * section is the row, not any one column. `formFor` turns two or more comparisons
+       * over the same entities into a table for exactly this case.
+       */
+      takeaway:
+        "Six properties, S$26.0m, and the two the family uses earn nothing — which is a choice, not a problem.",
+      dataKeys: ["property.schedule"],
+      findings: [
+        {
+          kind: "comparison",
+          id: "f.pvalue",
+          emphasis: "primary",
+          confidence: 1,
+          sources: VALUATIONS,
+          subject: "Property",
+          label: "Property",
           measure: "Value",
           entities: [
-            { name: "Family Business", value: 12.5, display: "S$12.5m" },
-            { name: "London Residence", value: 8.2, display: "S$8.2m" },
-            { name: "US Equity Portfolio", value: 6.8, display: "S$6.8m" },
-            { name: "Singapore Bonds", value: 4.1, display: "S$4.1m" },
-            { name: "Asia Growth Fund IV", value: 3.0, display: "S$3.0m" },
+            { name: "London Residence, Kensington", value: 8.2, display: "S$8.2m" },
+            { name: "Singapore Shophouse, Tanjong Pagar", value: 6.5, display: "S$6.5m" },
+            { name: "Sydney Apartment, Potts Point", value: 4.1, display: "S$4.1m" },
+            { name: "Kuala Lumpur Office Unit", value: 3.2, display: "S$3.2m" },
+            { name: "Tokyo Residential, Minato", value: 2.4, display: "S$2.4m" },
+            { name: "Provence Farmhouse", value: 1.6, display: "S$1.6m" },
           ],
         },
         {
           kind: "comparison",
-          id: "f.hweight",
+          id: "f.pyield",
           emphasis: "secondary",
-          confidence: 1,
-          sources: [...CUSTODY, ...VALUATIONS, ...FUNDS],
-          subject: "Key holdings",
-          label: "Asset",
-          measure: "Weight",
+          confidence: 0.95,
+          sources: TENANCY,
+          subject: "Property",
+          label: "Property",
+          measure: "Net yield",
           entities: [
-            { name: "Family Business", value: 18.3, display: "18%" },
-            { name: "London Residence", value: 12.0, display: "12%" },
-            { name: "US Equity Portfolio", value: 9.9, display: "10%" },
-            { name: "Singapore Bonds", value: 6.0, display: "6%" },
-            { name: "Asia Growth Fund IV", value: 4.4, display: "4%" },
+            { name: "London Residence, Kensington", value: 0, display: "\u2014" },
+            { name: "Singapore Shophouse, Tanjong Pagar", value: 3.2, display: "3.2%" },
+            { name: "Sydney Apartment, Potts Point", value: 3.8, display: "3.8%" },
+            { name: "Kuala Lumpur Office Unit", value: 5.1, display: "5.1%" },
+            { name: "Tokyo Residential, Minato", value: 3.4, display: "3.4%" },
+            { name: "Provence Farmhouse", value: 0, display: "\u2014" },
           ],
         },
         {
           kind: "comparison",
-          id: "f.hvalued",
+          id: "f.poccupancy",
           emphasis: "secondary",
           confidence: 1,
-          sources: [...VALUATIONS, ...FUNDS],
-          subject: "Key holdings",
-          label: "Asset",
+          sources: TENANCY,
+          subject: "Property",
+          label: "Property",
+          measure: "Status",
+          entities: [
+            { name: "London Residence, Kensington", value: 0, display: "Owner-occupied" },
+            { name: "Singapore Shophouse, Tanjong Pagar", value: 1, display: "Let" },
+            { name: "Sydney Apartment, Potts Point", value: 1, display: "Let" },
+            { name: "Kuala Lumpur Office Unit", value: 1, display: "Let" },
+            { name: "Tokyo Residential, Minato", value: 1, display: "Let" },
+            { name: "Provence Farmhouse", value: 0, display: "Owner-occupied" },
+          ],
+        },
+        {
+          kind: "comparison",
+          id: "f.please",
+          emphasis: "secondary",
+          confidence: 1,
+          sources: TENANCY,
+          subject: "Property",
+          label: "Property",
+          measure: "Lease to",
+          entities: [
+            { name: "London Residence, Kensington", value: 0, display: "\u2014" },
+            { name: "Singapore Shophouse, Tanjong Pagar", value: 7, display: "Q2 2028" },
+            { name: "Sydney Apartment, Potts Point", value: 1, display: "Q4 2026" },
+            { name: "Kuala Lumpur Office Unit", value: 4, display: "Q3 2027" },
+            { name: "Tokyo Residential, Minato", value: 2, display: "Q1 2027" },
+            { name: "Provence Farmhouse", value: 0, display: "\u2014" },
+          ],
+        },
+        {
+          kind: "comparison",
+          id: "f.pvalued",
+          emphasis: "secondary",
+          confidence: 1,
+          sources: VALUATIONS,
+          subject: "Property",
+          label: "Property",
           measure: "Last valued",
           entities: [
-            { name: "Family Business", value: 20, display: "31 Dec 2024" },
-            { name: "London Residence", value: 1, display: "12 Aug 2026" },
-            { name: "US Equity Portfolio", value: 0, display: "27 Aug 2026" },
-            { name: "Singapore Bonds", value: 0, display: "27 Aug 2026" },
-            { name: "Asia Growth Fund IV", value: 2, display: "30 Jun 2026" },
+            { name: "London Residence, Kensington", value: 1, display: "12 Aug 2026" },
+            { name: "Singapore Shophouse, Tanjong Pagar", value: 2, display: "30 Jun 2026" },
+            { name: "Sydney Apartment, Potts Point", value: 3, display: "15 May 2026" },
+            { name: "Kuala Lumpur Office Unit", value: 6, display: "28 Feb 2026" },
+            { name: "Tokyo Residential, Minato", value: 9, display: "30 Nov 2025" },
+            { name: "Provence Farmhouse", value: 32, display: "31 Dec 2023" },
           ],
         },
       ],
@@ -570,6 +767,36 @@ export const ELEANOR_REPORT: SemanticReport = {
       ],
     },
 
+    /* ------------------------------------------- 7. the property market */
+    {
+      id: "s.market",
+      semanticType: "market_context",
+      question: "What is the market doing to these assets?",
+      importance: "supporting",
+      takeaway: "Three external moves, each bearing on one named property rather than on the book as a whole.",
+      dataKeys: ["market.context"],
+      /*
+       * Supporting, and worded as effects rather than as news.
+       *
+       * The rows in the bundle each pair an event with the asset it bears on, which is the
+       * only form market context earns a place in a report like this: a book of six
+       * buildings has no benchmark, so a headline that is not attached to one of them is
+       * not analysis, it is a feed. What the section adds is which way each one cuts —
+       * valuation or income — because those are different problems with different answers.
+       */
+      findings: [
+        {
+          kind: "narrative",
+          id: "f.market",
+          emphasis: "secondary",
+          confidence: 0.8,
+          sources: [...MARKET, ...TENANCY],
+          subject: "The property market",
+          text: "Two of the three moves bear on what the properties are worth and one bears on what they earn, and the distinction matters here: a valuation effect changes the S$68.4m total, an income effect changes what has to be sold to meet a call.",
+        },
+      ],
+    },
+
     /* --------------------------------------- 5. private assets & valuations */
     {
       id: "s.valuations",
@@ -617,7 +844,7 @@ export const ELEANOR_REPORT: SemanticReport = {
       question: "What needs attention?",
       importance: "secondary",
       takeaway: "Three items, one of them dated.",
-      dataKeys: ["commit.calendar", "valuation.freshness", "holdings.key"],
+      dataKeys: ["commit.calendar", "valuation.freshness", "property.schedule"],
       findings: [
         {
           kind: "flag",
@@ -645,15 +872,15 @@ export const ELEANOR_REPORT: SemanticReport = {
         },
         {
           kind: "flag",
-          id: "f.att.refinance",
+          id: "f.att.leases",
           emphasis: "secondary",
-          confidence: 0.9,
-          sources: [...VALUATIONS, ...FAMILY_OFFICE],
+          confidence: 1,
+          sources: [...TENANCY, ...MARKET],
           subject: "Property",
           severity: "warn",
-          subjectLabel: "Property refinancing in 2027",
+          subjectLabel: "Three leases expire within eighteen months",
           detail:
-            "Refinancing options for the London property should be reviewed ahead of maturity, in the same year as the S$1.8m final payment and the S$2.5m private credit call. **Why it matters:** three obligations on one asset class in one year, and the terms are set by whoever is asked first.",
+            "Sydney in Q4 2026, Tokyo in Q1 2027 and Kuala Lumpur in Q3 2027 — S$9.7m of property and about two thirds of the rental income. **Why it matters:** the KL renewal is the least certain of the three and it falls in the same year as S$4.3m of commitments, so a vacancy and a capital call could land in the same quarter.",
         },
       ],
     },
@@ -717,15 +944,15 @@ export const ELEANOR_REPORT: SemanticReport = {
         },
         {
           kind: "recommendation",
-          id: "r.refinance",
+          id: "r.provence",
           emphasis: "secondary",
-          confidence: 0.85,
-          sources: [...VALUATIONS, ...FAMILY_OFFICE],
+          confidence: 0.8,
+          sources: [...VALUATIONS, ...TRUST],
           subject: "Property",
-          title: "Review property refinancing options",
+          title: "Decide the position on the Provence farmhouse",
           rationale:
-            "Begin discussions with lenders ahead of the 2027 maturity, while the August valuation is current and before the final payment falls due in the same year.",
-          action: "Approach two lenders this quarter",
+            "It is the smallest property, earns nothing, and is carried at a valuation from December 2023 — the oldest mark in the file. Either commission a current valuation and keep it as a family asset, or realise it and close most of the funding gap without touching the reserve. Both are defensible; drifting is the one option that is not, because the trustee needs the answer before the Q1 2027 call.",
+          action: "Put both options to the trustee this quarter",
         },
         {
           kind: "recommendation",
@@ -759,7 +986,7 @@ export const ELEANOR_REPORT: SemanticReport = {
           sources: [...CUSTODY, ...FAMILY_OFFICE, ...VALUATIONS, ...FUNDS],
           subject: "Sources",
           heading: "As at 27 August 2026",
-          text: "Every asset figure is recorded rather than estimated: bank and custody statements for the cash and the public positions, property valuations with their dates, fund manager reports for the private book, and family office records for the structure. This is a SGD book, so no conversion has been applied. Two figures are estimates and both are labelled where they appear — the +6% since January is anchored to the January review note rather than to a series, and the Q4 2027 family office cost is a planning number. Capital calls are not counted as liabilities, because a call exchanges cash for fund value rather than reducing the total; they appear in the calendar instead.",
+          text: "Every asset figure is recorded rather than estimated: bank and custody statements for the cash and the public positions, property valuations with their dates, tenancy agreements for the yields and lease expiries, fund manager reports for the private book, and the trust deed and family office records for the structure. This is a SGD book, so no conversion has been applied. Two figures are estimates and both are labelled where they appear — the +6% since January is anchored to the January review note rather than to a series, and the Q4 2027 family office cost is a planning number. Capital calls are not counted as liabilities, because a call exchanges cash for fund value rather than reducing the total; they appear in the calendar instead. The market items are published third-party data, dated to the second quarter, and are the only content here that is not about her own assets.",
         },
       ],
     },

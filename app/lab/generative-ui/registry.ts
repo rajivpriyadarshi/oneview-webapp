@@ -592,6 +592,16 @@ export const REGISTRY: ComponentRegistry = {
     useWhen: "Attributes of a single entity, or methodology behind a figure.",
     children: { allowed: "none" },
     requiresData: true,
+    /*
+     * Stated rather than left to tie-break, which is what it was.
+     *
+     * Five components implement `key_value` and four of them accept a narrative, so with
+     * every fit at the 0.5 default the winner was whichever appeared first in this file —
+     * a real decision resting on the order someone happened to type the entries in. The
+     * decision itself is right: `ClientCard`, `AssetCard` and `DocumentReference` are
+     * *one named thing* each, and a list of a trust's attributes is not one of those.
+     */
+    fit: (finding) => (finding.kind === "narrative" || finding.kind === "metric" ? 0.7 : 0.5),
   },
 
   /* ----------------------------------------------------------- visualisation */

@@ -25,6 +25,7 @@ import { ELEANOR_ANSWER, ELEANOR_BUNDLE, ELEANOR_PLAN, ELEANOR_REPORT } from "..
 import { IntentPlanSchema } from "../intent";
 import { PRASHANTH_PLAN, PRASHANTH_REPORT } from "../prashanth";
 import { RECIPES } from "../recipes";
+import type { UINode } from "../spec";
 import { headlineFigures, referencedKeys, SemanticReportSchema } from "../semantic";
 import { validate } from "../validate";
 
@@ -80,6 +81,26 @@ describe("a different book produces a differently shaped page", () => {
     expect(plan.areas.length).toBeLessThanOrEqual(RECIPES.PropertyReport.maxAreas);
   });
 
+  it("opens on the readout, not on the estate it belongs to", () => {
+    /*
+     * Both were eligible for position one — the headline slot used to accept `identity` as
+     * well as `summary`, and page order is read from each group's first candidate slot. So
+     * the ownership sections sorted ahead of the summary, filled a slot with room for one
+     * area, and left the only section marked `primary` — the one the headline figures are
+     * lifted from — off the page entirely.
+     */
+    expect(composeView(ELEANOR_REPORT, ELEANOR_PLAN, ELEANOR_BUNDLE).unplaced).toEqual([]);
+    const { plan } = planIA(ELEANOR_REPORT, ELEANOR_PLAN);
+    expect(plan.areas[0].sectionIds).toEqual(["s.readout"]);
+  });
+
+  it("reads the structure and the split of value across it as one area", () => {
+    const { plan } = planIA(ELEANOR_REPORT, ELEANOR_PLAN);
+    const shared = plan.areas.find((area) => area.sectionIds.includes("s.ownership"));
+    expect(shared?.sectionIds).toEqual(["s.estate", "s.ownership"]);
+    expect(shared?.arrangement).toBe("split");
+  });
+
   it("reads what the book is made of and where it sits as one area, side by side", () => {
     const { plan } = planIA(ELEANOR_REPORT, ELEANOR_PLAN);
     const shared = plan.areas.find((area) => area.sectionIds.includes("s.geography"));
@@ -103,14 +124,48 @@ describe("the page has the shape the report was designed to have", () => {
     return spec.root.filter((node) => node.component === "Section" || node.component === "WhatToWatch");
   };
 
-  it("numbers eight topics, and lets the holdings continue the split above them", () => {
-    /* The key positions are a second reading of the allocation, not a new question, so that
-       band carries no heading and takes no number — see `continuation` in ../recipes.ts. Ten
-       areas: nine bands, of which eight are headed, plus the sources, which are a collapsed
+  it("numbers eleven topics, every one of them headed", () => {
+    /* Twelve areas: eleven bands, all headed, plus the sources, which are a collapsed
        Disclosure rather than a Section. The headings are what the reader counts. */
     const headed = areas().filter((node) => node.props.heading);
-    expect(areas()).toHaveLength(9);
-    expect(headed.map((node) => node.props.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(areas()).toHaveLength(11);
+    expect(headed.map((node) => node.props.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  it("carries the three bands a portfolio report cannot have", () => {
+    /*
+     * The claim the two fixtures exist to make, reduced to three components.
+     *
+     * `KeyValueList` is labelled facts — a trustee, a governing law, a vesting year — and a
+     * performance report has nothing of that shape to say. `ComparisonTable` over six
+     * properties measured five ways is a schedule, where the same six inside a top-five
+     * holdings table would be one large number. `NewsImpact` pairs an external move with
+     * the one building it bears on. All three follow from the analysis declaring `identity`,
+     * a five-measure comparison and `market_context` — types Prashanth's never declares.
+     */
+    /* Leaves only: the band's own container and any SplitPane or Stack inside it are how the
+       area is arranged, not what it says. */
+    const LAYOUT = new Set(["Section", "SplitPane", "Stack", "Grid"]);
+    const leaves = (nodes: readonly UINode[]): string[] =>
+      nodes.flatMap((node) => {
+        const kids = [...(node.children ?? []), ...Object.values(node.slots ?? {}).flat()];
+        return LAYOUT.has(node.component) ? leaves(kids) : [node.component];
+      });
+    const node = (sectionId: string) => leaves(areas().filter((area) => area.sectionId === sectionId));
+    expect(node("s.estate")).toEqual(["KeyValueList", "Comparison"]);
+    expect(node("s.properties")).toEqual(["ComparisonTable"]);
+    expect(node("s.market")).toEqual(["NewsImpact"]);
+  });
+
+  it("keeps DataTable out of it, which is not the same as nothing choosing it", () => {
+    /*
+     * `DataTable` tabulates whatever columns the bound rows happen to carry, which is the
+     * one contract a report cannot have: a column appears because the data had a field, not
+     * because the analysis measured it. It nearly rendered here anyway — the ownership
+     * section inherited the estate's `key_value` form, and DataTable is the only component
+     * that implements `key_value` and accepts a comparison, so it won at a fit of 0.15.
+     */
+    expect(JSON.stringify(composed().spec.root)).not.toContain("DataTable");
   });
 
   it("orders the page as the reader needs it, not as the model emitted it", () => {
@@ -124,9 +179,11 @@ describe("the page has the shape the report was designed to have", () => {
     expect(areas().map((node) => node.sectionId)).toEqual([
       "s.readout",
       "s.changed",
+      "s.estate",
+      "s.properties",
       "s.allocation",
-      "s.holdings",
       "s.liquidity",
+      "s.market",
       "s.valuations",
       "s.attention",
       "s.coming",
@@ -178,7 +235,7 @@ describe("the frozen analysis does not weaken the guarantees", () => {
   it("keeps every figure out of the spec, the same as any composed view", () => {
     const { spec } = composed();
     const serialised = JSON.stringify(spec.root);
-    for (const figure of ["68.4", "11.0", "6.95", "2.95", "12.5", "8.2"]) {
+    for (const figure of ["68.4", "11.0", "6.95", "2.95", "41.0", "26.0", "8.2", "5.1"]) {
       expect(serialised, figure).not.toContain(figure);
     }
     expect(serialised).not.toContain(ELEANOR_REPORT.summary);
@@ -228,6 +285,15 @@ describe("the report renders the analysis it was written from", () => {
     /* The funding gap and the stale marks: the two findings the analysis leads to. */
     expect(text).toContain("S$2.95m");
     expect(text).toContain("older than nine months");
+    /* The estate, the schedule and the market context: the three bands only she has. */
+    expect(text).toContain("Zinc Trustees (Singapore) Pte Ltd");
+    expect(text).toContain("2041, or earlier at trustee discretion");
+    expect(text).toContain("S$41.0m");
+    expect(text).toContain("Singapore Shophouse, Tanjong Pagar");
+    expect(text).toContain("5.1%");
+    expect(text).toContain("Owner-occupied");
+    expect(text).toMatch(/Kuala Lumpur office vacancy/i);
+
     /* And the dated calendar the funding question turns on. */
     for (const when of ["Q4 2026", "Q1 2027", "Q3 2027", "Q4 2027"]) {
       expect(text, when).toContain(when);

@@ -188,6 +188,17 @@ function formFor(section: SemanticSection): { form: PresentationForm; chartOf?: 
    * reader is asking for here, which is the order they happened in.
    */
   if (section.semanticType === "activity") return { form: "timeline" };
+  /*
+   * And an identity section is labelled attributes, for the same reason.
+   *
+   * "Who owns this" is answered with facts, not figures: a trustee's name, a governing
+   * law, a vesting year, how many beneficiaries there are. Left to `formOf` those are
+   * narratives, and narratives are paragraphs — so the structure of an estate would come
+   * out as prose the reader has to parse for the one line they came for. As pairs they are
+   * scannable, which is the only thing this content is ever used for. `key_value` is also
+   * how an evidence section renders; the difference is which component implements it.
+   */
+  if (section.semanticType === "identity") return { form: "key_value" };
 
   const finding = dominant(section);
   if (!finding) return { form: "prose" };
@@ -506,6 +517,17 @@ function componentFor(
   siblings: number,
 ): ComponentId {
   if (section.semanticType === "evidence") return "SourceList";
+  /*
+   * Market context is the other section whose type decides its component.
+   *
+   * Same shape of rule as the line above, and for the same reason: an external event and
+   * what it means for a specific holding is a pair, and `NewsImpact` is the only component
+   * that draws it as one. Scored on the finding alone it could never win — the finding is
+   * an ordinary narrative, so the form is `prose`, and `Prose` implements prose too and
+   * would take it. That would print the section as paragraphs and lose the join between
+   * each event and the asset it bears on, which is the entire content.
+   */
+  if (section.semanticType === "market_context" && finding.kind === "narrative") return "NewsImpact";
   const scored = bestFor(form, finding, {
     count: cardinalityOf(finding),
     siblings,
