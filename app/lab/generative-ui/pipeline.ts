@@ -228,7 +228,7 @@ export async function run(
 
   /* ---------------------------------------------------- 1. what is being asked */
 
-  await begin("plan", "Reading the question");
+  await begin("plan", "Understanding the question");
 
   let plan: IntentPlan;
   if (pinned) {
@@ -256,7 +256,7 @@ export async function run(
 
   /* -------------------------------------------------------------- 2. the data */
 
-  await begin("data", "Gathering data");
+  await begin("data", "Gathering the data");
   const bundle = pinned ? pinned.bundle : plan.dataRequests.length > 0 ? executePlan(plan) : emptyBundle();
   const keys = Object.keys(bundle.values);
   await finish(
@@ -302,7 +302,7 @@ export async function run(
 
   /* --------------------------------------------------------- 3b. what it means */
 
-  await begin("structure", "Structuring the findings");
+  await begin("structure", "Sorting out what it says");
   let report: SemanticReport | null = null;
   if (via === "model") {
     const structured = await post({ stage: "structure", query, plan, values: bundle.values, answer });
@@ -322,7 +322,7 @@ export async function run(
 
   /* --------------------------------------------- 4, 5, 7. the page, decided here */
 
-  await begin("compose", "Choosing the layout");
+  await begin("compose", "Choosing how to show each part");
   const composed = composeView(report, plan, bundle);
   await finish(
     "compose",
@@ -334,7 +334,7 @@ export async function run(
 
   /* --------------------------------------------------------- 8. is it any good */
 
-  await begin("check", "Checking it");
+  await begin("check", "Checking it holds up");
   let spec = composed.spec;
   let result = validate(spec, bundle);
 

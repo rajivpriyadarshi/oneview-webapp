@@ -27,6 +27,7 @@
  * This file owns state and pacing only. No layout decision is taken here.
  */
 
+import { Check } from "lucide-react";
 import React, { type CSSProperties } from "react";
 import Link from "next/link";
 import Sidebar from "../../components/Sidebar";
@@ -589,31 +590,123 @@ export default function GenerativeUILab() {
 /* -------------------------------------------------------------------- stages */
 
 /**
- * The pipeline, reporting itself.
+ * The pipeline, reporting itself — four phases over six real stages.
  *
- * Each line is a layer that is running or has run, and its detail is what that layer
- * actually decided — not a phrase chosen to fill the wait. §13: real loading stages,
- * because the stages are real.
+ * Each line is work that is running or has run, and its detail is what that layer actually
+ * decided, never a phrase chosen to fill the wait (§13). What changed is the framing: the
+ * six stages are the architecture's units, and a reader watching six flat bullets learns
+ * the list without learning the shape. Grouped into the four things that are actually
+ * happening — understanding the question, answering it, deciding what goes where, putting
+ * the page together — the wait explains the system instead of enumerating it.
+ *
+ * The grouping is a presentation of the same run, not a different one: every stage still
+ * reports, and a phase is done only when all of its stages are.
  */
+const PHASES: { id: string; title: string; of: string[] }[] = [
+  { id: "understand", title: "Understanding your question", of: ["plan"] },
+  { id: "answer", title: "Answering it from your data", of: ["data", "answer"] },
+  { id: "structure", title: "Deciding what goes where", of: ["structure", "compose"] },
+  { id: "assemble", title: "Putting the page together", of: ["check"] },
+];
+
+/**
+ * A long detail said shortly.
+ *
+ * The data stage's detail is the list of keys it fetched, which is the honest thing for it
+ * to report and thirteen names wide on this page — it wrapped to two lines and pushed the
+ * phases apart. Counting the same list is not a different claim, so a detail past the
+ * measure becomes its own count. Nothing else is summarised: a recipe name, a task type and
+ * a word count are already short, and shortening prose would be editing it.
+ */
+function said(detail: string | undefined): string | undefined {
+  if (!detail) return undefined;
+  const parts = detail.split(", ");
+  return parts.length > 3 && detail.length > 52 ? `${parts.length} data points` : detail;
+}
+
 function StagePanel({ stages }: { stages: Stage[] }) {
+  const stageOf = (id: string) => stages.find((stage) => stage.id === id);
+  const state = PHASES.map((phase) => {
+    const own = phase.of.map(stageOf);
+    const reached = own.filter((stage) => stage !== undefined) as Stage[];
+    const done = reached.filter((stage) => stage.detail !== undefined);
+    return {
+      phase,
+      /* The running stage is the last one reached that has not reported a detail; when all
+         have, the phase is complete and the last one is what it says it did. */
+      current: reached[reached.length - 1],
+      started: reached.length > 0,
+      complete: done.length === phase.of.length,
+      fraction: done.length / phase.of.length,
+    };
+  });
+  const running = state.findIndex((entry) => entry.started && !entry.complete);
+
   return (
-    <div className="flex flex-col gap-[10px] py-[8px]">
-      <span className={LABEL}>Working</span>
-      {stages.map((stage, index) => {
-        const done = stage.detail !== undefined;
-        return (
-          <div key={stage.id} className="gu-line flex items-baseline gap-[9px]" style={{ animationDelay: `${index * 40}ms` }}>
-            <span
-              className={`mt-[5px] inline-block h-[6px] w-[6px] shrink-0 rounded-full ${done ? "" : "gu-pulse"}`}
-              style={{ background: done ? "#7F4E0B" : "#C79A4A" }}
-            />
-            <span className="font-satoshi text-[13px]" style={{ color: done ? INK : "rgba(0,0,0,0.45)" }}>
-              {stage.label}
-              {stage.detail ? <span className="text-black/40"> · {stage.detail}</span> : null}
-            </span>
-          </div>
-        );
-      })}
+    <div className="mx-auto flex w-full max-w-[420px] flex-col items-center py-[64px] max-[900px]:py-[36px]">
+      <span className={LABEL}>Building your view</span>
+
+      <div className="mt-[26px] w-full">
+        {state.map((entry, index) => {
+          const last = index === state.length - 1;
+          const active = index === running;
+          const line = entry.complete
+            ? said(entry.current?.detail)
+            : active
+              ? entry.current?.label
+              : undefined;
+          return (
+            <div key={entry.phase.id} className="grid grid-cols-[22px_minmax(0,1fr)] gap-x-[14px]">
+              {/* The disc, and the rail that carries the eye to the next one. */}
+              <div className="flex flex-col items-center">
+                <span
+                  className={`grid h-[22px] w-[22px] place-items-center rounded-full border transition-colors duration-300 ${
+                    entry.complete
+                      ? "border-[#7F4E0B] bg-[#7F4E0B]"
+                      : active
+                        ? "border-[#7F4E0B] bg-transparent"
+                        : "border-black/15 bg-transparent"
+                  }`}
+                >
+                  {entry.complete ? (
+                    <Check size={12} strokeWidth={2.5} color="#fffefa" />
+                  ) : active ? (
+                    <span className="gu-pulse block h-[7px] w-[7px] rounded-full bg-[#7F4E0B]" />
+                  ) : (
+                    <span className="block h-[5px] w-[5px] rounded-full bg-black/15" />
+                  )}
+                </span>
+                {/* The rail fills by the fraction of *this* phase's stages that have
+                    reported, which is why answering and structuring — two stages each —
+                    show progress mid-phase rather than sitting still and then jumping. */}
+                {last ? null : (
+                  <span className="relative mt-[6px] mb-[6px] w-[2px] flex-1 overflow-hidden rounded-full bg-black/[0.07]">
+                    <span
+                      className="absolute inset-x-0 top-0 rounded-full bg-[#7F4E0B]/70 transition-[height] duration-500 ease-out"
+                      style={{ height: `${entry.fraction * 100}%` }}
+                    />
+                  </span>
+                )}
+              </div>
+
+              <div className={`gu-line ${last ? "pb-0" : "pb-[20px]"}`} style={{ animationDelay: `${index * 70}ms` }}>
+                <div
+                  className="font-satoshi text-[14px] tracking-[-0.14px] transition-colors duration-300"
+                  style={{ color: entry.started ? INK : "rgba(0,0,0,0.32)" }}
+                >
+                  {entry.phase.title}
+                </div>
+                {/* One line, and only for the phase that is running or has finished. A
+                    pending phase says nothing, because nothing has happened in it yet and a
+                    caption there would be a guess at what will. */}
+                {line ? (
+                  <div className="mt-[3px] font-satoshi text-[12px] leading-[1.45] text-black/40">{line}</div>
+                ) : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

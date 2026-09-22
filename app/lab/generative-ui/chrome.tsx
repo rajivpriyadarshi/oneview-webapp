@@ -140,9 +140,19 @@ export function Figure({
   iconHex?: string;
 }) {
   const plated = Boolean(mark) || Boolean(Glyph);
+  /*
+   * With a plate, the label comes inside the stack.
+   *
+   * It used to sit above the whole row, which put the plate beside the *figure* and left
+   * the name of the thing hanging over both — so the glyph read as decoration on the
+   * number rather than as identification of the entity, and on a one-line label the plate
+   * looked dropped a line. Plate left, name and figure stacked to the right of it, is the
+   * arrangement a reader parses as "this thing, this much".
+   */
   const stack = (
     <div className="min-w-0">
-      <div className={plated ? undefined : "mt-[6px]"}>
+      {plated && label ? <div className={TYPE.label}>{label}</div> : null}
+      <div className={plated ? "mt-[2px]" : "mt-[6px]"}>
         <span className={size === "lg" ? TYPE.figure : TYPE.figureSm}>{value}</span>
       </div>
       {delta ? (
@@ -157,9 +167,9 @@ export function Figure({
 
   return (
     <div>
-      {label ? <div className={TYPE.label}>{label}</div> : null}
+      {label && !plated ? <div className={TYPE.label}>{label}</div> : null}
       {plated ? (
-        <div className="mt-[10px] flex items-start gap-[14px]">
+        <div className="flex items-center gap-[14px]">
           <span
             className={`grid h-[42px] shrink-0 place-items-center rounded-[10px] border bg-[#fffefa] ${mark ? "px-[11px]" : "w-[42px]"} ${SURFACE.hairline}`}
           >
