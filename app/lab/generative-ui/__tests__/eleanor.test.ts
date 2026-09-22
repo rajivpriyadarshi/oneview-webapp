@@ -124,12 +124,12 @@ describe("the page has the shape the report was designed to have", () => {
     return spec.root.filter((node) => node.component === "Section" || node.component === "WhatToWatch");
   };
 
-  it("numbers eleven topics, every one of them headed", () => {
-    /* Twelve areas: eleven bands, all headed, plus the sources, which are a collapsed
-       Disclosure rather than a Section. The headings are what the reader counts. */
+  it("numbers ten topics, every one of them headed", () => {
+    /* Ten bands, all headed, plus the sources, which are a collapsed Disclosure rather
+       than a Section. The headings are what the reader counts. */
     const headed = areas().filter((node) => node.props.heading);
-    expect(areas()).toHaveLength(11);
-    expect(headed.map((node) => node.props.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(areas()).toHaveLength(10);
+    expect(headed.map((node) => node.props.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 
   it("carries the three bands a portfolio report cannot have", () => {
@@ -224,8 +224,15 @@ describe("the page has the shape the report was designed to have", () => {
       "s.valuations",
       "s.attention",
       "s.coming",
-      "s.recommend",
     ]);
+  });
+
+  it("ends on the calendar, because a trust-held estate's decisions are not the adviser's", () => {
+    /* The absence is the claim: Prashanth's page closes on four recommendations, this one
+       declares no `recommendations` section at all, and nothing downstream manufactures
+       one. See the note where the section used to be in ../eleanor.ts. */
+    expect(ELEANOR_REPORT.sections.map((section) => section.semanticType)).not.toContain("recommendations");
+    expect(JSON.stringify(composed().spec.root)).not.toContain("Recommendation");
   });
 
   it("puts the three attention items in one row rather than on a rail", () => {

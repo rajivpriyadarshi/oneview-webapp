@@ -1,14 +1,17 @@
-# Market context art
+# Market band imagery
 
-Three placeholders for the news cards in the property report's market band
-(`NewsImpact` in `app/lab/generative-ui/leaves.tsx`). The file names are the
-`image` paths in `app/lab/generative-ui/eleanor.ts`:
+The three photographs behind Eleanor's "Market context" band, referenced by `image` on the
+`market.context` rows in `app/lab/generative-ui/eleanor.ts`:
 
-- `singapore-residential.jpg` — Singapore private residential, lead card (wide, ~1200×800)
-- `bank-of-england.jpg` — the Bank of England, small card (~800×600)
-- `kuala-lumpur-office.jpg` — a Kuala Lumpur office interior, small card (~800×600)
+| File | Article | Plate |
+| --- | --- | --- |
+| `singapore-residential.jpg` | Singapore private residential prices | lead card, 300px tall |
+| `bank-of-england.jpg` | Bank of England base rate | small card, 148px tall |
+| `kuala-lumpur-office.jpg` | Kuala Lumpur office vacancy | small card, 148px tall |
 
-Drop the real files in here under these names and they appear. Until then the
-renderer draws the tinted plate: `Art` catches the load error and falls back, so a
-missing file costs the card its picture and nothing else. Nothing in the image
-carries information — every claim on the card is in its text.
+Each is cropped toward its plate's aspect so that `object-cover` does not lose the subject —
+the Bank of England source was portrait and is cropped to the pediment and colonnade.
+
+If a file is missing or fails to load, `Art` in `leaves.tsx` falls back to a tinted plate
+rather than a broken image: the band is about the claim in the headline, and a photograph is
+never the source of a fact here.

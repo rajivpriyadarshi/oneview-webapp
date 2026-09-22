@@ -944,65 +944,16 @@ export const ELEANOR_REPORT: SemanticReport = {
       ],
     },
 
-    /* --------------------------------------------- 8. decisions & next steps */
-    {
-      id: "s.recommend",
-      semanticType: "recommendations",
-      question: "What should be decided?",
-      importance: "secondary",
-      takeaway: "Four decisions, in the order they bind.",
-      dataKeys: ["actions.open"],
-      findings: [
-        {
-          kind: "recommendation",
-          id: "r.liquidity",
-          emphasis: "primary",
-          confidence: 0.9,
-          sources: [...CUSTODY, ...FUNDS],
-          subject: "Liquidity",
-          title: "Review the liquidity strategy",
-          rationale:
-            "Decide how the 2027 calls are funded while the preferred reserve is held: from distributions, from the public book, or by drawing the reserve down deliberately rather than by default.",
-          action: "Model the three sources against the Q1 2027 call",
-        },
-        {
-          kind: "recommendation",
-          id: "r.valuations",
-          emphasis: "primary",
-          confidence: 0.95,
-          sources: [...VALUATIONS, ...FUNDS],
-          subject: "Valuations",
-          title: "Obtain updated valuations",
-          rationale:
-            "Prioritise the family business and the fund positions older than nine months. A quarter of the private book, and the largest single holding, currently rests on marks the file itself flags as old.",
-          action: "Commission the family business valuation first",
-        },
-        {
-          kind: "recommendation",
-          id: "r.provence",
-          emphasis: "secondary",
-          confidence: 0.8,
-          sources: [...VALUATIONS, ...TRUST],
-          subject: "Property",
-          title: "Decide the position on the Provence farmhouse",
-          rationale:
-            "It is the smallest property, earns nothing, and is carried at a valuation from December 2023 — the oldest mark in the file. Either commission a current valuation and keep it as a family asset, or realise it and close most of the funding gap without touching the reserve. Both are defensible; drifting is the one option that is not, because the trustee needs the answer before the Q1 2027 call.",
-          action: "Put both options to the trustee this quarter",
-        },
-        {
-          kind: "recommendation",
-          id: "r.calls",
-          emphasis: "secondary",
-          confidence: 0.9,
-          sources: FUNDS,
-          subject: "Commitments",
-          title: "Confirm the capital call schedule",
-          rationale:
-            "Coordinate with both fund managers on expected timing and amounts. The Q4 2026 and Q1 2027 dates are the managers' guidance rather than fixed obligations, and a shift in either changes what has to be liquid and when.",
-          action: "Written confirmation from both managers",
-        },
-      ],
-    },
+    /*
+     * No recommendations section.
+     *
+     * Deliberately absent, and the second half of the differentiation claim: Prashanth's
+     * report ends on four decisions because the question asked what to do about a
+     * portfolio the adviser controls. This one is a property review of a trust-held
+     * estate — the decisions belong to the trustee, and the analysis stops at what the
+     * file says. So the page has no "Decisions & next steps" band, which is a shape
+     * difference the recipe cannot invent and the composer simply has nothing to fill.
+     */
 
     /* ----------------------------------------------------------- 9. evidence */
     {
