@@ -306,7 +306,10 @@ const RATIOS: Record<string, string> = {
 };
 
 const SplitPane: Container = ({ props, slots }) => (
-  <div className={`grid grid-cols-1 gap-[14px] ${RATIOS[String(props.ratio)] ?? RATIOS.even}`}>
+  /* 24px between the halves, matching `Grid`. At 14px a key-value list whose values are
+     right-aligned to its own edge ran almost into the card beside it, so the two sides read
+     as one crowded block rather than as two answers set against each other. */
+  <div className={`grid grid-cols-1 gap-[24px] ${RATIOS[String(props.ratio)] ?? RATIOS.even}`}>
     {(["left", "right"] as const).map((side) => (
       <div key={side} className="flex min-w-0 flex-col gap-[8px]">
         {str(props[`${side}Label`]) ? <div className={LABEL}>{props[`${side}Label`] as string}</div> : null}

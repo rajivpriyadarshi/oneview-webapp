@@ -641,71 +641,81 @@ function StagePanel({ stages }: { stages: Stage[] }) {
     };
   });
   const running = state.findIndex((entry) => entry.started && !entry.complete);
+  const spoken = state[running] ?? [...state].reverse().find((entry) => entry.started);
+  const line = spoken
+    ? spoken.complete
+      ? said(spoken.current?.detail)
+      : (spoken.current?.label ?? undefined)
+    : undefined;
 
   return (
-    <div className="mx-auto flex w-full max-w-[420px] flex-col items-center py-[64px] max-[900px]:py-[36px]">
+    <div className="mx-auto flex w-full max-w-[620px] flex-col items-center py-[72px] max-[900px]:py-[40px]">
       <span className={LABEL}>Building your view</span>
 
-      <div className="mt-[26px] w-full">
+      {/* Four columns of equal width, so the rails between the discs are equal lengths and
+          the row reads as a track rather than as four items that happen to be in a line. */}
+      <div className="mt-[30px] grid w-full grid-cols-4">
         {state.map((entry, index) => {
           const last = index === state.length - 1;
           const active = index === running;
-          const line = entry.complete
-            ? said(entry.current?.detail)
-            : active
-              ? entry.current?.label
-              : undefined;
           return (
-            <div key={entry.phase.id} className="grid grid-cols-[22px_minmax(0,1fr)] gap-x-[14px]">
-              {/* The disc, and the rail that carries the eye to the next one. */}
-              <div className="flex flex-col items-center">
-                <span
-                  className={`grid h-[22px] w-[22px] place-items-center rounded-full border transition-colors duration-300 ${
-                    entry.complete
-                      ? "border-[#7F4E0B] bg-[#7F4E0B]"
-                      : active
-                        ? "border-[#7F4E0B] bg-transparent"
-                        : "border-black/15 bg-transparent"
-                  }`}
-                >
-                  {entry.complete ? (
-                    <Check size={12} strokeWidth={2.5} color="#fffefa" />
-                  ) : active ? (
-                    <span className="gu-pulse block h-[7px] w-[7px] rounded-full bg-[#7F4E0B]" />
-                  ) : (
-                    <span className="block h-[5px] w-[5px] rounded-full bg-black/15" />
-                  )}
+            <div key={entry.phase.id} className="relative flex min-w-0 flex-col items-center">
+              {/* The rail runs from this disc's centre to the next one's and fills by the
+                  fraction of *this* phase's stages that have reported — which is why
+                  answering and structuring, two stages each, move mid-phase instead of
+                  sitting still and then jumping. Behind the discs, which carry the card's
+                  own background so the track passes under them rather than through them. */}
+              {last ? null : (
+                <span className="absolute top-[10px] left-1/2 h-[2px] w-full overflow-hidden bg-black/[0.07]">
+                  <span
+                    className="absolute inset-y-0 left-0 bg-[#7F4E0B]/70 transition-[width] duration-700 ease-out"
+                    style={{ width: `${entry.fraction * 100}%` }}
+                  />
                 </span>
-                {/* The rail fills by the fraction of *this* phase's stages that have
-                    reported, which is why answering and structuring — two stages each —
-                    show progress mid-phase rather than sitting still and then jumping. */}
-                {last ? null : (
-                  <span className="relative mt-[6px] mb-[6px] w-[2px] flex-1 overflow-hidden rounded-full bg-black/[0.07]">
-                    <span
-                      className="absolute inset-x-0 top-0 rounded-full bg-[#7F4E0B]/70 transition-[height] duration-500 ease-out"
-                      style={{ height: `${entry.fraction * 100}%` }}
-                    />
-                  </span>
+              )}
+              <span
+                className={`relative z-[1] grid h-[22px] w-[22px] place-items-center rounded-full border transition-colors duration-300 ${
+                  entry.complete
+                    ? "border-[#7F4E0B] bg-[#7F4E0B]"
+                    : active
+                      ? "border-[#7F4E0B] bg-[#fffefa]"
+                      : "border-black/15 bg-[#fffefa]"
+                }`}
+              >
+                {entry.complete ? (
+                  <Check size={12} strokeWidth={2.5} color="#fffefa" />
+                ) : active ? (
+                  <span className="gu-pulse block h-[7px] w-[7px] rounded-full bg-[#7F4E0B]" />
+                ) : (
+                  <span className="block h-[5px] w-[5px] rounded-full bg-black/15" />
                 )}
-              </div>
-
-              <div className={`gu-line ${last ? "pb-0" : "pb-[20px]"}`} style={{ animationDelay: `${index * 70}ms` }}>
-                <div
-                  className="font-satoshi text-[14px] tracking-[-0.14px] transition-colors duration-300"
-                  style={{ color: entry.started ? INK : "rgba(0,0,0,0.32)" }}
-                >
-                  {entry.phase.title}
-                </div>
-                {/* One line, and only for the phase that is running or has finished. A
-                    pending phase says nothing, because nothing has happened in it yet and a
-                    caption there would be a guess at what will. */}
-                {line ? (
-                  <div className="mt-[3px] font-satoshi text-[12px] leading-[1.45] text-black/40">{line}</div>
-                ) : null}
+              </span>
+              <div
+                className="gu-line mt-[12px] px-[8px] text-center font-satoshi text-[12px] leading-[1.35] tracking-[-0.12px] transition-colors duration-300"
+                style={{ color: entry.started ? INK : "rgba(0,0,0,0.32)", animationDelay: `${index * 70}ms` }}
+              >
+                {entry.phase.title}
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/*
+       * One caption for the whole track, not one per column.
+       *
+       * Four captions under four columns is four ragged blocks of different heights, and
+       * three of them are about work that has already finished. What the reader wants while
+       * waiting is what is happening *now*, so the running phase says it, in the centre,
+       * where the next line replaces the last in the same place. A completed run's last
+       * phase keeps its detail there, so the panel does not end on a blank line.
+       */}
+      <div className="mt-[26px] flex h-[18px] items-center">
+        {line ? (
+          <span key={line} className="gu-line font-satoshi text-[13px] tracking-[-0.13px] text-black/45">
+            {line}
+          </span>
+        ) : null}
       </div>
     </div>
   );

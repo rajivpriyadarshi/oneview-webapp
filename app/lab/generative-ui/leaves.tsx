@@ -820,8 +820,21 @@ function Comparison({ props, finding, node }: Resolved) {
     .filter((name) => name.toLowerCase() !== shown.toLowerCase());
   const rows = props.variant === "rows";
 
+  /*
+   * And the measure is not said at all when the figures already say it.
+   *
+   * The line above earns its place when the tiles show bare numbers — three values of 41,
+   * 18.7 and 8.7 mean nothing without "Value held" over them. When every entity carries a
+   * pre-formatted `display`, the unit is on the figure: "S$41.0m" under a named entity is
+   * already an amount held, and a caption reading "Value held" — or "Amount" over a cash
+   * position — is a table's column header stranded above a set of cards. Measures in
+   * `props.measures` that name something else still print, because those say something the
+   * figures do not.
+   */
+  const captioned = finding.entities.every((entity) => entity.display) ? also : [shown, ...also];
+
   return (
-    <Block title={finding.label} caption={[shown, ...also].join(" · ")}>
+    <Block title={finding.label} caption={captioned.length > 0 ? captioned.join(" · ") : undefined}>
       <div
         className={rows ? "flex flex-col gap-[10px]" : "grid gap-[10px]"}
         style={rows ? undefined : { gridTemplateColumns: `repeat(${finding.entities.length}, minmax(0, 1fr))` }}

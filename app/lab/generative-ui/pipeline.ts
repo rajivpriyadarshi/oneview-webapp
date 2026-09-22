@@ -108,10 +108,23 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
  * staged panel is that the architecture has six separable steps, and a step nobody sees
  * cannot make that point.
  *
- * So the pinned run is paced, and the numbers are shaped like the work would be. Reading
- * the question is quick. Gathering data is a few tool calls. Writing the answer is the
- * long one, because generating four hundred words is, and structuring it is nearly as
- * long. Choosing the layout and checking it are deterministic code and feel like it.
+ * So the pinned run is paced, and the numbers are shaped like the work would be — which
+ * means *unevenly*. The first version gave every stage roughly a second and a half, and a
+ * reader watching four phases tick at a metronome's pace correctly concludes that nothing
+ * is being timed: real work has a rhythm, and the rhythm is the tell. Where the time
+ * actually goes, if these layers ran for real:
+ *
+ *   plan       A short model call on one sentence. Fast, and it should feel instant-ish.
+ *   data       Tool calls, in parallel but bounded by the slowest. Around a second.
+ *   answer     Four hundred words out of a model, token by token. The long one, by far,
+ *              and the one the reader should be able to feel taking its time.
+ *   structure  A second model call, turning that answer into findings. Long, but shorter
+ *              than writing the prose was.
+ *   compose    Pure functions over a dozen sections. Hundreds of milliseconds at most.
+ *   check      Walking a tree against a schema. Faster still, and it lands with a snap.
+ *
+ * `before` is the wait while a stage is open and `after` is the beat on its result, so a
+ * cheap stage gets a short beat and the two expensive ones are allowed to sit.
  *
  * Nothing else changes: the model path is not delayed by a millisecond, because there the
  * stages take however long they take and inventing more would be padding a real number.
@@ -119,12 +132,12 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
  * any of them.
  */
 const PACE: Record<string, { before: number; after: number }> = {
-  plan: { before: 420, after: 220 },
-  data: { before: 880, after: 260 },
-  answer: { before: 1650, after: 340 },
-  structure: { before: 1450, after: 300 },
-  compose: { before: 760, after: 240 },
-  check: { before: 620, after: 180 },
+  plan: { before: 380, after: 200 },
+  data: { before: 1150, after: 180 },
+  answer: { before: 2700, after: 260 },
+  structure: { before: 1750, after: 220 },
+  compose: { before: 520, after: 140 },
+  check: { before: 300, after: 120 },
 };
 
 /* ---------------------------------------------------------------- transport */
