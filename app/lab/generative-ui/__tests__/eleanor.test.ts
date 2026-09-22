@@ -168,6 +168,22 @@ describe("the page has the shape the report was designed to have", () => {
     expect(JSON.stringify(composed().spec.root)).not.toContain("DataTable");
   });
 
+  it("stacks a comparison that has only half the page to sit in", () => {
+    /* Three entity tiles side by side in a pane are a third of a column each, so
+       "Whitfield Holdings Pte Ltd" wraps and the figures beneath the labels land at
+       different heights — a set that stops being scannable where the figures matter.
+       See the pane rule in ../compose.ts; the `rows` variant is the registry's. */
+    const inPanes = (nodes: readonly UINode[], within = false): UINode[] =>
+      nodes.flatMap((node) => {
+        const kids = [...(node.children ?? []), ...Object.values(node.slots ?? {}).flat()];
+        const inside = within || node.component === "SplitPane";
+        return [...(inside && node.component === "Comparison" ? [node] : []), ...inPanes(kids, inside)];
+      });
+    const paned = inPanes(composed().spec.root);
+    expect(paned.length).toBeGreaterThan(0);
+    for (const node of paned) expect(node.props.variant).toBe("rows");
+  });
+
   it("orders the page as the reader needs it, not as the model emitted it", () => {
     /*
      * Liquidity before valuations before attention before the calendar — and the calendar

@@ -1174,6 +1174,28 @@ function buildArea(build: Builder, area: IAArea, report: SemanticReport, recipe:
     };
     const left = lift(per[0].nodes);
     const right = lift(per[1].nodes);
+    /*
+     * A comparison inside a pane stacks, because a pane is half a page.
+     *
+     * Its tiles sit side by side by default, which is right at full width: three or four
+     * options read as one set with the figures aligned across. In half the width each tile
+     * is a third of a column, and the entity names — "Whitfield Holdings Pte Ltd" — wrap to
+     * two lines while the figures beneath them land at different heights, so the set stops
+     * being scannable at exactly the point the figures matter. Stacked, each option takes
+     * the pane's full width, the labels fit on one line and the values sit in a column.
+     *
+     * The `rows` variant is the registry's (../registry.ts) and was until now unreachable;
+     * this is the condition that earns it. Presentation only — same finding, same entities,
+     * same order.
+     */
+    const stackComparisons = (nodes: UINode[]): void => {
+      for (const node of nodes) {
+        if (node.component === "Comparison") node.props.variant = "rows";
+        if (node.children) stackComparisons(node.children);
+      }
+    };
+    stackComparisons(left.pane);
+    stackComparisons(right.pane);
     body = [
       {
         id: uid(build, "split"),
